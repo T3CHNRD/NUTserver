@@ -4,43 +4,60 @@
   <meta charset="utf-8">
   <title>NUT Orchestrator UI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f7f7f7; color: #222; }
-    h1, h2 { margin-bottom: 0.4rem; }
-    .card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
-    textarea { width: 100%; min-height: 240px; font-family: monospace; }
-    button { margin-right: 10px; margin-top: 10px; padding: 8px 14px; cursor: pointer; }
-    .output { white-space: pre-wrap; background: #111; color: #ddd; padding: 12px; min-height: 120px; border-radius: 6px; overflow-x: auto; }
-    .muted { color: #666; font-size: 0.95rem; }
-    .tag { display: inline-block; padding: 2px 8px; border: 1px solid #aaa; border-radius: 999px; font-size: 0.85rem; margin-left: 8px; }
-  </style>
+  <link rel="stylesheet" href="/static/nut-ui-theme.css">
 </head>
 <body>
-  <h1>NUT Orchestrator UI</h1>
-  <p class="muted">Approved NUT and orchestrator configuration editor for nutserver.</p>
+  <div class="nutui-shell">
+    <header class="nutui-header">
+      <div class="nutui-title-wrap">
+        <h1>NUT Orchestrator UI</h1>
+        <p>Integrated admin console for config editing, tests, backups, and rollback.</p>
+      </div>
+      <div class="nutui-top-actions">
+        <button onclick="runTest('simulate')">Simulated Test</button>
+        <button onclick="runTest('real')">Real Test</button>
+        <button onclick="backupNow()">Backup Now</button>
+        <a href="/nut-ui" style="text-decoration:none;" target="_self">
+          <button type="button">Refresh</button>
+        </a>
+      </div>
+    </header>
 
-  <div class="card">
-    <h2>Actions</h2>
-    <button onclick="runTest('simulate')">Simulated Test</button>
-    <button onclick="runTest('real')">Real Test</button>
-    <button onclick="backupNow()">Backup Now</button>
-  </div>
+    <div class="nutui-grid">
+      <aside class="nutui-nav">
+        <h2>Navigation</h2>
+        <ul>
+          <li><a href="/nutserver-dashboard.priority1.html" target="_blank" rel="noopener noreferrer">Open Main Dashboard</a></li>
+          <li><a href="#output">Action Output</a></li>
+          <li><a href="#configs">Approved Configs</a></li>
+        </ul>
+      </aside>
 
-  <div class="card">
-    <h2>Action Output</h2>
-    <div id="action-output" class="output"></div>
-  </div>
+      <main class="nutui-main">
+        <section class="nutui-output-card" id="output">
+          <h2>Action Output</h2>
+          <div id="action-output" class="nutui-output"></div>
+        </section>
 
-  {% for cfg in configs %}
-  <div class="card">
-    <h2>{{ cfg.name }} <span class="tag">{{ cfg.type }}</span></h2>
-    <div class="muted">{{ cfg.path }}</div>
-    <textarea id="content-{{ cfg.id }}">{{ cfg.content }}</textarea><br>
-    <button onclick="saveConfig('{{ cfg.id }}', 'dry-run')">Validate Only</button>
-    <button onclick="saveConfig('{{ cfg.id }}', 'apply')">Apply Change</button>
-    <button onclick="rollbackConfig('{{ cfg.id }}')">Rollback</button>
+        <section class="nutui-main-card" id="configs">
+          <h2>Approved Config Files</h2>
+          <p>Use <strong>Validate Only</strong> first, especially for live NUT <code>.conf</code> files.</p>
+        </section>
+
+        {% for cfg in configs %}
+        <section class="nutui-config-card">
+          <h2>{{ cfg.name }} <span class="nutui-tag">{{ cfg.type }}</span></h2>
+          <div>{{ cfg.path }}</div>
+          <br>
+          <textarea id="content-{{ cfg.id }}">{{ cfg.content }}</textarea><br>
+          <button onclick="saveConfig('{{ cfg.id }}', 'dry-run')">Validate Only</button>
+          <button onclick="saveConfig('{{ cfg.id }}', 'apply')">Apply Change</button>
+          <button onclick="rollbackConfig('{{ cfg.id }}')">Rollback</button>
+        </section>
+        {% endfor %}
+      </main>
+    </div>
   </div>
-  {% endfor %}
 
   <script src="/static/app.js"></script>
 </body>
