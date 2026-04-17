@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REGISTRY="/opt/nut-orchestrator-ui/lib/config_registry.json"
+VALIDATORS="/opt/nut-orchestrator-ui/lib/validators.sh"
+BACKUP_DIR="/var/lib/nut-orchestrator-ui/backups"
+LOG_FILE="/var/log/nut-orchestrator-ui/ui-actions.log"
+
+usage() {
+  echo "Usage: $0 <config_id> <staged_file> [dry-run|apply]"
+  exit 1
+}
+
+[ $# -lt 2 ] && usage
+
+CONFIG_ID="$1"
+STAGED_FILE="$2"
+MODE="${3:-dry-run}"
+
+[ -f "$REGISTRY" ] || { echo "Registry not found"; exit 1; }
+[ -f "$VALIDATORS" ] || { echo "Validators not found"; exit 1; }
+[ -f "$STAGED_FILE" ] || { echo "Staged file not found"; exit 1; }
+
+CONFIG_JSON="$(jq -c --arg id "$CONFIG_ID" '.editable_configs[] | select(.id==$id)' "$REGISTRY")"
+[ -n "$CONFIG_JSON" ] || { echo "Unknown config id"; exit 1; }
+
+TARGET_PATH="$(echo "$CONFIG_JSON" | jq -r '.path')"
+VALIDATOR="$(echo "$CONFIG_JSON" | jq -r '.validator')"
+CONFIG_NAME="$(echo "$CONFIG_JSON" | jq -r '.name')"
+ALLOWED_EXTENSIONS="$(echo "$CONFIG_JSON" | jq -r '.allowed_extensions[]')"
+
+[ -n "$TARGET_PATH" ] && [ "$TARGET_PATH" != "null" ] || { echo "Missing target path"; exit 1; }
+[ -n "$VALIDATOR" ] && [ "$VALIDATOR" != "null" ] || { echo "Missing validator"; exit 1; }
+
+BASENAME="$(basename "$TARGET_PATH")"
+
+for blocked in $(jq -r '.blocked_patterns[]' "$REGISTRY"); do
+  if [[ "$BASENAME" == *"$blocked"* ]]; then
+    echo "Blocked filename pattern detected: $blocked"
+    exit 1
+  fi
+done
+
+EXT_OK=0
+for ext in $ALLOWED_EXTENSIONS; do
+  if [[ "$TARGET_PATH" == *"$ext" ]]; then
+    EXT_OK=1
+    break
+  fi
+done
+
+[ "$EXT_OK" -eq 1 ] || { echo "Target path extension is not approved"; exit 1; }
+
+mkdir -p "$BACKUP_DIR" "$(dirname "$LOG_FILE")"
+source "$VALIDATORS"
+
+TMP_VALIDATE="$(mktemp)"
+cp -f "$STAGED_FILE" "$TMP_VALIDATE"
+
+echo "[$(date -Is)] VALIDATE START config_id=$CONFIG_ID name=\"$CONFIG_NAME\" target=\"$TARGET_PATH\" mode=$MODE" | tee -a "$LOG_FILE"
+
+run_validator "$VALIDATOR" "$TMP_VALIDATE"
+
+if [ "$MODE" = "dry-run" ]; then
+  echo "Dry-run successful. Validation passed for $CONFIG_ID"
+  rm -f "$TMP_VALIDATE"
+  exit 0
+fi
+
+TS="$(date +%Y%m%d-%H%M%S)"
+SAFE_ID="$(echo "$CONFIG_ID" | tr -cd 'a-zA-Z0-9_-')"
+DEST_BACKUP_DIR="$BACKUP_DIR/$SAFE_ID"
+mkdir -p "$DEST_BACKUP_DIR"
+
+if [ -f "$TARGET_PATH" ]; then
+  cp -a "$TARGET_PATH" "$DEST_BACKUP_DIR/${TS}.bak"
+fi
+
+install -o root -g root -m 640 "$STAGED_FILE" "$TARGET_PATH"
+
+echo "[$(date -Is)] APPLY OK config_id=$CONFIG_ID target=\"$TARGET_PATH\" backup=\"$DEST_BACKUP_DIR/${TS}.bak\"" | tee -a "$LOG_FILE"
+
+rm -f "$TMP_VALIDATE"
+echo "Apply successful for $CONFIG_ID"

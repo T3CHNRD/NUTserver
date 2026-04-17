@@ -1,0 +1,21 @@
+[Unit]
+Description=NUT Orchestrator UI Flask Service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/nut-orchestrator-ui
+ExecStart=/usr/bin/python3 /opt/nut-orchestrator-ui/app.py
+Restart=always
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/log/nut-orchestrator-ui /var/lib/nut-orchestrator-ui
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LOG_FILE="/var/log/nut-orchestrator-ui/tests.log"
+MODE="${1:-simulate}"
+
+mkdir -p "$(dirname "$LOG_FILE")"
+
+echo "[$(date -Is)] TEST START mode=$MODE" | tee -a "$LOG_FILE"
+
+case "$MODE" in
+  simulate)
+    echo "Running simulated test..."
+    echo "Check 1: config registry exists: $(test -f /opt/nut-orchestrator-ui/lib/config_registry.json && echo OK || echo FAIL)"
+    echo "Check 2: config.d exists: $(test -d /etc/nut/config.d && echo OK || echo FAIL)"
+    echo "Check 3: dashboard exists: $(test -f /var/www/html/nutserver-dashboard.html && echo OK || echo FAIL)"
+    echo "Check 4: NUT server service known: $(systemctl list-unit-files | grep -q '^nut-server.service' && echo OK || echo FAIL)"
+    echo "Check 5: apply wrapper exists: $(test -x /usr/local/sbin/nut-ui-apply-config && echo OK || echo FAIL)"
+    echo "Simulation complete."
+    ;;
+  real)
+    echo "Running real test..."
+    echo "Placeholder only. Replace this block with your approved production-safe real test command."
+    ;;
+  *)
+    echo "Unknown mode: $MODE" >&2
+    exit 1
+    ;;
+esac
+
+echo "[$(date -Is)] TEST END mode=$MODE" | tee -a "$LOG_FILE"

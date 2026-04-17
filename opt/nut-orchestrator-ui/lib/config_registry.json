@@ -1,0 +1,66 @@
+{
+  "editable_configs": [
+    {
+      "id": "nut_orchestrator_conf",
+      "name": "NUT Orchestrator Config",
+      "path": "/etc/nut/config.d/nut-orchestrator.conf",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [".conf"],
+      "apply_mode": "local"
+    },
+    {
+      "id": "dashboard_ui_json",
+      "name": "Dashboard UI Settings",
+      "path": "/etc/nut/config.d/dashboard-ui.json",
+      "type": "json",
+      "validator": "validate_json",
+      "allowed_extensions": [".json"],
+      "apply_mode": "local"
+    },
+    {
+      "id": "approved_targets_yml",
+      "name": "Approved Targets",
+      "path": "/etc/nut/config.d/approved-targets.yml",
+      "type": "yaml",
+      "validator": "validate_yaml",
+      "allowed_extensions": [".yml", ".yaml"],
+      "apply_mode": "local_or_ssh"
+    },
+    {
+      "id": "upsmon_conf",
+      "name": "upsmon.conf",
+      "path": "/etc/nut/upsmon.conf",
+      "type": "text",
+      "validator": "validate_upsmon_conf",
+      "allowed_extensions": [".conf"],
+      "apply_mode": "local"
+    },
+    {
+      "id": "upssched_conf",
+      "name": "upssched.conf",
+      "path": "/etc/nut/upssched.conf",
+      "type": "text",
+      "validator": "validate_upssched_conf",
+      "allowed_extensions": [".conf"],
+      "apply_mode": "local"
+    },
+    {
+      "id": "nut_conf",
+      "name": "nut.conf",
+      "path": "/etc/nut/nut.conf",
+      "type": "text",
+      "validator": "validate_nut_conf",
+      "allowed_extensions": [".conf"],
+      "apply_mode": "local"
+    }
+  ],
+  "blocked_patterns": [
+    ".env",
+    ".key",
+    ".pem",
+    "id_rsa",
+    "id_ed25519",
+    "upsd.users"
+  ]
+}
