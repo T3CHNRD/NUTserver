@@ -32,12 +32,8 @@ const state = {
 function $(id) { return document.getElementById(id); }
 
 function toast(message, type = "info") {
-  const wrap = $("toast-wrap");
-  const el = document.createElement("div");
-  el.className = `nutui-toast ${type}`;
-  el.textContent = message;
-  wrap.appendChild(el);
-  setTimeout(() => el.remove(), 4000);
+  // Toasts intentionally disabled to avoid upper-right flashing notifications.
+  return;
 }
 
 function setTopStatus(text, loading = false) {
