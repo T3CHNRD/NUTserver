@@ -160,7 +160,13 @@ function revertCurrent() {
 }
 
 async function runServerBackup() {
+  const btn = $("btn-backup-github");
+  if (btn.dataset.running === "1") return;
+
+  btn.dataset.running = "1";
+  btn.disabled = true;
   setTopStatus("Running server backup to GitHub...", true);
+
   try {
     const data = await apiJson(`${BASE}/api/backup`, { method: "POST" });
     setTopStatus("Server backup completed.", false);
@@ -169,6 +175,9 @@ async function runServerBackup() {
     setTopStatus("Server backup failed.", false);
     setOutput("Backup Error", String(err));
     toast("Server backup failed", "error");
+  } finally {
+    btn.dataset.running = "0";
+    btn.disabled = false;
   }
 }
 
