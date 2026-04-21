@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 LOG_FILE="/var/log/nut-orchestrator-ui/backup.log"
-BACKUP_SCRIPT="/home/nutserver/nut-run-backup-and-push.sh"
+BACKUP_SCRIPT="/usr/local/sbin/nut-run-backup-and-push.sh"
 
 mkdir -p "$(dirname "$LOG_FILE")"
 touch "$LOG_FILE"
@@ -20,8 +20,8 @@ if [ ! -x "$BACKUP_SCRIPT" ]; then
   exit 1
 fi
 
-sudo -u nutserver "$BACKUP_SCRIPT" 2>&1 | tee -a "$LOG_FILE"
-RC=${PIPESTATUS[0]}
+"$BACKUP_SCRIPT"
+RC=$?
 
 echo "[$(date -Is)] BACKUP END rc=$RC" | tee -a "$LOG_FILE"
 exit "$RC"
