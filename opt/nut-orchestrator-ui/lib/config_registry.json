@@ -1,31 +1,22 @@
 {
   "editable_configs": [
     {
-      "id": "nut_orchestrator_conf",
-      "name": "NUT Orchestrator Config",
-      "path": "/etc/nut/config.d/nut-orchestrator.conf",
+      "id": "ups_conf",
+      "name": "ups.conf",
+      "path": "/etc/nut/ups.conf",
       "type": "text",
       "validator": "validate_text_generic",
       "allowed_extensions": [".conf"],
       "apply_mode": "local"
     },
     {
-      "id": "dashboard_ui_json",
-      "name": "Dashboard UI Settings",
-      "path": "/etc/nut/config.d/dashboard-ui.json",
-      "type": "json",
-      "validator": "validate_json",
-      "allowed_extensions": [".json"],
+      "id": "upsd_conf",
+      "name": "upsd.conf",
+      "path": "/etc/nut/upsd.conf",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [".conf"],
       "apply_mode": "local"
-    },
-    {
-      "id": "approved_targets_yml",
-      "name": "Approved Targets",
-      "path": "/etc/nut/config.d/approved-targets.yml",
-      "type": "yaml",
-      "validator": "validate_yaml",
-      "allowed_extensions": [".yml", ".yaml"],
-      "apply_mode": "local_or_ssh"
     },
     {
       "id": "upsmon_conf",
@@ -53,6 +44,101 @@
       "validator": "validate_nut_conf",
       "allowed_extensions": [".conf"],
       "apply_mode": "local"
+    },
+    {
+      "id": "hosts_conf",
+      "name": "hosts.conf",
+      "path": "/etc/nut/hosts.conf",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [".conf"],
+      "apply_mode": "local"
+    },
+    {
+      "id": "live_nut_orchestrator_conf",
+      "name": "Live nut-orchestrator.conf",
+      "path": "/etc/nut/nut-orchestrator.conf",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [".conf"],
+      "apply_mode": "local"
+    },
+    {
+      "id": "nut_orchestrator_conf",
+      "name": "config.d nut-orchestrator.conf",
+      "path": "/etc/nut/config.d/nut-orchestrator.conf",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [".conf"],
+      "apply_mode": "local"
+    },
+    {
+      "id": "approved_targets_yml",
+      "name": "Approved Targets",
+      "path": "/etc/nut/config.d/approved-targets.yml",
+      "type": "yaml",
+      "validator": "validate_yaml",
+      "allowed_extensions": [".yml", ".yaml"],
+      "apply_mode": "local_or_ssh"
+    },
+    {
+      "id": "dashboard_ui_json",
+      "name": "Dashboard UI Settings",
+      "path": "/etc/nut/config.d/dashboard-ui.json",
+      "type": "json",
+      "validator": "validate_json",
+      "allowed_extensions": [".json"],
+      "apply_mode": "local"
+    }
+  ],
+  "reference_configs": [
+    {
+      "id": "inventory_json_ref",
+      "name": "inventory.json (reference)",
+      "path": "/opt/nut-auto/output/inventory.json",
+      "type": "json"
+    },
+    {
+      "id": "ups_conf_generated_ref",
+      "name": "ups.conf.generated (reference)",
+      "path": "/opt/nut-auto/output/ups.conf.generated",
+      "type": "text"
+    },
+    {
+      "id": "proxmox_placeholder_ref",
+      "name": "nut-orchestrator.conf pre-proxmox-placeholder (reference)",
+      "path": "/etc/nut/nut-orchestrator.conf.pre-proxmox-placeholder-20260416-150741",
+      "type": "text"
+    },
+    {
+      "id": "ups_conf_backup_ref",
+      "name": "ups.conf.backup (reference)",
+      "path": "/etc/nut/ups.conf.backup",
+      "type": "text"
+    },
+    {
+      "id": "ups_conf_working_2ups_ref",
+      "name": "ups.conf.working-2ups (reference)",
+      "path": "/etc/nut/ups.conf.working-2ups",
+      "type": "text"
+    },
+    {
+      "id": "ups_conf_working_3ups_ref",
+      "name": "ups.conf.working-3ups (reference)",
+      "path": "/etc/nut/ups.conf.working-3ups",
+      "type": "text"
+    },
+    {
+      "id": "upsmon_pre_orchestrator_ref",
+      "name": "upsmon.conf.pre-orchestrator (reference)",
+      "path": "/etc/nut/upsmon.conf.pre-orchestrator",
+      "type": "text"
+    },
+    {
+      "id": "upssched_pre_orchestrator_ref",
+      "name": "upssched.conf.pre-orchestrator (reference)",
+      "path": "/etc/nut/upssched.conf.pre-orchestrator",
+      "type": "text"
     }
   ],
   "blocked_patterns": [
@@ -61,6 +147,7 @@
     ".pem",
     "id_rsa",
     "id_ed25519",
-    "upsd.users"
+    "upsd.users",
+    ".creds"
   ]
 }

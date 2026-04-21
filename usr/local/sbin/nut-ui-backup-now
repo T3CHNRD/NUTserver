@@ -6,6 +6,7 @@ BACKUP_SCRIPT="/home/nutserver/nut-run-backup-and-push.sh"
 
 mkdir -p "$(dirname "$LOG_FILE")"
 
+echo "[$(date -Is)] BUTTON-PROOF: nut-ui-backup-now entered" | tee -a "$LOG_FILE"
 echo "[$(date -Is)] BACKUP START" | tee -a "$LOG_FILE"
 
 if [ ! -x "$BACKUP_SCRIPT" ]; then

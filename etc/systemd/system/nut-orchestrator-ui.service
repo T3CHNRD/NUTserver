@@ -11,7 +11,7 @@ ExecStart=/usr/bin/python3 /opt/nut-orchestrator-ui/app.py
 Restart=always
 RestartSec=5
 
-NoNewPrivileges=true
+# NoNewPrivileges removed because approved sudo wrappers are required for root-owned NUT config access
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true

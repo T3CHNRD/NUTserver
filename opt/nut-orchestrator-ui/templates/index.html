@@ -4,61 +4,124 @@
   <meta charset="utf-8">
   <title>NUT Orchestrator UI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/static/nut-ui-theme.css">
+  <link rel="stylesheet" href="/nut-ui/static/nut-ui-theme.css">
 </head>
 <body>
+  <div class="nutui-toast-wrap" id="toast-wrap"></div>
+
   <div class="nutui-shell">
-    <header class="nutui-header">
+    <header class="nutui-topbar">
       <div class="nutui-title-wrap">
         <h1>NUT Orchestrator UI</h1>
-        <p>Integrated admin console for config editing, tests, backups, and rollback.</p>
+        <p>Edit live NUT/orchestrator configs and inspect historical/reference files safely.</p>
       </div>
+
       <div class="nutui-top-actions">
-        <button onclick="runTest('simulate')">Simulated Test</button>
-        <button onclick="runTest('real')">Real Test</button>
-        <button onclick="backupNow()">Backup Now</button>
-        <a href="/nut-ui" style="text-decoration:none;" target="_self">
-          <button type="button">Refresh</button>
-        </a>
+        <button class="nutui-btn nutui-btn-secondary" id="btn-sim-test">Simulated Test</button>
+        <button class="nutui-btn nutui-btn-warn" id="btn-real-test">Real Test</button>
+        <button class="nutui-btn nutui-btn-primary" id="btn-backup-github">Backup All to GitHub</button>
+        <button class="nutui-btn nutui-btn-secondary" id="btn-restore-github" disabled title="Restore from GitHub will be wired after core UI flow is stable.">Restore from GitHub (coming soon)</button>
+        <a class="nutui-btn nutui-btn-secondary" href="/nutserver-dashboard.priority1.html" target="_blank" rel="noopener noreferrer">Open Main Dashboard</a>
       </div>
     </header>
 
+    <div class="nutui-statusbar" id="top-status">
+      <span class="nutui-spinner" id="top-spinner"></span>
+      <span id="top-status-text">Loading approved configs...</span>
+    </div>
+
     <div class="nutui-grid">
-      <aside class="nutui-nav">
-        <h2>Navigation</h2>
-        <ul>
-          <li><a href="/nutserver-dashboard.priority1.html" target="_blank" rel="noopener noreferrer">Open Main Dashboard</a></li>
-          <li><a href="#output">Action Output</a></li>
-          <li><a href="#configs">Approved Configs</a></li>
-        </ul>
+      <aside class="nutui-card nutui-sidebar">
+        <label class="nutui-label" for="config-select">Editable Live Config</label>
+        <select class="nutui-select" id="config-select">
+          <option value="ups_conf">ups.conf</option>
+          <option value="upsd_conf">upsd.conf</option>
+          <option value="upsmon_conf">upsmon.conf</option>
+          <option value="upssched_conf">upssched.conf</option>
+          <option value="nut_conf">nut.conf</option>
+          <option value="hosts_conf">hosts.conf</option>
+          <option value="live_nut_orchestrator_conf">Live nut-orchestrator.conf</option>
+          <option value="nut_orchestrator_conf">config.d nut-orchestrator.conf</option>
+          <option value="approved_targets_yml">approved-targets.yml</option>
+          <option value="dashboard_ui_json">dashboard-ui.json</option>
+        </select>
+
+        <br><br>
+
+        <label class="nutui-label" for="reference-select">Read-Only Reference File</label>
+        <select class="nutui-select" id="reference-select">
+          <option value="">-- Select a reference file --</option>
+          <option value="inventory_json_ref">inventory.json (reference)</option>
+          <option value="ups_conf_generated_ref">ups.conf.generated (reference)</option>
+          <option value="proxmox_placeholder_ref">nut-orchestrator.conf pre-proxmox-placeholder</option>
+          <option value="ups_conf_backup_ref">ups.conf.backup</option>
+          <option value="ups_conf_working_2ups_ref">ups.conf.working-2ups</option>
+          <option value="ups_conf_working_3ups_ref">ups.conf.working-3ups</option>
+          <option value="upsmon_pre_orchestrator_ref">upsmon.conf.pre-orchestrator</option>
+          <option value="upssched_pre_orchestrator_ref">upssched.conf.pre-orchestrator</option>
+        </select>
+
+        <div class="nutui-meta">
+          <div class="nutui-mini">
+            <div class="k">Selected Path</div>
+            <div class="v" id="meta-path">-</div>
+          </div>
+          <div class="nutui-mini">
+            <div class="k">Type</div>
+            <div class="v" id="meta-type">-</div>
+          </div>
+          <div class="nutui-mini">
+            <div class="k">Status</div>
+            <div class="v" id="meta-status">Ready</div>
+          </div>
+        </div>
       </aside>
 
       <main class="nutui-main">
-        <section class="nutui-output-card" id="output">
-          <h2>Action Output</h2>
-          <div id="action-output" class="nutui-output"></div>
+        <section class="nutui-two-col">
+          <div class="nutui-card nutui-section nutui-pane">
+            <div class="nutui-pane-head">
+              <div class="nutui-pane-title-wrap">
+                <div class="nutui-pane-title" id="editor-title">Config Editor</div>
+                <div class="nutui-pane-subtitle" id="editor-subtitle">Select a live config to load and edit its current server content.</div>
+              </div>
+              <div class="nutui-pane-actions">
+                <button class="nutui-btn nutui-btn-secondary" id="btn-load">Reload</button>
+                <button class="nutui-btn nutui-btn-warn" id="btn-validate">Validate</button>
+                <button class="nutui-btn nutui-btn-primary" id="btn-save">Save</button>
+                <button class="nutui-btn nutui-btn-danger" id="btn-revert">Revert</button>
+              </div>
+            </div>
+
+            <textarea class="nutui-editor" id="config-editor" spellcheck="false"></textarea>
+          </div>
+
+          <div class="nutui-card nutui-section nutui-pane">
+            <div class="nutui-pane-head">
+              <div class="nutui-pane-title-wrap">
+                <div class="nutui-pane-title">Reference Viewer</div>
+                <div class="nutui-pane-subtitle">Read-only comparison files for planning, rollback, hardware changes, and Proxmox migration work.</div>
+              </div>
+              <div class="nutui-pane-actions nutui-pane-actions-placeholder" aria-hidden="true">
+                <span class="nutui-btn nutui-btn-secondary nutui-ghost-btn">Reload</span>
+                <span class="nutui-btn nutui-btn-warn nutui-ghost-btn">Validate</span>
+                <span class="nutui-btn nutui-btn-primary nutui-ghost-btn">Save</span>
+                <span class="nutui-btn nutui-btn-danger nutui-ghost-btn">Revert</span>
+              </div>
+            </div>
+
+            <textarea class="nutui-editor" id="reference-viewer" spellcheck="false" readonly></textarea>
+          </div>
         </section>
 
-        <section class="nutui-main-card" id="configs">
-          <h2>Approved Config Files</h2>
-          <p>Use <strong>Validate Only</strong> first, especially for live NUT <code>.conf</code> files.</p>
+        <section class="nutui-card nutui-section">
+          <div style="font-size:1.2rem;font-weight:800;margin-bottom:12px;">Action Output</div>
+          <div class="nutui-output" id="action-output"></div>
         </section>
-
-        {% for cfg in configs %}
-        <section class="nutui-config-card">
-          <h2>{{ cfg.name }} <span class="nutui-tag">{{ cfg.type }}</span></h2>
-          <div>{{ cfg.path }}</div>
-          <br>
-          <textarea id="content-{{ cfg.id }}">{{ cfg.content }}</textarea><br>
-          <button onclick="saveConfig('{{ cfg.id }}', 'dry-run')">Validate Only</button>
-          <button onclick="saveConfig('{{ cfg.id }}', 'apply')">Apply Change</button>
-          <button onclick="rollbackConfig('{{ cfg.id }}')">Rollback</button>
-        </section>
-        {% endfor %}
       </main>
     </div>
   </div>
 
-  <script src="/static/app.js"></script>
+  <script src="/nut-ui/static/app.js"></script>
 </body>
 </html>

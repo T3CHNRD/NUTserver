@@ -35,29 +35,68 @@ def is_allowed_file(item):
 
 @app.route("/")
 def index():
+    return render_template("index.html")
+
+@app.route("/healthz")
+def healthz():
+    return jsonify({"ok": True})
+
+
+@app.route("/api/config/<reference_id>/content-ref", methods=["GET"])
+def get_reference_content(reference_id):
     registry = load_registry()
-    configs = []
+    ref_item = None
+    for item in registry.get("reference_configs", []):
+        if item["id"] == reference_id:
+            ref_item = item
+            break
 
-    for item in registry["editable_configs"]:
-        if not is_allowed_file(item):
-            continue
+    if not ref_item:
+        return jsonify({"ok": False, "error": "Reference is not approved for viewing"}), 403
 
-        path = item["path"]
-        content = ""
+    cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-read-reference", reference_id]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
-        if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
-                content = f.read()
+    if result.returncode != 0:
+        return jsonify({
+            "ok": False,
+            "error": result.stderr or result.stdout or "Failed to read reference"
+        }), 500
 
-        configs.append({
-            "id": item["id"],
-            "name": item["name"],
-            "path": item["path"],
-            "type": item["type"],
-            "content": content
-        })
+    return jsonify({
+        "ok": True,
+        "id": ref_item["id"],
+        "name": ref_item["name"],
+        "path": ref_item["path"],
+        "type": ref_item["type"],
+        "content": result.stdout
+    })
 
-    return render_template("index.html", configs=configs)
+@app.route("/api/config/<config_id>/content", methods=["GET"])
+def get_config_content(config_id):
+    item = get_config_by_id(config_id)
+    if not item or not is_allowed_file(item):
+        return jsonify({"ok": False, "error": "Config is not approved for viewing"}), 403
+
+    cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-read-config", config_id]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+
+    if result.returncode != 0:
+        return jsonify({
+            "ok": False,
+            "error": result.stderr or result.stdout or "Failed to read config"
+        }), 500
+
+    content = result.stdout
+
+    return jsonify({
+        "ok": True,
+        "id": item["id"],
+        "name": item["name"],
+        "path": item["path"],
+        "type": item["type"],
+        "content": content
+    })
 
 @app.route("/api/config/<config_id>", methods=["POST"])
 def update_config(config_id):
@@ -127,10 +166,6 @@ def rollback(config_id):
         "stderr": result.stderr,
         "returncode": result.returncode
     })
-
-@app.route("/healthz")
-def healthz():
-    return jsonify({"ok": True})
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5080)
