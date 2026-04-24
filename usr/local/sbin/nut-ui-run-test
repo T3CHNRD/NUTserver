@@ -1,31 +1,184 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 LOG_FILE="/var/log/nut-orchestrator-ui/tests.log"
+POWER_EVENT_LOG="/var/log/nut-orchestrator-ui/power-events.log"
+REGISTRY="/opt/nut-orchestrator-ui/lib/config_registry.json"
 MODE="${1:-simulate}"
 
-mkdir -p "$(dirname "$LOG_FILE")"
+PASS_COUNT=0
+FAIL_COUNT=0
 
-echo "[$(date -Is)] TEST START mode=$MODE" | tee -a "$LOG_FILE"
+mkdir -p "$(dirname "$LOG_FILE")"
+touch "$LOG_FILE" "$POWER_EVENT_LOG"
+
+ts() {
+  date -Is
+}
+
+log_line() {
+  echo "[$(ts)] $1" | tee -a "$LOG_FILE"
+}
+
+power_event() {
+  echo "[$(ts)] $1" | tee -a "$POWER_EVENT_LOG" >> "$LOG_FILE"
+}
+
+pass() {
+  PASS_COUNT=$((PASS_COUNT + 1))
+  log_line "PASS $1"
+}
+
+fail() {
+  FAIL_COUNT=$((FAIL_COUNT + 1))
+  log_line "FAIL $1"
+}
+
+check_file() {
+  local path="$1"
+  local label="$2"
+
+  if [ -e "$path" ]; then
+    pass "$label ($path)"
+  else
+    fail "$label missing ($path)"
+  fi
+}
+
+check_exec() {
+  local path="$1"
+  local label="$2"
+
+  if [ -x "$path" ]; then
+    pass "$label executable ($path)"
+  else
+    fail "$label not executable ($path)"
+  fi
+}
+
+validate_managed_configs() {
+  local id path name tmp
+
+  while IFS=$'\t' read -r id path name; do
+    if [ ! -f "$path" ]; then
+      fail "Managed config missing for ${id} (${path})"
+      continue
+    fi
+
+    tmp="$(mktemp)"
+    cp -f "$path" "$tmp"
+
+    if /usr/local/sbin/nut-ui-apply-config "$id" "$tmp" dry-run >> "$LOG_FILE" 2>&1; then
+      pass "Validated managed config ${id} (${name})"
+    else
+      fail "Validation failed for ${id} (${name})"
+    fi
+
+    rm -f "$tmp"
+  done < <(jq -r '.editable_configs[] | [.id, .path, .name] | @tsv' "$REGISTRY")
+}
+
+run_sim_wrapper() {
+  local label="$1"
+  shift
+  local script_path="$1"
+  shift
+
+  local action="$script_path $*"
+
+  log_line "-----"
+  log_line "TARGET: $label"
+  log_line "MODE: SIMULATED / DRY-RUN"
+  log_line "ACTION: would run $action"
+  power_event "SIMULATED START target=\"${label}\" action=\"would run ${action}\""
+
+  if [ ! -x "$script_path" ]; then
+    fail "${label} missing executable (${script_path})"
+    power_event "SIMULATED FAIL target=\"${label}\" result=\"missing executable\" script=\"${script_path}\""
+    return
+  fi
+
+  if SIMULATE=1 "$script_path" "$@" >> "$LOG_FILE" 2>&1; then
+    pass "${label} simulated execution OK"
+    power_event "SIMULATED PASS target=\"${label}\" result=\"would shutdown/orchestrate successfully\" action=\"${action}\""
+  else
+    fail "${label} simulated execution FAILED"
+    power_event "SIMULATED FAIL target=\"${label}\" result=\"simulated command failed\" action=\"${action}\""
+  fi
+}
+
+run_simulate() {
+  log_line "TEST START mode=simulate"
+  log_line "NOTE Simulated Test does not perform real shutdowns."
+  log_line "NOTE Graceful vs abrupt shutdown can only be confirmed during Real Test or real UPS event."
+  power_event "SIMULATED TEST START mode=simulate note=\"no real shutdown commands executed\""
+
+  check_file "$REGISTRY" "Config registry exists"
+  check_exec "/usr/local/sbin/nut-ui-apply-config" "Apply wrapper"
+  check_exec "/usr/local/sbin/nut-ui-run-test" "Test runner"
+
+  check_file "/etc/nut/hosts.conf" "hosts.conf exists"
+  check_file "/etc/nut/nut-orchestrator.conf" "Live orchestrator config exists"
+  check_file "/etc/nut/config.d/nut-orchestrator.conf" "config.d orchestrator config exists"
+  check_file "/etc/nut/config.d/approved-targets.yml" "Approved targets config exists"
+  check_file "/etc/nut/config.d/dashboard-ui.json" "Dashboard UI settings config exists"
+  check_file "/var/www/html/nutserver-dashboard.html" "Main dashboard exists"
+
+  if command -v jq >/dev/null 2>&1; then
+    pass "jq is available"
+  else
+    fail "jq is missing"
+  fi
+
+  if command -v python3 >/dev/null 2>&1; then
+    pass "python3 is available"
+  else
+    fail "python3 is missing"
+  fi
+
+  validate_managed_configs
+
+  log_line "===== SIMULATED SHUTDOWN PLAN ====="
+
+  run_sim_wrapper "VMware domain" /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain
+  run_sim_wrapper "VMware VCSA host-detect" /usr/local/sbin/nut-vmware-shutdown.sh detect_vcsa_host
+  run_sim_wrapper "NetApp01" /usr/local/sbin/nut-netapp-halt.sh Alblnetapp01
+  run_sim_wrapper "NetApp02" /usr/local/sbin/nut-netapp-halt.sh Alblnetapp02
+  run_sim_wrapper "Synology" /usr/local/sbin/nut-synology-shutdown.sh
+  run_sim_wrapper "VOIP" /usr/local/sbin/nut-voip-shutdown.sh
+  run_sim_wrapper "DB01" /usr/local/sbin/nut-db-shutdown.sh DB01
+  run_sim_wrapper "DB02" /usr/local/sbin/nut-db-shutdown.sh DB02
+  run_sim_wrapper "Blue Iris" /usr/local/sbin/nut-blueiris-shutdown.sh
+  run_sim_wrapper "Lansweeper" /usr/local/sbin/nut-lansweeper-shutdown.sh
+
+  if [ "$FAIL_COUNT" -eq 0 ]; then
+    log_line "SUMMARY PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    power_event "SIMULATED TEST SUMMARY result=PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    exit 0
+  else
+    log_line "SUMMARY FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    power_event "SIMULATED TEST SUMMARY result=FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    exit 1
+  fi
+}
+
+run_real() {
+  log_line "TEST START mode=real"
+  log_line "FAIL Real Test is intentionally disabled until live orchestration is explicitly approved."
+  log_line "SUMMARY FAIL passes=0 failures=1"
+  power_event "REAL TEST BLOCKED result=FAIL reason=\"Real Test intentionally disabled until explicitly approved\""
+  exit 1
+}
 
 case "$MODE" in
   simulate)
-    echo "Running simulated test..."
-    echo "Check 1: config registry exists: $(test -f /opt/nut-orchestrator-ui/lib/config_registry.json && echo OK || echo FAIL)"
-    echo "Check 2: config.d exists: $(test -d /etc/nut/config.d && echo OK || echo FAIL)"
-    echo "Check 3: dashboard exists: $(test -f /var/www/html/nutserver-dashboard.html && echo OK || echo FAIL)"
-    echo "Check 4: NUT server service known: $(systemctl list-unit-files | grep -q '^nut-server.service' && echo OK || echo FAIL)"
-    echo "Check 5: apply wrapper exists: $(test -x /usr/local/sbin/nut-ui-apply-config && echo OK || echo FAIL)"
-    echo "Simulation complete."
+    run_simulate
     ;;
   real)
-    echo "Running real test..."
-    echo "Placeholder only. Replace this block with your approved production-safe real test command."
+    run_real
     ;;
   *)
     echo "Unknown mode: $MODE" >&2
     exit 1
     ;;
 esac
-
-echo "[$(date -Is)] TEST END mode=$MODE" | tee -a "$LOG_FILE"

@@ -27,7 +27,9 @@ CONFIG_JSON="$(jq -c --arg id "$CONFIG_ID" '.editable_configs[] | select(.id==$i
 TARGET_PATH="$(echo "$CONFIG_JSON" | jq -r '.path')"
 VALIDATOR="$(echo "$CONFIG_JSON" | jq -r '.validator')"
 CONFIG_NAME="$(echo "$CONFIG_JSON" | jq -r '.name')"
-ALLOWED_EXTENSIONS="$(echo "$CONFIG_JSON" | jq -r '.allowed_extensions[]')"
+OWNER="$(echo "$CONFIG_JSON" | jq -r '.owner // "root"')"
+GROUP_NAME="$(echo "$CONFIG_JSON" | jq -r '.group // "root"')"
+FILE_MODE="$(echo "$CONFIG_JSON" | jq -r '.file_mode // "640"')"
 
 [ -n "$TARGET_PATH" ] && [ "$TARGET_PATH" != "null" ] || { echo "Missing target path"; exit 1; }
 [ -n "$VALIDATOR" ] && [ "$VALIDATOR" != "null" ] || { echo "Missing validator"; exit 1; }
@@ -42,12 +44,12 @@ for blocked in $(jq -r '.blocked_patterns[]' "$REGISTRY"); do
 done
 
 EXT_OK=0
-for ext in $ALLOWED_EXTENSIONS; do
+while IFS= read -r ext; do
   if [[ "$TARGET_PATH" == *"$ext" ]]; then
     EXT_OK=1
     break
   fi
-done
+done < <(echo "$CONFIG_JSON" | jq -r '.allowed_extensions[]')
 
 [ "$EXT_OK" -eq 1 ] || { echo "Target path extension is not approved"; exit 1; }
 
@@ -76,9 +78,23 @@ if [ -f "$TARGET_PATH" ]; then
   cp -a "$TARGET_PATH" "$DEST_BACKUP_DIR/${TS}.bak"
 fi
 
-install -o root -g root -m 640 "$STAGED_FILE" "$TARGET_PATH"
+# OVERWRITE FILE CONTENT SAFELY (DO NOT REPLACE FILE)
+if ! cat "$STAGED_FILE" | tee "$TARGET_PATH" > /dev/null; then
+  echo "[$(date -Is)] APPLY FAIL config_id=$CONFIG_ID target=\"$TARGET_PATH\" step=\"tee-overwrite\" owner=\"$OWNER\" group=\"$GROUP_NAME\" mode=\"$FILE_MODE\"" | tee -a "$LOG_FILE"
+  exit 1
+fi
 
-echo "[$(date -Is)] APPLY OK config_id=$CONFIG_ID target=\"$TARGET_PATH\" backup=\"$DEST_BACKUP_DIR/${TS}.bak\"" | tee -a "$LOG_FILE"
+if ! chown "$OWNER:$GROUP_NAME" "$TARGET_PATH"; then
+  echo "[$(date -Is)] APPLY FAIL config_id=$CONFIG_ID target=\"$TARGET_PATH\" step=\"chown\" owner=\"$OWNER\" group=\"$GROUP_NAME\" mode=\"$FILE_MODE\"" | tee -a "$LOG_FILE"
+  exit 1
+fi
+
+if ! chmod "$FILE_MODE" "$TARGET_PATH"; then
+  echo "[$(date -Is)] APPLY FAIL config_id=$CONFIG_ID target=\"$TARGET_PATH\" step=\"chmod\" owner=\"$OWNER\" group=\"$GROUP_NAME\" mode=\"$FILE_MODE\"" | tee -a "$LOG_FILE"
+  exit 1
+fi
+
+echo "[$(date -Is)] APPLY OK config_id=$CONFIG_ID target=\"$TARGET_PATH\" backup=\"$DEST_BACKUP_DIR/${TS}.bak\" owner=\"$OWNER\" group=\"$GROUP_NAME\" mode=\"$FILE_MODE\"" | tee -a "$LOG_FILE"
 
 rm -f "$TMP_VALIDATE"
 echo "Apply successful for $CONFIG_ID"

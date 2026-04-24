@@ -7,7 +7,10 @@
       "type": "text",
       "validator": "validate_text_generic",
       "allowed_extensions": [".conf"],
-      "apply_mode": "local"
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "640"
     },
     {
       "id": "upsd_conf",
@@ -16,7 +19,10 @@
       "type": "text",
       "validator": "validate_text_generic",
       "allowed_extensions": [".conf"],
-      "apply_mode": "local"
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "640"
     },
     {
       "id": "upsmon_conf",
@@ -25,7 +31,10 @@
       "type": "text",
       "validator": "validate_upsmon_conf",
       "allowed_extensions": [".conf"],
-      "apply_mode": "local"
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "644"
     },
     {
       "id": "upssched_conf",
@@ -34,7 +43,10 @@
       "type": "text",
       "validator": "validate_upssched_conf",
       "allowed_extensions": [".conf"],
-      "apply_mode": "local"
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "644"
     },
     {
       "id": "nut_conf",
@@ -43,7 +55,10 @@
       "type": "text",
       "validator": "validate_nut_conf",
       "allowed_extensions": [".conf"],
-      "apply_mode": "local"
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "640"
     },
     {
       "id": "hosts_conf",
@@ -52,7 +67,10 @@
       "type": "text",
       "validator": "validate_text_generic",
       "allowed_extensions": [".conf"],
-      "apply_mode": "local"
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "nut",
+      "file_mode": "644"
     },
     {
       "id": "live_nut_orchestrator_conf",
@@ -61,7 +79,10 @@
       "type": "text",
       "validator": "validate_text_generic",
       "allowed_extensions": [".conf"],
-      "apply_mode": "local"
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "600"
     },
     {
       "id": "nut_orchestrator_conf",
@@ -70,7 +91,10 @@
       "type": "text",
       "validator": "validate_text_generic",
       "allowed_extensions": [".conf"],
-      "apply_mode": "local"
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "640"
     },
     {
       "id": "approved_targets_yml",
@@ -79,7 +103,10 @@
       "type": "yaml",
       "validator": "validate_yaml",
       "allowed_extensions": [".yml", ".yaml"],
-      "apply_mode": "local_or_ssh"
+      "apply_mode": "local_or_ssh",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "640"
     },
     {
       "id": "dashboard_ui_json",
@@ -88,7 +115,58 @@
       "type": "json",
       "validator": "validate_json",
       "allowed_extensions": [".json"],
-      "apply_mode": "local"
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "640"
+    },
+    {
+      "id": "synology_shutdown_sh",
+      "name": "nut-synology-shutdown.sh",
+      "path": "/usr/local/sbin/nut-synology-shutdown.sh",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [".sh"],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "750"
+    },
+    {
+      "id": "voip_shutdown_sh",
+      "name": "nut-voip-shutdown.sh",
+      "path": "/usr/local/sbin/nut-voip-shutdown.sh",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [".sh"],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "750"
+    },
+    {
+      "id": "db_shutdown_sh",
+      "name": "nut-db-shutdown.sh",
+      "path": "/usr/local/sbin/nut-db-shutdown.sh",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [".sh"],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "750"
+    },
+    {
+      "id": "blueiris_shutdown_sh",
+      "name": "nut-blueiris-shutdown.sh",
+      "path": "/usr/local/sbin/nut-blueiris-shutdown.sh",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [".sh"],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "750"
     }
   ],
   "reference_configs": [

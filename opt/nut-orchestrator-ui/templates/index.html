@@ -16,14 +16,14 @@
         <p>Edit live NUT/orchestrator configs and inspect historical/reference files safely.</p>
       </div>
 
-      <div class="nutui-top-actions">
-        <button class="nutui-btn nutui-btn-secondary" id="btn-sim-test">Simulated Test</button>
-        <button class="nutui-btn nutui-btn-warn" id="btn-real-test">Real Test</button>
-        <button class="nutui-btn nutui-btn-primary" id="btn-backup-github">Backup All to GitHub</button>
-        <button class="nutui-btn nutui-btn-secondary" id="btn-restore-github" disabled title="Restore from GitHub will be wired after core UI flow is stable.">Restore from GitHub (coming soon)</button>
-        <a class="nutui-btn nutui-btn-secondary" href="/nutserver-dashboard.priority1.html" target="_blank" rel="noopener noreferrer">Open Main Dashboard</a>
-      </div>
-    </header>
+<div class="nutui-top-actions">
+  <button class="nutui-btn nutui-btn-secondary" id="btn-sim-test">Simulated Test</button>
+  <button class="nutui-btn nutui-btn-warn" id="btn-real-test">Real Test</button>
+  <button class="nutui-btn nutui-btn-primary" id="btn-backup-github">Backup All to GitHub</button>
+  <button class="nutui-btn nutui-btn-secondary" id="btn-restore-github">Restore from GitHub</button>
+  <a class="nutui-btn nutui-btn-secondary" href="/nutserver-dashboard.html" target="_blank">Open Main Dashboard</a>
+</div>   
+ </header>
 
     <div class="nutui-statusbar" id="top-status">
       <span class="nutui-spinner" id="top-spinner"></span>
@@ -34,16 +34,9 @@
       <aside class="nutui-card nutui-sidebar">
         <label class="nutui-label" for="config-select">Editable Live Config</label>
         <select class="nutui-select" id="config-select">
-          <option value="ups_conf">ups.conf</option>
-          <option value="upsd_conf">upsd.conf</option>
-          <option value="upsmon_conf">upsmon.conf</option>
-          <option value="upssched_conf">upssched.conf</option>
-          <option value="nut_conf">nut.conf</option>
-          <option value="hosts_conf">hosts.conf</option>
-          <option value="live_nut_orchestrator_conf">Live nut-orchestrator.conf</option>
-          <option value="nut_orchestrator_conf">config.d nut-orchestrator.conf</option>
-          <option value="approved_targets_yml">approved-targets.yml</option>
-          <option value="dashboard_ui_json">dashboard-ui.json</option>
+          {% for item in editable_configs %}
+          <option value="{{ item.id }}">{{ item.name }}</option>
+          {% endfor %}
         </select>
 
         <br><br>
@@ -51,14 +44,9 @@
         <label class="nutui-label" for="reference-select">Read-Only Reference File</label>
         <select class="nutui-select" id="reference-select">
           <option value="">-- Select a reference file --</option>
-          <option value="inventory_json_ref">inventory.json (reference)</option>
-          <option value="ups_conf_generated_ref">ups.conf.generated (reference)</option>
-          <option value="proxmox_placeholder_ref">nut-orchestrator.conf pre-proxmox-placeholder</option>
-          <option value="ups_conf_backup_ref">ups.conf.backup</option>
-          <option value="ups_conf_working_2ups_ref">ups.conf.working-2ups</option>
-          <option value="ups_conf_working_3ups_ref">ups.conf.working-3ups</option>
-          <option value="upsmon_pre_orchestrator_ref">upsmon.conf.pre-orchestrator</option>
-          <option value="upssched_pre_orchestrator_ref">upssched.conf.pre-orchestrator</option>
+          {% for item in reference_configs %}
+          <option value="{{ item.id }}">{{ item.name }}</option>
+          {% endfor %}
         </select>
 
         <div class="nutui-meta">

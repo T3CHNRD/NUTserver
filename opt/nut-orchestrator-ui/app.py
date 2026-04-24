@@ -35,7 +35,14 @@ def is_allowed_file(item):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    registry = load_registry()
+    editable_configs = registry.get("editable_configs", [])
+    reference_configs = registry.get("reference_configs", [])
+    return render_template(
+        "index.html",
+        editable_configs=editable_configs,
+        reference_configs=reference_configs
+    )
 
 @app.route("/healthz")
 def healthz():
@@ -151,6 +158,20 @@ def backup_now():
         "stderr": result.stderr,
         "returncode": result.returncode
     })
+
+
+@app.route("/api/restore", methods=["POST"])
+def restore_now():
+    cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-restore-github"]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    return jsonify({
+        "ok": result.returncode == 0,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "output": result.stdout + result.stderr,
+        "returncode": result.returncode
+    })
+
 
 @app.route("/api/rollback/<config_id>", methods=["POST"])
 def rollback(config_id):

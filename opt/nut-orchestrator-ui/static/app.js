@@ -230,8 +230,34 @@ function wireEvents() {
     await runServerBackup();
   });
 
-  $("btn-restore-github").addEventListener("click", () => {
-    setOutput("Restore from GitHub", "Restore from GitHub is not wired yet in this pass.");
+  $("btn-restore-github").addEventListener("click", async () => {
+    const btn = $("btn-restore-github");
+    if (btn.dataset.running === "1") return;
+
+    btn.dataset.running = "1";
+    setTopStatus("Restoring from GitHub...", true);
+
+    try {
+      const data = await apiJson(`${BASE}/api/restore`, { method: "POST" });
+
+      setOutput(
+        "Restore from GitHub",
+        data.output || `${data.stdout || ""}${data.stderr || ""}` || "No output returned."
+      );
+
+      if (data.ok) {
+        setTopStatus("Restore completed successfully.", false);
+      } else {
+        setTopStatus("Restore failed.", false);
+        toast("Restore failed", "error");
+      }
+    } catch (err) {
+      setOutput("Restore from GitHub", String(err));
+      setTopStatus("Restore failed.", false);
+      toast("Restore failed", "error");
+    } finally {
+      btn.dataset.running = "0";
+    }
   });
 }
 
