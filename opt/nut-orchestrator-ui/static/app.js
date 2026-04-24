@@ -219,7 +219,33 @@ function wireEvents() {
   });
 
   $("btn-sim-test").addEventListener("click", async () => {
-    await runTest("simulate");
+    const btn = $("btn-sim-test");
+    if (btn.dataset.running === "1") return;
+
+    btn.dataset.running = "1";
+    setTopStatus("Running Simulated Test...", true);
+
+    try {
+      const data = await apiJson(`${BASE}/api/test/simulate`, { method: "POST" });
+
+      setOutput(
+        "Simulated Test",
+        data.stdout || data.output || "No output returned."
+      );
+
+      if (data.ok) {
+        setTopStatus("Simulated Test completed successfully.", false);
+      } else {
+        setTopStatus("Simulated Test failed.", false);
+        toast("Simulated Test failed", "error");
+      }
+    } catch (err) {
+      setOutput("Simulated Test", String(err));
+      setTopStatus("Simulated Test failed.", false);
+      toast("Simulated Test failed", "error");
+    } finally {
+      btn.dataset.running = "0";
+    }
   });
 
   $("btn-real-test").addEventListener("click", async () => {

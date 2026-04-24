@@ -154,10 +154,12 @@ run_simulate() {
   if [ "$FAIL_COUNT" -eq 0 ]; then
     log_line "SUMMARY PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
     power_event "SIMULATED TEST SUMMARY result=PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
     exit 0
   else
     log_line "SUMMARY FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
     power_event "SIMULATED TEST SUMMARY result=FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
     exit 1
   fi
 }

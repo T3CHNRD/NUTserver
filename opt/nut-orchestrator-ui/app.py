@@ -10,9 +10,11 @@ REGISTRY_PATH = APP_ROOT / "lib" / "config_registry.json"
 
 app = Flask(__name__)
 
+
 def load_registry():
     with open(REGISTRY_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
+
 
 def get_config_by_id(config_id):
     registry = load_registry()
@@ -20,6 +22,7 @@ def get_config_by_id(config_id):
         if item["id"] == config_id:
             return item
     return None
+
 
 def is_allowed_file(item):
     path = item["path"]
@@ -33,6 +36,7 @@ def is_allowed_file(item):
     allowed_extensions = item.get("allowed_extensions", [])
     return any(path.endswith(ext) for ext in allowed_extensions)
 
+
 @app.route("/")
 def index():
     registry = load_registry()
@@ -44,15 +48,20 @@ def index():
         reference_configs=reference_configs
     )
 
+
 @app.route("/healthz")
 def healthz():
     return jsonify({"ok": True})
 
 
+# =========================
+# CONFIG READ (REFERENCE)
+# =========================
 @app.route("/api/config/<reference_id>/content-ref", methods=["GET"])
 def get_reference_content(reference_id):
     registry = load_registry()
     ref_item = None
+
     for item in registry.get("reference_configs", []):
         if item["id"] == reference_id:
             ref_item = item
@@ -79,9 +88,14 @@ def get_reference_content(reference_id):
         "content": result.stdout
     })
 
+
+# =========================
+# CONFIG READ (EDITABLE)
+# =========================
 @app.route("/api/config/<config_id>/content", methods=["GET"])
 def get_config_content(config_id):
     item = get_config_by_id(config_id)
+
     if not item or not is_allowed_file(item):
         return jsonify({"ok": False, "error": "Config is not approved for viewing"}), 403
 
@@ -94,20 +108,23 @@ def get_config_content(config_id):
             "error": result.stderr or result.stdout or "Failed to read config"
         }), 500
 
-    content = result.stdout
-
     return jsonify({
         "ok": True,
         "id": item["id"],
         "name": item["name"],
         "path": item["path"],
         "type": item["type"],
-        "content": content
+        "content": result.stdout
     })
 
+
+# =========================
+# CONFIG UPDATE
+# =========================
 @app.route("/api/config/<config_id>", methods=["POST"])
 def update_config(config_id):
     item = get_config_by_id(config_id)
+
     if not item or not is_allowed_file(item):
         return jsonify({"ok": False, "error": "Config is not approved for editing"}), 403
 
@@ -120,20 +137,33 @@ def update_config(config_id):
         staged = tf.name
 
     try:
-        cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-apply-config", config_id, staged, mode]
+        cmd = [
+            "/usr/bin/sudo",
+            "/usr/local/sbin/nut-ui-apply-config",
+            config_id,
+            staged,
+            mode
+        ]
+
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+
         return jsonify({
             "ok": result.returncode == 0,
             "stdout": result.stdout,
             "stderr": result.stderr,
             "returncode": result.returncode
         })
+
     finally:
         try:
             os.unlink(staged)
         except FileNotFoundError:
             pass
 
+
+# =========================
+# TEST RUNNER
+# =========================
 @app.route("/api/test/<mode>", methods=["POST"])
 def run_test(mode):
     if mode not in ("simulate", "real"):
@@ -141,6 +171,7 @@ def run_test(mode):
 
     cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-run-test", mode]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+
     return jsonify({
         "ok": result.returncode == 0,
         "stdout": result.stdout,
@@ -148,10 +179,15 @@ def run_test(mode):
         "returncode": result.returncode
     })
 
+
+# =========================
+# BACKUP
+# =========================
 @app.route("/api/backup", methods=["POST"])
 def backup_now():
     cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-backup-now"]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+
     return jsonify({
         "ok": result.returncode == 0,
         "stdout": result.stdout,
@@ -160,10 +196,14 @@ def backup_now():
     })
 
 
+# =========================
+# RESTORE FROM GITHUB
+# =========================
 @app.route("/api/restore", methods=["POST"])
 def restore_now():
     cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-restore-github"]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+
     return jsonify({
         "ok": result.returncode == 0,
         "stdout": result.stdout,
@@ -173,20 +213,42 @@ def restore_now():
     })
 
 
+# =========================
+# POWER EVENTS (NEW)
+# =========================
+@app.route("/api/power-events", methods=["GET"])
+def power_events():
+    result = subprocess.run(
+        ["/usr/bin/sudo", "/usr/local/sbin/nut-get-power-events-json"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+    return result.stdout, 200, {"Content-Type": "application/json"}
+
+
+# =========================
+# ROLLBACK
+# =========================
 @app.route("/api/rollback/<config_id>", methods=["POST"])
 def rollback(config_id):
     item = get_config_by_id(config_id)
+
     if not item or not is_allowed_file(item):
         return jsonify({"ok": False, "error": "Config is not approved for rollback"}), 403
 
     cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-rollback", config_id]
+
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+
     return jsonify({
         "ok": result.returncode == 0,
         "stdout": result.stdout,
         "stderr": result.stderr,
         "returncode": result.returncode
     })
+
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5080)
