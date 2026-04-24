@@ -86,7 +86,7 @@ run_sim_wrapper() {
 
   local action="$script_path $*"
 
-  log_line "-----"
+  log_line ""
   log_line "TARGET: $label"
   log_line "MODE: SIMULATED / DRY-RUN"
   log_line "ACTION: would run $action"
@@ -98,21 +98,49 @@ run_sim_wrapper() {
     return
   fi
 
-  if SIMULATE=1 "$script_path" "$@" >> "$LOG_FILE" 2>&1; then
-    pass "${label} simulated execution OK"
+  if SIMULATE=1 "$script_path" "$@" >/dev/null 2>&1; then
+    log_line "PASS ${label} simulated execution OK"
+    PASS_COUNT=$((PASS_COUNT + 1))
     power_event "SIMULATED PASS target=\"${label}\" result=\"would shutdown/orchestrate successfully\" action=\"${action}\""
   else
-    fail "${label} simulated execution FAILED"
+    log_line "FAIL ${label} simulated execution FAILED"
+    FAIL_COUNT=$((FAIL_COUNT + 1))
     power_event "SIMULATED FAIL target=\"${label}\" result=\"simulated command failed\" action=\"${action}\""
   fi
 }
 
-run_simulate() {
-  log_line "TEST START mode=simulate"
-  log_line "NOTE Simulated Test does not perform real shutdowns."
-  log_line "NOTE Graceful vs abrupt shutdown can only be confirmed during Real Test or real UPS event."
-  power_event "SIMULATED TEST START mode=simulate note=\"no real shutdown commands executed\""
+run_real_wrapper() {
+  local label="$1"
+  shift
+  local script_path="$1"
+  shift
 
+  local action="$script_path $*"
+
+  log_line ""
+  log_line "TARGET: $label"
+  log_line "MODE: REAL / LIVE"
+  log_line "ACTION: executing $action"
+  power_event "REAL START target=\"${label}\" action=\"${action}\""
+
+  if [ ! -x "$script_path" ]; then
+    fail "${label} missing executable (${script_path})"
+    power_event "REAL FAIL target=\"${label}\" result=\"missing executable\" script=\"${script_path}\""
+    return
+  fi
+
+  if "$script_path" "$@" >> "$LOG_FILE" 2>&1; then
+    log_line "PASS ${label} real execution OK"
+    PASS_COUNT=$((PASS_COUNT + 1))
+    power_event "REAL PASS target=\"${label}\" result=\"shutdown/orchestration command succeeded\" action=\"${action}\""
+  else
+    log_line "FAIL ${label} real execution FAILED"
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+    power_event "REAL FAIL target=\"${label}\" result=\"command failed\" action=\"${action}\""
+  fi
+}
+
+run_prechecks() {
   check_file "$REGISTRY" "Config registry exists"
   check_exec "/usr/local/sbin/nut-ui-apply-config" "Apply wrapper"
   check_exec "/usr/local/sbin/nut-ui-run-test" "Test runner"
@@ -122,7 +150,7 @@ run_simulate() {
   check_file "/etc/nut/config.d/nut-orchestrator.conf" "config.d orchestrator config exists"
   check_file "/etc/nut/config.d/approved-targets.yml" "Approved targets config exists"
   check_file "/etc/nut/config.d/dashboard-ui.json" "Dashboard UI settings config exists"
-  check_file "/var/www/html/nutserver-dashboard.html" "Main dashboard exists"
+  check_file "/var/www/html/nutserver-dashboard.priority1.html" "Priority dashboard exists"
 
   if command -v jq >/dev/null 2>&1; then
     pass "jq is available"
@@ -137,7 +165,17 @@ run_simulate() {
   fi
 
   validate_managed_configs
+}
 
+run_simulate() {
+  log_line "TEST START mode=simulate"
+  log_line "NOTE Simulated Test does not perform real shutdowns."
+  log_line "NOTE Graceful vs abrupt shutdown can only be confirmed during Real Test or real UPS event."
+  power_event "SIMULATED TEST START mode=simulate note=\"no real shutdown commands executed\""
+
+  run_prechecks
+
+  log_line ""
   log_line "===== SIMULATED SHUTDOWN PLAN ====="
 
   run_sim_wrapper "VMware domain" /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain
@@ -152,11 +190,13 @@ run_simulate() {
   run_sim_wrapper "Lansweeper" /usr/local/sbin/nut-lansweeper-shutdown.sh
 
   if [ "$FAIL_COUNT" -eq 0 ]; then
+    log_line ""
     log_line "SUMMARY PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
     power_event "SIMULATED TEST SUMMARY result=PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
     /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
     exit 0
   else
+    log_line ""
     log_line "SUMMARY FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
     power_event "SIMULATED TEST SUMMARY result=FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
     /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
@@ -166,10 +206,48 @@ run_simulate() {
 
 run_real() {
   log_line "TEST START mode=real"
-  log_line "FAIL Real Test is intentionally disabled until live orchestration is explicitly approved."
-  log_line "SUMMARY FAIL passes=0 failures=1"
-  power_event "REAL TEST BLOCKED result=FAIL reason=\"Real Test intentionally disabled until explicitly approved\""
-  exit 1
+  power_event "REAL TEST REQUESTED mode=real"
+
+  if [ "${ALLOW_REAL_TEST:-0}" != "1" ]; then
+    log_line "FAIL Real Test blocked. Set ALLOW_REAL_TEST=1 to enable."
+    log_line "SUMMARY FAIL passes=0 failures=1"
+    power_event "REAL TEST BLOCKED result=FAIL reason=\"ALLOW_REAL_TEST not set to 1\""
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+    exit 1
+  fi
+
+  log_line "WARNING REAL TEST ENABLED - LIVE SHUTDOWN COMMANDS MAY EXECUTE"
+  power_event "REAL TEST START mode=real warning=\"live shutdown commands may execute\""
+
+  run_prechecks
+
+  log_line ""
+  log_line "===== REAL SHUTDOWN TEST PLAN ====="
+
+  run_real_wrapper "VMware domain" /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain
+  run_real_wrapper "VMware VCSA host-detect" /usr/local/sbin/nut-vmware-shutdown.sh detect_vcsa_host
+  run_real_wrapper "NetApp01" /usr/local/sbin/nut-netapp-halt.sh Alblnetapp01
+  run_real_wrapper "NetApp02" /usr/local/sbin/nut-netapp-halt.sh Alblnetapp02
+  run_real_wrapper "Synology" /usr/local/sbin/nut-synology-shutdown.sh
+  run_real_wrapper "VOIP" /usr/local/sbin/nut-voip-shutdown.sh
+  run_real_wrapper "DB01" /usr/local/sbin/nut-db-shutdown.sh DB01
+  run_real_wrapper "DB02" /usr/local/sbin/nut-db-shutdown.sh DB02
+  run_real_wrapper "Blue Iris" /usr/local/sbin/nut-blueiris-shutdown.sh
+  run_real_wrapper "Lansweeper" /usr/local/sbin/nut-lansweeper-shutdown.sh
+
+  if [ "$FAIL_COUNT" -eq 0 ]; then
+    log_line ""
+    log_line "SUMMARY PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    power_event "REAL TEST SUMMARY result=PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+    exit 0
+  else
+    log_line ""
+    log_line "SUMMARY FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    power_event "REAL TEST SUMMARY result=FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+    exit 1
+  fi
 }
 
 case "$MODE" in

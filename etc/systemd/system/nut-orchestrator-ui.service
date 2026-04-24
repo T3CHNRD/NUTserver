@@ -7,7 +7,7 @@ Type=simple
 User=www-data
 Group=www-data
 WorkingDirectory=/opt/nut-orchestrator-ui
-ExecStart=/usr/bin/python3 /opt/nut-orchestrator-ui/app.py
+ExecStart=/usr/bin/gunicorn -w 2 -b 127.0.0.1:5080 app:app
 Restart=always
 RestartSec=5
 

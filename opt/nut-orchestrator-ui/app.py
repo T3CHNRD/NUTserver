@@ -169,13 +169,41 @@ def run_test(mode):
     if mode not in ("simulate", "real"):
         return jsonify({"ok": False, "error": "Invalid mode"}), 400
 
-    cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-run-test", mode]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    if mode == "real":
+        payload = request.get_json(silent=True) or {}
+        supplied = payload.get("passphrase", "")
+
+        hash_path = Path("/etc/nut/real-test-passphrase.sha256")
+        if not hash_path.exists():
+            return jsonify({
+                "ok": False,
+                "error": "Real Test passphrase hash is not configured"
+            }), 500
+
+        import hashlib
+        expected_hash = hash_path.read_text(encoding="utf-8").strip()
+        supplied_hash = hashlib.sha256(supplied.encode("utf-8")).hexdigest()
+
+        if supplied_hash != expected_hash:
+            return jsonify({
+                "ok": False,
+                "stdout": "",
+                "stderr": "Real Test blocked: invalid passphrase",
+                "output": "Real Test blocked: invalid passphrase",
+                "returncode": 403
+            }), 403
+
+        cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-run-real-test-approved"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+    else:
+        cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-run-test", "simulate"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
     return jsonify({
         "ok": result.returncode == 0,
         "stdout": result.stdout,
         "stderr": result.stderr,
+        "output": result.stdout + result.stderr,
         "returncode": result.returncode
     })
 
