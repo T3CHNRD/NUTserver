@@ -196,6 +196,90 @@
       "owner": "root",
       "group": "root",
       "file_mode": "750"
+    },
+    {
+      "id": "nut_ui_run_test",
+      "name": "nut-ui-run-test",
+      "path": "/usr/local/sbin/nut-ui-run-test",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [
+        ".sh"
+      ],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "750"
+    },
+    {
+      "id": "nut_ui_run_real_test_approved",
+      "name": "nut-ui-run-real-test-approved",
+      "path": "/usr/local/sbin/nut-ui-run-real-test-approved",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [
+        ".sh"
+      ],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "750"
+    },
+    {
+      "id": "lansweeper_shutdown_sh",
+      "name": "nut-lansweeper-shutdown.sh",
+      "path": "/usr/local/sbin/nut-lansweeper-shutdown.sh",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [
+        ".sh"
+      ],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "750"
+    },
+    {
+      "id": "vmware_shutdown_sh",
+      "name": "nut-vmware-shutdown.sh",
+      "path": "/usr/local/sbin/nut-vmware-shutdown.sh",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [
+        ".sh"
+      ],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "750"
+    },
+    {
+      "id": "netapp_shutdown_sh",
+      "name": "nut-netapp-halt.sh",
+      "path": "/usr/local/sbin/nut-netapp-halt.sh",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [
+        ".sh"
+      ],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "750"
+    },
+    {
+      "id": "orchestrator_main_sh",
+      "name": "nut-orchestrator.sh (main orchestration)",
+      "path": "/usr/local/bin/nut-orchestrator.sh",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [
+        ".sh"
+      ],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "750"
     }
   ],
   "reference_configs": [
@@ -251,6 +335,18 @@
       "id": "nut_orchestrator_sh_ref",
       "name": "nut-orchestrator.sh live orchestration logic (reference)",
       "path": "/usr/local/bin/nut-orchestrator.sh",
+      "type": "text"
+    },
+    {
+      "id": "emergency_cheat_sheet_ref",
+      "name": "Emergency Cheat Sheet - GitHub Restore",
+      "path": "/opt/nut-orchestrator-ui/docs/emergency-cheat-sheet.md",
+      "type": "text"
+    },
+    {
+      "id": "shutdown_flow_chart_ref",
+      "name": "Shutdown Flow Chart - UPS Timers and Test Phases",
+      "path": "/opt/nut-orchestrator-ui/docs/shutdown-flow-chart.md",
       "type": "text"
     }
   ],
