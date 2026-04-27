@@ -193,7 +193,23 @@ def run_test(mode):
                 "returncode": 403
             }), 403
 
-        cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-run-real-test-approved"]
+        phase = payload.get("phase", "phase1-lansweeper")
+        allowed_phases = {
+            "phase1-lansweeper",
+            "phase2-power-restore-abort",
+            "phase3-full",
+        }
+
+        if phase not in allowed_phases:
+            return jsonify({
+                "ok": False,
+                "stdout": "",
+                "stderr": f"Real Test blocked: invalid phase {phase}",
+                "output": f"Real Test blocked: invalid phase {phase}",
+                "returncode": 400
+            }), 400
+
+        cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-run-real-test-approved", phase]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
     else:
         cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-run-test", "simulate"]
