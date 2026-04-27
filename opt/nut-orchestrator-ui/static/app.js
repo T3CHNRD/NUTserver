@@ -253,8 +253,33 @@ function wireEvents() {
     const btn = $("btn-real-test");
     if (btn.dataset.running === "1") return;
 
+    const phaseChoice = window.prompt(
+      "REAL TEST PHASE SELECTION:\n\n" +
+      "1 = Phase 1: Lansweeper only\n" +
+      "2 = Phase 2: Power restore abort test\n" +
+      "3 = Phase 3: Full shutdown\n\n" +
+      "Enter 1, 2, or 3:"
+    );
+
+    const phaseMap = {
+      "1": "phase1-lansweeper",
+      "2": "phase2-power-restore-abort",
+      "3": "phase3-full"
+    };
+
+    const phase = phaseMap[phaseChoice];
+
+    if (!phase) {
+      setOutput("Real Test", "Real Test cancelled. Invalid or missing phase selection.");
+      setTopStatus("Real Test cancelled.", false);
+      return;
+    }
+
     const passphrase = window.prompt(
-      "REAL TEST WARNING:\n\nThis may execute live shutdown commands.\nEnter the Real Test passphrase to continue:"
+      "REAL TEST WARNING:\n\n" +
+      "Selected phase: " + phase + "\n\n" +
+      "This may execute live shutdown commands.\n" +
+      "Enter the Real Test passphrase to continue:"
     );
 
     if (!passphrase) {
@@ -264,13 +289,13 @@ function wireEvents() {
     }
 
     btn.dataset.running = "1";
-    setTopStatus("Running Real Test...", true);
+    setTopStatus("Running Real Test " + phase + "...", true);
 
     try {
       const data = await apiJson(`${BASE}/api/test/real`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passphrase })
+        body: JSON.stringify({ passphrase, phase })
       });
 
       setOutput(
@@ -281,8 +306,8 @@ function wireEvents() {
       if (data.ok) {
         setTopStatus("Real Test completed successfully.", false);
       } else {
-        setTopStatus("Real Test failed or was blocked.", false);
-        toast("Real Test failed or blocked", "error");
+        setTopStatus("Real Test blocked or failed.", false);
+        toast("Real Test blocked or failed", "error");
       }
     } catch (err) {
       setOutput("Real Test", String(err));
