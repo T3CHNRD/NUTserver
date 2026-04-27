@@ -12,9 +12,7 @@ FAIL_COUNT=0
 mkdir -p "$(dirname "$LOG_FILE")"
 touch "$LOG_FILE" "$POWER_EVENT_LOG"
 
-ts() {
-  date -Is
-}
+ts() { date -Is; }
 
 log_line() {
   echo "[$(ts)] $1" | tee -a "$LOG_FILE"
@@ -35,30 +33,14 @@ fail() {
 }
 
 check_file() {
-  local path="$1"
-  local label="$2"
-
-  if [ -e "$path" ]; then
-    pass "$label ($path)"
-  else
-    fail "$label missing ($path)"
-  fi
+  [ -e "$1" ] && pass "$2 ($1)" || fail "$2 missing ($1)"
 }
 
 check_exec() {
-  local path="$1"
-  local label="$2"
-
-  if [ -x "$path" ]; then
-    pass "$label executable ($path)"
-  else
-    fail "$label not executable ($path)"
-  fi
+  [ -x "$1" ] && pass "$2 executable ($1)" || fail "$2 not executable ($1)"
 }
 
 validate_managed_configs() {
-  local id path name tmp
-
   while IFS=$'\t' read -r id path name; do
     if [ ! -f "$path" ]; then
       fail "Managed config missing for ${id} (${path})"
@@ -78,68 +60,6 @@ validate_managed_configs() {
   done < <(jq -r '.editable_configs[] | [.id, .path, .name] | @tsv' "$REGISTRY")
 }
 
-run_sim_wrapper() {
-  local label="$1"
-  shift
-  local script_path="$1"
-  shift
-
-  local action="$script_path $*"
-
-  log_line ""
-  log_line "TARGET: $label"
-  log_line "MODE: SIMULATED / DRY-RUN"
-  log_line "ACTION: would run $action"
-  power_event "SIMULATED START target=\"${label}\" action=\"would run ${action}\""
-
-  if [ ! -x "$script_path" ]; then
-    fail "${label} missing executable (${script_path})"
-    power_event "SIMULATED FAIL target=\"${label}\" result=\"missing executable\" script=\"${script_path}\""
-    return
-  fi
-
-  if SIMULATE=1 "$script_path" "$@" >/dev/null 2>&1; then
-    log_line "PASS ${label} simulated execution OK"
-    PASS_COUNT=$((PASS_COUNT + 1))
-    power_event "SIMULATED PASS target=\"${label}\" result=\"would shutdown/orchestrate successfully\" action=\"${action}\""
-  else
-    log_line "FAIL ${label} simulated execution FAILED"
-    FAIL_COUNT=$((FAIL_COUNT + 1))
-    power_event "SIMULATED FAIL target=\"${label}\" result=\"simulated command failed\" action=\"${action}\""
-  fi
-}
-
-run_real_wrapper() {
-  local label="$1"
-  shift
-  local script_path="$1"
-  shift
-
-  local action="$script_path $*"
-
-  log_line ""
-  log_line "TARGET: $label"
-  log_line "MODE: REAL / LIVE"
-  log_line "ACTION: executing $action"
-  power_event "REAL START target=\"${label}\" action=\"${action}\""
-
-  if [ ! -x "$script_path" ]; then
-    fail "${label} missing executable (${script_path})"
-    power_event "REAL FAIL target=\"${label}\" result=\"missing executable\" script=\"${script_path}\""
-    return
-  fi
-
-  if "$script_path" "$@" >> "$LOG_FILE" 2>&1; then
-    log_line "PASS ${label} real execution OK"
-    PASS_COUNT=$((PASS_COUNT + 1))
-    power_event "REAL PASS target=\"${label}\" result=\"shutdown/orchestration command succeeded\" action=\"${action}\""
-  else
-    log_line "FAIL ${label} real execution FAILED"
-    FAIL_COUNT=$((FAIL_COUNT + 1))
-    power_event "REAL FAIL target=\"${label}\" result=\"command failed\" action=\"${action}\""
-  fi
-}
-
 run_prechecks() {
   check_file "$REGISTRY" "Config registry exists"
   check_exec "/usr/local/sbin/nut-ui-apply-config" "Apply wrapper"
@@ -152,34 +72,48 @@ run_prechecks() {
   check_file "/etc/nut/config.d/dashboard-ui.json" "Dashboard UI settings config exists"
   check_file "/var/www/html/nutserver-dashboard.priority1.html" "Priority dashboard exists"
 
-  if command -v jq >/dev/null 2>&1; then
-    pass "jq is available"
-  else
-    fail "jq is missing"
-  fi
-
-  if command -v python3 >/dev/null 2>&1; then
-    pass "python3 is available"
-  else
-    fail "python3 is missing"
-  fi
+  command -v jq >/dev/null && pass "jq is available" || fail "jq is missing"
+  command -v python3 >/dev/null && pass "python3 is available" || fail "python3 is missing"
 
   validate_managed_configs
 }
 
+# =========================
+# SIMULATED TEST
+# =========================
+
 run_simulate() {
   log_line "TEST START mode=simulate"
   log_line "NOTE Simulated Test does not perform real shutdowns."
-  log_line "NOTE Graceful vs abrupt shutdown can only be confirmed during Real Test or real UPS event."
-  power_event "SIMULATED TEST START mode=simulate note=\"no real shutdown commands executed\""
+  power_event "SIMULATED TEST START mode=simulate"
 
   run_prechecks
 
   log_line ""
   log_line "===== SIMULATED SHUTDOWN PLAN ====="
 
-  run_sim_wrapper "VMware domain" /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain
-  run_sim_wrapper "VMware VCSA host-detect" /usr/local/sbin/nut-vmware-shutdown.sh detect_vcsa_host
+  # ===== VMware (EXPANDED OUTPUT) =====
+  log_line ""
+  log_line "===== VMWARE ORCHESTRATION ====="
+  log_line ""
+
+  if SIMULATE=1 /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain >> "$LOG_FILE" 2>&1; then
+    pass "VMware orchestration simulation"
+  else
+    fail "VMware orchestration simulation"
+  fi
+
+  log_line ""
+  log_line "===== VMWARE VCSA DETECT ====="
+  log_line ""
+
+  if SIMULATE=1 /usr/local/sbin/nut-vmware-shutdown.sh detect_vcsa_host >> "$LOG_FILE" 2>&1; then
+    pass "VMware VCSA host-detect simulation"
+  else
+    fail "VMware VCSA host-detect simulation"
+  fi
+
+  # ===== Other systems =====
   run_sim_wrapper "NetApp01" /usr/local/sbin/nut-netapp-halt.sh Alblnetapp01
   run_sim_wrapper "NetApp02" /usr/local/sbin/nut-netapp-halt.sh Alblnetapp02
   run_sim_wrapper "Synology" /usr/local/sbin/nut-synology-shutdown.sh
@@ -204,28 +138,36 @@ run_simulate() {
   fi
 }
 
+# =========================
+# REAL TEST (PROTECTED)
+# =========================
+
 run_real() {
   log_line "TEST START mode=real"
-  power_event "REAL TEST REQUESTED mode=real"
+  power_event "REAL TEST REQUESTED"
 
   if [ "${ALLOW_REAL_TEST:-0}" != "1" ]; then
     log_line "FAIL Real Test blocked. Set ALLOW_REAL_TEST=1 to enable."
-    log_line "SUMMARY FAIL passes=0 failures=1"
-    power_event "REAL TEST BLOCKED result=FAIL reason=\"ALLOW_REAL_TEST not set to 1\""
-    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+    power_event "REAL TEST BLOCKED"
     exit 1
   fi
 
-  log_line "WARNING REAL TEST ENABLED - LIVE SHUTDOWN COMMANDS MAY EXECUTE"
-  power_event "REAL TEST START mode=real warning=\"live shutdown commands may execute\""
+  log_line "WARNING REAL TEST ENABLED"
+  power_event "REAL TEST START"
 
   run_prechecks
 
   log_line ""
   log_line "===== REAL SHUTDOWN TEST PLAN ====="
 
-  run_real_wrapper "VMware domain" /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain
-  run_real_wrapper "VMware VCSA host-detect" /usr/local/sbin/nut-vmware-shutdown.sh detect_vcsa_host
+  # VMware (same expansion)
+  if /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain >> "$LOG_FILE" 2>&1; then
+    pass "VMware orchestration execution"
+  else
+    fail "VMware orchestration execution"
+  fi
+
+  # Remaining systems
   run_real_wrapper "NetApp01" /usr/local/sbin/nut-netapp-halt.sh Alblnetapp01
   run_real_wrapper "NetApp02" /usr/local/sbin/nut-netapp-halt.sh Alblnetapp02
   run_real_wrapper "Synology" /usr/local/sbin/nut-synology-shutdown.sh
@@ -238,27 +180,18 @@ run_real() {
   if [ "$FAIL_COUNT" -eq 0 ]; then
     log_line ""
     log_line "SUMMARY PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
-    power_event "REAL TEST SUMMARY result=PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
-    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+    power_event "REAL TEST SUMMARY PASS"
     exit 0
   else
     log_line ""
     log_line "SUMMARY FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
-    power_event "REAL TEST SUMMARY result=FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
-    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+    power_event "REAL TEST SUMMARY FAIL"
     exit 1
   fi
 }
 
 case "$MODE" in
-  simulate)
-    run_simulate
-    ;;
-  real)
-    run_real
-    ;;
-  *)
-    echo "Unknown mode: $MODE" >&2
-    exit 1
-    ;;
+  simulate) run_simulate ;;
+  real) run_real ;;
+  *) echo "Unknown mode: $MODE"; exit 1 ;;
 esac

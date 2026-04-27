@@ -6,7 +6,9 @@
       "path": "/etc/nut/ups.conf",
       "type": "text",
       "validator": "validate_text_generic",
-      "allowed_extensions": [".conf"],
+      "allowed_extensions": [
+        ".conf"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "root",
@@ -18,7 +20,9 @@
       "path": "/etc/nut/upsd.conf",
       "type": "text",
       "validator": "validate_text_generic",
-      "allowed_extensions": [".conf"],
+      "allowed_extensions": [
+        ".conf"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "root",
@@ -30,7 +34,9 @@
       "path": "/etc/nut/upsmon.conf",
       "type": "text",
       "validator": "validate_upsmon_conf",
-      "allowed_extensions": [".conf"],
+      "allowed_extensions": [
+        ".conf"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "root",
@@ -42,7 +48,9 @@
       "path": "/etc/nut/upssched.conf",
       "type": "text",
       "validator": "validate_upssched_conf",
-      "allowed_extensions": [".conf"],
+      "allowed_extensions": [
+        ".conf"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "root",
@@ -54,7 +62,9 @@
       "path": "/etc/nut/nut.conf",
       "type": "text",
       "validator": "validate_nut_conf",
-      "allowed_extensions": [".conf"],
+      "allowed_extensions": [
+        ".conf"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "root",
@@ -66,7 +76,9 @@
       "path": "/etc/nut/hosts.conf",
       "type": "text",
       "validator": "validate_text_generic",
-      "allowed_extensions": [".conf"],
+      "allowed_extensions": [
+        ".conf"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "nut",
@@ -78,7 +90,9 @@
       "path": "/etc/nut/nut-orchestrator.conf",
       "type": "text",
       "validator": "validate_text_generic",
-      "allowed_extensions": [".conf"],
+      "allowed_extensions": [
+        ".conf"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "root",
@@ -90,7 +104,9 @@
       "path": "/etc/nut/config.d/nut-orchestrator.conf",
       "type": "text",
       "validator": "validate_text_generic",
-      "allowed_extensions": [".conf"],
+      "allowed_extensions": [
+        ".conf"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "root",
@@ -102,7 +118,10 @@
       "path": "/etc/nut/config.d/approved-targets.yml",
       "type": "yaml",
       "validator": "validate_yaml",
-      "allowed_extensions": [".yml", ".yaml"],
+      "allowed_extensions": [
+        ".yml",
+        ".yaml"
+      ],
       "apply_mode": "local_or_ssh",
       "owner": "root",
       "group": "root",
@@ -114,7 +133,9 @@
       "path": "/etc/nut/config.d/dashboard-ui.json",
       "type": "json",
       "validator": "validate_json",
-      "allowed_extensions": [".json"],
+      "allowed_extensions": [
+        ".json"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "root",
@@ -126,7 +147,9 @@
       "path": "/usr/local/sbin/nut-synology-shutdown.sh",
       "type": "text",
       "validator": "validate_text_generic",
-      "allowed_extensions": [".sh"],
+      "allowed_extensions": [
+        ".sh"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "root",
@@ -138,7 +161,9 @@
       "path": "/usr/local/sbin/nut-voip-shutdown.sh",
       "type": "text",
       "validator": "validate_text_generic",
-      "allowed_extensions": [".sh"],
+      "allowed_extensions": [
+        ".sh"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "root",
@@ -150,7 +175,9 @@
       "path": "/usr/local/sbin/nut-db-shutdown.sh",
       "type": "text",
       "validator": "validate_text_generic",
-      "allowed_extensions": [".sh"],
+      "allowed_extensions": [
+        ".sh"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "root",
@@ -162,7 +189,9 @@
       "path": "/usr/local/sbin/nut-blueiris-shutdown.sh",
       "type": "text",
       "validator": "validate_text_generic",
-      "allowed_extensions": [".sh"],
+      "allowed_extensions": [
+        ".sh"
+      ],
       "apply_mode": "local",
       "owner": "root",
       "group": "root",
@@ -216,6 +245,12 @@
       "id": "upssched_pre_orchestrator_ref",
       "name": "upssched.conf.pre-orchestrator (reference)",
       "path": "/etc/nut/upssched.conf.pre-orchestrator",
+      "type": "text"
+    },
+    {
+      "id": "nut_orchestrator_sh_ref",
+      "name": "nut-orchestrator.sh live orchestration logic (reference)",
+      "path": "/usr/local/bin/nut-orchestrator.sh",
       "type": "text"
     }
   ],

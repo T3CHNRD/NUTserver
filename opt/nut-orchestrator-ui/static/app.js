@@ -21,7 +21,8 @@ const REFERENCES = {
   ups_conf_working_2ups_ref: { id: "ups_conf_working_2ups_ref", path: "/etc/nut/ups.conf.working-2ups" },
   ups_conf_working_3ups_ref: { id: "ups_conf_working_3ups_ref", path: "/etc/nut/ups.conf.working-3ups" },
   upsmon_pre_orchestrator_ref: { id: "upsmon_pre_orchestrator_ref", path: "/etc/nut/upsmon.conf.pre-orchestrator" },
-  upssched_pre_orchestrator_ref: { id: "upssched_pre_orchestrator_ref", path: "/etc/nut/upssched.conf.pre-orchestrator" }
+  upssched_pre_orchestrator_ref: { id: "upssched_pre_orchestrator_ref", path: "/etc/nut/upssched.conf.pre-orchestrator" },
+  nut_orchestrator_sh_ref: { id: "nut_orchestrator_sh_ref", path: "/usr/local/bin/nut-orchestrator.sh" }
 };
 
 const state = {
@@ -249,7 +250,47 @@ function wireEvents() {
   });
 
   $("btn-real-test").addEventListener("click", async () => {
-    await runTest("real");
+    const btn = $("btn-real-test");
+    if (btn.dataset.running === "1") return;
+
+    const passphrase = window.prompt(
+      "REAL TEST WARNING:\n\nThis may execute live shutdown commands.\nEnter the Real Test passphrase to continue:"
+    );
+
+    if (!passphrase) {
+      setOutput("Real Test", "Real Test cancelled. No commands were run.");
+      setTopStatus("Real Test cancelled.", false);
+      return;
+    }
+
+    btn.dataset.running = "1";
+    setTopStatus("Running Real Test...", true);
+
+    try {
+      const data = await apiJson(`${BASE}/api/test/real`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passphrase })
+      });
+
+      setOutput(
+        "Real Test",
+        data.output || data.stdout || data.stderr || "No output returned."
+      );
+
+      if (data.ok) {
+        setTopStatus("Real Test completed successfully.", false);
+      } else {
+        setTopStatus("Real Test failed or was blocked.", false);
+        toast("Real Test failed or blocked", "error");
+      }
+    } catch (err) {
+      setOutput("Real Test", String(err));
+      setTopStatus("Real Test failed.", false);
+      toast("Real Test failed", "error");
+    } finally {
+      btn.dataset.running = "0";
+    }
   });
 
   $("btn-backup-github").addEventListener("click", async () => {
