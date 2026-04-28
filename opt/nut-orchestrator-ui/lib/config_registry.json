@@ -204,7 +204,7 @@
       "type": "text",
       "validator": "validate_text_generic",
       "allowed_extensions": [
-        ".sh"
+        ""
       ],
       "apply_mode": "local",
       "owner": "root",
@@ -218,7 +218,7 @@
       "type": "text",
       "validator": "validate_text_generic",
       "allowed_extensions": [
-        ".sh"
+        ""
       ],
       "apply_mode": "local",
       "owner": "root",
