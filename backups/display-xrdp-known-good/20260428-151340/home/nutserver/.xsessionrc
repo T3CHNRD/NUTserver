@@ -1,0 +1,5 @@
+export DESKTOP_SESSION=ubuntu
+export GDMSESSION=ubuntu
+export XDG_CURRENT_DESKTOP=ubuntu:GNOME
+export GNOME_SHELL_SESSION_MODE=ubuntu
+export XDG_SESSION_DESKTOP=ubuntu
