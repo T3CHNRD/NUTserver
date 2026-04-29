@@ -68,5 +68,34 @@ if [ "$SIMULATE" = "1" ]; then
   exit 0
 fi
 
-log "ERROR live execution disabled by project rule; refusing to run real halt"
-exit 2
+log "MODE: REAL / LIVE"
+log "SAFETY CHECK: ALLOW_REAL_TEST=${ALLOW_REAL_TEST:-0}"
+log "SAFETY CHECK: REAL_TEST_PHASE=${REAL_TEST_PHASE:-unset}"
+log "SAFETY CHECK: NETAPP_LIVE_APPROVED=${NETAPP_LIVE_APPROVED:-0}"
+
+if [ "${ALLOW_REAL_TEST:-0}" != "1" ]; then
+  log "ERROR NetApp live halt blocked: ALLOW_REAL_TEST is not 1"
+  exit 2
+fi
+
+if [ "${REAL_TEST_PHASE:-}" != "full-production" ] && [ "${REAL_TEST_PHASE:-}" != "phase-netapp" ]; then
+  log "ERROR NetApp live halt blocked: REAL_TEST_PHASE is not approved for NetApp"
+  exit 2
+fi
+
+if [ "${NETAPP_LIVE_APPROVED:-0}" != "1" ]; then
+  log "ERROR NetApp live halt blocked: NETAPP_LIVE_APPROVED is not 1"
+  exit 2
+fi
+
+log "APPROVED: executing NetApp halt command"
+ssh -o BatchMode=yes -o ConnectTimeout=10 "${NETAPP_USERNAME}@${HOST}" "system node halt -node ${ARRAY_NAME} -reason 'UPS power event'" >> "$LOG_FILE" 2>&1
+RC=$?
+
+if [ "$RC" -ne 0 ]; then
+  log "ERROR NetApp halt command failed for $TARGET rc=$RC"
+  exit "$RC"
+fi
+
+log "SUCCESS NetApp halt command sent to $TARGET"
+exit 0

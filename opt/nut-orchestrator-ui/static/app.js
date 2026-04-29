@@ -327,10 +327,69 @@ function wireEvents() {
     if (btn.dataset.running === "1") return;
 
     btn.dataset.running = "1";
-    setTopStatus("Restoring from GitHub...", true);
+    setTopStatus("Loading GitHub restore branches...", true);
 
     try {
-      const data = await apiJson(`${BASE}/api/restore`, { method: "POST" });
+      const branchData = await apiJson(`${BASE}/api/restore/branches`, { method: "GET" });
+
+      if (!branchData.ok || !Array.isArray(branchData.branches) || branchData.branches.length === 0) {
+        setOutput(
+          "Restore from GitHub",
+          branchData.output || "No restore branches were returned."
+        );
+        setTopStatus("Could not load restore branches.", false);
+        toast("Could not load restore branches", "error");
+        return;
+      }
+
+      const branchList = branchData.branches
+        .map((branch, index) => `${index + 1}. ${branch}`)
+        .join("\n");
+
+      const selected = window.prompt(
+        `Choose GitHub branch to restore from:\n\n${branchList}\n\nEnter a number or exact branch name. Leave blank to cancel:`,
+        ""
+      );
+
+      if (selected === null) {
+        setTopStatus("Restore cancelled.", false);
+        return;
+      }
+
+      const trimmed = selected.trim();
+
+      if (!trimmed) {
+        setTopStatus("Restore cancelled.", false);
+        return;
+      }
+
+      let branch = trimmed;
+
+      if (/^[0-9]+$/.test(trimmed)) {
+        const index = Number(trimmed) - 1;
+        if (index < 0 || index >= branchData.branches.length) {
+          setTopStatus("Invalid restore branch selection.", false);
+          toast("Invalid branch selection", "error");
+          return;
+        }
+        branch = branchData.branches[index];
+      }
+
+      const confirmed = window.confirm(
+        `Restore local repo from GitHub branch:\n\n${branch}\n\nThis will back up the current repo state, fetch GitHub, and reset the local repo to origin/${branch}. Continue?`
+      );
+
+      if (!confirmed) {
+        setTopStatus("Restore cancelled.", false);
+        return;
+      }
+
+      setTopStatus(`Restoring from GitHub branch ${branch}...`, true);
+
+      const data = await apiJson(`${BASE}/api/restore`, {
+        method: "POST",
+        body: JSON.stringify({ branch })
+      });
 
       setOutput(
         "Restore from GitHub",
@@ -338,7 +397,7 @@ function wireEvents() {
       );
 
       if (data.ok) {
-        setTopStatus("Restore completed successfully.", false);
+        setTopStatus(`Restore completed from ${branch}.`, false);
       } else {
         setTopStatus("Restore failed.", false);
         toast("Restore failed", "error");

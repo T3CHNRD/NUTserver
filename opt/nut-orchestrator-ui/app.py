@@ -243,13 +243,38 @@ def backup_now():
 # =========================
 # RESTORE FROM GITHUB
 # =========================
+@app.route("/api/restore/branches", methods=["GET"])
+def restore_branches():
+    cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-restore-github", "--list"]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+
+    branches = [
+        line.strip()
+        for line in result.stdout.splitlines()
+        if line.strip() and not line.startswith("Fetching ")
+    ]
+
+    return jsonify({
+        "ok": result.returncode == 0,
+        "branches": branches,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "output": result.stdout + result.stderr,
+        "returncode": result.returncode
+    })
+
+
 @app.route("/api/restore", methods=["POST"])
 def restore_now():
-    cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-restore-github"]
+    payload = request.get_json(silent=True) or {}
+    branch = str(payload.get("branch") or "backup-sanitized-initial").strip()
+
+    cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-restore-github", branch]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
 
     return jsonify({
         "ok": result.returncode == 0,
+        "branch": branch,
         "stdout": result.stdout,
         "stderr": result.stderr,
         "output": result.stdout + result.stderr,
