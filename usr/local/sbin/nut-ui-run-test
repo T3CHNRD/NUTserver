@@ -254,16 +254,110 @@ run_real() {
       ;;
 
     phase2-power-restore-abort)
-      log_line ""
-      log_line "===== PHASE 2: POWER RESTORE ABORT TEST ====="
-      power_event "REAL TEST PHASE2 start simulate-abort"
+      log_line "===== PHASE 2: REAL UPS3 POWER RESTORE ABORT TEST ====="
+      power_event "REAL TEST PHASE2 start ups=ups3 mode=real-observe"
+      power_event "REAL TEST PHASE2 operator_action=\"Pull UPS3 AC input power now\""
+      power_event "REAL TEST PHASE2 note=\"This test waits for ups3@localhost to become OB, then waits for it to return OL before 300 seconds\""
 
-      log_line "SIMULATED POWER OUTAGE: shutdown sequence would begin."
-      sleep 5
-      log_line "SIMULATED POWER RESTORE: abort condition received."
-      log_line "ABORTING remaining shutdown sequence. No shutdown commands sent in this phase."
+      UPS_NAME="ups3@localhost"
+      UPS_SHORT="ups3"
+      WAIT_ONBATT_SECONDS=180
+      WAIT_RESTORE_SECONDS=300
+      POLL_SECONDS=2
 
-      power_event "REAL TEST PHASE2 abort triggered power_restored=true"
+      phase2_cancel() {
+        power_event "REAL TEST PHASE2 result=CANCELED ups=${UPS_SHORT} reason=\"operator interrupted or UI request stopped\""
+        /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+        exit 130
+      }
+
+      trap phase2_cancel INT TERM
+
+      start_status="$(upsc "$UPS_NAME" ups.status 2>/dev/null || true)"
+      power_event "REAL TEST PHASE2 initial_status ups=${UPS_SHORT} status=\"${start_status}\""
+
+      if ! echo "$start_status" | grep -qw "OL"; then
+        power_event "REAL TEST PHASE2 result=FAIL ups=${UPS_SHORT} reason=\"ups3 not online before test\" status=\"${start_status}\""
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+        break
+      fi
+
+      power_event "REAL TEST PHASE2 waiting_for_on_battery ups=${UPS_SHORT} timeout=${WAIT_ONBATT_SECONDS}s"
+      power_event "REAL TEST PHASE2 operator_action=\"Pull UPS3 AC input power now\""
+
+      onbatt_seen=0
+      elapsed=0
+      while [ "$elapsed" -lt "$WAIT_ONBATT_SECONDS" ]; do
+        current_status="$(upsc "$UPS_NAME" ups.status 2>/dev/null || true)"
+
+        if echo "$current_status" | grep -qw "OB"; then
+          onbatt_seen=1
+          power_event "REAL TEST PHASE2 on_battery_detected ups=${UPS_SHORT} status=\"${current_status}\" elapsed=${elapsed}s"
+          break
+        fi
+
+        sleep "$POLL_SECONDS"
+        elapsed=$((elapsed+POLL_SECONDS))
+      done
+
+      if [ "$onbatt_seen" -ne 1 ]; then
+        power_event "REAL TEST PHASE2 result=FAIL ups=${UPS_SHORT} reason=\"ups3 did not enter OB before timeout\" timeout=${WAIT_ONBATT_SECONDS}s"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+        break
+      fi
+
+      power_event "REAL TEST PHASE2 operator_action=\"Restore UPS3 AC input power now\""
+      power_event "REAL TEST PHASE2 waiting_for_power_restore ups=${UPS_SHORT} timeout=${WAIT_RESTORE_SECONDS}s"
+
+      restore_seen=0
+      elapsed=0
+      while [ "$elapsed" -lt "$WAIT_RESTORE_SECONDS" ]; do
+        current_status="$(upsc "$UPS_NAME" ups.status 2>/dev/null || true)"
+
+        if echo "$current_status" | grep -qw "OL"; then
+          restore_seen=1
+          power_event "REAL TEST PHASE2 power_restored_detected ups=${UPS_SHORT} status=\"${current_status}\" elapsed=${elapsed}s"
+          break
+        fi
+
+        sleep "$POLL_SECONDS"
+        elapsed=$((elapsed+POLL_SECONDS))
+      done
+
+      if [ "$restore_seen" -ne 1 ]; then
+        power_event "REAL TEST PHASE2 result=FAIL ups=${UPS_SHORT} reason=\"ups3 did not return OL before timeout\" timeout=${WAIT_RESTORE_SECONDS}s"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+        break
+      fi
+
+      power_event "REAL TEST PHASE2 waiting_for_orchestrator_abort ups=${UPS_SHORT}"
+
+      sleep 8
+
+      abort_log_found=0
+      state_found=0
+
+      if grep -q "PHASE2_POWER_RESTORE_ABORT_RESULT ups3 rc=0" /var/log/nut-orchestrator.log 2>/dev/null; then
+        abort_log_found=1
+      fi
+
+      if grep -q '"state": "power_restored_canceled"' /var/www/html/nut-state/ups3.json 2>/dev/null; then
+        state_found=1
+      fi
+
+      if [ "$abort_log_found" -eq 1 ] || [ "$state_found" -eq 1 ]; then
+        power_event "REAL TEST PHASE2 result=PASS ups=${UPS_SHORT} power_restored=true abort_confirmed=true"
+        PASS_COUNT=$((PASS_COUNT+1))
+      else
+        power_event "REAL TEST PHASE2 result=FAIL ups=${UPS_SHORT} reason=\"power restored but abort confirmation not found\""
+        FAIL_COUNT=$((FAIL_COUNT+1))
+      fi
+
+      trap - INT TERM
+      /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
       ;;
 
     phase3-full)

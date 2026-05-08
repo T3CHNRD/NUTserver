@@ -4,6 +4,7 @@ set -u
 LOG_FILE="/var/log/nut-orchestrator.log"
 STATE_DIR="/var/www/html/nut-state"
 EVENT_LOG="/var/www/html/nut-state/events.log"
+UI_POWER_LOG="/var/log/nut-orchestrator-ui/power-events.log"
 
 mkdir -p "$STATE_DIR"
 touch "$LOG_FILE" "$EVENT_LOG"
@@ -15,8 +16,15 @@ ts() {
 }
 
 log_line() {
-  echo "[$(ts)] $1" | tee -a "$LOG_FILE"
-  echo "[$(ts)] $1" >> "$EVENT_LOG"
+  local line="[$(ts)] $1"
+
+  echo "$line" | tee -a "$LOG_FILE"
+  echo "$line" >> "$EVENT_LOG"
+
+  mkdir -p "$(dirname "$UI_POWER_LOG")"
+  touch "$UI_POWER_LOG"
+  chmod 644 "$UI_POWER_LOG"
+  echo "$line" >> "$UI_POWER_LOG"
 }
 
 write_state() {
@@ -49,6 +57,33 @@ JSON
   chmod 644 "$state_file"
 }
 
+run_phase2_power_restore_abort() {
+  local ups_name="$1"
+  local rc=0
+
+  log_line "PHASE2_POWER_RESTORE_ABORT_REQUESTED ${ups_name}"
+  log_line "PHASE2_POWER_RESTORE_ABORT_TARGET ${ups_name}"
+
+  if [ -x /usr/local/sbin/phase2-power-restore-abort ]; then
+    /usr/local/sbin/phase2-power-restore-abort --ups "$ups_name" >> "$LOG_FILE" 2>&1
+    rc=$?
+    log_line "PHASE2_POWER_RESTORE_ABORT_RESULT ${ups_name} rc=${rc}"
+    return "$rc"
+  fi
+
+  if [ -x /usr/local/bin/phase2-power-restore-abort ]; then
+    /usr/local/bin/phase2-power-restore-abort --ups "$ups_name" >> "$LOG_FILE" 2>&1
+    rc=$?
+    log_line "PHASE2_POWER_RESTORE_ABORT_RESULT ${ups_name} rc=${rc}"
+    return "$rc"
+  fi
+
+  log_line "PHASE2_POWER_RESTORE_ABORT_FAILED ${ups_name} reason='script not found or not executable'"
+  log_line "PHASE2_POWER_RESTORE_ABORT_CHECKED /usr/local/sbin/phase2-power-restore-abort"
+  log_line "PHASE2_POWER_RESTORE_ABORT_CHECKED /usr/local/bin/phase2-power-restore-abort"
+  return 127
+}
+
 commit_placeholder() {
   local ups_name="$1"
   local rc=0
@@ -57,7 +92,7 @@ commit_placeholder() {
     ups7)
       log_line "UPS_SHUTDOWN_COMMITTED ups7 targeted shutdown started"
 
-      log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB01 method='ssh solaris wrapper'"
+      log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB01 method='telnet solaris wrapper'"
       /usr/local/sbin/nut-db-shutdown.sh DB01 >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
@@ -66,7 +101,7 @@ commit_placeholder() {
         log_line "UPS_TARGET_ACTION_FAILED ups7 DB01 rc=$rc"
       fi
 
-      log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB02 method='ssh solaris wrapper'"
+      log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB02 method='telnet solaris wrapper'"
       /usr/local/sbin/nut-db-shutdown.sh DB02 >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
@@ -171,6 +206,11 @@ commit_placeholder() {
       write_state "ups9" "ups9" "shutdown_committed" "broader VMware shutdown" 0 0 "Committed; VMware wrapper executed, NetApp wrappers executed, Synology wrapper executed"
       ;;
 
+    ups3)
+      log_line "UPS_SHUTDOWN_COMMITTED ups3 phase2 validation commit reached"
+      write_state "ups3" "ups3" "shutdown_committed" "phase2 validation" 0 0 "Committed; Phase 2 ups3 validation timer expired"
+      ;;
+
     *)
       log_line "UPS_SHUTDOWN_COMMITTED ${ups_name} no action handler defined"
       write_state "$ups_name" "$ups_name" "shutdown_committed" "unknown" 0 0 "No action handler defined"
@@ -254,9 +294,28 @@ case "${1:-}" in
     commit_placeholder "ups9"
     ;;
 
+  ups3-onbatt)
+    log_line "UPS_ONBATT_DETECTED ups3 runtime='unknown' countdown='300s'"
+    log_line "UPS_COUNTDOWN_STARTED ups3 scope='phase2 validation' countdown='300s'"
+    write_state "ups3" "ups3" "on_battery_pending" "phase2 validation" 300 300 "Phase 2 ups3 power-restore-abort validation pending"
+    ;;
+
+  phase2-power-restore-abort-ups3)
+    run_phase2_power_restore_abort "ups3"
+    rc=$?
+    if [ "$rc" -eq 0 ]; then
+      write_state "ups3" "ups3" "power_restored_canceled" "phase2 validation" 0 0 "Phase 2 power restore abort completed for ups3"
+    else
+      write_state "ups3" "ups3" "power_restore_abort_failed" "phase2 validation" 0 0 "Phase 2 power restore abort failed for ups3 rc=${rc}"
+    fi
+    exit "$rc"
+    ;;
+
+  ups3-commit)
+    commit_placeholder "ups3"
+    ;;
+
   *)
     log_line "UNKNOWN_EVENT arg='${1:-none}'"
     ;;
 esac
-
-exit 0
