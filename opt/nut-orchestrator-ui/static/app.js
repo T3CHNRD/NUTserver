@@ -460,7 +460,7 @@ async function loadPowerBootEvents() {
   panel.textContent = "Loading Power / Boot Event Log...";
 
   try {
-    const response = await fetch("/api/power-events", { cache: "no-store" });
+    const response = await fetch(`${BASE}/api/power-events`, { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
@@ -476,4 +476,28 @@ async function loadPowerBootEvents() {
 window.addEventListener("DOMContentLoaded", () => {
   loadPowerBootEvents();
   setInterval(loadPowerBootEvents, 30000);
+});
+
+/* Download All Logs button - added for NUT test evidence export */
+function addDownloadAllLogsButton() {
+  if (document.getElementById("btn-download-all-logs")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "btn-download-all-logs";
+  btn.textContent = "Download All Logs";
+  btn.style.marginLeft = "0.5rem";
+  btn.onclick = () => {
+    window.location.href = `${BASE}/api/export-logs`;
+  };
+
+  const realBtn = document.getElementById("btn-real-test");
+  if (realBtn && realBtn.parentNode) {
+    realBtn.parentNode.insertBefore(btn, realBtn.nextSibling);
+  } else {
+    document.body.prepend(btn);
+  }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  addDownloadAllLogsButton();
 });

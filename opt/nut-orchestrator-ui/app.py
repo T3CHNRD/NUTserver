@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import send_file, Flask, render_template, request, jsonify
 import json
 import os
 import subprocess
@@ -300,6 +300,29 @@ def power_events():
 # =========================
 # ROLLBACK
 # =========================
+
+
+@app.route("/api/export-logs", methods=["GET"])
+def export_logs():
+    try:
+        result = subprocess.run(
+            ["/usr/bin/sudo", "/usr/local/sbin/nut-export-test-logs"],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=True,
+        )
+        archive_path = result.stdout.strip().splitlines()[-1]
+        return send_file(
+            archive_path,
+            as_attachment=True,
+            download_name=os.path.basename(archive_path),
+            mimetype="application/gzip",
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
 @app.route("/api/rollback/<config_id>", methods=["POST"])
 def rollback(config_id):
     item = get_config_by_id(config_id)
