@@ -417,3 +417,63 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("config-select").value = state.currentId;
   await loadConfig(state.currentId);
 });
+
+/* Power / Boot Event Log Panel - added for NUT real-test observability */
+async function loadPowerBootEvents() {
+  const targetId = "power-boot-event-log";
+  let panel = document.getElementById(targetId);
+
+  if (!panel) {
+    const container = document.createElement("section");
+    container.style.marginTop = "1rem";
+    container.style.padding = "1rem";
+    container.style.border = "1px solid #ccc";
+    container.style.borderRadius = "8px";
+    container.style.background = "#111";
+    container.style.color = "#eee";
+
+    const title = document.createElement("h2");
+    title.textContent = "Power / Boot Event Log";
+    title.style.marginTop = "0";
+
+    const refresh = document.createElement("button");
+    refresh.textContent = "Refresh Power / Boot Event Log";
+    refresh.onclick = loadPowerBootEvents;
+    refresh.style.marginBottom = "0.75rem";
+
+    panel = document.createElement("pre");
+    panel.id = targetId;
+    panel.style.whiteSpace = "pre-wrap";
+    panel.style.maxHeight = "360px";
+    panel.style.overflow = "auto";
+    panel.style.background = "#000";
+    panel.style.color = "#0f0";
+    panel.style.padding = "0.75rem";
+    panel.style.borderRadius = "6px";
+
+    container.appendChild(title);
+    container.appendChild(refresh);
+    container.appendChild(panel);
+    document.body.appendChild(container);
+  }
+
+  panel.textContent = "Loading Power / Boot Event Log...";
+
+  try {
+    const response = await fetch("/api/power-events", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const events = await response.json();
+    const lines = events.map(item => item.line || JSON.stringify(item));
+    panel.textContent = lines.slice(-250).join("\n") || "No power events found.";
+  } catch (err) {
+    panel.textContent = `ERROR loading Power / Boot Event Log: ${err}`;
+  }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  loadPowerBootEvents();
+  setInterval(loadPowerBootEvents, 30000);
+});
