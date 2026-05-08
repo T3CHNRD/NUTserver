@@ -418,7 +418,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadConfig(state.currentId);
 });
 
-/* Power / Boot Event Log Panel - added for NUT real-test observability */
+
+
+
+/* Power / Boot Event Log Panel - readable mirror of main dashboard source */
 async function loadPowerBootEvents() {
   const targetId = "power-boot-event-log";
   let panel = document.getElementById(targetId);
@@ -436,22 +439,27 @@ async function loadPowerBootEvents() {
     title.textContent = "Power / Boot Event Log";
     title.style.marginTop = "0";
 
+    const note = document.createElement("div");
+    note.textContent = "Readable view using the same source as the main dashboard: /nut-power-events.json";
+    note.style.marginBottom = "0.5rem";
+    note.style.opacity = "0.8";
+
     const refresh = document.createElement("button");
     refresh.textContent = "Refresh Power / Boot Event Log";
     refresh.onclick = loadPowerBootEvents;
     refresh.style.marginBottom = "0.75rem";
 
-    panel = document.createElement("pre");
+    panel = document.createElement("div");
     panel.id = targetId;
-    panel.style.whiteSpace = "pre-wrap";
-    panel.style.maxHeight = "360px";
+    panel.style.maxHeight = "500px";
     panel.style.overflow = "auto";
     panel.style.background = "#000";
-    panel.style.color = "#0f0";
+    panel.style.color = "#eee";
     panel.style.padding = "0.75rem";
     panel.style.borderRadius = "6px";
 
     container.appendChild(title);
+    container.appendChild(note);
     container.appendChild(refresh);
     container.appendChild(panel);
     document.body.appendChild(container);
@@ -460,14 +468,109 @@ async function loadPowerBootEvents() {
   panel.textContent = "Loading Power / Boot Event Log...";
 
   try {
-    const response = await fetch(`${BASE}/api/power-events`, { cache: "no-store" });
+    const response = await fetch("/nut-power-events.json?v=" + Date.now(), { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const events = await response.json();
-    const lines = events.map(item => item.line || JSON.stringify(item));
-    panel.textContent = lines.slice(-250).join("\n") || "No power events found.";
+    const data = await response.json();
+
+    const rawLines = Array.isArray(data)
+      ? data.map(item => {
+          if (typeof item === "string") return item;
+          return item.line || item.raw || "";
+        })
+      : [];
+
+    const lines = rawLines.filter(line => String(line || "").trim() !== "").slice(-160);
+
+    if (!lines.length) {
+      panel.textContent = "No log entries found.";
+      return;
+    }
+
+    const esc = (value) => String(value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+
+    function parseLine(line) {
+      const row = {
+        timestamp: "",
+        event: "",
+        target: "",
+        mode: "",
+        action: "",
+        status: "",
+        result: line
+      };
+
+      const ts = line.match(/^\[([^\]]+)\]\s*(.*)$/);
+      let msg = line;
+      if (ts) {
+        row.timestamp = ts[1];
+        msg = ts[2];
+      }
+
+      if (msg.startsWith("TARGET:")) {
+        row.event = "Target";
+        row.target = msg.replace("TARGET:", "").trim();
+      } else if (msg.startsWith("MODE:")) {
+        row.event = "Mode";
+        row.mode = msg.replace("MODE:", "").trim();
+      } else if (msg.startsWith("ACTION:")) {
+        row.event = "Action";
+        row.action = msg.replace("ACTION:", "").trim();
+      } else if (msg.includes("PASS")) {
+        row.event = "Result";
+        row.status = "PASS";
+      } else if (msg.includes("FAIL") || msg.includes("ERROR")) {
+        row.event = "Result";
+        row.status = "FAIL";
+      } else if (msg.includes("SUMMARY")) {
+        row.event = "Summary";
+      } else if (msg.toUpperCase().includes("REAL TEST BLOCKED")) {
+        row.event = "Real test blocked";
+        row.status = "FAIL";
+      } else if (msg.toUpperCase().includes("POWER") || msg.toUpperCase().includes("BATTERY")) {
+        row.event = "Power / battery event";
+      } else {
+        row.event = "Event";
+      }
+
+      return row;
+    }
+
+    const rows = lines.map(parseLine);
+
+    panel.innerHTML = `
+      <table style="width:100%; border-collapse:collapse; font-size:12px;">
+        <thead>
+          <tr>
+            <th style="border-bottom:1px solid #555; text-align:left; padding:5px;">Timestamp</th>
+            <th style="border-bottom:1px solid #555; text-align:left; padding:5px;">Event</th>
+            <th style="border-bottom:1px solid #555; text-align:left; padding:5px;">Target</th>
+            <th style="border-bottom:1px solid #555; text-align:left; padding:5px;">Mode</th>
+            <th style="border-bottom:1px solid #555; text-align:left; padding:5px;">Action</th>
+            <th style="border-bottom:1px solid #555; text-align:left; padding:5px;">PASS / FAIL</th>
+            <th style="border-bottom:1px solid #555; text-align:left; padding:5px;">Result text</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.reverse().map(row => `
+            <tr>
+              <td style="border-bottom:1px solid #222; padding:5px; vertical-align:top;">${esc(row.timestamp)}</td>
+              <td style="border-bottom:1px solid #222; padding:5px; vertical-align:top;">${esc(row.event)}</td>
+              <td style="border-bottom:1px solid #222; padding:5px; vertical-align:top;">${esc(row.target)}</td>
+              <td style="border-bottom:1px solid #222; padding:5px; vertical-align:top;">${esc(row.mode)}</td>
+              <td style="border-bottom:1px solid #222; padding:5px; vertical-align:top;">${esc(row.action)}</td>
+              <td style="border-bottom:1px solid #222; padding:5px; vertical-align:top;">${esc(row.status)}</td>
+              <td style="border-bottom:1px solid #222; padding:5px; vertical-align:top;">${esc(row.result)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
   } catch (err) {
     panel.textContent = `ERROR loading Power / Boot Event Log: ${err}`;
   }
@@ -477,6 +580,7 @@ window.addEventListener("DOMContentLoaded", () => {
   loadPowerBootEvents();
   setInterval(loadPowerBootEvents, 30000);
 });
+
 
 /* Download All Logs button - added for NUT test evidence export */
 function addDownloadAllLogsButton() {

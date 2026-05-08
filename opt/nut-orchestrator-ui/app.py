@@ -302,6 +302,121 @@ def power_events():
 # =========================
 
 
+
+
+
+@app.route("/api/power-events-table", methods=["GET"])
+def power_events_table():
+    import json
+    import re
+
+    def parse_line(raw_line):
+        raw = str(raw_line).strip()
+        timestamp = ""
+        msg = raw
+
+        m = re.match(r"^\[([^\]]+)\]\s*(.*)$", raw)
+        if m:
+            timestamp = m.group(1)
+            msg = m.group(2)
+
+        def qval(name):
+            q = re.search(rf'{name}="([^"]*)"', msg)
+            return q.group(1) if q else ""
+
+        target = qval("target")
+        action = qval("action")
+        result = qval("result")
+
+        mode = ""
+        status = ""
+        event = "event"
+        summary = ""
+
+        upper = msg.upper()
+
+        if "SIMULATED" in upper or "DRY-RUN" in upper:
+            mode = "SIMULATED / DRY-RUN"
+        if "REAL TEST" in upper or "MODE: REAL" in upper:
+            mode = "REAL"
+        if "BLOCKED" in upper:
+            mode = "BLOCKED"
+            event = "shutdown blocked"
+        if "RUNNING" in upper or "START" in upper:
+            if not mode:
+                mode = "RUNNING"
+
+        if "PASS" in upper or "SUCCESS" in upper:
+            status = "PASS"
+        elif "FAIL" in upper or "ERROR" in upper:
+            status = "FAIL"
+        elif "WARN" in upper:
+            status = "WARN"
+
+        if "SUMMARY" in upper:
+            event = "test summary"
+            summary = msg
+        elif "POWER RESTORE" in upper or "ONLINE" in upper or "UTILITY POWER RETURNS" in upper:
+            event = "power restored"
+        elif "POWER OUTAGE" in upper or "ON BATTERY" in upper or " ONBATT" in upper or " OB" in upper:
+            event = "power outage"
+        elif "BATTERY IS LOW" in upper or "LOW BATTERY" in upper or " LB" in upper:
+            event = "UPS battery low / replacement check"
+        elif "SHUTDOWN" in upper and ("TRIGGER" in upper or "START" in upper or "REQUEST" in upper):
+            event = "shutdown triggered"
+        elif "ABORT" in upper or "STOPPED" in upper or "CANCEL" in upper:
+            event = "shutdown stopped"
+        elif "REAL TEST REQUESTED" in upper:
+            event = "real test requested"
+        elif "SIMULATED TEST START" in upper:
+            event = "simulated test started"
+        elif "TARGET:" in upper and not target:
+            target = msg.split("TARGET:", 1)[1].strip()
+            event = "target"
+        elif "ACTION:" in upper and not action:
+            action = msg.split("ACTION:", 1)[1].strip()
+            event = "action"
+        elif "MODE:" in upper and not mode:
+            mode = msg.split("MODE:", 1)[1].strip()
+            event = "mode"
+
+        if not result:
+            result = msg
+
+        return {
+            "timestamp": timestamp,
+            "event": event,
+            "target": target,
+            "mode": mode,
+            "action": action,
+            "status": status,
+            "result": result,
+            "summary": summary,
+            "raw": raw,
+        }
+
+    try:
+        result = subprocess.run(
+            ["/usr/bin/sudo", "/usr/local/sbin/nut-get-power-events-json"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        )
+
+        raw_events = json.loads(result.stdout or "[]")
+        lines = []
+
+        for item in raw_events[-300:]:
+            if isinstance(item, dict):
+                lines.append(item.get("line", ""))
+            else:
+                lines.append(str(item))
+
+        return jsonify({"ok": True, "events": [parse_line(line) for line in lines]})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc), "events": []}), 500
+
 @app.route("/api/export-logs", methods=["GET"])
 def export_logs():
     try:
