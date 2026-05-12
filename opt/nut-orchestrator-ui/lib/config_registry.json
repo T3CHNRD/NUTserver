@@ -309,6 +309,21 @@
       "owner": "root",
       "group": "root",
       "file_mode": "600"
+    },
+    {
+      "id": "vcenter_pass",
+      "name": "vCenter Password",
+      "path": "/etc/nut/vcenter.pass",
+      "type": "password",
+      "sensitive": true,
+      "validator": "validate_text_generic",
+      "allowed_extensions": [
+        ".pass"
+      ],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "600"
     }
   ],
   "reference_configs": [

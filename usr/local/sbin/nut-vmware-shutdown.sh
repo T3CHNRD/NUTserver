@@ -39,6 +39,13 @@ fi
 # shellcheck disable=SC1090
 . "$CONFIG_FILE"
 
+VCENTER_PASS_FILE="/etc/nut/vcenter.pass"
+VMWARE_VM_MAP_FILE="/etc/nut/config.d/vmware-vm-map.conf"
+
+if [ -s "$VCENTER_PASS_FILE" ]; then
+  VCENTER_PASSWORD="$(tr -d '\r\n' < "$VCENTER_PASS_FILE")"
+fi
+
 ACTION="${1:-shutdown_domain}"
 
 PHASE1=(
@@ -134,6 +141,29 @@ except Exception as e:
     print(f"ERROR:{e}")
     sys.exit(1)
 PY
+}
+
+vmware_map_lookup() {
+  local intended_name="$1"
+  local field="${2:-vm_id}"
+
+  if [ ! -f "$VMWARE_VM_MAP_FILE" ]; then
+    return 1
+  fi
+
+  awk -F'|' -v target="$intended_name" -v field="$field" '
+    BEGIN { found=0 }
+    /^[[:space:]]*$/ { next }
+    /^[[:space:]]*#/ { next }
+    $1 == target {
+      if (field == "vcenter_name") print $2
+      else if (field == "vm_id") print $3
+      else if (field == "notes") print $4
+      found=1
+      exit
+    }
+    END { if (found == 0) exit 1 }
+  ' "$VMWARE_VM_MAP_FILE"
 }
 
 vc_api_get_vm_id() {
@@ -246,16 +276,23 @@ shutdown_vm_list() {
 
   for vm_name in "$@"; do
     log "ATTEMPT VMware guest shutdown for ${vm_name}"
-    vm_id="$(vc_api_get_vm_id "$session_id" "$vm_name" 2>/dev/null)"
-    rc=$?
+    vm_id="$(vmware_map_lookup "$vm_name" vm_id 2>/dev/null || true)"
+    mapped_name="$(vmware_map_lookup "$vm_name" vcenter_name 2>/dev/null || true)"
 
-    if [ "$rc" -ne 0 ] || [ -z "$vm_id" ]; then
-      log "ERROR could not find VM id for ${vm_name}"
-      power_classification "FAIL" "vm_id_not_found" "vm=\"${vm_name}\""
-      continue
+    if [ -n "$vm_id" ]; then
+      log "MAPPED ${vm_name} -> ${mapped_name:-unknown} (${vm_id})"
+    else
+      vm_id="$(vc_api_get_vm_id "$session_id" "$vm_name" 2>/dev/null)"
+      rc=$?
+
+      if [ "$rc" -ne 0 ] || [ -z "$vm_id" ]; then
+        log "ERROR could not find VM id for ${vm_name}"
+        power_classification "FAIL" "vm_id_not_found" "vm=\"${vm_name}\""
+        continue
+      fi
     fi
 
-    vc_api_guest_shutdown "$session_id" "$vm_id" "$vm_name"
+    vc_api_guest_shutdown "$session_id" "$vm_id" "${mapped_name:-$vm_name}"
     shutdown_rc="$?"
 
     case "$shutdown_rc" in
