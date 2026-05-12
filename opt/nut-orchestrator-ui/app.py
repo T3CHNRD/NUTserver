@@ -99,6 +99,20 @@ def get_config_content(config_id):
     if not item or not is_allowed_file(item):
         return jsonify({"ok": False, "error": "Config is not approved for viewing"}), 403
 
+    if item.get("sensitive") is True:
+        target_path = Path(item["path"])
+        configured = target_path.exists() and target_path.stat().st_size > 0
+        return jsonify({
+            "ok": True,
+            "id": item["id"],
+            "name": item["name"],
+            "path": item["path"],
+            "type": item["type"],
+            "sensitive": True,
+            "password_configured": configured,
+            "content": "********" if configured else ""
+        })
+
     cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-read-config", config_id]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
@@ -131,6 +145,14 @@ def update_config(config_id):
     payload = request.get_json(force=True)
     content = payload.get("content", "")
     mode = payload.get("mode", "dry-run")
+
+    if item.get("sensitive") is True and content.strip() == "********":
+        return jsonify({
+            "ok": False,
+            "stdout": "",
+            "stderr": "Sensitive config was not changed because the masked placeholder was submitted. Replace ******** with the real new value before applying.",
+            "returncode": 2
+        }), 400
 
     with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as tf:
         tf.write(content)

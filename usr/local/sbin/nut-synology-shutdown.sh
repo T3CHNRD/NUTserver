@@ -14,6 +14,24 @@ log() {
   echo "[$(ts)] $1" | tee -a "$LOG_FILE"
 }
 
+power_classification() {
+  local result="$1"
+  local reason="$2"
+  local extra="${3:-}"
+
+  if [ -x /usr/local/sbin/nut-power-event-log ]; then
+    if [ -n "$extra" ]; then
+      /usr/local/sbin/nut-power-event-log "SHUTDOWN_CLASSIFICATION ${result} target=\"Synology\" reason=\"${reason}\" ${extra}"
+    else
+      /usr/local/sbin/nut-power-event-log "SHUTDOWN_CLASSIFICATION ${result} target=\"Synology\" reason=\"${reason}\""
+    fi
+  fi
+
+  if [ -x /usr/local/sbin/nut-publish-power-events-json ]; then
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+  fi
+}
+
 CMD_PREVIEW="ssh -o BatchMode=yes -o ConnectTimeout=10 ${USER_NAME}@${HOST} \"sudo shutdown -P now\""
 
 log "Starting Synology shutdown for $HOST"
@@ -22,7 +40,39 @@ log "SIMULATION PREVIEW: would run ${CMD_PREVIEW}"
 
 if [ "$SIMULATE" = "1" ]; then
   log "SIMULATION ONLY: no Synology shutdown command sent"
+
+  if [ -x /usr/local/sbin/nut-power-event-log ]; then
+    /usr/local/sbin/nut-power-event-log 'SHUTDOWN_CLASSIFICATION WARN target="Synology" reason="simulation_only_command_not_sent"'
+  fi
+
+  if [ -x /usr/local/sbin/nut-publish-power-events-json ]; then
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+  fi
+
   exit 0
+fi
+
+log "MODE: REAL / LIVE"
+log "SAFETY CHECK: ALLOW_REAL_TEST=${ALLOW_REAL_TEST:-0}"
+log "SAFETY CHECK: REAL_TEST_PHASE=${REAL_TEST_PHASE:-unset}"
+log "SAFETY CHECK: SYNOLOGY_LIVE_APPROVED=${SYNOLOGY_LIVE_APPROVED:-0}"
+
+if [ "${ALLOW_REAL_TEST:-0}" != "1" ]; then
+  log "ERROR Synology live shutdown blocked: ALLOW_REAL_TEST is not 1"
+  power_classification "FAIL" "blocked_allow_real_test_not_set"
+  exit 2
+fi
+
+if [ "${REAL_TEST_PHASE:-}" != "phase3-full" ] && [ "${REAL_TEST_PHASE:-}" != "phase-synology" ]; then
+  log "ERROR Synology live shutdown blocked: REAL_TEST_PHASE is not approved for Synology"
+  power_classification "FAIL" "blocked_wrong_real_test_phase" "phase=\"${REAL_TEST_PHASE:-unset}\""
+  exit 2
+fi
+
+if [ "${SYNOLOGY_LIVE_APPROVED:-0}" != "1" ]; then
+  log "ERROR Synology live shutdown blocked: SYNOLOGY_LIVE_APPROVED is not 1"
+  power_classification "FAIL" "blocked_synology_live_not_approved"
+  exit 2
 fi
 
 ssh -o BatchMode=yes -o ConnectTimeout=10 "${USER_NAME}@${HOST}" "sudo shutdown -P now" >> "$LOG_FILE" 2>&1
@@ -30,8 +80,17 @@ RC=$?
 
 if [ "$RC" -ne 0 ]; then
   log "ERROR Synology shutdown command failed rc=$RC"
+  power_classification "FAIL" "command_failed" "command_rc=${RC}"
   exit "$RC"
 fi
 
 log "SUCCESS Synology shutdown command sent"
-exit 0
+
+if [ -x /usr/local/sbin/nut-classify-target-shutdown ]; then
+  /usr/local/sbin/nut-classify-target-shutdown Synology "$RC" >> "$LOG_FILE" 2>&1
+  CLASSIFY_RC="$?"
+  exit "$CLASSIFY_RC"
+fi
+
+power_classification "WARN" "command_sent_but_not_verified" "verify_rc=99"
+exit 3

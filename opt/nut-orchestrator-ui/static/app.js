@@ -249,6 +249,88 @@ function wireEvents() {
     }
   });
 
+  function promptRealTestPassphrase(phase) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement("div");
+      overlay.style.position = "fixed";
+      overlay.style.inset = "0";
+      overlay.style.background = "rgba(0,0,0,0.65)";
+      overlay.style.zIndex = "9999";
+      overlay.style.display = "flex";
+      overlay.style.alignItems = "center";
+      overlay.style.justifyContent = "center";
+
+      const box = document.createElement("div");
+      box.style.background = "#0b1220";
+      box.style.color = "#ffffff";
+      box.style.border = "1px solid #334155";
+      box.style.borderRadius = "12px";
+      box.style.padding = "20px";
+      box.style.width = "min(520px, 92vw)";
+      box.style.boxShadow = "0 20px 50px rgba(0,0,0,0.45)";
+
+      const title = document.createElement("h2");
+      title.textContent = "Real Test Warning";
+      title.style.margin = "0 0 12px 0";
+
+      const warning = document.createElement("p");
+      warning.textContent = "Selected phase: " + phase + ". This may execute live shutdown commands. Enter the Real Test passphrase to continue.";
+      warning.style.lineHeight = "1.45";
+
+      const input = document.createElement("input");
+      input.type = "password";
+      input.autocomplete = "off";
+      input.placeholder = "Real Test passphrase";
+      input.style.width = "100%";
+      input.style.boxSizing = "border-box";
+      input.style.padding = "10px";
+      input.style.margin = "12px 0";
+      input.style.borderRadius = "8px";
+      input.style.border = "1px solid #475569";
+      input.style.background = "#020617";
+      input.style.color = "#ffffff";
+
+      const actions = document.createElement("div");
+      actions.style.display = "flex";
+      actions.style.gap = "10px";
+      actions.style.justifyContent = "flex-end";
+
+      const cancel = document.createElement("button");
+      cancel.textContent = "Cancel";
+      cancel.type = "button";
+
+      const submit = document.createElement("button");
+      submit.textContent = "Run Real Test";
+      submit.type = "button";
+
+      actions.appendChild(cancel);
+      actions.appendChild(submit);
+
+      box.appendChild(title);
+      box.appendChild(warning);
+      box.appendChild(input);
+      box.appendChild(actions);
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+
+      const cleanup = (value) => {
+        input.value = "";
+        document.body.removeChild(overlay);
+        resolve(value);
+      };
+
+      cancel.addEventListener("click", () => cleanup(""));
+      submit.addEventListener("click", () => cleanup(input.value));
+
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") cleanup(input.value);
+        if (event.key === "Escape") cleanup("");
+      });
+
+      setTimeout(() => input.focus(), 0);
+    });
+  }
+
   $("btn-real-test").addEventListener("click", async () => {
     const btn = $("btn-real-test");
     if (btn.dataset.running === "1") return;
@@ -275,12 +357,7 @@ function wireEvents() {
       return;
     }
 
-    const passphrase = window.prompt(
-      "REAL TEST WARNING:\n\n" +
-      "Selected phase: " + phase + "\n\n" +
-      "This may execute live shutdown commands.\n" +
-      "Enter the Real Test passphrase to continue:"
-    );
+    const passphrase = await promptRealTestPassphrase(phase);
 
     if (!passphrase) {
       setOutput("Real Test", "Real Test cancelled. No commands were run.");
