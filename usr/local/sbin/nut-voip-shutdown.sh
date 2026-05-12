@@ -80,8 +80,17 @@ RC=$?
 
 if [ "$RC" -ne 0 ]; then
   log "ERROR VOIP shutdown command failed rc=$RC"
+  power_classification "FAIL" "command_failed" "command_rc=${RC}"
   exit "$RC"
 fi
 
 log "SUCCESS VOIP shutdown command sent"
-exit 0
+
+if [ -x /usr/local/sbin/nut-classify-target-shutdown ]; then
+  /usr/local/sbin/nut-classify-target-shutdown VOIP "$RC" >> "$LOG_FILE" 2>&1
+  CLASSIFY_RC="$?"
+  exit "$CLASSIFY_RC"
+fi
+
+power_classification "WARN" "command_sent_but_not_verified" "verify_rc=99"
+exit 3

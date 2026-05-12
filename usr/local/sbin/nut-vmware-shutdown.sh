@@ -13,6 +13,24 @@ log() {
   echo "[$(ts)] $1" | tee -a "$LOG_FILE"
 }
 
+power_classification() {
+  local result="$1"
+  local reason="$2"
+  local extra="${3:-}"
+
+  if [ -x /usr/local/sbin/nut-power-event-log ]; then
+    if [ -n "$extra" ]; then
+      /usr/local/sbin/nut-power-event-log "SHUTDOWN_CLASSIFICATION ${result} target=\"VMware\" reason=\"${reason}\" ${extra}"
+    else
+      /usr/local/sbin/nut-power-event-log "SHUTDOWN_CLASSIFICATION ${result} target=\"VMware\" reason=\"${reason}\""
+    fi
+  fi
+
+  if [ -x /usr/local/sbin/nut-publish-power-events-json ]; then
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+  fi
+}
+
 if [ ! -f "$CONFIG_FILE" ]; then
   log "ERROR config file missing: $CONFIG_FILE"
   exit 1
@@ -28,7 +46,7 @@ PHASE1=(
 )
 
 PHASE2=(
-"Albl-Exch2019"
+"Albl-exch2019"
 "albl-SageSQL"
 "alblvvsaa"
 )
@@ -44,6 +62,13 @@ PHASE4=(
 )
 
 VCENTER_VM="${VMWARE_VCSA_VM:-ALBL-VCSA}"
+
+ESXI_HOSTS=(
+"192.168.99.84"
+"192.168.99.72"
+"192.168.99.71"
+"192.168.99.70"
+)
 
 require_python() {
   python3 - <<'PY' >/dev/null 2>&1
@@ -73,8 +98,18 @@ simulate_shutdown_domain() {
   run_wave_sim "3_CLUSTER_SUPPORT" "${PHASE3[@]}"
   run_wave_sim "4_CORE_IDENTITY" "${PHASE4[@]}"
   run_wave_sim "5_VCENTER_APPLIANCE" "$VCENTER_VM"
-  log "SIMULATION NOTE: ESXi host shutdown is not implemented in this wrapper"
+  run_wave_sim "6_ESXI_HOSTS_SIM_ONLY" "${ESXI_HOSTS[@]}"
+  log "SIMULATION NOTE: ESXi host shutdown is listed for Wave 2 visibility only; real ESXi shutdown is not implemented in this wrapper"
   log "SIMULATION NOTE: NetApp/storage shutdown is handled by separate wrapper/orchestrator path"
+
+  if [ -x /usr/local/sbin/nut-power-event-log ]; then
+    /usr/local/sbin/nut-power-event-log 'SHUTDOWN_CLASSIFICATION WARN target="VMware" reason="simulation_only_command_not_sent"'
+  fi
+
+  if [ -x /usr/local/sbin/nut-publish-power-events-json ]; then
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+  fi
+
   log "SUMMARY PASS"
 }
 
@@ -216,10 +251,24 @@ shutdown_vm_list() {
 
     if [ "$rc" -ne 0 ] || [ -z "$vm_id" ]; then
       log "ERROR could not find VM id for ${vm_name}"
+      power_classification "FAIL" "vm_id_not_found" "vm=\"${vm_name}\""
       continue
     fi
 
-    vc_api_guest_shutdown "$session_id" "$vm_id" "$vm_name" || true
+    vc_api_guest_shutdown "$session_id" "$vm_id" "$vm_name"
+    shutdown_rc="$?"
+
+    case "$shutdown_rc" in
+      0)
+        power_classification "WARN" "guest_shutdown_requested_not_verified" "vm=\"${vm_name}\""
+        ;;
+      3)
+        power_classification "WARN" "guest_shutdown_tools_or_state_issue" "vm=\"${vm_name}\""
+        ;;
+      *)
+        power_classification "FAIL" "guest_shutdown_command_failed" "vm=\"${vm_name}\" command_rc=${shutdown_rc}"
+        ;;
+    esac
     sleep 5
   done
 }
@@ -233,16 +282,19 @@ real_shutdown_domain() {
 
   if [ "${ALLOW_REAL_TEST:-0}" != "1" ]; then
     log "ERROR VMware live shutdown blocked: ALLOW_REAL_TEST is not 1"
+    power_classification "FAIL" "blocked_allow_real_test_not_set"
     exit 2
   fi
 
   if [ "${REAL_TEST_PHASE:-}" != "full-production" ] && [ "${REAL_TEST_PHASE:-}" != "phase-vmware" ]; then
     log "ERROR VMware live shutdown blocked: REAL_TEST_PHASE is not approved for VMware"
+    power_classification "FAIL" "blocked_wrong_real_test_phase" "phase=\"${REAL_TEST_PHASE:-unset}\""
     exit 2
   fi
 
   if [ "${VMWARE_LIVE_APPROVED:-0}" != "1" ]; then
     log "ERROR VMware live shutdown blocked: VMWARE_LIVE_APPROVED is not 1"
+    power_classification "FAIL" "blocked_vmware_live_not_approved"
     exit 2
   fi
 
@@ -254,6 +306,7 @@ real_shutdown_domain() {
 
   if [ "$rc" -ne 0 ] || [[ "$session_id" == ERROR:* ]] || [ -z "$session_id" ]; then
     log "ERROR unable to login to vCenter API"
+    power_classification "FAIL" "vcenter_api_login_failed"
     exit 1
   fi
 
@@ -272,7 +325,9 @@ real_shutdown_domain() {
   shutdown_vm_list "$session_id" "$VCENTER_VM"
 
   log "VMWARE_HOST_SHUTDOWN_NOT_IMPLEMENTED"
+  power_classification "WARN" "esxi_host_shutdown_not_implemented"
   log "SUCCESS VMware vCenter guest shutdown workflow completed"
+  power_classification "WARN" "workflow_completed_guest_shutdowns_requested_not_verified"
   exit 0
 }
 
