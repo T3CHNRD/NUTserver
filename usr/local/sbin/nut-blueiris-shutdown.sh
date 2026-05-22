@@ -4,7 +4,7 @@ set -u
 LOG_FILE="/var/log/nut-blueiris-shutdown.log"
 TARGET_NAME="BlueIris"
 TARGET_IP="192.168.1.25"
-CREDS="/etc/nut/blueiris.creds"
+CREDS_FILE="/etc/nut/lansweeper.creds"
 SIMULATE="${SIMULATE:-1}"
 
 CLASSIFY_TARGET_HELPER="/usr/local/sbin/nut-classify-target-shutdown"
@@ -29,7 +29,17 @@ classify_target() {
   return 3
 }
 
-CMD_PREVIEW="/usr/bin/net rpc shutdown -S ${TARGET_IP} -A ${CREDS} -f -t 0 -C \"UPS shutdown\""
+if [ -f "$CREDS_FILE" ]; then
+  # shellcheck disable=SC1090
+  . "$CREDS_FILE"
+fi
+
+RPC_DOMAIN="${LANSWEEPER_DOMAIN:-ALBL}"
+RPC_USERNAME="${LANSWEEPER_USERNAME:-administrator}"
+RPC_PASSWORD="${LANSWEEPER_PASSWORD:-}"
+
+RPC_USER="${RPC_DOMAIN}\\${RPC_USERNAME}%${RPC_PASSWORD}"
+CMD_PREVIEW="/usr/bin/net rpc shutdown -S ${TARGET_IP} -U '${RPC_DOMAIN}\\${RPC_USERNAME}%********' -f -t 0 -C \"UPS shutdown\""
 
 log "Starting Blue Iris shutdown for $TARGET_IP"
 log "SIMULATE=$SIMULATE"
@@ -84,8 +94,14 @@ if [ "${BLUEIRIS_LIVE_APPROVED:-0}" != "1" ]; then
   exit 2
 fi
 
-if [ ! -f "$CREDS" ]; then
-  log "ERROR credentials file not found: $CREDS"
+if [ ! -f "$CREDS_FILE" ]; then
+  log "ERROR credentials file not found: $CREDS_FILE"
+  classify_target 1
+  exit 1
+fi
+
+if [ -z "${RPC_PASSWORD:-}" ]; then
+  log "ERROR RPC password missing from $CREDS_FILE"
   classify_target 1
   exit 1
 fi
@@ -93,7 +109,7 @@ fi
 log "APPROVED: executing Blue Iris RPC shutdown"
 log "COMMAND PREVIEW: ${CMD_PREVIEW}"
 
-/usr/bin/net rpc shutdown -S "$TARGET_IP" -A "$CREDS" -f -t 0 -C "UPS shutdown" >> "$LOG_FILE" 2>&1
+/usr/bin/net rpc shutdown -S "$TARGET_IP" -U "$RPC_USER" -f -t 0 -C "UPS shutdown" >> "$LOG_FILE" 2>&1
 COMMAND_RC="$?"
 
 if [ "$COMMAND_RC" -ne 0 ]; then
