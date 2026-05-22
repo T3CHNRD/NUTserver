@@ -50,9 +50,102 @@ function setMeta(data, statusText = "Ready") {
   $("editor-subtitle").textContent = data.path || "Select a live config to load and edit its current server content.";
 }
 
+function normalizeActionOutputText(value) {
+  if (value === null || value === undefined) return "";
+
+  let text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+
+  // Many backend responses arrive as JSON-escaped strings. Make them readable.
+  text = text
+    .replaceAll("\\r\\n", "\n")
+    .replaceAll("\\n", "\n")
+    .replaceAll("\\t", "  ");
+
+  return text.trim();
+}
+
+function classifyActionOutput(text, payload) {
+  const haystack = (text || "").toUpperCase();
+  const rc = payload && typeof payload === "object" ? payload.returncode : undefined;
+
+  if (rc !== undefined && Number(rc) !== 0) return "fail";
+  if (haystack.includes("ERROR") || haystack.includes("FAILED") || haystack.includes("FATAL")) return "fail";
+  if (haystack.includes("WARN") || haystack.includes("WARNING") || haystack.includes("BLOCKED")) return "warn";
+  if ((payload && payload.ok === true) || haystack.includes(" PASS") || haystack.includes("SUCCESS")) return "pass";
+
+  return "info";
+}
+
+function makeOutputSection(label, value) {
+  const normalized = normalizeActionOutputText(value);
+  if (!normalized) return "";
+
+  return `
+    <div class="nutui-output-section">
+      <div class="nutui-output-section-title">${label}</div>
+      <pre class="nutui-output-pre">${escapeHtml(normalized)}</pre>
+    </div>
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
 function setOutput(title, payload) {
-  const text = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
-  $("action-output").textContent = `=== ${title} ===\n\n${text}`;
+  const output = $("action-output");
+  const isObject = payload && typeof payload === "object" && !Array.isArray(payload);
+
+  let body = "";
+  let combinedText = "";
+
+  if (isObject) {
+    const statusText = [
+      payload.ok !== undefined ? `ok: ${payload.ok}` : "",
+      payload.returncode !== undefined ? `returncode: ${payload.returncode}` : ""
+    ].filter(Boolean).join(" | ");
+
+    combinedText = [
+      statusText,
+      payload.stdout || "",
+      payload.stderr || "",
+      payload.output || ""
+    ].join("\n");
+
+    body += statusText
+      ? `<div class="nutui-output-summary">${escapeHtml(statusText)}</div>`
+      : "";
+
+    body += makeOutputSection("Standard Output", payload.stdout || payload.output);
+    body += makeOutputSection("Errors / Warnings", payload.stderr);
+
+    const raw = JSON.stringify(payload, null, 2);
+    body += `
+      <details class="nutui-output-raw">
+        <summary>Raw response</summary>
+        <pre class="nutui-output-pre">${escapeHtml(normalizeActionOutputText(raw))}</pre>
+      </details>
+    `;
+  } else {
+    combinedText = normalizeActionOutputText(payload);
+    body += makeOutputSection("Output", combinedText);
+  }
+
+  const classification = classifyActionOutput(combinedText, payload);
+
+  output.classList.remove("nutui-output-pass", "nutui-output-warn", "nutui-output-fail", "nutui-output-info");
+  output.classList.add(`nutui-output-${classification}`);
+
+  output.innerHTML = `
+    <div class="nutui-output-header">
+      <span>${escapeHtml(title)}</span>
+      <span class="nutui-output-badge">${classification.toUpperCase()}</span>
+    </div>
+    ${body || '<div class="nutui-output-empty">No output returned.</div>'}
+  `;
 }
 
 async function apiJson(url, options = {}) {

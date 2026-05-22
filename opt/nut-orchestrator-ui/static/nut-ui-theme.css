@@ -1330,3 +1330,100 @@ body {
     max-height: 220px !important;
   }
 }
+
+/* Readable Action Output panel */
+.nutui-output {
+  max-height: 320px !important;
+  overflow: auto !important;
+  white-space: normal !important;
+  padding: 14px !important;
+  border-radius: 16px !important;
+  line-height: 1.45 !important;
+}
+
+.nutui-output-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.nutui-output-badge {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+
+.nutui-output-summary {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-size: 13px;
+}
+
+.nutui-output-section {
+  margin-top: 10px;
+}
+
+.nutui-output-section-title {
+  margin-bottom: 6px;
+  color: #a9bedc;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.nutui-output-pre {
+  margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: #020817;
+  color: #e5eefc;
+  border: 1px solid rgba(148,163,184,0.22);
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.nutui-output-raw {
+  margin-top: 12px;
+}
+
+.nutui-output-raw summary {
+  cursor: pointer;
+  color: #a9bedc;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.nutui-output-empty {
+  color: #a9bedc;
+  font-style: italic;
+}
+
+.nutui-output-pass {
+  border-color: rgba(34,197,94,0.45) !important;
+}
+
+.nutui-output-warn {
+  border-color: rgba(245,158,11,0.55) !important;
+}
+
+.nutui-output-fail {
+  border-color: rgba(239,68,68,0.55) !important;
+}
+
+.nutui-output-info {
+  border-color: rgba(148,163,184,0.35) !important;
+}
