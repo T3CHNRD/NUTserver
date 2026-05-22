@@ -229,9 +229,30 @@ PY
 }
 
 vc_api_detect_vcsa_host() {
-  local session_id="$1"
+  local session_id="${1:-unused}"
 
-  python3 - <<PY
+  # Preferred read-only placement path:
+  # Uses pyVmomi helper to resolve VM runtime host placement.
+  # This does not request guest shutdown, poweroff, reboot, or host shutdown.
+  if [ -x /usr/local/sbin/nut-vmware-readonly-placement.py ]; then
+    /usr/local/sbin/nut-vmware-readonly-placement.py --vm "$VCENTER_VM" --json | python3 -c '
+import json
+import sys
+
+try:
+    data = json.load(sys.stdin)
+    host = data.get("host_name")
+    if not host:
+        sys.exit(3)
+    print(host)
+except Exception:
+    sys.exit(1)
+'
+    return "$?"
+  fi
+
+  # Fallback legacy REST-only detection.
+  python3 - <<PY2
 import requests, sys
 server="${VCENTER_SERVER:-}"
 session="${session_id}"
@@ -243,7 +264,7 @@ try:
     vms.raise_for_status()
     vcsa_id=None
     for item in vms.json().get("value", []):
-        if item.get("name") == vcsa_name:
+        if item.get("name", "").lower() == vcsa_name.lower():
             vcsa_id=item.get("vm")
             break
     if not vcsa_id:
@@ -264,9 +285,8 @@ try:
     sys.exit(4)
 except Exception:
     sys.exit(1)
-PY
+PY2
 }
-
 shutdown_vm_list() {
   local session_id="$1"
   shift
