@@ -505,49 +505,72 @@ async function loadPowerBootEvents() {
 
   if (!panel) {
     const container = document.createElement("section");
-    container.style.marginTop = "1rem";
-    container.style.padding = "1rem";
-    container.style.border = "1px solid #ccc";
-    container.style.borderRadius = "8px";
-    container.style.background = "#111";
-    container.style.color = "#eee";
+    container.className = "nutui-card nutui-section nutui-power-log-card";
 
     const title = document.createElement("h2");
     title.textContent = "Power / Boot Event Log";
-    title.style.marginTop = "0";
+    title.className = "nutui-power-log-title";
 
     const note = document.createElement("div");
-    note.textContent = "Readable view using the same source as the main dashboard: /nut-power-events.json";
-    note.style.marginBottom = "0.5rem";
-    note.style.opacity = "0.8";
+    note.textContent = "Readable view using the shared Dashboard/NUT UI power event feed: newest first, last 5 days only.";
+    note.className = "nutui-power-log-note";
 
     const refresh = document.createElement("button");
     refresh.textContent = "Refresh Power / Boot Event Log";
     refresh.onclick = loadPowerBootEvents;
-    refresh.style.marginBottom = "0.75rem";
+    refresh.className = "nutui-btn nutui-btn-secondary nutui-power-log-refresh";
 
     panel = document.createElement("div");
     panel.id = targetId;
-    panel.style.maxHeight = "500px";
-    panel.style.overflow = "auto";
-    panel.style.background = "#000";
-    panel.style.color = "#eee";
-    panel.style.padding = "0.75rem";
-    panel.style.borderRadius = "6px";
+    panel.className = "nutui-power-log-panel";
 
     container.appendChild(title);
     container.appendChild(note);
     container.appendChild(refresh);
     container.appendChild(panel);
-    document.body.appendChild(container);
+
+    const main = document.querySelector(".nutui-main") || document.body;
+    main.appendChild(container);
   }
 
   panel.textContent = "Loading Power / Boot Event Log...";
 
   try {
-    const response = await fetch("/nut-power-events.json?v=" + Date.now(), { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+    const cacheBust = Date.now();
+    const pageBase = window.location.pathname.endsWith("/")
+      ? window.location.pathname
+      : window.location.pathname.replace(/[^/]*$/, "");
+
+    const candidates = [
+      "/nut-power-events.json?v=" + cacheBust,
+      "nut-power-events.json?v=" + cacheBust,
+      pageBase + "nut-power-events.json?v=" + cacheBust,
+      pageBase + "api/power-events?v=" + cacheBust,
+      "api/power-events?v=" + cacheBust,
+      "/api/power-events?v=" + cacheBust,
+      "/nut-orchestrator-ui/api/power-events?v=" + cacheBust,
+      "/orchestrator/api/power-events?v=" + cacheBust,
+      "/nut/api/power-events?v=" + cacheBust
+    ];
+
+    let response = null;
+    let lastStatus = "not attempted";
+
+    for (const url of candidates) {
+      try {
+        const attempt = await fetch(url, { cache: "no-store" });
+        lastStatus = `${url} -> HTTP ${attempt.status}`;
+        if (attempt.ok) {
+          response = attempt;
+          break;
+        }
+      } catch (e) {
+        lastStatus = `${url} -> ${e}`;
+      }
+    }
+
+    if (!response) {
+      throw new Error(`Power events API not reachable. Last attempt: ${lastStatus}`);
     }
 
     const data = await response.json();
@@ -634,7 +657,7 @@ async function loadPowerBootEvents() {
           </tr>
         </thead>
         <tbody>
-          ${rows.reverse().map(row => `
+          ${rows.map(row => `
             <tr>
               <td style="border-bottom:1px solid #222; padding:5px; vertical-align:top;">${esc(row.timestamp)}</td>
               <td style="border-bottom:1px solid #222; padding:5px; vertical-align:top;">${esc(row.event)}</td>
