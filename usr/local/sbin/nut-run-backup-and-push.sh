@@ -128,6 +128,7 @@ main() {
   copy_executable_file /usr/local/sbin/nut-db-shutdown.sh ./usr/local/sbin/nut-db-shutdown.sh
   copy_executable_file /usr/local/sbin/nut-blueiris-shutdown.sh ./usr/local/sbin/nut-blueiris-shutdown.sh
   copy_executable_file /usr/local/bin/nut-orchestrator.sh ./usr/local/bin/nut-orchestrator.sh
+  copy_executable_file /usr/local/sbin/nut-local-final-shutdown.sh ./usr/local/sbin/nut-local-final-shutdown.sh
 
   # config.d (safe)
   copy_text_file /etc/nut/config.d/nut-orchestrator.conf ./etc/nut/config.d/nut-orchestrator.conf 640

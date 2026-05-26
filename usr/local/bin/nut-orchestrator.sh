@@ -203,7 +203,16 @@ commit_placeholder() {
         log_line "UPS_TARGET_ACTION_FAILED ups9 Albl-synology1 rc=$rc"
       fi
 
-      write_state "ups9" "ups9" "shutdown_committed" "broader VMware shutdown" 0 0 "Committed; VMware wrapper executed, NetApp wrappers executed, Synology wrapper executed"
+      log_line "UPS_TARGET_ACTION_ATTEMPT ups9 nutserver method='local final shutdown wrapper - should run last'"
+      /usr/local/sbin/nut-local-final-shutdown.sh >> "$LOG_FILE" 2>&1
+      rc=$?
+      if [ "$rc" -eq 0 ]; then
+        log_line "UPS_TARGET_ACTION_SUCCESS ups9 nutserver final shutdown"
+      else
+        log_line "UPS_TARGET_ACTION_FAILED ups9 nutserver final shutdown rc=$rc"
+      fi
+
+      write_state "ups9" "ups9" "shutdown_committed" "broader VMware shutdown" 0 0 "Committed; VMware wrapper executed, NetApp wrappers executed, Synology wrapper executed, NUT server final shutdown wrapper executed last"
       ;;
 
     ups3)
