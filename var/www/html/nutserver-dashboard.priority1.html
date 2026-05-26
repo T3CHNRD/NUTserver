@@ -160,9 +160,15 @@
 
     .mid-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr 1.2fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1.4fr);
       gap: 18px;
       margin-bottom: 18px;
+      align-items: stretch;
+    }
+
+    .mid-grid > .card {
+      min-width: 0;
+      height: 100%;
     }
 
     .chart-card canvas {
@@ -266,7 +272,47 @@
       .title { font-size: 28px; }
       .big-value { font-size: 24px; }
     }
-  </style>
+  
+
+.mid-grid,
+.mid-grid > .card {
+  min-width: 0;
+}
+
+#lastBootSummary {
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  white-space: normal !important;
+}
+
+#outageLogBox {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+
+#outageLogBox .power-log-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+#outageLogBox .power-log-table th,
+#outageLogBox .power-log-table td {
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  max-width: 1px;
+}
+
+#outageLogBox .power-log-table td:last-child {
+  font-size: 12px;
+  line-height: 1.35;
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -821,7 +867,27 @@ async function loadOutageLog() {
     outageLogData = data;
 
     const latest = data[0]?.line || "unknown";
-    summary.textContent = "Latest power/test event: " + latest;
+    let latestSummary = "Latest power/test event shown below.";
+
+    if (latest.includes("APC_IDF_EVENT")) {
+      const sourceMatch = latest.match(/source="([^"]+)"/);
+      const changeMatch = latest.match(/change="([^"]+)"/);
+      const severityMatch = latest.match(/severity="([^"]+)"/);
+      const codeMatch = latest.match(/code="([^"]+)"/);
+
+      const source = sourceMatch ? sourceMatch[1] : "APC IDF";
+      const change = changeMatch ? changeMatch[1].replaceAll("_", " ") : "event";
+      const severity = severityMatch ? severityMatch[1] + " " : "";
+      const code = codeMatch ? " " + codeMatch[1] : "";
+
+      latestSummary = `Latest power/test event: ${source} ${severity}${change}${code}`;
+    } else if (latest.includes("NUT_MONITOR_EVENT")) {
+      latestSummary = "Latest power/test event: NUT monitor event shown below.";
+    } else if (latest.includes("SHUTDOWN_CLASSIFICATION")) {
+      latestSummary = "Latest power/test event: shutdown classification shown below.";
+    }
+
+    summary.textContent = latestSummary;
 
     const esc = (value) => String(value || "")
       .replaceAll("&", "&amp;")
@@ -992,3 +1058,6 @@ setInterval(loadOutageLog, 60000);
   font-weight: 700 !important;
 }
 </style>
+
+/* ===== Dashboard containment fix for long Power / Boot Event Log lines ===== */
+
