@@ -124,6 +124,13 @@ main() {
   copy_executable_file /usr/local/sbin/nut-vmware-readonly-placement.py ./usr/local/sbin/nut-vmware-readonly-placement.py
   copy_executable_file /usr/local/sbin/nut-netapp-halt.sh ./usr/local/sbin/nut-netapp-halt.sh
   copy_executable_file /usr/local/sbin/nut-synology-shutdown.sh ./usr/local/sbin/nut-synology-shutdown.sh
+
+  if [ -f /etc/nut/synology-api.conf ]; then
+    mkdir -p ./etc/nut
+    sed -E 's/^(SYNOLOGY_PASSWORD=).*/\1"[REDACTED]"/' /etc/nut/synology-api.conf > ./etc/nut/synology-api.conf
+    chmod 600 ./etc/nut/synology-api.conf
+    log "Copied sanitized /etc/nut/synology-api.conf -> ./etc/nut/synology-api.conf"
+  fi
   copy_executable_file /usr/local/sbin/nut-voip-shutdown.sh ./usr/local/sbin/nut-voip-shutdown.sh
   copy_executable_file /usr/local/sbin/nut-db-shutdown.sh ./usr/local/sbin/nut-db-shutdown.sh
   copy_executable_file /usr/local/sbin/nut-blueiris-shutdown.sh ./usr/local/sbin/nut-blueiris-shutdown.sh
