@@ -1,0 +1,8 @@
+[Unit]
+Description=Logging-only APC IDF2/IDF3 web event monitor for NUT dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/nut-apc-idf-event-monitor.sh
