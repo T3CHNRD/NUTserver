@@ -141,6 +141,7 @@ main() {
   copy_text_file /etc/nut/config.d/nut-orchestrator.conf ./etc/nut/config.d/nut-orchestrator.conf 640
   copy_text_file /etc/nut/config.d/dashboard-ui.json ./etc/nut/config.d/dashboard-ui.json 640
   copy_text_file /etc/nut/config.d/approved-targets.yml ./etc/nut/config.d/approved-targets.yml 640
+  copy_text_file /etc/nut/config.d/shutdown-verification-targets.conf ./etc/nut/config.d/shutdown-verification-targets.conf 644
 
   # sanitized main config
   if ${AS_ROOT} test -f /etc/nut/nut-orchestrator.conf; then
