@@ -910,6 +910,90 @@
       margin-top: 10px;
     }
 
+  
+  
+    /* UPS Rack Overview popup */
+    .cc-rack-table-wrap {
+      overflow-x: auto;
+      max-height: 520px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      background: rgba(3,7,18,0.56);
+    }
+
+    .cc-rack-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    .cc-rack-table th,
+    .cc-rack-table td {
+      padding: 11px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.09);
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .cc-rack-table th {
+      color: rgba(255,255,255,0.72);
+      font-weight: 850;
+      background: rgba(255,255,255,0.045);
+    }
+
+    .cc-rack-table tr {
+      cursor: pointer;
+    }
+
+    .cc-rack-table tr:hover {
+      background: rgba(255,255,255,0.06);
+    }
+
+    .cc-rack-table tr.selected {
+      background: rgba(138,180,255,0.15);
+    }
+
+    .cc-rack-status {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-weight: 800;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.055);
+    }
+
+    .cc-rack-status.online {
+      color: rgba(167,243,208,0.98);
+      border-color: rgba(52,211,153,0.36);
+      background: rgba(52,211,153,0.13);
+    }
+
+    .cc-rack-status.warning {
+      color: rgba(253,230,138,0.98);
+      border-color: rgba(251,191,36,0.36);
+      background: rgba(251,191,36,0.13);
+    }
+
+    .cc-rack-status.offline {
+      color: rgba(254,202,202,0.98);
+      border-color: rgba(248,113,113,0.38);
+      background: rgba(248,113,113,0.13);
+    }
+
+  
+    .cc-picker-actions {
+      display: none;
+      margin-top: 10px;
+      justify-content: flex-start;
+      gap: 8px;
+    }
+
+    .cc-picker-actions.open {
+      display: flex;
+    }
+
   </style>
 </head>
 
@@ -1035,6 +1119,9 @@
         </div>
 
         <div class="cc-ups-picker" id="cc-ups-picker"></div>
+        <div class="cc-picker-actions" id="cc-picker-actions">
+          <button class="cc-btn" id="cc-rack-overview-button">UPS Rack Overview</button>
+        </div>
 
         <div style="height:14px;"></div>
 
@@ -1901,6 +1988,108 @@
       if (modal) modal.classList.remove("open");
     }
 
+
+
+    async function loadControlCenterRackMap() {
+      const map = {};
+
+      try {
+        const res = await fetch("/ups-rack-map.txt?v=" + Date.now(), { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+
+        const text = await res.text();
+        text.split(/\r?\n/).forEach((line) => {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) return;
+
+          const parts = trimmed.split("=");
+          const upsName = parts.shift().trim();
+          const rackValue = parts.join("=").trim();
+
+          if (upsName) map[upsName] = rackValue || "--";
+        });
+      } catch (err) {
+        setControlCenterOutput("UPS Rack Overview", "Unable to load rack map: " + String(err), true);
+      }
+
+      return map;
+    }
+
+    function rackStatusClass(statusText) {
+      const state = classifyUpsStatus(statusText);
+      if (state === "online") return "online";
+      if (state === "warning") return "warning";
+      return "offline";
+    }
+
+    async function loadControlCenterRackOverview() {
+      const tbody = document.getElementById("cc-rack-table-body");
+      if (!tbody) return;
+
+      tbody.innerHTML = '<tr><td colspan="7">Loading UPS Rack Overview...</td></tr>';
+
+      const rackMap = await loadControlCenterRackMap();
+
+      const rows = await Promise.all(ccDisplayOrder.map(async (upsName) => {
+        let data = ccUpsDataStore[upsName];
+
+        if (!data) {
+          try {
+            data = await fetchControlCenterUps(upsName);
+            ccUpsDataStore[upsName] = data;
+          } catch (err) {
+            data = { ups_status: "Check", error: String(err) };
+          }
+        }
+
+        const friendly = String(data.friendly_system_name || data.device_model || data["ups.model"] || upsName).trim() || upsName;
+        const status = String(data.ups_status || data["ups.status"] || "Check");
+        const battery = data.battery_charge || data["battery.charge"] || "";
+        const load = data.ups_load || data["ups.load"] || "";
+        const voltage = data.input_voltage || data["input.voltage"] || "";
+
+        return `
+          <tr data-ups="${escapeHtml(upsName)}" class="${upsName === ccSelectedUps ? "selected" : ""}">
+            <td><strong>${escapeHtml(upsName)}</strong></td>
+            <td>${escapeHtml(rackMap[upsName] || "--")}</td>
+            <td>${escapeHtml(friendly)}</td>
+            <td><span class="cc-rack-status ${rackStatusClass(status)}">${escapeHtml(status)}</span></td>
+            <td>${battery ? escapeHtml(String(battery) + "%") : "Not reported"}</td>
+            <td>${load ? escapeHtml(String(load) + "%") : "Not reported"}</td>
+            <td>${voltage ? escapeHtml(String(voltage) + " V") : "Not reported"}</td>
+          </tr>
+        `;
+      }));
+
+      tbody.innerHTML = rows.join("");
+
+      tbody.querySelectorAll("tr[data-ups]").forEach((row) => {
+        row.addEventListener("click", async () => {
+          ccSelectedUps = row.dataset.ups;
+          ccAutoCyclePauseUntil = Date.now() + 45000;
+          ccAutoCycleIndex = ccDisplayOrder.indexOf(ccSelectedUps);
+          if (ccAutoCycleIndex < 0) ccAutoCycleIndex = 0;
+
+          renderControlCenterUpsPicker();
+          await loadControlCenterUPS();
+          drawLoadGraph();
+          await loadControlCenterRackOverview();
+        });
+      });
+    }
+
+    async function openRackOverview() {
+      const modal = document.getElementById("cc-rack-overview-modal");
+      if (modal) modal.classList.add("open");
+      await loadControlCenterRackOverview();
+    }
+
+    function closeRackOverview() {
+      const modal = document.getElementById("cc-rack-overview-modal");
+      if (modal) modal.classList.remove("open");
+    }
+
+
     async function refreshControlCenterAll() {
       ccRefreshCountdown = CC_REFRESH_SECONDS;
       updateControlCenterClock();
@@ -1975,6 +2164,8 @@
           ccAutoCycleIndex = ccDisplayOrder.indexOf(ccSelectedUps);
           if (ccAutoCycleIndex < 0) ccAutoCycleIndex = 0;
           picker.classList.remove("open");
+          const pickerActions = document.getElementById("cc-picker-actions");
+          if (pickerActions) pickerActions.classList.remove("open");
           renderControlCenterUpsPicker();
           await loadControlCenterUPS();
         });
@@ -2102,7 +2293,9 @@
       const upsPicker = document.getElementById("cc-ups-picker");
       if (selectedUpsCard && upsPicker) {
         selectedUpsCard.addEventListener("click", () => {
+          const pickerActions = document.getElementById("cc-picker-actions");
           upsPicker.classList.toggle("open");
+          if (pickerActions) pickerActions.classList.toggle("open", upsPicker.classList.contains("open"));
           renderControlCenterUpsPicker();
         });
       }
@@ -2121,6 +2314,23 @@
       if (loadGraphModal) {
         loadGraphModal.addEventListener("click", (event) => {
           if (event.target === loadGraphModal) closeLoadGraph();
+        });
+      }
+
+      const rackOverviewButton = document.getElementById("cc-rack-overview-button");
+      if (rackOverviewButton) {
+        rackOverviewButton.addEventListener("click", openRackOverview);
+      }
+
+      const closeRackOverviewButton = document.getElementById("cc-close-rack-overview");
+      if (closeRackOverviewButton) {
+        closeRackOverviewButton.addEventListener("click", closeRackOverview);
+      }
+
+      const rackOverviewModal = document.getElementById("cc-rack-overview-modal");
+      if (rackOverviewModal) {
+        rackOverviewModal.addEventListener("click", (event) => {
+          if (event.target === rackOverviewModal) closeRackOverview();
         });
       }
 
@@ -2211,6 +2421,37 @@
       <canvas class="cc-load-graph" id="cc-load-graph-canvas" width="900" height="320"></canvas>
       <div class="cc-modal-note">
         This graph uses samples collected while this Control Center page is open.
+      </div>
+    </div>
+  </div>
+
+  <div class="cc-modal-backdrop" id="cc-rack-overview-modal" aria-hidden="true">
+    <div class="cc-modal" style="width:min(1180px, calc(100vw - 48px));">
+      <div class="cc-modal-head">
+        <div>
+          <div class="cc-modal-title">UPS Rack Overview</div>
+          <div class="cc-modal-note">Rack/location data comes from /var/www/html/ups-rack-map.txt. Click a row to select that UPS.</div>
+        </div>
+        <button class="cc-btn" id="cc-close-rack-overview">Close</button>
+      </div>
+
+      <div class="cc-rack-table-wrap">
+        <table class="cc-rack-table">
+          <thead>
+            <tr>
+              <th>UPS</th>
+              <th>Rack / Location</th>
+              <th>Friendly Name</th>
+              <th>Status</th>
+              <th>Battery</th>
+              <th>Load</th>
+              <th>Input Voltage</th>
+            </tr>
+          </thead>
+          <tbody id="cc-rack-table-body">
+            <tr><td colspan="7">Loading UPS Rack Overview...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
