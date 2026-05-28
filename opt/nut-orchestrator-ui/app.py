@@ -52,7 +52,14 @@ def index():
 
 @app.route("/control-center")
 def control_center():
-    return render_template("control-center.html")
+    registry = load_registry()
+    editable_configs = registry.get("editable_configs", [])
+    reference_configs = registry.get("reference_configs", [])
+    return render_template(
+        "control-center.html",
+        editable_configs=editable_configs,
+        reference_configs=reference_configs
+    )
 
 
 @app.route("/healthz")

@@ -190,6 +190,49 @@
       font-size: 0.94rem;
     }
 
+    .cc-ups-pick-card {
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+
+    .cc-ups-pick-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(138, 180, 255, 0.36);
+      background: linear-gradient(145deg, rgba(138,180,255,0.13), rgba(255,255,255,0.05));
+    }
+
+    .cc-ups-picker {
+      margin-top: 14px;
+      display: none;
+      grid-template-columns: repeat(9, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .cc-ups-picker.open {
+      display: grid;
+    }
+
+    .cc-ups-choice {
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 999px;
+      padding: 9px 10px;
+      background: rgba(255,255,255,0.055);
+      color: rgba(255,255,255,0.88);
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .cc-ups-choice.selected {
+      border-color: rgba(52, 211, 153, 0.46);
+      background: rgba(52, 211, 153, 0.18);
+    }
+
+    @media (max-width: 900px) {
+      .cc-ups-picker {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
     .cc-legend-row {
       display: flex;
       flex-wrap: wrap;
@@ -476,6 +519,125 @@
       gap: 12px;
     }
 
+    .cc-config-grid {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .cc-config-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cc-label {
+      display: block;
+      color: var(--cc-muted);
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.045em;
+      margin-bottom: 6px;
+    }
+
+    .cc-select,
+    .cc-editor {
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 18px;
+      background: rgba(3, 7, 18, 0.62);
+      color: rgba(255,255,255,0.92);
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .cc-select {
+      min-height: 44px;
+      padding: 10px 12px;
+      font-weight: 700;
+    }
+
+    .cc-mini {
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.11);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.045);
+    }
+
+    .cc-mini .k {
+      color: var(--cc-muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .cc-mini .v {
+      margin-top: 4px;
+      color: rgba(255,255,255,0.9);
+      overflow-wrap: anywhere;
+      font-size: 0.88rem;
+    }
+
+    .cc-two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .cc-pane-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .cc-pane-title {
+      font-size: 1rem;
+      font-weight: 850;
+      letter-spacing: -0.015em;
+    }
+
+    .cc-pane-subtitle {
+      color: var(--cc-muted);
+      font-size: 0.84rem;
+      line-height: 1.35;
+      margin-top: 4px;
+    }
+
+    .cc-pane-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .cc-editor {
+      min-height: 420px;
+      padding: 13px;
+      resize: vertical;
+      font-family:
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        Consolas,
+        "Liberation Mono",
+        monospace;
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 1100px) {
+      .cc-config-grid,
+      .cc-two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .cc-action-card h3 {
       margin: 0 0 8px;
       font-size: 1rem;
@@ -552,6 +714,91 @@
         padding: 16px;
       }
     }
+  
+    /* Configuration Management cleanup */
+    .cc-config-grid {
+      grid-template-columns: 320px minmax(0, 1fr) !important;
+      align-items: stretch;
+    }
+
+    .cc-config-workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .cc-config-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 22px;
+      background: rgba(255,255,255,0.045);
+    }
+
+    .cc-config-toolbar-text {
+      min-width: 220px;
+    }
+
+    .cc-config-toolbar-actions {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 8px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .cc-config-toolbar-actions .cc-btn {
+      white-space: nowrap;
+      min-width: 92px;
+    }
+
+    .cc-config-editor-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .cc-config-pane {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cc-config-pane .cc-editor {
+      flex: 1;
+      min-height: 430px;
+    }
+
+    .cc-pane-head.compact {
+      margin-bottom: 10px;
+      min-height: 54px;
+    }
+
+    @media (max-width: 1200px) {
+      .cc-config-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .cc-config-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .cc-config-toolbar-actions {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+
+      .cc-config-editor-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
   </style>
 </head>
 
@@ -634,10 +881,10 @@
         </div>
 
         <div class="cc-metrics" id="cc-ups-metrics">
-          <div class="cc-metric">
+          <div class="cc-metric cc-ups-pick-card" id="cc-selected-ups-card" title="Click to choose UPS">
             <div class="cc-metric-label">Selected UPS</div>
             <div class="cc-metric-value" id="cc-ups-name">Loading</div>
-            <div class="cc-metric-note" id="cc-ups-model">Waiting for UPS data.</div>
+            <div class="cc-metric-note" id="cc-ups-model">Click to choose UPS.</div>
           </div>
           <div class="cc-metric">
             <div class="cc-metric-label">Battery Charge</div>
@@ -676,6 +923,8 @@
           </div>
         </div>
 
+        <div class="cc-ups-picker" id="cc-ups-picker"></div>
+
         <div style="height:14px;"></div>
 
         <div class="cc-card" style="box-shadow:none; padding:16px; border-radius:24px;">
@@ -709,9 +958,83 @@
         <div class="cc-section-title">
           <h2>Configuration Management</h2>
         </div>
-        <div class="cc-embed-note">
-          Next migration step after monitoring/actions: move the existing config selector,
-          editor, reference viewer, validate, save, revert, and reload controls here.
+        <div class="cc-section-subtitle">
+          Uses the same approved live-config and read-only reference registry as the current NUT Orchestrator UI.
+        </div>
+
+        <div class="cc-config-grid">
+          <aside class="cc-config-sidebar">
+            <div>
+              <label class="cc-label" for="config-select">Editable Live Config</label>
+              <select class="cc-select" id="config-select">
+                {% for item in editable_configs %}
+                <option value="{{ item.id }}">{{ item.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div>
+              <label class="cc-label" for="reference-select">Read-Only Reference File</label>
+              <select class="cc-select" id="reference-select">
+                <option value="">-- Select a reference file --</option>
+                {% for item in reference_configs %}
+                <option value="{{ item.id }}">{{ item.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="cc-mini">
+              <div class="k">Selected Path</div>
+              <div class="v" id="meta-path">-</div>
+            </div>
+
+            <div class="cc-mini">
+              <div class="k">Type</div>
+              <div class="v" id="meta-type">-</div>
+            </div>
+
+            <div class="cc-mini">
+              <div class="k">Status</div>
+              <div class="v" id="meta-status">Ready</div>
+            </div>
+          </aside>
+
+          <div class="cc-config-workspace">
+            <div class="cc-config-toolbar">
+              <div class="cc-config-toolbar-text">
+                <div class="cc-pane-title" id="editor-title">Config Editor</div>
+                <div class="cc-pane-subtitle" id="editor-subtitle">Select a live config to load, validate, save, or revert.</div>
+              </div>
+              <div class="cc-config-toolbar-actions">
+                <button class="cc-btn" id="btn-load">Reload</button>
+                <button class="cc-btn cc-btn-warn" id="btn-validate">Validate</button>
+                <button class="cc-btn cc-btn-primary" id="btn-save">Save</button>
+                <button class="cc-btn cc-btn-danger" id="btn-revert">Revert</button>
+              </div>
+            </div>
+
+            <div class="cc-config-editor-grid">
+              <section class="cc-config-pane">
+                <div class="cc-pane-head compact">
+                  <div>
+                    <div class="cc-pane-title">Editable Live Config</div>
+                    <div class="cc-pane-subtitle">Current server content for the selected approved live config.</div>
+                  </div>
+                </div>
+                <textarea class="cc-editor" id="config-editor" spellcheck="false"></textarea>
+              </section>
+
+              <section class="cc-config-pane">
+                <div class="cc-pane-head compact">
+                  <div>
+                    <div class="cc-pane-title">Reference Viewer</div>
+                    <div class="cc-pane-subtitle">Read-only comparison files for planning, rollback, hardware changes, and migration work.</div>
+                  </div>
+                </div>
+                <textarea class="cc-editor" id="reference-viewer" spellcheck="false" readonly></textarea>
+              </section>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1028,13 +1351,18 @@
       ccRefreshCountdown = CC_REFRESH_SECONDS;
       updateControlCenterClock();
       rotateControlCenterFact();
+      autoCycleControlCenterUPS();
       loadControlCenterEvents();
       loadControlCenterUPS();
     }
 
 
-    const ccUpsList = ["ups1", "ups2", "ups3", "ups6", "ups7", "ups8", "ups9", "UPS_Test"];
-    let ccSelectedUps = "ups3";
+    const ccUpsList = ["ups1","ups2","ups3","ups4","ups5","ups6","ups7","ups8","ups9"];
+    const ccDisplayOrder = ["ups1","ups2","ups3","ups4","ups5","ups8","ups6","ups7","ups9"];
+    let ccSelectedUps = "ups1";
+    let ccAutoCycleEnabled = true;
+    let ccAutoCyclePauseUntil = 0;
+    let ccAutoCycleIndex = 0;
 
     function secondsToReadable(seconds) {
       const value = Number(seconds);
@@ -1074,66 +1402,94 @@
       return await resp.json();
     }
 
+    function renderControlCenterUpsPicker() {
+      const picker = document.getElementById("cc-ups-picker");
+      if (!picker) return;
+
+      picker.innerHTML = ccDisplayOrder.map((upsName) => `
+        <button class="cc-ups-choice ${upsName === ccSelectedUps ? "selected" : ""}" data-ups="${upsName}">
+          ${escapeHtml(upsName)}
+        </button>
+      `).join("");
+
+      picker.querySelectorAll(".cc-ups-choice").forEach((button) => {
+        button.addEventListener("click", async () => {
+          ccSelectedUps = button.dataset.ups;
+          ccAutoCyclePauseUntil = Date.now() + 45000;
+          ccAutoCycleIndex = ccDisplayOrder.indexOf(ccSelectedUps);
+          if (ccAutoCycleIndex < 0) ccAutoCycleIndex = 0;
+          picker.classList.remove("open");
+          renderControlCenterUpsPicker();
+          await loadControlCenterUPS();
+        });
+      });
+    }
+
+    function autoCycleControlCenterUPS() {
+      if (!ccAutoCycleEnabled) return;
+      if (Date.now() < ccAutoCyclePauseUntil) return;
+
+      const currentIndex = ccDisplayOrder.indexOf(ccSelectedUps);
+      if (currentIndex >= 0) {
+        ccAutoCycleIndex = (currentIndex + 1) % ccDisplayOrder.length;
+      } else {
+        ccAutoCycleIndex = 0;
+      }
+
+      ccSelectedUps = ccDisplayOrder[ccAutoCycleIndex];
+      renderControlCenterUpsPicker();
+    }
+
     async function loadControlCenterUPS() {
       setUpsText("cc-ups-name", ccSelectedUps);
       setUpsText("cc-ups-refresh", "Loading");
 
-      let lastError = "";
+      try {
+        const data = await fetchControlCenterUps(ccSelectedUps);
 
-      for (const upsName of ccUpsList) {
-        try {
-          const data = await fetchControlCenterUps(upsName);
-
-          if (!data || Object.keys(data).length === 0) {
-            lastError = `${upsName}: empty response`;
-            continue;
-          }
-
-          ccSelectedUps = upsName;
-
-          const friendlyName =
-            data.friendly_system_name ||
-            data["device.mfr"] || data["device_mfr"] ||
-            data["ups.model"] || data["device_model"] ||
-            upsName;
-
-          setUpsText("cc-selected-ups", upsName);
-          setUpsText("cc-ups-name", upsName);
-          setUpsText("cc-ups-model", String(friendlyName));
-          setUpsText("cc-ups-charge", formatPercent(data["battery.charge"] ?? data["battery_charge"]));
-          setUpsText("cc-ups-load", formatPercent(data["ups.load"] ?? data["ups_load"]));
-          setUpsText("cc-ups-runtime", secondsToReadable(data["battery.runtime"] ?? data["battery_runtime"]));
-          setUpsText("cc-ups-input", pickValue(data, ["input.voltage", "input_voltage"], " V"));
-          setUpsText("cc-ups-output", pickValue(data, ["output.voltage", "output_voltage"], " V"));
-          const statusText = pickValue(data, ["ups.status", "ups_status", "status"]);
-          setUpsText("cc-ups-status", statusText);
-          setUpsText("cc-ups-refresh", new Date().toLocaleTimeString());
-
-          setUpsText("cc-ups-status-main", "Online (" + upsName + ")");
-          setUpsText("cc-ups-status-sub", String(friendlyName));
-          setUpsText("cc-ups-status-pill", statusText);
-
-          return;
-        } catch (err) {
-          lastError = `${upsName}: ${err}`;
+        if (!data || Object.keys(data).length === 0) {
+          throw new Error(`${ccSelectedUps}: empty response`);
         }
+
+        const friendlyName =
+          data.friendly_system_name ||
+          data["device.mfr"] || data["device_mfr"] ||
+          data["ups.model"] || data["device_model"] ||
+          ccSelectedUps;
+
+        setUpsText("cc-selected-ups", ccSelectedUps);
+        setUpsText("cc-ups-name", ccSelectedUps);
+        setUpsText("cc-ups-model", String(friendlyName));
+        setUpsText("cc-ups-charge", formatPercent(data["battery.charge"] ?? data["battery_charge"]));
+        setUpsText("cc-ups-load", formatPercent(data["ups.load"] ?? data["ups_load"]));
+        setUpsText("cc-ups-runtime", secondsToReadable(data["battery.runtime"] ?? data["battery_runtime"]));
+        setUpsText("cc-ups-input", pickValue(data, ["input.voltage", "input_voltage"], " V"));
+        setUpsText("cc-ups-output", pickValue(data, ["output.voltage", "output_voltage"], " V"));
+
+        const statusText = pickValue(data, ["ups.status", "ups_status", "status"]);
+        setUpsText("cc-ups-status", statusText);
+        setUpsText("cc-ups-refresh", new Date().toLocaleTimeString());
+
+        setUpsText("cc-ups-status-main", "Online (" + ccSelectedUps + ")");
+        setUpsText("cc-ups-status-sub", String(friendlyName));
+        setUpsText("cc-ups-status-pill", statusText);
+
+        renderControlCenterUpsPicker();
+      } catch (err) {
+        setUpsText("cc-ups-model", String(err));
+        setUpsText("cc-ups-charge", "--");
+        setUpsText("cc-ups-load", "--");
+        setUpsText("cc-ups-runtime", "--");
+        setUpsText("cc-ups-input", "--");
+        setUpsText("cc-ups-output", "--");
+        setUpsText("cc-ups-status", "Check");
+        setUpsText("cc-ups-refresh", "Failed");
+        setUpsText("cc-ups-status-main", "UPS status unavailable");
+        setUpsText("cc-ups-status-sub", String(err));
+        setUpsText("cc-ups-status-pill", "Check");
+        renderControlCenterUpsPicker();
       }
-
-      setUpsText("cc-ups-name", "Unavailable");
-      setUpsText("cc-ups-model", lastError || "No UPS data loaded.");
-      setUpsText("cc-ups-charge", "--");
-      setUpsText("cc-ups-load", "--");
-      setUpsText("cc-ups-runtime", "--");
-      setUpsText("cc-ups-input", "--");
-      setUpsText("cc-ups-output", "--");
-      setUpsText("cc-ups-status", "Check");
-      setUpsText("cc-ups-refresh", "Failed");
-      setUpsText("cc-ups-status-main", "UPS status unavailable");
-      setUpsText("cc-ups-status-sub", lastError || "No UPS data loaded.");
-      setUpsText("cc-ups-status-pill", "Check");
     }
-
-
 
     async function runControlCenterSimulatedTest() {
       const btn = document.getElementById("cc-sim-test");
@@ -1181,6 +1537,15 @@
       const upsRefreshButton = document.getElementById("cc-refresh-ups");
       if (upsRefreshButton) {
         upsRefreshButton.addEventListener("click", loadControlCenterUPS);
+      }
+
+      const selectedUpsCard = document.getElementById("cc-selected-ups-card");
+      const upsPicker = document.getElementById("cc-ups-picker");
+      if (selectedUpsCard && upsPicker) {
+        selectedUpsCard.addEventListener("click", () => {
+          upsPicker.classList.toggle("open");
+          renderControlCenterUpsPicker();
+        });
       }
 
       const backupButton = document.getElementById("cc-backup-github");
