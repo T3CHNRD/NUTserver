@@ -961,6 +961,10 @@
         <div class="cc-section-subtitle">
           Uses the same approved live-config and read-only reference registry as the current NUT Orchestrator UI.
         </div>
+        <div class="cc-mini" id="cc-config-inline-status" style="margin-bottom:14px;">
+          <div class="k">Config Loader</div>
+          <div class="v" id="cc-config-loader-status">Waiting to load selected config...</div>
+        </div>
 
         <div class="cc-config-grid">
           <aside class="cc-config-sidebar">
@@ -1295,6 +1299,236 @@
       return data;
     }
 
+
+    const CC_BASE = "/nut-ui";
+    const ccConfigState = {
+      currentId: null,
+      original: {}
+    };
+
+    function ccGet(id) {
+      return document.getElementById(id);
+    }
+
+    function setControlCenterStatus(message, busy = false) {
+      const health = ccGet("cc-health-text");
+      const output = ccGet("cc-action-output");
+
+      if (health) {
+        health.textContent = busy ? "Working" : "Online";
+      }
+
+      if (output && message) {
+        output.textContent = message + "\n\n" + output.textContent;
+      }
+    }
+
+    function setControlCenterMeta(data, status) {
+      const pathEl = ccGet("meta-path");
+      const typeEl = ccGet("meta-type");
+      const statusEl = ccGet("meta-status");
+      const editorTitle = ccGet("editor-title");
+      const editorSubtitle = ccGet("editor-subtitle");
+
+      if (pathEl) pathEl.textContent = data.path || "-";
+      if (typeEl) typeEl.textContent = data.type || "-";
+      if (statusEl) statusEl.textContent = status || "Ready";
+
+      if (editorTitle) editorTitle.textContent = data.name || "Config Editor";
+      if (editorSubtitle) {
+        editorSubtitle.textContent = data.path
+          ? "Editing live server file: " + data.path
+          : "Select a live config to load, validate, save, or revert.";
+      }
+    }
+
+
+    function setConfigLoaderStatus(message, isError = false) {
+      const el = ccGet("cc-config-loader-status");
+      if (!el) return;
+      el.textContent = message;
+      el.style.color = isError ? "rgba(248,113,113,0.95)" : "rgba(255,255,255,0.90)";
+    }
+
+    function extractConfigContent(data) {
+      if (!data) return "";
+      if (typeof data.content === "string") return data.content;
+      if (data.data && typeof data.data.content === "string") return data.data.content;
+      if (typeof data.stdout === "string") return data.stdout;
+      if (typeof data.raw === "string") return data.raw;
+      return "";
+    }
+
+    async function loadControlCenterConfig(configId) {
+      if (!configId) {
+        setConfigLoaderStatus("No editable config selected.", true);
+        return;
+      }
+
+      ccConfigState.currentId = configId;
+      setConfigLoaderStatus("Loading " + configId + "...");
+      setControlCenterOutput("Load", "Loading " + configId + " from server...");
+
+      const editor = ccGet("config-editor");
+
+      try {
+        const data = await ccApiJson(CC_BASE + "/api/config/" + encodeURIComponent(configId) + "/content");
+        const content = extractConfigContent(data);
+
+        if (editor) {
+          editor.value = content;
+          editor.scrollTop = 0;
+        }
+
+        ccConfigState.original[configId] = content;
+        setControlCenterMeta(data, "Loaded");
+        setConfigLoaderStatus("Loaded " + (data.name || configId) + " / " + content.length + " bytes.");
+
+        setControlCenterOutput("Load", {
+          ok: true,
+          id: data.id,
+          name: data.name,
+          path: data.path,
+          type: data.type,
+          bytes: content.length
+        });
+      } catch (err) {
+        const message = "Load failed for " + configId + ": " + String(err);
+        if (editor) editor.value = message;
+        setControlCenterMeta({ path: "-", type: "-", name: "Config Editor" }, "Load failed");
+        setConfigLoaderStatus(message, true);
+        setControlCenterOutput("Load Error", message, true);
+      }
+    }
+
+    async function loadControlCenterReference(refId) {
+      const viewer = ccGet("reference-viewer");
+
+      if (!refId) {
+        if (viewer) viewer.value = "";
+        setConfigLoaderStatus("No reference file selected.");
+        setControlCenterOutput("Reference Viewer", "No reference file selected.");
+        return;
+      }
+
+      setConfigLoaderStatus("Loading reference " + refId + "...");
+      setControlCenterOutput("Reference Load", "Loading reference file " + refId + "...");
+
+      try {
+        const data = await ccApiJson(CC_BASE + "/api/config/" + encodeURIComponent(refId) + "/content-ref");
+        const content = extractConfigContent(data);
+
+        if (viewer) {
+          viewer.value = content;
+          viewer.scrollTop = 0;
+        }
+
+        setConfigLoaderStatus("Loaded reference " + (data.name || refId) + " / " + content.length + " bytes.");
+        setControlCenterOutput("Reference Load", {
+          ok: true,
+          id: data.id,
+          name: data.name,
+          path: data.path,
+          type: data.type,
+          bytes: content.length
+        });
+      } catch (err) {
+        const message = "Reference load failed for " + refId + ": " + String(err);
+        if (viewer) viewer.value = message;
+        setConfigLoaderStatus(message, true);
+        setControlCenterOutput("Reference Load Error", message, true);
+      }
+    }
+
+    async function validateControlCenterConfig() {
+      const configId = ccConfigState.currentId;
+      const editor = ccGet("config-editor");
+
+      if (!configId || !editor) {
+        setControlCenterOutput("Validate Error", "No editable config is currently loaded.", true);
+        return;
+      }
+
+      setControlCenterOutput("Validate", "Validating " + configId + "...");
+
+      try {
+        const data = await ccApiJson(CC_BASE + "/api/config/" + encodeURIComponent(configId), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: editor.value, mode: "dry-run" })
+        });
+
+        const statusEl = ccGet("meta-status");
+        if (statusEl) statusEl.textContent = "Validation OK";
+
+        setControlCenterOutput("Validate", data, !data.ok);
+      } catch (err) {
+        const statusEl = ccGet("meta-status");
+        if (statusEl) statusEl.textContent = "Validation failed";
+        setControlCenterOutput("Validate Error", String(err), true);
+      }
+    }
+
+    async function saveControlCenterConfig() {
+      const configId = ccConfigState.currentId;
+      const editor = ccGet("config-editor");
+
+      if (!configId || !editor) {
+        setControlCenterOutput("Save Error", "No editable config is currently loaded.", true);
+        return;
+      }
+
+      const confirmed = confirm(
+        "Apply changes to live config?\n\n" +
+        configId +
+        "\n\nThis uses the same backend save path as the current NUT UI."
+      );
+
+      if (!confirmed) {
+        setControlCenterOutput("Save", "Save cancelled. No changes were applied.");
+        return;
+      }
+
+      setControlCenterOutput("Save", "Saving " + configId + "...");
+
+      try {
+        const data = await ccApiJson(CC_BASE + "/api/config/" + encodeURIComponent(configId), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: editor.value, mode: "apply" })
+        });
+
+        ccConfigState.original[configId] = editor.value;
+
+        const statusEl = ccGet("meta-status");
+        if (statusEl) statusEl.textContent = "Saved";
+
+        setControlCenterOutput("Save", data, !data.ok);
+      } catch (err) {
+        const statusEl = ccGet("meta-status");
+        if (statusEl) statusEl.textContent = "Save failed";
+        setControlCenterOutput("Save Error", String(err), true);
+      }
+    }
+
+    function revertControlCenterConfig() {
+      const configId = ccConfigState.currentId;
+      const editor = ccGet("config-editor");
+
+      if (!configId || !editor) {
+        setControlCenterOutput("Revert Error", "No editable config is currently loaded.", true);
+        return;
+      }
+
+      editor.value = ccConfigState.original[configId] || "";
+
+      const statusEl = ccGet("meta-status");
+      if (statusEl) statusEl.textContent = "Reverted";
+
+      setControlCenterOutput("Revert", "Reverted " + configId + " to the last loaded content.");
+    }
+
+
     async function runControlCenterBackup() {
       setControlCenterOutput("Backup All to GitHub", "Running backup...");
       try {
@@ -1546,6 +1780,46 @@
           upsPicker.classList.toggle("open");
           renderControlCenterUpsPicker();
         });
+      }
+
+      const configSelect = document.getElementById("config-select");
+      if (configSelect) {
+        configSelect.addEventListener("change", async (event) => {
+          await loadControlCenterConfig(event.target.value);
+        });
+      }
+
+      const referenceSelect = document.getElementById("reference-select");
+      if (referenceSelect) {
+        referenceSelect.addEventListener("change", async (event) => {
+          await loadControlCenterReference(event.target.value);
+        });
+      }
+
+      const loadButton = document.getElementById("btn-load");
+      if (loadButton) {
+        loadButton.addEventListener("click", async () => {
+          await loadControlCenterConfig(ccConfigState.currentId || (configSelect ? configSelect.value : ""));
+        });
+      }
+
+      const validateButton = document.getElementById("btn-validate");
+      if (validateButton) {
+        validateButton.addEventListener("click", validateControlCenterConfig);
+      }
+
+      const saveButton = document.getElementById("btn-save");
+      if (saveButton) {
+        saveButton.addEventListener("click", saveControlCenterConfig);
+      }
+
+      const revertButton = document.getElementById("btn-revert");
+      if (revertButton) {
+        revertButton.addEventListener("click", revertControlCenterConfig);
+      }
+
+      if (configSelect && configSelect.value) {
+        loadControlCenterConfig(configSelect.value);
       }
 
       const backupButton = document.getElementById("cc-backup-github");
