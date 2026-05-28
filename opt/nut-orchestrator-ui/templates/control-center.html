@@ -1341,6 +1341,7 @@
 
 
     const CC_REFRESH_SECONDS = 35;
+    const CC_LOAD_GRAPH_SAMPLE_SECONDS = 15;
     let ccRefreshCountdown = CC_REFRESH_SECONDS;
 
     const ccFacts = [
@@ -1765,9 +1766,10 @@
 
 
     const ccLoadHistory = {};
+    const ccUpsDataStore = {};
 
     function numericPercent(value) {
-      const n = Number(String(value ?? "").replace("%", "").trim());
+      const n = parseFloat(String(value ?? "").replace("%", "").trim());
       return Number.isFinite(n) ? n : null;
     }
 
@@ -1777,13 +1779,32 @@
 
       if (!ccLoadHistory[upsName]) ccLoadHistory[upsName] = [];
 
-      ccLoadHistory[upsName].push({
-        time: new Date(),
-        value: n
-      });
+      ccLoadHistory[upsName].push(n);
 
       if (ccLoadHistory[upsName].length > 60) {
-        ccLoadHistory[upsName] = ccLoadHistory[upsName].slice(-60);
+        ccLoadHistory[upsName].shift();
+      }
+    }
+
+    async function sampleAllUpsLoadsForGraph() {
+      await Promise.all(ccDisplayOrder.map(async (upsName) => {
+        try {
+          const data = await fetchControlCenterUps(upsName);
+          ccUpsDataStore[upsName] = data;
+          addLoadHistorySample(upsName, data["ups.load"] ?? data["ups_load"]);
+        } catch (err) {
+          // Keep graph sampling quiet. The visible selected UPS loader handles errors.
+        }
+      }));
+    }
+
+
+    async function preloadLoadGraphHistory() {
+      await sampleAllUpsLoadsForGraph();
+
+      const modal = document.getElementById("cc-load-graph-modal");
+      if (modal && modal.classList.contains("open")) {
+        drawLoadGraph();
       }
     }
 
@@ -1792,62 +1813,75 @@
       if (!canvas) return;
 
       const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
       const history = ccLoadHistory[ccSelectedUps] || [];
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, w, h);
 
-      ctx.fillStyle = "rgba(3, 7, 18, 0.85)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(3, 7, 18, 0.88)";
+      ctx.fillRect(0, 0, w, h);
 
-      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.strokeStyle = "rgba(255,255,255,0.13)";
       ctx.lineWidth = 1;
 
       for (let i = 0; i <= 5; i++) {
-        const y = 24 + i * ((canvas.height - 48) / 5);
+        const y = 20 + i * ((h - 40) / 5);
         ctx.beginPath();
-        ctx.moveTo(46, y);
-        ctx.lineTo(canvas.width - 20, y);
+        ctx.moveTo(50, y);
+        ctx.lineTo(w - 20, y);
         ctx.stroke();
       }
 
-      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.fillStyle = "rgba(255,255,255,0.64)";
       ctx.font = "13px system-ui, sans-serif";
-      ctx.fillText("100%", 8, 30);
-      ctx.fillText("50%", 14, canvas.height / 2 + 4);
-      ctx.fillText("0%", 22, canvas.height - 24);
+      ctx.fillText("100%", 8, 26);
+      ctx.fillText("50%", 16, (h / 2) + 4);
+      ctx.fillText("0%", 26, h - 20);
 
-      if (history.length < 2) {
+      if (history.length === 0) {
         ctx.fillStyle = "rgba(255,255,255,0.75)";
         ctx.font = "16px system-ui, sans-serif";
-        ctx.fillText("Collecting load samples for " + ccSelectedUps + "...", 64, canvas.height / 2);
+        ctx.fillText("No load samples collected yet for " + ccSelectedUps + ".", 64, h / 2);
         return;
       }
 
-      const plotLeft = 52;
-      const plotRight = canvas.width - 24;
-      const plotTop = 24;
-      const plotBottom = canvas.height - 28;
-      const width = plotRight - plotLeft;
-      const height = plotBottom - plotTop;
+      const latest = history[history.length - 1];
 
-      ctx.strokeStyle = "rgba(138, 180, 255, 0.95)";
+      ctx.fillStyle = "rgba(255,255,255,0.88)";
+      ctx.font = "15px system-ui, sans-serif";
+      ctx.fillText("Latest: " + latest + "%", 64, 44);
+      ctx.fillText("Samples: " + history.length + " / 60", 64, 66);
+
+      if (history.length < 2) {
+        const x = w / 2;
+        const y = (h - 20) - ((latest / 100) * (h - 40));
+
+        ctx.fillStyle = "rgba(138, 180, 255, 0.95)";
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(255,255,255,0.70)";
+        ctx.font = "15px system-ui, sans-serif";
+        ctx.fillText("Collecting more samples for line history...", 64, h / 2);
+        return;
+      }
+
+      ctx.strokeStyle = "rgba(138, 180, 255, 0.96)";
       ctx.lineWidth = 3;
       ctx.beginPath();
 
-      history.forEach((point, index) => {
-        const x = plotLeft + (index / Math.max(history.length - 1, 1)) * width;
-        const y = plotBottom - (Math.max(0, Math.min(100, point.value)) / 100) * height;
+      for (let i = 0; i < history.length; i++) {
+        const x = 50 + (i * ((w - 70) / Math.max(history.length - 1, 1)));
+        const clamped = Math.max(0, Math.min(100, history[i]));
+        const y = (h - 20) - ((clamped / 100) * (h - 40));
 
-        if (index === 0) ctx.moveTo(x, y);
+        if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
-      });
+      }
 
       ctx.stroke();
-
-      const latest = history[history.length - 1];
-      ctx.fillStyle = "rgba(255,255,255,0.88)";
-      ctx.font = "15px system-ui, sans-serif";
-      ctx.fillText("Latest: " + latest.value + "%", 64, 48);
     }
 
     function openLoadGraph() {
@@ -1856,7 +1890,7 @@
       const subtitle = document.getElementById("cc-load-graph-subtitle");
 
       if (title) title.textContent = "UPS Load History - " + ccSelectedUps;
-      if (subtitle) subtitle.textContent = "Rolling load samples collected every refresh while the page is open.";
+      if (subtitle) subtitle.textContent = "Dashboard-style rolling load history for selected UPS.";
       if (modal) modal.classList.add("open");
 
       drawLoadGraph();
@@ -1867,14 +1901,15 @@
       if (modal) modal.classList.remove("open");
     }
 
-
-    function refreshControlCenterAll() {
+    async function refreshControlCenterAll() {
       ccRefreshCountdown = CC_REFRESH_SECONDS;
       updateControlCenterClock();
       rotateControlCenterFact();
       autoCycleControlCenterUPS();
       loadControlCenterEvents();
-      loadControlCenterUPS();
+      await sampleAllUpsLoadsForGraph();
+      await loadControlCenterUPS();
+      drawLoadGraph();
     }
 
 
@@ -1984,7 +2019,6 @@
         setUpsText("cc-ups-charge", formatPercent(data["battery.charge"] ?? data["battery_charge"]));
         const loadPercentText = formatPercent(data["ups.load"] ?? data["ups_load"]);
         setUpsText("cc-ups-load", loadPercentText);
-        addLoadHistorySample(ccSelectedUps, loadPercentText);
         setUpsText("cc-ups-runtime", secondsToReadable(data["battery.runtime"] ?? data["battery_runtime"]));
         setUpsText("cc-ups-input", pickValue(data, ["input.voltage", "input_voltage"], " V"));
         setUpsText("cc-ups-output", pickValue(data, ["output.voltage", "output_voltage"], " V"));
@@ -2160,6 +2194,9 @@
           updateControlCenterClock();
         }
       }, 1000);
+
+      preloadLoadGraphHistory();
+      setInterval(preloadLoadGraphHistory, CC_LOAD_GRAPH_SAMPLE_SECONDS * 1000);
     });
   </script>
   <div class="cc-modal-backdrop" id="cc-load-graph-modal" aria-hidden="true">
