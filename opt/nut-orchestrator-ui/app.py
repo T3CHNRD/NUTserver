@@ -49,6 +49,12 @@ def index():
     )
 
 
+
+@app.route("/control-center")
+def control_center():
+    return render_template("control-center.html")
+
+
 @app.route("/healthz")
 def healthz():
     return jsonify({"ok": True})

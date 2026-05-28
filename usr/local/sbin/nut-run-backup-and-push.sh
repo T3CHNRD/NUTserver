@@ -92,6 +92,7 @@ main() {
   copy_text_file /opt/nut-orchestrator-ui/lib/config_registry.json ./opt/nut-orchestrator-ui/lib/config_registry.json 644
   copy_executable_file /opt/nut-orchestrator-ui/lib/validators.sh ./opt/nut-orchestrator-ui/lib/validators.sh
   copy_text_file /opt/nut-orchestrator-ui/templates/index.html ./opt/nut-orchestrator-ui/templates/index.html 644
+  copy_text_file /opt/nut-orchestrator-ui/templates/control-center.html ./opt/nut-orchestrator-ui/templates/control-center.html 644
   copy_text_file /opt/nut-orchestrator-ui/static/app.js ./opt/nut-orchestrator-ui/static/app.js 644
   copy_text_file /opt/nut-orchestrator-ui/static/nut-ui-theme.css ./opt/nut-orchestrator-ui/static/nut-ui-theme.css 644
 
