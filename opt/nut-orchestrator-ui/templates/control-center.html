@@ -1471,6 +1471,126 @@
       }
     }
 
+  
+    /* Control Center product layout architecture pass */
+    .cc-command-center {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+      min-width: min(520px, 100%);
+    }
+
+    .cc-command-primary {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 9px;
+    }
+
+    .cc-command-secondary {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 9px;
+      color: rgba(255,255,255,0.54);
+      font-size: 0.84rem;
+    }
+
+    .cc-legacy-label {
+      font-weight: 850;
+      letter-spacing: 0.035em;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.44);
+    }
+
+    .cc-legacy-link {
+      color: rgba(219,234,254,0.72);
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.035);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-weight: 750;
+    }
+
+    .cc-legacy-link:hover {
+      color: rgba(255,255,255,0.94);
+      border-color: rgba(255,255,255,0.20);
+      background: rgba(255,255,255,0.065);
+    }
+
+    .cc-section-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin: 0 0 18px 0;
+      padding: 8px;
+      border: 1px solid rgba(255,255,255,0.095);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.035);
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    .cc-section-nav a {
+      color: rgba(255,255,255,0.70);
+      text-decoration: none;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 800;
+      font-size: 0.88rem;
+    }
+
+    .cc-section-nav a:hover {
+      color: rgba(255,255,255,0.94);
+      background: rgba(255,255,255,0.075);
+    }
+
+    .cc-section-tag {
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 5px 9px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 999px;
+      color: rgba(255,255,255,0.54);
+      font-size: 0.72rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      background: rgba(255,255,255,0.035);
+    }
+
+    .cc-card {
+      scroll-margin-top: 24px;
+    }
+
+    .cc-action-grid.is-compact {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      max-width: 720px;
+    }
+
+    @media (max-width: 900px) {
+      .cc-command-center,
+      .cc-command-primary,
+      .cc-command-secondary {
+        align-items: flex-start;
+        justify-content: flex-start;
+      }
+
+      .cc-section-nav {
+        border-radius: 24px;
+        width: 100%;
+      }
+
+      .cc-action-grid.is-compact {
+        grid-template-columns: 1fr;
+        max-width: none;
+      }
+    }
+
   </style>
 </head>
 
@@ -1481,13 +1601,17 @@
         <div class="cc-title">NUT Control Center</div>
         <div class="cc-subtitle">One place for UPS monitoring, power events, safe actions, configuration, and recovery visibility.</div>
       </div>
-      <div class="cc-top-tools">
-        <div class="cc-top-actions">
+      <div class="cc-command-center">
+        <div class="cc-command-primary">
           <button class="cc-btn cc-btn-primary" id="cc-backup-github">Backup All to GitHub</button>
-          <button class="cc-btn" id="cc-restore-github">Restore from GitHub</button>
-          <a class="cc-btn" href="/nut-ui/">Current NUT UI</a>
-          <a class="cc-btn" href="/nutserver-dashboard.priority1.html">Current UPS Dashboard</a>
           <button class="cc-btn" id="cc-refresh-all">Refresh</button>
+          <button class="cc-btn" id="cc-restore-github">Restore from GitHub</button>
+        </div>
+
+        <div class="cc-command-secondary">
+          <span class="cc-legacy-label">Legacy pages</span>
+          <a class="cc-legacy-link" href="/nut-ui/">NUT UI</a>
+          <a class="cc-legacy-link" href="/nutserver-dashboard.priority1.html">UPS Dashboard</a>
         </div>
 
         <div class="cc-clock-card">
@@ -1497,6 +1621,13 @@
         </div>
       </div>
     </header>
+
+    <nav class="cc-section-nav" aria-label="Control Center sections">
+      <a href="#cc-monitoring-section">Monitoring</a>
+      <a href="#cc-events-section">Events</a>
+      <a href="#cc-tests-logs-live-section">Tests & Logs</a>
+      <a href="#cc-config-section">Configuration</a>
+    </nav>
 
     <section class="cc-hero-grid">
       <div class="cc-card">
@@ -1535,7 +1666,8 @@
     </section>
 
     <section class="cc-grid">
-      <div class="cc-card cc-wide">
+      <div class="cc-card cc-wide" id="cc-monitoring-section">
+        <div class="cc-section-tag">Monitoring</div>
         <div class="cc-section-title">
           <h2>UPS Monitoring</h2>
           <button class="cc-btn" id="cc-refresh-ups">Refresh UPS</button>
@@ -1618,7 +1750,8 @@
       </div>
 
 
-      <div class="cc-card cc-wide">
+      <div class="cc-card cc-wide" id="cc-events-section">
+        <div class="cc-section-tag">Events</div>
         <div class="cc-section-title">
           <h2>Power / Boot Event Log</h2>
           <button class="cc-btn" id="cc-refresh-events-2">Refresh Event Log</button>
@@ -1629,7 +1762,8 @@
     </section>
 
     <section class="cc-grid">
-      <div class="cc-card cc-wide">
+      <div class="cc-card cc-wide" id="cc-config-section">
+        <div class="cc-section-tag">Configuration</div>
         <div class="cc-section-title">
           <h2>Configuration Management</h2>
         </div>
@@ -1721,6 +1855,7 @@
     </section>
 
     <section class="cc-card cc-danger-zone" id="cc-tests-logs-live-section">
+      <div class="cc-section-tag">Operations</div>
       <div class="cc-section-title">
         <h2>Tests, Logs, and Live Controls</h2>
       </div>
@@ -1729,7 +1864,7 @@
         Backup and Restore stay at the top so they are not duplicated.
       </div>
 
-      <div class="cc-action-grid">
+      <div class="cc-action-grid is-compact">
         <div class="cc-action-card">
           <h3>Simulated Test</h3>
           <p>Runs the existing safe simulated test endpoint. No live shutdown commands should be sent.</p>
@@ -1742,17 +1877,9 @@
           <a class="cc-btn" id="cc-export-logs" href="/nut-ui/api/export-logs">Export Logs</a>
         </div>
 
-        <div class="cc-action-card">
-          <h3>Current NUT UI</h3>
-          <p>Temporary shortcut while the remaining config and live-test controls are migrated.</p>
-          <a class="cc-btn" href="/nut-ui/">Open Current NUT UI</a>
-        </div>
 
-        <div class="cc-action-card">
-          <h3>Live Test</h3>
-          <p>Kept collapsed and separated until the current Real Test passphrase flow is migrated exactly.</p>
-          <button class="cc-btn cc-btn-danger" id="cc-real-test-placeholder">View Live Test Notes</button>
-        </div>
+
+
       </div>
 
       <div style="height:16px;"></div>
@@ -1813,8 +1940,7 @@
           </div>
 
           <div class="cc-live-actions">
-            <a class="cc-btn" href="/nut-ui/">Open Current NUT UI</a>
-            <button class="cc-btn" id="cc-live-test-notes">Show Safety Notes</button>
+              <button class="cc-btn" id="cc-live-test-notes">Show Safety Notes</button>
             <button class="cc-btn cc-btn-danger" id="cc-real-test-run" disabled title="Real Test is disabled in Control Center until an approved live-test window">Real Test Disabled</button>
           </div>
         </div>
