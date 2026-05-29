@@ -1841,6 +1841,36 @@
       }
     }
 
+  
+    /* Floating tab menu readability polish */
+    .cc-section-nav {
+      background:
+        linear-gradient(145deg, rgba(17, 24, 39, 0.92), rgba(15, 23, 42, 0.78)) !important;
+      border-color: rgba(255,255,255,0.20) !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 20px 46px rgba(0,0,0,0.38) !important;
+      backdrop-filter: blur(30px) saturate(1.45) !important;
+      -webkit-backdrop-filter: blur(30px) saturate(1.45) !important;
+    }
+
+    .cc-section-nav a {
+      color: rgba(255,255,255,0.78) !important;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.42);
+    }
+
+    .cc-section-nav a.active {
+      color: rgba(255,255,255,0.98) !important;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.22), rgba(147,197,253,0.12)) !important;
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+
+    .cc-section-nav a:hover {
+      color: rgba(255,255,255,0.98) !important;
+      background: rgba(255,255,255,0.10) !important;
+    }
+
   </style>
 </head>
 
@@ -2206,14 +2236,13 @@
             </div>
 
             <div class="cc-live-warning-box">
-              Real Test may execute live shutdown actions. Control Center execution is disabled until an approved live-test window.
-              Use the current NUT UI only when a live test is intentionally approved.
+              Real Test live execution remains disabled. This Control Center button is currently proof-only and sends a fake passphrase to confirm the backend password lock rejects the request.
             </div>
           </div>
 
           <div class="cc-live-actions">
               <button class="cc-btn" id="cc-live-test-notes">Show Safety Notes</button>
-            <button class="cc-btn cc-btn-danger" id="cc-real-test-run" disabled title="Real Test is disabled in Control Center until an approved live-test window">Real Test Disabled</button>
+            <button class="cc-btn cc-btn-danger" id="cc-real-test-run" data-safe-password-test="1" title="Safe test only: sends a fake passphrase to verify backend lockout">Test Password Lock</button>
           </div>
         </div>
       </div>
@@ -2778,7 +2807,10 @@
 
       if (btn && btn.dataset.running === "1") return;
 
-      const passphrase = await promptControlCenterRealTestPassphrase(phase);
+      const safePasswordTestOnly = Boolean(btn && btn.dataset.safePasswordTest === "1");
+      const passphrase = safePasswordTestOnly
+        ? "fake-test-only"
+        : await promptControlCenterRealTestPassphrase(phase);
 
       if (!passphrase) {
         setControlCenterOutput("Real Test", "Real Test cancelled. No commands were run.");
@@ -2786,19 +2818,37 @@
       }
 
       if (btn) btn.dataset.running = "1";
-      setButtonRunning("cc-real-test-run", true, "Running Real Test...");
-      setControlCenterOutput("Real Test", "Running " + phaseLabel + "...");
+      setButtonRunning(
+        "cc-real-test-run",
+        true,
+        safePasswordTestOnly ? "Testing lock..." : "Running Real Test..."
+      );
+
+      setControlCenterOutput(
+        "Real Test",
+        safePasswordTestOnly
+          ? "Testing password lock for " + phaseLabel + " using a fake passphrase. No live test should run."
+          : "Running " + phaseLabel + "..."
+      );
 
       try {
-        const data = await ccApiJson("/nut-ui/api/test/real", {
+        const response = await fetch("/nut-ui/api/test/real", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ passphrase, phase })
         });
 
+        let data;
+        try {
+          data = await response.json();
+        } catch (jsonErr) {
+          data = { ok: false, stderr: "Unable to parse response JSON: " + String(jsonErr) };
+        }
+
         setControlCenterOutput(
-          "Real Test",
-          data.output || data.stdout || data.stderr || data
+          safePasswordTestOnly ? "Password Lock Test" : "Real Test",
+          data.output || data.stdout || data.stderr || data,
+          !data.ok
         );
       } catch (err) {
         setControlCenterOutput("Real Test Error", String(err), true);
