@@ -994,6 +994,204 @@
       display: flex;
     }
 
+  
+    /* Advanced Live Test polished locked state */
+    .cc-live-locked-card {
+      margin-top: 16px;
+      border: 1px solid rgba(248, 113, 113, 0.24);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at top right, rgba(248, 113, 113, 0.12), transparent 28rem),
+        linear-gradient(145deg, rgba(49, 46, 72, 0.78), rgba(15, 23, 42, 0.72));
+      padding: 18px;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+    }
+
+    .cc-live-locked-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .cc-live-eyebrow {
+      color: rgba(254, 202, 202, 0.88);
+      font-size: 0.78rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .cc-live-title {
+      color: rgba(255,255,255,0.96);
+      font-size: 1.35rem;
+      font-weight: 900;
+      letter-spacing: -0.025em;
+    }
+
+    .cc-live-subtitle {
+      color: rgba(255,255,255,0.70);
+      font-size: 0.94rem;
+      line-height: 1.45;
+      margin-top: 6px;
+      max-width: 820px;
+    }
+
+    .cc-live-pill {
+      white-space: nowrap;
+      border: 1px solid rgba(248, 113, 113, 0.34);
+      background: rgba(248, 113, 113, 0.13);
+      color: rgba(254, 202, 202, 0.96);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 850;
+      font-size: 0.84rem;
+    }
+
+    .cc-live-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .cc-live-step {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      background: rgba(255,255,255,0.045);
+      padding: 13px;
+    }
+
+    .cc-live-step .k {
+      color: rgba(255,255,255,0.60);
+      font-size: 0.76rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .cc-live-step .v {
+      color: rgba(255,255,255,0.92);
+      margin-top: 6px;
+      font-weight: 820;
+      line-height: 1.35;
+    }
+
+    .cc-live-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 1050px) {
+      .cc-live-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .cc-live-locked-head {
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .cc-live-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+  
+    /* Protected Real Test active controls */
+    .cc-live-control-panel {
+      margin-top: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 24px;
+      background: rgba(255,255,255,0.045);
+      padding: 14px;
+    }
+
+    .cc-live-control-row {
+      display: grid;
+      grid-template-columns: minmax(260px, 420px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: end;
+    }
+
+    .cc-live-warning-box {
+      border: 1px solid rgba(251, 191, 36, 0.28);
+      border-radius: 20px;
+      background: rgba(251, 191, 36, 0.09);
+      padding: 12px;
+      color: rgba(255,255,255,0.86);
+      line-height: 1.45;
+      font-size: 0.92rem;
+    }
+
+    .cc-passphrase-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(3, 7, 18, 0.76);
+      padding: 24px;
+    }
+
+    .cc-passphrase-overlay.open {
+      display: flex;
+    }
+
+    .cc-passphrase-box {
+      width: min(560px, calc(100vw - 48px));
+      border: 1px solid rgba(248, 113, 113, 0.28);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at top right, rgba(248, 113, 113, 0.12), transparent 24rem),
+        linear-gradient(145deg, rgba(30, 41, 59, 0.98), rgba(8, 18, 30, 0.98));
+      box-shadow: 0 18px 48px rgba(0,0,0,0.42);
+      padding: 20px;
+    }
+
+    .cc-passphrase-title {
+      font-size: 1.3rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .cc-passphrase-warning {
+      color: rgba(255,255,255,0.74);
+      line-height: 1.45;
+      margin-bottom: 14px;
+    }
+
+    .cc-passphrase-input {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      background: rgba(3, 7, 18, 0.74);
+      color: rgba(255,255,255,0.94);
+      padding: 12px;
+      outline: none;
+      margin-bottom: 14px;
+    }
+
+    .cc-passphrase-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .cc-live-control-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
   </style>
 </head>
 
@@ -1286,15 +1484,63 @@
       <div class="cc-output" id="cc-action-output">No action has been run from this page yet.</div>
 
       <div style="height:16px;"></div>
-
-      <details class="cc-details">
-        <summary>Advanced Live Test Controls</summary>
-        <div class="cc-embed-note" style="margin-top:12px;">
-          Real Test controls will be wired last and must keep the existing Real Test phase selection,
-          passphrase prompt, and backend safety gates. Until that migration is complete, use the current NUT UI
-          for live-test actions.
+      <div class="cc-live-locked-card" id="cc-advanced-live-test-card">
+        <div class="cc-live-locked-head">
+          <div>
+            <div class="cc-live-eyebrow">Protected operation</div>
+            <div class="cc-live-title">Advanced Live Test Controls</div>
+            <div class="cc-live-subtitle">
+              Real Test execution is now available through the same protected backend path as the current NUT UI.
+              The passphrase, phase validation, and backend safety gates remain unchanged.
+            </div>
+          </div>
+          <div class="cc-live-pill">Protected by passphrase</div>
         </div>
-      </details>
+
+        <div class="cc-live-grid">
+          <div class="cc-live-step">
+            <div class="k">Step 1</div>
+            <div class="v">Select approved Real Test phase</div>
+          </div>
+          <div class="cc-live-step">
+            <div class="k">Step 2</div>
+            <div class="v">Review live shutdown warning</div>
+          </div>
+          <div class="cc-live-step">
+            <div class="k">Step 3</div>
+            <div class="v">Enter Real Test passphrase</div>
+          </div>
+          <div class="cc-live-step">
+            <div class="k">Step 4</div>
+            <div class="v">Use existing backend safety gates</div>
+          </div>
+        </div>
+
+        <div class="cc-live-control-panel">
+          <div class="cc-live-control-row">
+            <div>
+              <label class="cc-label" for="cc-real-test-phase">Real Test Phase</label>
+              <select class="cc-select" id="cc-real-test-phase">
+                <option value="phase1-lansweeper">Phase 1 - Lansweeper only</option>
+                <option value="phase2-power-restore-abort">Phase 2 - Power restore abort test</option>
+                <option value="phase3-full">Phase 3 - Full shutdown</option>
+              </select>
+            </div>
+
+            <div class="cc-live-warning-box">
+              Real Test may execute live shutdown actions. Control Center execution is disabled until an approved live-test window.
+              Use the current NUT UI only when a live test is intentionally approved.
+            </div>
+          </div>
+
+          <div class="cc-live-actions">
+            <a class="cc-btn" href="/nut-ui/">Open Current NUT UI</a>
+            <button class="cc-btn" id="cc-live-test-notes">Show Safety Notes</button>
+            <button class="cc-btn cc-btn-danger" id="cc-real-test-run" disabled title="Real Test is disabled in Control Center until an approved live-test window">Real Test Disabled</button>
+          </div>
+        </div>
+      </div>
+
     </section>
   </div>
 
@@ -1787,6 +2033,112 @@
 
       bar.classList.remove("status-online", "status-warning", "status-offline");
       bar.classList.add("status-" + state);
+    }
+
+
+
+    const ccRealTestPhaseLabels = {
+      "phase1-lansweeper": "Phase 1 - Lansweeper only",
+      "phase2-power-restore-abort": "Phase 2 - Power restore abort test",
+      "phase3-full": "Phase 3 - Full shutdown"
+    };
+
+    function promptControlCenterRealTestPassphrase(phase) {
+      return new Promise((resolve) => {
+        const overlay = document.getElementById("cc-real-test-passphrase-overlay");
+        const warning = document.getElementById("cc-real-test-passphrase-warning");
+        const input = document.getElementById("cc-real-test-passphrase-input");
+        const cancel = document.getElementById("cc-real-test-passphrase-cancel");
+        const submit = document.getElementById("cc-real-test-passphrase-submit");
+
+        if (!overlay || !input || !cancel || !submit) {
+          resolve("");
+          return;
+        }
+
+        const phaseLabel = ccRealTestPhaseLabels[phase] || phase;
+
+        if (warning) {
+          warning.textContent =
+            "Selected phase: " + phaseLabel +
+            ". This may execute live shutdown commands. Enter the Real Test passphrase to continue.";
+        }
+
+        input.value = "";
+        overlay.classList.add("open");
+
+        const cleanup = (value) => {
+          input.value = "";
+          overlay.classList.remove("open");
+
+          cancel.removeEventListener("click", onCancel);
+          submit.removeEventListener("click", onSubmit);
+          input.removeEventListener("keydown", onKeydown);
+
+          resolve(value);
+        };
+
+        const onCancel = () => cleanup("");
+        const onSubmit = () => cleanup(input.value);
+        const onKeydown = (event) => {
+          if (event.key === "Enter") cleanup(input.value);
+          if (event.key === "Escape") cleanup("");
+        };
+
+        cancel.addEventListener("click", onCancel);
+        submit.addEventListener("click", onSubmit);
+        input.addEventListener("keydown", onKeydown);
+
+        setTimeout(() => input.focus(), 0);
+      });
+    }
+
+    async function runControlCenterRealTest() {
+      const btn = document.getElementById("cc-real-test-run");
+      const phaseSelect = document.getElementById("cc-real-test-phase");
+      const phase = phaseSelect ? phaseSelect.value : "phase1-lansweeper";
+      const phaseLabel = ccRealTestPhaseLabels[phase] || phase;
+
+      if (btn && btn.dataset.running === "1") return;
+
+      const passphrase = await promptControlCenterRealTestPassphrase(phase);
+
+      if (!passphrase) {
+        setControlCenterOutput("Real Test", "Real Test cancelled. No commands were run.");
+        return;
+      }
+
+      if (btn) btn.dataset.running = "1";
+      setButtonRunning("cc-real-test-run", true, "Running Real Test...");
+      setControlCenterOutput("Real Test", "Running " + phaseLabel + "...");
+
+      try {
+        const data = await ccApiJson("/nut-ui/api/test/real", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ passphrase, phase })
+        });
+
+        setControlCenterOutput(
+          "Real Test",
+          data.output || data.stdout || data.stderr || data
+        );
+      } catch (err) {
+        setControlCenterOutput("Real Test Error", String(err), true);
+      } finally {
+        if (btn) btn.dataset.running = "0";
+        setButtonRunning("cc-real-test-run", false);
+      }
+    }
+
+    function showControlCenterRealTestNotes() {
+      setControlCenterOutput("Real Test Safety Notes", {
+        backend_endpoint: "/nut-ui/api/test/real",
+        passphrase_required: true,
+        allowed_phases: Object.keys(ccRealTestPhaseLabels),
+        wrapper: "/usr/local/sbin/nut-ui-run-real-test-approved",
+        safety_note: "This Control Center button uses the existing protected backend path and does not bypass safety gates."
+      });
     }
 
 
@@ -2374,6 +2726,16 @@
         loadControlCenterConfig(configSelect.value);
       }
 
+      const realTestButton = document.getElementById("cc-real-test-run");
+      if (realTestButton) {
+        realTestButton.addEventListener("click", runControlCenterRealTest);
+      }
+
+      const realTestNotesButton = document.getElementById("cc-live-test-notes");
+      if (realTestNotesButton) {
+        realTestNotesButton.addEventListener("click", showControlCenterRealTestNotes);
+      }
+
       const backupButton = document.getElementById("cc-backup-github");
       if (backupButton) {
         backupButton.addEventListener("click", runControlCenterBackup);
@@ -2452,6 +2814,20 @@
             <tr><td colspan="7">Loading UPS Rack Overview...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="cc-passphrase-overlay" id="cc-real-test-passphrase-overlay" aria-hidden="true">
+    <div class="cc-passphrase-box">
+      <div class="cc-passphrase-title">Real Test Warning</div>
+      <div class="cc-passphrase-warning" id="cc-real-test-passphrase-warning">
+        This may execute live shutdown commands. Enter the Real Test passphrase to continue.
+      </div>
+      <input class="cc-passphrase-input" id="cc-real-test-passphrase-input" type="password" autocomplete="off" placeholder="Real Test passphrase">
+      <div class="cc-passphrase-actions">
+        <button class="cc-btn" id="cc-real-test-passphrase-cancel">Cancel</button>
+        <button class="cc-btn cc-btn-danger" id="cc-real-test-passphrase-submit">Run Real Test</button>
       </div>
     </div>
   </div>
