@@ -2198,11 +2198,11 @@
             <div class="cc-live-eyebrow">Protected operation</div>
             <div class="cc-live-title">Advanced Live Test Controls</div>
             <div class="cc-live-subtitle">
-              Real Test execution is intentionally disabled in the Control Center until an approved live-test window.
-              The passphrase, phase validation, and backend safety gates remain unchanged and are documented here for readiness.
+              Real Test is live-ready in the Control Center and remains locked behind the existing Real Test passphrase.
+              The passphrase, phase validation, and backend safety gates remain unchanged.
             </div>
           </div>
-          <div class="cc-live-pill">Live test disabled</div>
+          <div class="cc-live-pill">Passphrase locked</div>
         </div>
 
         <div class="cc-live-grid">
@@ -2236,13 +2236,13 @@
             </div>
 
             <div class="cc-live-warning-box">
-              Real Test live execution remains disabled. This Control Center button is currently proof-only and sends a fake passphrase to confirm the backend password lock rejects the request.
+              Real Test is live-ready and protected by the existing Real Test passphrase. Enter a fake password to prove lockout. Enter the real passphrase only during an approved live-test window. For tonight, use Phase 1 - Lansweeper only unless the scope is intentionally changed.
             </div>
           </div>
 
           <div class="cc-live-actions">
               <button class="cc-btn" id="cc-live-test-notes">Show Safety Notes</button>
-            <button class="cc-btn cc-btn-danger" id="cc-real-test-run" data-safe-password-test="1" title="Safe test only: sends a fake passphrase to verify backend lockout">Test Password Lock</button>
+            <button class="cc-btn cc-btn-danger" id="cc-real-test-run" title="Requires Real Test passphrase. Use fake password to prove lockout, or real passphrase during approved live test.">Run Test</button>
           </div>
         </div>
       </div>
@@ -2807,10 +2807,7 @@
 
       if (btn && btn.dataset.running === "1") return;
 
-      const safePasswordTestOnly = Boolean(btn && btn.dataset.safePasswordTest === "1");
-      const passphrase = safePasswordTestOnly
-        ? "fake-test-only"
-        : await promptControlCenterRealTestPassphrase(phase);
+      const passphrase = await promptControlCenterRealTestPassphrase(phase);
 
       if (!passphrase) {
         setControlCenterOutput("Real Test", "Real Test cancelled. No commands were run.");
@@ -2818,18 +2815,8 @@
       }
 
       if (btn) btn.dataset.running = "1";
-      setButtonRunning(
-        "cc-real-test-run",
-        true,
-        safePasswordTestOnly ? "Testing lock..." : "Running Real Test..."
-      );
-
-      setControlCenterOutput(
-        "Real Test",
-        safePasswordTestOnly
-          ? "Testing password lock for " + phaseLabel + " using a fake passphrase. No live test should run."
-          : "Running " + phaseLabel + "..."
-      );
+      setButtonRunning("cc-real-test-run", true, "Running Test...");
+      setControlCenterOutput("Real Test", "Submitting " + phaseLabel + " to protected backend path...");
 
       try {
         const response = await fetch("/nut-ui/api/test/real", {
@@ -2846,7 +2833,7 @@
         }
 
         setControlCenterOutput(
-          safePasswordTestOnly ? "Password Lock Test" : "Real Test",
+          "Real Test",
           data.output || data.stdout || data.stderr || data,
           !data.ok
         );
