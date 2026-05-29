@@ -1871,6 +1871,16 @@
       background: rgba(255,255,255,0.10) !important;
     }
 
+  
+    /* Pontiac weather line in clock card */
+    .cc-clock-weather {
+      margin-top: 5px;
+      color: rgba(219, 234, 254, 0.86);
+      font-size: 0.84rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
   </style>
 </head>
 
@@ -1897,6 +1907,7 @@
         <div class="cc-clock-card">
           <div class="cc-clock-time" id="cc-clock-time">--:--:--</div>
           <div class="cc-clock-date" id="cc-clock-date">Loading date...</div>
+          <div class="cc-clock-weather" id="cc-pontiac-weather">Pontiac: loading temp...</div>
           <div class="cc-clock-refresh" id="cc-refresh-countdown">Refresh countdown: 35s</div>
         </div>
       </div>
@@ -3156,6 +3167,39 @@
     }
 
 
+
+    async function updatePontiacWeather() {
+      const el = document.getElementById("cc-pontiac-weather");
+      if (!el) return;
+
+      const url =
+        "https://api.open-meteo.com/v1/forecast" +
+        "?latitude=42.6389" +
+        "&longitude=-83.2910" +
+        "&current=temperature_2m" +
+        "&temperature_unit=fahrenheit" +
+        "&timezone=America%2FDetroit";
+
+      try {
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+
+        const data = await response.json();
+        const temp = data && data.current ? data.current.temperature_2m : null;
+
+        if (temp === null || temp === undefined || Number.isNaN(Number(temp))) {
+          throw new Error("temperature missing");
+        }
+
+        el.textContent = "Pontiac: " + Math.round(Number(temp)) + "°F";
+        el.title = "Pontiac, MI current temperature from Open-Meteo";
+      } catch (err) {
+        el.textContent = "Pontiac: temp unavailable";
+        el.title = String(err);
+      }
+    }
+
+
     async function refreshControlCenterAll() {
       ccRefreshCountdown = CC_REFRESH_SECONDS;
       updateControlCenterClock();
@@ -3520,7 +3564,10 @@
         realTestPlaceholder.addEventListener("click", showControlCenterLiveTestNotes);
       }
 
+      updatePontiacWeather();
       refreshControlCenterAll();
+
+      setInterval(updatePontiacWeather, 10 * 60 * 1000);
 
       setInterval(() => {
         ccRefreshCountdown -= 1;
