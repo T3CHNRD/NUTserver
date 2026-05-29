@@ -1591,6 +1591,256 @@
       }
     }
 
+  
+    /* Product layout rebuild: operations first, config as modal */
+    .cc-config-launch-card {
+      border-style: dashed !important;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.060), rgba(255,255,255,0.028)) !important;
+    }
+
+    .cc-config-launch-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .cc-config-launch-title {
+      font-size: 1.22rem;
+      font-weight: 900;
+      letter-spacing: -0.025em;
+      color: rgba(255,255,255,0.94);
+      margin-bottom: 6px;
+    }
+
+    .cc-config-launch-copy {
+      color: rgba(255,255,255,0.64);
+      line-height: 1.46;
+      max-width: 860px;
+    }
+
+    .cc-config-launch-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .cc-config-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,0.105);
+      background: rgba(255,255,255,0.040);
+      color: rgba(255,255,255,0.68);
+      font-weight: 800;
+      font-size: 0.78rem;
+    }
+
+    .cc-config-modal {
+      width: min(1480px, calc(100vw - 44px)) !important;
+      max-height: calc(100vh - 44px);
+      overflow: auto;
+      padding: 18px !important;
+    }
+
+    .cc-config-modal .cc-card {
+      box-shadow: none !important;
+      margin: 0 !important;
+    }
+
+    .cc-modal-head.is-config-head {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      background:
+        linear-gradient(180deg, rgba(15,23,42,0.98), rgba(15,23,42,0.88));
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .cc-tests-flow-card {
+      border-color: rgba(255,255,255,0.115) !important;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.032)) !important;
+    }
+
+    @media (max-width: 900px) {
+      .cc-config-launch-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+  
+    /* Tabbed Control Center + restrained liquid glass */
+    .cc-section-nav {
+      position: sticky;
+      top: 10px;
+      z-index: 50;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      width: fit-content;
+      max-width: 100%;
+      margin: 0 0 20px 0;
+      padding: 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.13), rgba(255,255,255,0.045));
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 18px 42px rgba(0,0,0,0.24);
+      backdrop-filter: blur(22px) saturate(1.35);
+      -webkit-backdrop-filter: blur(22px) saturate(1.35);
+    }
+
+    .cc-section-nav a {
+      position: relative;
+      color: rgba(255,255,255,0.68);
+      text-decoration: none;
+      border-radius: 999px;
+      padding: 9px 16px;
+      font-weight: 850;
+      font-size: 0.9rem;
+      transition:
+        color 160ms ease,
+        background 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
+    }
+
+    .cc-section-nav a:hover {
+      color: rgba(255,255,255,0.96);
+      background: rgba(255,255,255,0.075);
+    }
+
+    .cc-section-nav a.active {
+      color: rgba(255,255,255,0.98);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.20), rgba(255,255,255,0.075));
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.22),
+        0 10px 24px rgba(0,0,0,0.20);
+    }
+
+    .cc-section-nav a.active::after {
+      content: "";
+      position: absolute;
+      left: 18%;
+      right: 18%;
+      bottom: 5px;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent, rgba(147,197,253,0.90), transparent);
+    }
+
+    .cc-tab-panel {
+      display: none !important;
+    }
+
+    .cc-tab-panel.active {
+      display: block !important;
+      animation: ccTabReveal 190ms ease-out;
+    }
+
+    @keyframes ccTabReveal {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .cc-top,
+    .cc-card,
+    .cc-modal,
+    .cc-clock-card,
+    .cc-live-locked-card {
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(18px) saturate(1.22) !important;
+      -webkit-backdrop-filter: blur(18px) saturate(1.22) !important;
+    }
+
+    .cc-top::after,
+    .cc-card::after,
+    .cc-modal::after,
+    .cc-clock-card::after,
+    .cc-live-locked-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.13), transparent 34%),
+        radial-gradient(circle at top right, rgba(147,197,253,0.12), transparent 22rem);
+      opacity: 0.70;
+      mix-blend-mode: screen;
+    }
+
+    .cc-top > *,
+    .cc-card > *,
+    .cc-modal > *,
+    .cc-clock-card > *,
+    .cc-live-locked-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .cc-card {
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.095), rgba(255,255,255,0.040)) !important;
+      border-color: rgba(255,255,255,0.15) !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.12),
+        0 18px 46px rgba(0,0,0,0.23) !important;
+    }
+
+    .cc-card.cc-danger-zone {
+      background:
+        linear-gradient(145deg, rgba(80,65,85,0.36), rgba(15,23,42,0.62)) !important;
+      border-color: rgba(248,113,113,0.18) !important;
+    }
+
+    .cc-event-box,
+    .cc-output,
+    .cc-editor,
+    .cc-load-graph,
+    .cc-rack-table-wrap {
+      background: rgba(2,6,23,0.68) !important;
+      border-color: rgba(255,255,255,0.12) !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.06),
+        0 10px 24px rgba(0,0,0,0.16) !important;
+    }
+
+    @media (max-width: 900px) {
+      .cc-section-nav {
+        width: 100%;
+        border-radius: 24px;
+      }
+
+      .cc-section-nav a {
+        flex: 1 1 auto;
+        text-align: center;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cc-tab-panel.active {
+        animation: none;
+      }
+    }
+
   </style>
 </head>
 
@@ -1623,10 +1873,10 @@
     </header>
 
     <nav class="cc-section-nav" aria-label="Control Center sections">
-      <a href="#cc-monitoring-section">Monitoring</a>
-      <a href="#cc-events-section">Events</a>
-      <a href="#cc-tests-logs-live-section">Tests & Logs</a>
-      <a href="#cc-config-section">Configuration</a>
+      <a href="#cc-monitoring-section" class="active" data-cc-tab="cc-monitoring-section">Monitoring</a>
+      <a href="#cc-events-section" data-cc-tab="cc-events-section">Events</a>
+      <a href="#cc-tests-logs-live-section" data-cc-tab="cc-tests-logs-live-section">Tests & Logs</a>
+      <a href="#cc-config-section" data-cc-tab="cc-config-section">Configuration</a>
     </nav>
 
     <section class="cc-hero-grid">
@@ -1666,7 +1916,7 @@
     </section>
 
     <section class="cc-grid">
-      <div class="cc-card cc-wide" id="cc-monitoring-section">
+      <div class="cc-card cc-wide cc-tab-panel active" id="cc-monitoring-section">
         <div class="cc-section-tag">Monitoring</div>
         <div class="cc-section-title">
           <h2>UPS Monitoring</h2>
@@ -1750,23 +2000,47 @@
       </div>
 
 
-      <div class="cc-card cc-wide" id="cc-events-section">
+      <div class="cc-card cc-wide cc-tab-panel" id="cc-events-section">
         <div class="cc-section-tag">Events</div>
         <div class="cc-section-title">
           <h2>Power / Boot Event Log</h2>
           <button class="cc-btn" id="cc-refresh-events-2">Refresh Event Log</button>
         </div>
+
+<div class="cc-section-title">
+        <h2>Tests, Logs, and Live Controls</h2>
+      </div>
+
+      <div class="cc-card cc-wide cc-config-launch-card cc-tab-panel" id="cc-config-section">
+        <div class="cc-section-tag">Configuration</div>
+        <div class="cc-config-launch-layout">
+          <div>
+            <div class="cc-config-launch-title">Configuration Management</div>
+            <div class="cc-config-launch-copy">
+              Configuration editing is available when needed, but it stays out of the main monitoring flow.
+              Save remains disabled until the controlled dashboard-ui.json save test is approved.
+            </div>
+            <div class="cc-config-launch-badges">
+              <span class="cc-config-badge">Reload</span>
+              <span class="cc-config-badge">Validate</span>
+              <span class="cc-config-badge">Revert</span>
+              <span class="cc-config-badge">Save disabled</span>
+            </div>
+          </div>
+          <button class="cc-btn cc-btn-primary" id="cc-open-config-management">Open Configuration Management</button>
+        </div>
+      </div>
+
+
         <div class="cc-section-subtitle" id="cc-event-summary">Loading latest event summary...</div>
         <div class="cc-event-box" id="cc-event-box">Loading Power / Boot Event Log...</div>
       </div>
     </section>
 
     <section class="cc-grid">
-      <div class="cc-card cc-wide" id="cc-config-section">
+      <div class="cc-card cc-wide cc-tab-panel" id="cc-config-section">
         <div class="cc-section-tag">Configuration</div>
-        <div class="cc-section-title">
-          <h2>Configuration Management</h2>
-        </div>
+        
         <div class="cc-section-subtitle">
           Uses the same approved live-config and read-only reference registry as the current NUT Orchestrator UI.
         </div>
@@ -1854,11 +2128,9 @@
 
     </section>
 
-    <section class="cc-card cc-danger-zone" id="cc-tests-logs-live-section">
+    <section class="cc-card cc-danger-zone cc-tab-panel" id="cc-tests-logs-live-section">
       <div class="cc-section-tag">Operations</div>
-      <div class="cc-section-title">
-        <h2>Tests, Logs, and Live Controls</h2>
-      </div>
+      
       <div class="cc-section-subtitle">
         Safe tests, log export, action output, and live-test controls are grouped here at the bottom.
         Backup and Restore stay at the top so they are not duplicated.
@@ -3141,6 +3413,56 @@
         realTestNotesButton.addEventListener("click", showControlCenterRealTestNotes);
       }
 
+      const openConfigButton = document.getElementById("cc-open-config-management");
+      const closeConfigButton = document.getElementById("cc-close-config-management");
+      const configModal = document.getElementById("cc-config-management-modal");
+
+      if (openConfigButton && configModal) {
+        openConfigButton.addEventListener("click", () => {
+          configModal.classList.add("open");
+        });
+      }
+
+      if (closeConfigButton && configModal) {
+        closeConfigButton.addEventListener("click", () => {
+          configModal.classList.remove("open");
+        });
+      }
+
+      if (configModal) {
+        configModal.addEventListener("click", (event) => {
+          if (event.target === configModal) configModal.classList.remove("open");
+        });
+      }
+
+      const tabLinks = document.querySelectorAll("[data-cc-tab]");
+      const tabPanels = document.querySelectorAll(".cc-tab-panel");
+
+      function showControlCenterTab(sectionId) {
+        tabPanels.forEach((panel) => {
+          panel.classList.toggle("active", panel.id === sectionId);
+        });
+
+        tabLinks.forEach((link) => {
+          link.classList.toggle("active", link.dataset.ccTab === sectionId);
+        });
+      }
+
+      tabLinks.forEach((link) => {
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          showControlCenterTab(link.dataset.ccTab);
+          history.replaceState(null, "", "#" + link.dataset.ccTab);
+        });
+      });
+
+      const initialTab = location.hash ? location.hash.replace("#", "") : "cc-monitoring-section";
+      if (document.getElementById(initialTab)) {
+        showControlCenterTab(initialTab);
+      } else {
+        showControlCenterTab("cc-monitoring-section");
+      }
+
       const backupButton = document.getElementById("cc-backup-github");
       if (backupButton) {
         backupButton.addEventListener("click", runControlCenterBackup);
@@ -3234,6 +3556,22 @@
         <button class="cc-btn" id="cc-real-test-passphrase-cancel">Cancel</button>
         <button class="cc-btn cc-btn-danger" id="cc-real-test-passphrase-submit">Run Real Test</button>
       </div>
+    </div>
+  </div>
+
+  <div class="cc-modal-backdrop" id="cc-config-management-modal" aria-hidden="true">
+    <div class="cc-modal cc-config-modal">
+      <div class="cc-modal-head is-config-head">
+        <div>
+          <div class="cc-modal-title">Configuration Management</div>
+          <div class="cc-modal-note">Edit only when needed. Save remains disabled until the controlled dashboard-ui.json save test is approved.</div>
+        </div>
+        <button class="cc-btn" id="cc-close-config-management">Close</button>
+      </div>
+
+<div class="cc-section-title">
+          <h2>Configuration Management</h2>
+        </div>
     </div>
   </div>
 
