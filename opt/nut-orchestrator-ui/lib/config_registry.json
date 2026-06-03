@@ -254,6 +254,20 @@
       "file_mode": "750"
     },
     {
+      "id": "hypervisor_ssh_fallback_conf",
+      "name": "Hypervisor SSH Fallback Config",
+      "path": "/etc/nut/hypervisors/hypervisor-ssh-fallback.conf",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [
+        ".conf"
+      ],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "640"
+    },
+    {
       "id": "netapp_shutdown_sh",
       "name": "nut-netapp-halt.sh",
       "path": "/usr/local/sbin/nut-netapp-halt.sh",
