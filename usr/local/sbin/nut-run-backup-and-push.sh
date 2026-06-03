@@ -161,7 +161,23 @@ main() {
   run_git add .
 
   if git diff --cached --quiet; then
-    log "No changes to commit"
+  
+  # Hypervisor SSH fallback support files.
+  # Safe backup only: do not copy private SSH keys from /root/.ssh.
+  if [ -f /etc/nut/hypervisors/hypervisor-ssh-fallback.conf ]; then
+    mkdir -p ./etc/nut/hypervisors
+    copy_text_file /etc/nut/hypervisors/hypervisor-ssh-fallback.conf ./etc/nut/hypervisors/hypervisor-ssh-fallback.conf 640
+  fi
+
+  if [ -f /usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh ]; then
+    copy_executable_file /usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh ./usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh
+  fi
+
+  if [ -f /usr/local/sbin/nut-vcenter-host-action-dry-run.sh ]; then
+    copy_executable_file /usr/local/sbin/nut-vcenter-host-action-dry-run.sh ./usr/local/sbin/nut-vcenter-host-action-dry-run.sh
+  fi
+
+  log "No changes to commit"
   else
     run_git commit -m "Full sanitized system backup $(date)"
     run_git push origin HEAD:"$TARGET_BRANCH"
