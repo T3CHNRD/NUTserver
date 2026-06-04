@@ -3066,12 +3066,64 @@
       }
     }
 
-    function showFutureRestoreNotice(kind) {
+    function openSelectedRestoreModal() {
       closeRestoreOptionsModal();
-      setControlCenterOutput(
-        "Restore from GitHub",
-        "This restore option is not enabled yet: " + kind + ". Current restore safety phase only supports repo sync and dry-run previews."
+      const overlay = document.getElementById("cc-selected-restore-modal-overlay");
+      if (overlay) {
+        overlay.classList.add("open");
+        overlay.setAttribute("aria-hidden", "false");
+      }
+    }
+
+    function closeSelectedRestoreModal() {
+      const overlay = document.getElementById("cc-selected-restore-modal-overlay");
+      if (overlay) {
+        overlay.classList.remove("open");
+        overlay.setAttribute("aria-hidden", "true");
+      }
+    }
+
+    async function runSelectedFileLiveRestore(itemId) {
+      const title = "Restore from GitHub";
+      closeSelectedRestoreModal();
+
+      const phrase = "RESTORE SELECTED FILE";
+      const confirmed = confirm(
+        "You selected restore item:\n\n" +
+        itemId +
+        "\n\nThis will restore one approved file from the GitHub-backed local repo copy to its live destination. A pre-restore backup will be created first.\n\nContinue?"
       );
+
+      if (!confirmed) {
+        setControlCenterOutput(title, "Selected-file restore cancelled. No commands were run.");
+        return;
+      }
+
+      const typed = prompt(
+        "Type the exact confirmation phrase to restore this selected file:\n\n" + phrase,
+        ""
+      );
+
+      if (typed !== phrase) {
+        setControlCenterOutput(title, "Selected-file restore blocked. Exact confirmation phrase was not entered.");
+        return;
+      }
+
+      setButtonRunning("cc-restore-github", true, "Restoring selected file...");
+      setControlCenterOutput(title, "Running selected-file live restore for item: " + itemId);
+
+      try {
+        const data = await ccApiJson("/nut-ui/api/restore/selected-file-live", {
+          method: "POST",
+          body: JSON.stringify({ item_id: itemId, confirmation: phrase })
+        });
+
+        setControlCenterOutput(title, data, !data.ok);
+      } catch (err) {
+        setControlCenterOutput("Selected Restore Error", String(err), true);
+      } finally {
+        setButtonRunning("cc-restore-github", false);
+      }
     }
 
     async function runControlCenterRestore() {
@@ -3701,6 +3753,8 @@
           const action = button.getAttribute("data-restore-action");
           if (action === "sync-repo") {
             syncBackupRepoFromGithub();
+          } else if (action === "open-selected-restore") {
+            openSelectedRestoreModal();
           }
         });
       });
@@ -3712,9 +3766,27 @@
         });
       });
 
-      document.querySelectorAll("[data-restore-future]").forEach((button) => {
+
+      const selectedRestoreModalClose = document.getElementById("cc-selected-restore-modal-close");
+      if (selectedRestoreModalClose) {
+        selectedRestoreModalClose.addEventListener("click", () => {
+          closeSelectedRestoreModal();
+          openRestoreOptionsModal();
+        });
+      }
+
+      const selectedRestoreModalOverlay = document.getElementById("cc-selected-restore-modal-overlay");
+      if (selectedRestoreModalOverlay) {
+        selectedRestoreModalOverlay.addEventListener("click", (event) => {
+          if (event.target === selectedRestoreModalOverlay) {
+            closeSelectedRestoreModal();
+          }
+        });
+      }
+
+      document.querySelectorAll("[data-selected-restore-item]").forEach((button) => {
         button.addEventListener("click", () => {
-          showFutureRestoreNotice(button.getAttribute("data-restore-future"));
+          runSelectedFileLiveRestore(button.getAttribute("data-selected-restore-item"));
         });
       });
 
@@ -3824,13 +3896,14 @@
   </div>
 
 
+  
   <div class="cc-restore-modal-overlay" id="cc-restore-modal-overlay" aria-hidden="true">
     <div class="cc-restore-modal" role="dialog" aria-modal="true" aria-labelledby="cc-restore-modal-title">
       <div class="cc-restore-modal-header">
         <div>
           <div class="cc-restore-modal-title" id="cc-restore-modal-title">Restore from GitHub Options</div>
           <div class="cc-restore-modal-subtitle">
-            Choose a safe restore action. Live file restore is not enabled yet; current restore options are repo sync and dry-run previews only.
+            Choose a restore action. Repo sync updates the local backup copy only. Restore selected file can perform a live restore, but only after confirmation.
           </div>
         </div>
         <button class="cc-btn" type="button" id="cc-restore-modal-close">Close</button>
@@ -3843,48 +3916,59 @@
         </button>
 
         <button class="cc-restore-option" type="button" data-restore-dry-run="all">
-          Dry-run preview: all
-          <small>Preview all restore mappings. No files copied.</small>
+          Preview restore plan
+          <small>Shows all restore mappings. No files copied.</small>
         </button>
 
-        <button class="cc-restore-option" type="button" data-restore-dry-run="ui">
-          Dry-run preview: UI
-          <small>Preview Control Center and dashboard UI files.</small>
+        <button class="cc-restore-option" type="button" data-restore-action="open-selected-restore">
+          Restore selected file
+          <small>Choose one approved file. Live restore requires exact confirmation.</small>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cc-restore-modal-overlay" id="cc-selected-restore-modal-overlay" aria-hidden="true">
+    <div class="cc-restore-modal" role="dialog" aria-modal="true" aria-labelledby="cc-selected-restore-modal-title">
+      <div class="cc-restore-modal-header">
+        <div>
+          <div class="cc-restore-modal-title" id="cc-selected-restore-modal-title">Restore Selected File</div>
+          <div class="cc-restore-modal-subtitle">
+            Select one approved file. Use the test probe first to safely verify live restore works.
+          </div>
+        </div>
+        <button class="cc-btn" type="button" id="cc-selected-restore-modal-close">Back</button>
+      </div>
+
+      <div class="cc-restore-option-grid">
+        <button class="cc-restore-option" type="button" data-selected-restore-item="restore_test_probe">
+          Safe test probe
+          <small>/etc/nut/restore-live-test-probe.txt — harmless live restore test.</small>
         </button>
 
-        <button class="cc-restore-option" type="button" data-restore-dry-run="nut-configs">
-          Dry-run preview: NUT configs
-          <small>Preview NUT config files and hypervisor config.</small>
+        <button class="cc-restore-option" type="button" data-selected-restore-item="hypervisor_ssh_fallback_conf">
+          Hypervisor SSH fallback config
+          <small>/etc/nut/hypervisors/hypervisor-ssh-fallback.conf</small>
         </button>
 
-        <button class="cc-restore-option" type="button" data-restore-dry-run="scripts">
-          Dry-run preview: scripts
-          <small>Preview shutdown and orchestration helper scripts.</small>
+        <button class="cc-restore-option" type="button" data-selected-restore-item="ui_control_center_html">
+          Control Center HTML
+          <small>/opt/nut-orchestrator-ui/templates/control-center.html</small>
         </button>
 
-        <button class="cc-restore-option" type="button" data-restore-dry-run="vmware-hypervisor">
-          Dry-run preview: VMware / ESXi / Proxmox
-          <small>Preview hypervisor helper files. No host actions run.</small>
+        <button class="cc-restore-option" type="button" data-selected-restore-item="config_registry_json">
+          Config registry
+          <small>/opt/nut-orchestrator-ui/lib/config_registry.json</small>
         </button>
 
-        <button class="cc-restore-option" type="button" data-restore-dry-run="systemd">
-          Dry-run preview: systemd
-          <small>Preview service and timer files.</small>
+        <button class="cc-restore-option" type="button" data-selected-restore-item="nut_vmware_export_inventory">
+          VMware inventory exporter
+          <small>/usr/local/sbin/nut-vmware-export-inventory.sh</small>
         </button>
 
-        <button class="cc-restore-option future" type="button" data-restore-future="selected-file">
-          Future: restore selected live file
-          <small>Not enabled yet. Will require preview, backup, and confirmation.</small>
-        </button>
-
-        <button class="cc-restore-option future" type="button" data-restore-future="category">
-          Future: restore selected category
-          <small>Not enabled yet. Will require preview, backup, and confirmation.</small>
-        </button>
-
-        <button class="cc-restore-option future" type="button" data-restore-future="full">
-          Future: full live restore
-          <small>Not enabled yet. Will require strong confirmation phrase.</small>
+        <button class="cc-restore-option" type="button" data-selected-restore-item="nut_hypervisor_ssh_readonly_preflight">
+          Hypervisor SSH read-only preflight
+          <small>/usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh</small>
         </button>
       </div>
     </div>
