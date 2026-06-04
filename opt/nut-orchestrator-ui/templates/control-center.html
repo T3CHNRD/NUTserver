@@ -3098,10 +3098,21 @@
       const overlay = document.getElementById("cc-selected-restore-confirm-overlay");
 
       if (labelEl) labelEl.textContent = pendingSelectedRestoreLabel;
-      if (idEl) idEl.textContent = pendingSelectedRestoreItemId;
-      if (input) input.value = "";
+      if (idEl) {
+        idEl.textContent = pendingSelectedRestoreItemId;
+        idEl.dataset.pendingRestoreItem = pendingSelectedRestoreItemId;
+      }
+      if (input) {
+        input.value = "";
+        input.dataset.pendingRestoreItem = pendingSelectedRestoreItemId;
+      }
+      const runButton = document.getElementById("cc-selected-restore-confirm-run");
+      if (runButton) {
+        runButton.dataset.pendingRestoreItem = pendingSelectedRestoreItemId;
+      }
 
       if (overlay) {
+        overlay.dataset.pendingRestoreItem = pendingSelectedRestoreItemId;
         overlay.classList.add("open");
         overlay.setAttribute("aria-hidden", "false");
         setTimeout(() => {
@@ -3123,10 +3134,26 @@
       const title = "Restore from GitHub";
       const phrase = "RESTORE SELECTED FILE";
       const input = document.getElementById("cc-selected-restore-confirm-input");
-      const typed = input ? input.value.trim() : "";
+      const overlay = document.getElementById("cc-selected-restore-confirm-overlay");
+      const idEl = document.getElementById("cc-selected-restore-confirm-id");
+      const runButton = document.getElementById("cc-selected-restore-confirm-run");
 
-      if (!pendingSelectedRestoreItemId) {
-        setControlCenterOutput(title, "Selected-file restore blocked. No restore item was selected.", true);
+      const typed = input ? input.value.trim() : "";
+      const selectedItemId =
+        (runButton && runButton.dataset.pendingRestoreItem) ||
+        (input && input.dataset.pendingRestoreItem) ||
+        (overlay && overlay.dataset.pendingRestoreItem) ||
+        (idEl && idEl.dataset.pendingRestoreItem) ||
+        pendingSelectedRestoreItemId ||
+        (idEl && idEl.textContent ? idEl.textContent.trim() : "") ||
+        "";
+
+      if (!selectedItemId) {
+        setControlCenterOutput(
+          title,
+          "Selected-file restore blocked. No restore item was selected. The UI lost the selected item ID before sending the request.",
+          true
+        );
         return;
       }
 
@@ -3138,12 +3165,12 @@
       closeSelectedRestoreConfirmModal();
 
       setButtonRunning("cc-restore-github", true, "Restoring selected file...");
-      setControlCenterOutput(title, "Running selected-file live restore for item: " + pendingSelectedRestoreItemId);
+      setControlCenterOutput(title, "Running selected-file live restore for item: " + selectedItemId);
 
       try {
         const data = await ccApiJson("/nut-ui/api/restore/selected-file-live", {
           method: "POST",
-          body: JSON.stringify({ item_id: pendingSelectedRestoreItemId, confirmation: phrase })
+          body: JSON.stringify({ item_id: selectedItemId, confirmation: phrase })
         });
 
         setControlCenterOutput(title, data, !data.ok);
@@ -3813,11 +3840,20 @@
       }
 
       document.querySelectorAll("[data-selected-restore-item]").forEach((button) => {
-        button.addEventListener("click", () => {
-          openSelectedRestoreConfirmModal(
-            button.getAttribute("data-selected-restore-item"),
-            button.getAttribute("data-selected-restore-label") || button.textContent.trim()
-          );
+        button.addEventListener("click", (event) => {
+          const clicked = event.currentTarget;
+          const itemId = clicked ? clicked.getAttribute("data-selected-restore-item") : "";
+          const label = clicked ? (clicked.getAttribute("data-selected-restore-label") || clicked.textContent.trim()) : "";
+
+          if (!itemId) {
+            setControlCenterOutput("Restore from GitHub", "Selected-file restore blocked. Clicked restore button did not contain a restore item ID.", true);
+            return;
+          }
+
+          pendingSelectedRestoreItemId = itemId;
+          pendingSelectedRestoreLabel = label || itemId;
+
+          openSelectedRestoreConfirmModal(itemId, label || itemId);
         });
       });
 
