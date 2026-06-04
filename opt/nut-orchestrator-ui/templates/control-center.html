@@ -1895,7 +1895,7 @@
         <div class="cc-command-primary">
           <button class="cc-btn cc-btn-primary" id="cc-backup-github">Backup All to GitHub</button>
           <button class="cc-btn" id="cc-refresh-all">Refresh</button>
-          <button class="cc-btn" id="cc-restore-github">Restore from GitHub</button>
+          <button class="cc-btn" id="cc-restore-github">Sync Backup Repo from GitHub</button>
         </div>
 
         <div class="cc-command-secondary">
@@ -2883,36 +2883,36 @@
 
     async function runControlCenterRestore() {
       setButtonRunning("cc-restore-github", true, "Loading branches...");
-      setControlCenterOutput("Restore from GitHub", "Loading restore branches...");
+      setControlCenterOutput("Sync Backup Repo from GitHub", "Loading GitHub backup branches...");
 
       try {
         const branchData = await ccApiJson("/nut-ui/api/restore/branches");
         const branches = branchData.branches || [];
         const fallback = "backup-sanitized-initial";
         const branch = prompt(
-          "Restore from GitHub branch.\n\nAvailable branches:\n" +
+          "Sync Backup Repo from GitHub branch.\n\nAvailable branches:\n" +
           (branches.length ? branches.join("\n") : fallback) +
           "\n\nEnter branch to restore:",
           branches[0] || fallback
         );
 
         if (!branch || !branch.trim()) {
-          setControlCenterOutput("Restore from GitHub", "Restore cancelled. No commands were run.");
+          setControlCenterOutput("Sync Backup Repo from GitHub", "Sync cancelled. No commands were run.");
           return;
         }
 
         const confirmed = confirm(
-          "Restore local repo from GitHub branch:\n\n" +
+          "Sync local backup repo from GitHub branch:\n\n" +
           branch.trim() +
-          "\n\nThis will back up the current repo state, fetch GitHub, and reset the local repo. Continue?"
+          "\n\nThis will back up the current local repo copy, fetch GitHub, and reset /opt/nut-admin/repo-template. It will not restore live system files. Continue?"
         );
 
         if (!confirmed) {
-          setControlCenterOutput("Restore from GitHub", "Restore cancelled. No commands were run.");
+          setControlCenterOutput("Sync Backup Repo from GitHub", "Sync cancelled. No commands were run.");
           return;
         }
 
-        setButtonRunning("cc-restore-github", true, "Restoring...");
+        setButtonRunning("cc-restore-github", true, "Syncing...");
 
         const data = await ccApiJson("/nut-ui/api/restore", {
           method: "POST",
@@ -2920,9 +2920,9 @@
           body: JSON.stringify({ branch: branch.trim() })
         });
 
-        setControlCenterOutput("Restore from GitHub", data, !data.ok);
+        setControlCenterOutput("Sync Backup Repo from GitHub", data, !data.ok);
       } catch (err) {
-        setControlCenterOutput("Restore Error", String(err), true);
+        setControlCenterOutput("Sync Error", String(err), true);
       } finally {
         setButtonRunning("cc-restore-github", false);
       }

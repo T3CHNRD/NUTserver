@@ -171,6 +171,10 @@ main() {
     copy_executable_file /usr/local/sbin/nut-vcenter-host-action-dry-run.sh ./usr/local/sbin/nut-vcenter-host-action-dry-run.sh
   fi
 
+  if [ -f /usr/local/sbin/nut-ui-live-restore-dry-run ]; then
+    copy_executable_file /usr/local/sbin/nut-ui-live-restore-dry-run ./usr/local/sbin/nut-ui-live-restore-dry-run
+  fi
+
   chown -R "$HOST_USER:$HOST_GROUP" "$REPO_DIR"
 
   run_git add .
