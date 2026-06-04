@@ -365,6 +365,7 @@ def restore_selected_file_live():
     confirmation = str(payload.get("confirmation") or "").strip()
 
     allowed = {
+        "restore_test_probe",
         "ui_app_py",
         "ui_control_center_html",
         "ui_index_html",

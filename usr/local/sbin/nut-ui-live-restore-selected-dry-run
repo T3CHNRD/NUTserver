@@ -13,6 +13,13 @@ fail() {
 [ -n "$REQUESTED_ID" ] || fail "restore item id is required"
 
 case "$REQUESTED_ID" in
+  restore_test_probe)
+    CATEGORY="restore-test"
+    REPO_REL="etc/nut/restore-live-test-probe.txt"
+    LIVE_PATH="/etc/nut/restore-live-test-probe.txt"
+    MODE="644"
+    ;;
+
   ui_app_py)
     CATEGORY="ui"
     REPO_REL="opt/nut-orchestrator-ui/app.py"

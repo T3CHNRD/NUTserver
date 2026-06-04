@@ -144,6 +144,10 @@ main() {
   copy_text_file /etc/nut/config.d/approved-targets.yml ./etc/nut/config.d/approved-targets.yml 640
   copy_text_file /etc/nut/config.d/shutdown-verification-targets.conf ./etc/nut/config.d/shutdown-verification-targets.conf 644
 
+  if [ -f /etc/nut/restore-live-test-probe.txt ]; then
+    copy_text_file /etc/nut/restore-live-test-probe.txt ./etc/nut/restore-live-test-probe.txt 644
+  fi
+
   # sanitized main config
   if ${AS_ROOT} test -f /etc/nut/nut-orchestrator.conf; then
     ${AS_ROOT} sed \
