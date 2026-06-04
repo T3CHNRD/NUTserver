@@ -1980,6 +1980,148 @@
       }
     }
 
+
+    /* Restore selected file two-card alignment */
+    .cc-restore-selected-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 1rem;
+      align-items: stretch;
+      margin-top: 1rem;
+    }
+
+    .cc-restore-selected-layout > .cc-card {
+      height: 100%;
+      min-height: 330px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .cc-restore-selected-layout .cc-input,
+    .cc-restore-selected-layout select {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    @media (max-width: 820px) {
+      .cc-restore-selected-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .cc-restore-selected-layout > .cc-card {
+        min-height: auto;
+      }
+    }
+
+
+    /* Restore selected file alignment fix */
+    #cc-lab-selected-restore-screen .cc-restore-selected-layout {
+      align-items: stretch !important;
+    }
+
+    #cc-lab-selected-restore-screen .cc-restore-selected-layout > .cc-card {
+      margin-top: 0 !important;
+      align-self: stretch !important;
+      min-height: 332px;
+    }
+
+    #cc-lab-selected-restore-screen #cc-lab-restore-confirm-panel {
+      margin-top: 0 !important;
+      align-self: stretch !important;
+    }
+
+
+    /* Restore selected file equal-card sizing */
+    #cc-lab-selected-restore-screen .cc-restore-selected-layout {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+      gap: 1rem !important;
+      align-items: stretch !important;
+    }
+
+    #cc-lab-selected-restore-screen .cc-restore-selected-layout > .cc-card,
+    #cc-lab-selected-restore-screen #cc-lab-restore-confirm-panel {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 340px !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    #cc-lab-selected-restore-screen #cc-lab-restore-confirm-panel {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    #cc-lab-selected-restore-screen #cc-lab-restore-confirm-panel .cc-btn-danger {
+      margin-top: auto !important;
+      align-self: flex-end !important;
+    }
+
+    @media (max-width: 820px) {
+      #cc-lab-selected-restore-screen .cc-restore-selected-layout {
+        grid-template-columns: 1fr !important;
+      }
+
+      #cc-lab-selected-restore-screen .cc-restore-selected-layout > .cc-card,
+      #cc-lab-selected-restore-screen #cc-lab-restore-confirm-panel {
+        min-height: auto !important;
+      }
+    }
+
+
+    /* Restore selected file exact card sizing */
+    #cc-lab-selected-restore-screen .cc-restore-selected-layout {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 1rem !important;
+      align-items: stretch !important;
+    }
+
+    #cc-lab-selected-restore-screen .cc-restore-selected-layout > .cc-card {
+      width: 100% !important;
+      min-width: 0 !important;
+      height: 350px !important;
+      min-height: 350px !important;
+      max-height: 350px !important;
+      margin: 0 !important;
+      padding: 1.35rem !important;
+      box-sizing: border-box !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    #cc-lab-selected-restore-screen .cc-restore-selected-layout > .cc-card > div:last-child,
+    #cc-lab-selected-restore-screen #cc-lab-restore-confirm-panel .cc-btn-danger {
+      margin-top: auto !important;
+    }
+
+    #cc-lab-selected-restore-screen #cc-lab-restore-confirm-panel {
+      width: 100% !important;
+      height: 350px !important;
+      min-height: 350px !important;
+      max-height: 350px !important;
+      margin: 0 !important;
+      padding: 1.35rem !important;
+      box-sizing: border-box !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    @media (max-width: 820px) {
+      #cc-lab-selected-restore-screen .cc-restore-selected-layout {
+        grid-template-columns: 1fr !important;
+      }
+
+      #cc-lab-selected-restore-screen .cc-restore-selected-layout > .cc-card,
+      #cc-lab-selected-restore-screen #cc-lab-restore-confirm-panel {
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+      }
+    }
+
 </style>
 </head>
 
@@ -3181,6 +3323,72 @@
       }
     }
 
+    let ccLabPendingRestoreItemId = "";
+
+    function openLabSelectedRestoreScreen() {
+      closeRestoreOptionsModal();
+
+      const screen = document.getElementById("cc-lab-selected-restore-screen");
+      if (screen) {
+        screen.classList.add("open");
+        screen.setAttribute("aria-hidden", "false");
+      }
+    }
+
+    function closeLabSelectedRestoreScreen() {
+      const screen = document.getElementById("cc-lab-selected-restore-screen");
+      if (screen) {
+        screen.classList.remove("open");
+        screen.setAttribute("aria-hidden", "true");
+      }
+    }
+
+    function selectLabRestoreItem(itemId, label) {
+      ccLabPendingRestoreItemId = String(itemId || "").trim();
+
+      const confirmPanel = document.getElementById("cc-lab-restore-confirm-panel");
+      const titleEl = document.getElementById("cc-lab-restore-confirm-title");
+      const idEl = document.getElementById("cc-lab-restore-confirm-id");
+      const input = document.getElementById("cc-lab-restore-confirm-input");
+
+      if (titleEl) titleEl.textContent = label || itemId;
+      if (idEl) idEl.textContent = ccLabPendingRestoreItemId;
+      if (input) input.value = "";
+      if (confirmPanel) confirmPanel.style.display = "block";
+    }
+
+    async function runLabSelectedRestore() {
+      const title = "Restore Lab";
+      const phrase = "RESTORE SELECTED FILE";
+      const input = document.getElementById("cc-lab-restore-confirm-input");
+      const confirmation = input ? String(input.value || "").trim() : "";
+
+      if (!ccLabPendingRestoreItemId) {
+        setControlCenterOutput(title, "Live restore blocked. No restore item was selected.", true);
+        return;
+      }
+
+      if (confirmation !== phrase) {
+        setControlCenterOutput(title, "Live restore blocked. Exact confirmation phrase was not entered.", true);
+        return;
+      }
+
+      closeLabSelectedRestoreScreen();
+      setControlCenterOutput(title, "Running lab live restore for selected item: " + ccLabPendingRestoreItemId);
+
+      try {
+        const data = await ccApiJson("/nut-ui/api/restore/selected-file-live", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ item_id: ccLabPendingRestoreItemId, confirmation: phrase })
+        });
+
+        setControlCenterOutput(title, data, !data.ok);
+      } catch (err) {
+        setControlCenterOutput("Restore Lab Error", String(err), true);
+      }
+    }
+
     async function runControlCenterRestore() {
       openRestoreOptionsModal();
     }
@@ -3206,6 +3414,9 @@
         drawLoadGraph();
       }
     }
+
+    // Lab safety guard: prevent drawLoadGraph from crashing if load history is unavailable.
+    let ccLoadHistory = [];
 
     function drawLoadGraph() {
       const canvas = document.getElementById("cc-load-graph-canvas");
@@ -3789,6 +4000,34 @@
         restoreButton.addEventListener("click", runControlCenterRestore);
       }
 
+      const labOpenSelectedRestore = document.getElementById("cc-lab-open-selected-restore");
+      if (labOpenSelectedRestore) {
+        labOpenSelectedRestore.addEventListener("click", openLabSelectedRestoreScreen);
+      }
+
+      const labSelectedRestoreBack = document.getElementById("cc-lab-selected-restore-back");
+      if (labSelectedRestoreBack) {
+        labSelectedRestoreBack.addEventListener("click", () => {
+          closeLabSelectedRestoreScreen();
+          openRestoreOptionsModal();
+        });
+      }
+
+      document.querySelectorAll("[data-lab-restore-item]").forEach((button) => {
+        button.addEventListener("click", () => {
+          selectLabRestoreItem(
+            button.getAttribute("data-lab-restore-item"),
+            button.childNodes[0] ? button.childNodes[0].textContent.trim() : button.textContent.trim()
+          );
+        });
+      });
+
+      const labRunSelectedRestore = document.getElementById("cc-lab-run-selected-restore");
+      if (labRunSelectedRestore) {
+        labRunSelectedRestore.addEventListener("click", runLabSelectedRestore);
+      }
+
+
       const restoreModalClose = document.getElementById("cc-restore-modal-close");
       if (restoreModalClose) {
         restoreModalClose.addEventListener("click", closeRestoreOptionsModal);
@@ -3991,13 +4230,14 @@
 
 
   
+  
   <div class="cc-restore-modal-overlay" id="cc-restore-modal-overlay" aria-hidden="true">
     <div class="cc-restore-modal" role="dialog" aria-modal="true" aria-labelledby="cc-restore-modal-title">
       <div class="cc-restore-modal-header">
         <div>
           <div class="cc-restore-modal-title" id="cc-restore-modal-title">Restore from GitHub Options</div>
           <div class="cc-restore-modal-subtitle">
-            Choose a restore action. Repo sync updates the local backup copy only. Restore selected file can perform a live restore, but only after confirmation.
+            Choose a restore action. Repo sync updates the local backup copy only. Preview shows restore mappings without copying files.
           </div>
         </div>
         <button class="cc-btn" type="button" id="cc-restore-modal-close">Close</button>
@@ -4014,146 +4254,127 @@
           <small>Shows all restore mappings. No files copied.</small>
         </button>
 
-        <button class="cc-restore-option" type="button" data-restore-action="open-selected-restore">
-          Restore selected file
-          <small>Choose one approved file. Live restore requires exact confirmation.</small>
+        <button class="cc-restore-option" type="button" id="cc-lab-open-selected-restore">
+          Live restore selected file
+          <small>Open the in-modal restore selection screen. No separate restore page.</small>
         </button>
       </div>
     </div>
   </div>
 
   
-  <div class="cc-restore-modal-overlay" id="cc-selected-restore-modal-overlay" aria-hidden="true">
-    <div class="cc-restore-modal" role="dialog" aria-modal="true" aria-labelledby="cc-selected-restore-modal-title">
+  
+  <div class="cc-restore-modal-overlay" id="cc-lab-selected-restore-screen" aria-hidden="true">
+    <div class="cc-restore-modal" role="dialog" aria-modal="true" aria-labelledby="cc-lab-selected-restore-title">
       <div class="cc-restore-modal-header">
         <div>
-          <div class="cc-restore-modal-title" id="cc-selected-restore-modal-title">Restore Selected File</div>
+          <div class="cc-restore-modal-title" id="cc-lab-selected-restore-title">Restore Selected File</div>
           <div class="cc-restore-modal-subtitle">
-            Select one approved file to restore from the GitHub-backed local repo copy. Use the safe test probe first when proving restore behavior.
+            Select one approved file. Use the safe test probe first to verify live restore works.
           </div>
         </div>
-        <button class="cc-btn" type="button" id="cc-selected-restore-modal-close">Back</button>
+        <button class="cc-btn" type="button" id="cc-lab-selected-restore-back">Back</button>
       </div>
 
       <div class="cc-restore-option-grid">
-        <button class="cc-restore-option" type="button" data-selected-restore-item="restore_test_probe" data-selected-restore-label="Safe test probe">
-          Safe test probe
-          <small>/etc/nut/restore-live-test-probe.txt — harmless live restore test.</small>
-        </button>
+                <div class="cc-card" style="margin-bottom:1rem;">
+          <h3 style="margin:.35rem 0 .5rem;">Choose restore item</h3>
+          <p style="margin:.25rem 0 1rem; color: var(--cc-muted);">
+            Select one approved file from Editable Live Config. Blocked entries are shown for visibility but cannot be restored from this menu yet.
+          </p>
 
-        <button class="cc-restore-option" type="button" data-selected-restore-item="dashboard_ui_json" data-selected-restore-label="Dashboard UI config">
-          Dashboard UI config
-          <small>/etc/nut/config.d/dashboard-ui.json</small>
-        </button>
+          <label class="cc-kicker" for="cc-lab-restore-item-dropdown">Approved restore item</label>
+          <select id="cc-lab-restore-item-dropdown" class="cc-input" style="width:100%; margin-top:.45rem;">
+            <option value="restore_test_probe" data-label="Safe test probe">Safe test probe — /etc/nut/restore-live-test-probe.txt</option>
+            <option value="ups_conf" disabled>ups.conf — /etc/nut/ups.conf — blocked: missing GitHub-backed repo source</option>
+            <option value="upsd_conf" data-label="upsd.conf">upsd.conf — /etc/nut/upsd.conf</option>
+            <option value="upsmon_conf" data-label="upsmon.conf">upsmon.conf — /etc/nut/upsmon.conf</option>
+            <option value="upssched_conf" data-label="upssched.conf">upssched.conf — /etc/nut/upssched.conf</option>
+            <option value="nut_conf" data-label="nut.conf">nut.conf — /etc/nut/nut.conf</option>
+            <option value="hosts_conf" data-label="hosts.conf">hosts.conf — /etc/nut/hosts.conf</option>
+            <option value="live_nut_orchestrator_conf" data-label="Live nut-orchestrator.conf">Live nut-orchestrator.conf — /etc/nut/nut-orchestrator.conf</option>
+            <option value="nut_orchestrator_conf" data-label="config.d nut-orchestrator.conf">config.d nut-orchestrator.conf — /etc/nut/config.d/nut-orchestrator.conf</option>
+            <option value="approved_targets_yml" data-label="Approved Targets">Approved Targets — /etc/nut/config.d/approved-targets.yml</option>
+            <option value="dashboard_ui_json" data-label="Dashboard UI Settings">Dashboard UI Settings — /etc/nut/config.d/dashboard-ui.json</option>
+            <option value="synology_shutdown_sh" data-label="nut-synology-shutdown.sh">nut-synology-shutdown.sh — /usr/local/sbin/nut-synology-shutdown.sh</option>
+            <option value="voip_shutdown_sh" data-label="nut-voip-shutdown.sh">nut-voip-shutdown.sh — /usr/local/sbin/nut-voip-shutdown.sh</option>
+            <option value="db_shutdown_sh" data-label="nut-db-shutdown.sh">nut-db-shutdown.sh — /usr/local/sbin/nut-db-shutdown.sh</option>
+            <option value="blueiris_shutdown_sh" data-label="nut-blueiris-shutdown.sh">nut-blueiris-shutdown.sh — /usr/local/sbin/nut-blueiris-shutdown.sh</option>
+            <option value="nut_ui_run_test" data-label="nut-ui-run-test">nut-ui-run-test — /usr/local/sbin/nut-ui-run-test</option>
+            <option value="nut_ui_run_real_test_approved" data-label="nut-ui-run-real-test-approved">nut-ui-run-real-test-approved — /usr/local/sbin/nut-ui-run-real-test-approved</option>
+            <option value="lansweeper_shutdown_sh" data-label="nut-lansweeper-shutdown.sh">nut-lansweeper-shutdown.sh — /usr/local/sbin/nut-lansweeper-shutdown.sh</option>
+            <option value="vmware_shutdown_sh" data-label="nut-vmware-shutdown.sh">nut-vmware-shutdown.sh — /usr/local/sbin/nut-vmware-shutdown.sh</option>
+            <option value="hypervisor_ssh_fallback_conf" data-label="Hypervisor SSH Fallback Config">Hypervisor SSH Fallback Config — /etc/nut/hypervisors/hypervisor-ssh-fallback.conf</option>
+            <option value="netapp_shutdown_sh" data-label="nut-netapp-halt.sh">nut-netapp-halt.sh — /usr/local/sbin/nut-netapp-halt.sh</option>
+            <option value="orchestrator_main_sh" data-label="nut-orchestrator.sh (main orchestration)">nut-orchestrator.sh (main orchestration) — /usr/local/bin/nut-orchestrator.sh</option>
+            <option value="db_telnet_user" disabled>DB Telnet Username — /etc/nut/db-telnet.user — blocked: missing GitHub-backed repo source</option>
+            <option value="db_telnet_pass" disabled>DB Telnet Password — /etc/nut/db-telnet.pass — blocked: sensitive_item_requires_separate_handling</option>
+            <option value="vcenter_pass" disabled>vCenter Password — /etc/nut/vcenter.pass — blocked: sensitive_item_requires_separate_handling</option>
+          </select>
 
-        <button class="cc-restore-option" type="button" data-selected-restore-item="approved_targets_yml" data-selected-restore-label="Approved targets">
-          Approved targets
-          <small>/etc/nut/config.d/approved-targets.yml</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="shutdown_verification_targets_conf" data-selected-restore-label="Shutdown verification targets">
-          Shutdown verification targets
-          <small>/etc/nut/config.d/shutdown-verification-targets.conf</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="hypervisor_ssh_fallback_conf" data-selected-restore-label="Hypervisor SSH fallback config">
-          Hypervisor SSH fallback config
-          <small>/etc/nut/hypervisors/hypervisor-ssh-fallback.conf</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="config_registry_json" data-selected-restore-label="Config registry">
-          Config registry
-          <small>/opt/nut-orchestrator-ui/lib/config_registry.json</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="ui_app_py" data-selected-restore-label="NUT UI app.py">
-          NUT UI app.py
-          <small>/opt/nut-orchestrator-ui/app.py</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="ui_control_center_html" data-selected-restore-label="Control Center HTML">
-          Control Center HTML
-          <small>/opt/nut-orchestrator-ui/templates/control-center.html</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="ui_index_html" data-selected-restore-label="Dashboard index HTML">
-          Dashboard index HTML
-          <small>/opt/nut-orchestrator-ui/templates/index.html</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="ui_static_app_js" data-selected-restore-label="Static app.js">
-          Static app.js
-          <small>/opt/nut-orchestrator-ui/static/app.js</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="ui_theme_css" data-selected-restore-label="NUT UI theme CSS">
-          NUT UI theme CSS
-          <small>/opt/nut-orchestrator-ui/static/nut-ui-theme.css</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="nut_ui_live_restore_dry_run" data-selected-restore-label="Live restore dry-run planner">
-          Live restore dry-run planner
-          <small>/usr/local/sbin/nut-ui-live-restore-dry-run</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="nut_ui_live_restore_selected_dry_run" data-selected-restore-label="Selected-file dry-run wrapper">
-          Selected-file dry-run wrapper
-          <small>/usr/local/sbin/nut-ui-live-restore-selected-dry-run</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="nut_vmware_export_inventory" data-selected-restore-label="VMware inventory exporter">
-          VMware inventory exporter
-          <small>/usr/local/sbin/nut-vmware-export-inventory.sh</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="nut_vmware_shutdown" data-selected-restore-label="VMware shutdown script">
-          VMware shutdown script
-          <small>/usr/local/sbin/nut-vmware-shutdown.sh</small>
-        </button>
-
-        <button class="cc-restore-option" type="button" data-selected-restore-item="nut_hypervisor_ssh_readonly_preflight" data-selected-restore-label="Hypervisor SSH read-only preflight">
-          Hypervisor SSH read-only preflight
-          <small>/usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh</small>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div class="cc-restore-modal-overlay" id="cc-selected-restore-confirm-overlay" aria-hidden="true">
-    <div class="cc-restore-modal" role="dialog" aria-modal="true" aria-labelledby="cc-selected-restore-confirm-title">
-      <div class="cc-restore-modal-header">
-        <div>
-          <div class="cc-restore-modal-title" id="cc-selected-restore-confirm-title">Confirm Selected File Restore</div>
-          <div class="cc-restore-modal-subtitle">
-            A pre-restore backup will be created before the selected file is restored.
+          <div style="display:flex; justify-content:flex-end; gap:.75rem; margin-top:1rem;">
+            <button class="cc-btn" type="button"
+              onclick="
+                const s = document.getElementById('cc-lab-restore-item-dropdown');
+                if (!s || !s.value) { return false; }
+                const label = s.options[s.selectedIndex].dataset.label || s.options[s.selectedIndex].textContent.trim();
+                selectLabRestoreItem(s.value, label);
+                return false;
+              ">
+              Select Restore Item
+            </button>
           </div>
         </div>
-        <button class="cc-btn" type="button" id="cc-selected-restore-confirm-close">Back</button>
-      </div>
 
-      <div class="cc-card" style="margin-bottom: 1rem;">
-        <div class="cc-kicker">Selected restore item</div>
-        <div id="cc-selected-restore-confirm-label" style="font-weight: 800; margin-top: .35rem;"></div>
-        <div id="cc-selected-restore-confirm-id" style="opacity: .72; margin-top: .35rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;"></div>
-      </div>
+      <div class="cc-card" id="cc-lab-restore-confirm-panel" style="display:none; margin-top:1rem;">
+        <div class="cc-kicker">Confirm Restore</div>
+        <h3 id="cc-lab-restore-confirm-title" style="margin:.35rem 0 .5rem;">Selected item</h3>
+        <p id="cc-lab-restore-confirm-id" style="color:rgba(255,255,255,.66); margin-top:0;"></p>
 
-      <label class="cc-kicker" for="cc-selected-restore-confirm-input">Type exact confirmation phrase</label>
-      <input
-        id="cc-selected-restore-confirm-input"
-        class="cc-input"
-        type="text"
-        autocomplete="off"
-        spellcheck="false"
-        placeholder="RESTORE SELECTED FILE"
-        style="width: 100%; margin-top: .5rem;"
-      />
+        <label class="cc-kicker" for="cc-lab-restore-confirm-input">Type exact confirmation phrase</label>
+        <input
+          id="cc-lab-restore-confirm-input"
+          class="cc-input"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="RESTORE SELECTED FILE"
+          style="width:100%; margin-top:.45rem;"
+        />
 
-      <div style="display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1rem;">
-        <button class="cc-btn" type="button" id="cc-selected-restore-confirm-cancel">Cancel</button>
-        <button class="cc-btn cc-btn-danger" type="button" id="cc-selected-restore-confirm-run">Restore Selected File</button>
+        <div style="border:1px solid rgba(251,191,36,.35); background:rgba(251,191,36,.08); border-radius:16px; padding:.75rem; margin-top:.85rem; color:rgba(254,243,199,.95);">
+          Live restore requires typing <strong>RESTORE SELECTED FILE</strong>. A pre-restore backup will be created first.
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:.9rem;">
+          <button class="cc-btn cc-btn-danger" type="button" id="cc-lab-run-selected-restore">
+            Restore Selected File
+          </button>
+        </div>
       </div>
     </div>
   </div>
+
+  <script>
+    // LAB_RESTORE_BUTTON_FIX_20260604
+    document.addEventListener("DOMContentLoaded", function () {
+      const openButton = document.getElementById("cc-lab-open-selected-restore");
+      const restoreOptionsOverlay = document.getElementById("cc-restore-modal-overlay");
+      const selectedRestoreScreen = document.getElementById("cc-lab-selected-restore-screen");
+
+      if (openButton && selectedRestoreScreen) {
+        openButton.addEventListener("click", function () {
+          if (restoreOptionsOverlay) {
+            restoreOptionsOverlay.classList.remove("open");
+            restoreOptionsOverlay.setAttribute("aria-hidden", "true");
+          }
+
+          selectedRestoreScreen.classList.add("open");
+          selectedRestoreScreen.setAttribute("aria-hidden", "false");
+        });
+      }
+    });
+  </script>
 
 </body>
 </html>

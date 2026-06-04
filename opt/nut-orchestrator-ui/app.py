@@ -62,6 +62,11 @@ def control_center():
     )
 
 
+
+@app.route("/control-center-restore-lab")
+def control_center_restore_lab():
+    return render_template("control-center-restore-lab.html")
+
 @app.route("/healthz")
 def healthz():
     return jsonify({"ok": True})
@@ -257,6 +262,7 @@ def run_test(mode):
         "output": result.stdout + result.stderr,
         "returncode": result.returncode
     })
+
 
 
 # =========================
