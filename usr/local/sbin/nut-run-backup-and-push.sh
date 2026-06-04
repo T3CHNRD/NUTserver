@@ -138,6 +138,9 @@ main() {
   copy_executable_file /usr/local/bin/nut-orchestrator.sh ./usr/local/bin/nut-orchestrator.sh
   copy_executable_file /usr/local/sbin/nut-local-final-shutdown.sh ./usr/local/sbin/nut-local-final-shutdown.sh
 
+  # Core NUT configuration files.
+  copy_text_file /etc/nut/ups.conf ./etc/nut/ups.conf 640
+
   # config.d (safe)
   copy_text_file /etc/nut/config.d/nut-orchestrator.conf ./etc/nut/config.d/nut-orchestrator.conf 640
   copy_text_file /etc/nut/config.d/dashboard-ui.json ./etc/nut/config.d/dashboard-ui.json 640
