@@ -317,6 +317,47 @@ def restore_now():
     })
 
 
+@app.route("/api/restore/live-dry-run", methods=["POST"])
+def restore_live_dry_run():
+    payload = request.get_json(silent=True) or {}
+    category = str(payload.get("category") or "all").strip()
+
+    allowed = {
+        "all",
+        "ui",
+        "nut-configs",
+        "scripts",
+        "vmware-hypervisor",
+        "systemd",
+    }
+
+    if category not in allowed:
+        return jsonify({
+            "ok": False,
+            "stdout": "",
+            "stderr": f"Invalid restore dry-run category: {category}",
+            "output": f"Invalid restore dry-run category: {category}",
+            "returncode": 400,
+        }), 400
+
+    cmd = [
+        "/usr/bin/sudo",
+        "/usr/local/sbin/nut-ui-live-restore-dry-run",
+        "dry-run",
+        category,
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+
+    return jsonify({
+        "ok": result.returncode == 0,
+        "category": category,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "output": result.stdout + result.stderr,
+        "returncode": result.returncode
+    })
+
+
 # =========================
 # POWER EVENTS (NEW)
 # =========================

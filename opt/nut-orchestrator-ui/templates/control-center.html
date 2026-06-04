@@ -1881,7 +1881,106 @@
       letter-spacing: -0.01em;
     }
 
-  </style>
+  
+    /* Restore from GitHub custom options modal */
+    .cc-restore-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10020;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(2, 6, 23, 0.62);
+      backdrop-filter: blur(22px) saturate(1.3);
+      -webkit-backdrop-filter: blur(22px) saturate(1.3);
+    }
+
+    .cc-restore-modal-overlay.open {
+      display: flex;
+    }
+
+    .cc-restore-modal {
+      width: min(760px, 96vw);
+      border-radius: 30px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background:
+        linear-gradient(145deg, rgba(30,41,59,0.94), rgba(15,23,42,0.92));
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.16),
+        0 32px 90px rgba(0,0,0,0.48);
+      padding: 22px;
+    }
+
+    .cc-restore-modal-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .cc-restore-modal-title {
+      font-size: 1.2rem;
+      font-weight: 850;
+      color: rgba(255,255,255,0.94);
+    }
+
+    .cc-restore-modal-subtitle {
+      margin-top: 6px;
+      color: rgba(255,255,255,0.64);
+      line-height: 1.45;
+      max-width: 560px;
+    }
+
+    .cc-restore-option-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .cc-restore-option {
+      text-align: left;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.13);
+      background: rgba(255,255,255,0.055);
+      color: rgba(255,255,255,0.90);
+      padding: 14px;
+      cursor: pointer;
+      font-weight: 750;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .cc-restore-option:hover {
+      border-color: rgba(147,197,253,0.34);
+      background: rgba(147,197,253,0.10);
+    }
+
+    .cc-restore-option small {
+      display: block;
+      margin-top: 6px;
+      color: rgba(255,255,255,0.58);
+      font-weight: 500;
+      line-height: 1.35;
+    }
+
+    .cc-restore-option.future {
+      opacity: 0.58;
+      cursor: not-allowed;
+    }
+
+    .cc-restore-option.future:hover {
+      border-color: rgba(255,255,255,0.13);
+      background: rgba(255,255,255,0.055);
+    }
+
+    @media (max-width: 760px) {
+      .cc-restore-option-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+</style>
 </head>
 
 <body>
@@ -1895,7 +1994,7 @@
         <div class="cc-command-primary">
           <button class="cc-btn cc-btn-primary" id="cc-backup-github">Backup All to GitHub</button>
           <button class="cc-btn" id="cc-refresh-all">Refresh</button>
-          <button class="cc-btn" id="cc-restore-github">Sync Backup Repo from GitHub</button>
+          <button class="cc-btn" id="cc-restore-github">Restore from GitHub</button>
         </div>
 
         <div class="cc-command-secondary">
@@ -2881,23 +2980,43 @@
       }
     }
 
-    async function runControlCenterRestore() {
+    function openRestoreOptionsModal() {
+      const overlay = document.getElementById("cc-restore-modal-overlay");
+      if (overlay) {
+        overlay.classList.add("open");
+        overlay.setAttribute("aria-hidden", "false");
+      }
+    }
+
+    function closeRestoreOptionsModal() {
+      const overlay = document.getElementById("cc-restore-modal-overlay");
+      if (overlay) {
+        overlay.classList.remove("open");
+        overlay.setAttribute("aria-hidden", "true");
+      }
+    }
+
+    async function syncBackupRepoFromGithub() {
+      const title = "Restore from GitHub";
+      closeRestoreOptionsModal();
+
       setButtonRunning("cc-restore-github", true, "Loading branches...");
-      setControlCenterOutput("Sync Backup Repo from GitHub", "Loading GitHub backup branches...");
+      setControlCenterOutput(title, "Loading GitHub backup branches...");
 
       try {
         const branchData = await ccApiJson("/nut-ui/api/restore/branches");
         const branches = branchData.branches || [];
         const fallback = "backup-sanitized-initial";
+
         const branch = prompt(
-          "Sync Backup Repo from GitHub branch.\n\nAvailable branches:\n" +
+          "Sync backup repo from GitHub branch.\n\nAvailable branches:\n" +
           (branches.length ? branches.join("\n") : fallback) +
-          "\n\nEnter branch to restore:",
+          "\n\nThis only resets /opt/nut-admin/repo-template. It does not restore live system files.\n\nEnter branch to sync:",
           branches[0] || fallback
         );
 
         if (!branch || !branch.trim()) {
-          setControlCenterOutput("Sync Backup Repo from GitHub", "Sync cancelled. No commands were run.");
+          setControlCenterOutput(title, "Sync cancelled. No commands were run.");
           return;
         }
 
@@ -2908,46 +3027,55 @@
         );
 
         if (!confirmed) {
-          setControlCenterOutput("Sync Backup Repo from GitHub", "Sync cancelled. No commands were run.");
+          setControlCenterOutput(title, "Sync cancelled. No commands were run.");
           return;
         }
 
         setButtonRunning("cc-restore-github", true, "Syncing...");
-
         const data = await ccApiJson("/nut-ui/api/restore", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ branch: branch.trim() })
         });
 
-        setControlCenterOutput("Sync Backup Repo from GitHub", data, !data.ok);
+        setControlCenterOutput(title, data, !data.ok);
       } catch (err) {
-        setControlCenterOutput("Sync Error", String(err), true);
+        setControlCenterOutput("Restore Error", String(err), true);
       } finally {
         setButtonRunning("cc-restore-github", false);
       }
     }
 
+    async function runRestoreDryRunPreview(category) {
+      const title = "Restore from GitHub";
+      closeRestoreOptionsModal();
 
-    const ccLoadHistory = {};
-    const ccUpsDataStore = {};
+      setButtonRunning("cc-restore-github", true, "Running dry-run...");
+      setControlCenterOutput(title, "Running live restore dry-run preview for category: " + category);
 
-    function numericPercent(value) {
-      const n = parseFloat(String(value ?? "").replace("%", "").trim());
-      return Number.isFinite(n) ? n : null;
+      try {
+        const data = await ccApiJson("/nut-ui/api/restore/live-dry-run", {
+          method: "POST",
+          body: JSON.stringify({ category })
+        });
+
+        setControlCenterOutput(title, data, !data.ok);
+      } catch (err) {
+        setControlCenterOutput("Restore Dry-Run Error", String(err), true);
+      } finally {
+        setButtonRunning("cc-restore-github", false);
+      }
     }
 
-    function addLoadHistorySample(upsName, loadValue) {
-      const n = numericPercent(loadValue);
-      if (n === null) return;
+    function showFutureRestoreNotice(kind) {
+      closeRestoreOptionsModal();
+      setControlCenterOutput(
+        "Restore from GitHub",
+        "This restore option is not enabled yet: " + kind + ". Current restore safety phase only supports repo sync and dry-run previews."
+      );
+    }
 
-      if (!ccLoadHistory[upsName]) ccLoadHistory[upsName] = [];
-
-      ccLoadHistory[upsName].push(n);
-
-      if (ccLoadHistory[upsName].length > 60) {
-        ccLoadHistory[upsName].shift();
-      }
+    async function runControlCenterRestore() {
+      openRestoreOptionsModal();
     }
 
     async function sampleAllUpsLoadsForGraph() {
@@ -3554,6 +3682,42 @@
         restoreButton.addEventListener("click", runControlCenterRestore);
       }
 
+      const restoreModalClose = document.getElementById("cc-restore-modal-close");
+      if (restoreModalClose) {
+        restoreModalClose.addEventListener("click", closeRestoreOptionsModal);
+      }
+
+      const restoreModalOverlay = document.getElementById("cc-restore-modal-overlay");
+      if (restoreModalOverlay) {
+        restoreModalOverlay.addEventListener("click", (event) => {
+          if (event.target === restoreModalOverlay) {
+            closeRestoreOptionsModal();
+          }
+        });
+      }
+
+      document.querySelectorAll("[data-restore-action]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const action = button.getAttribute("data-restore-action");
+          if (action === "sync-repo") {
+            syncBackupRepoFromGithub();
+          }
+        });
+      });
+
+      document.querySelectorAll("[data-restore-dry-run]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const category = button.getAttribute("data-restore-dry-run");
+          runRestoreDryRunPreview(category);
+        });
+      });
+
+      document.querySelectorAll("[data-restore-future]").forEach((button) => {
+        button.addEventListener("click", () => {
+          showFutureRestoreNotice(button.getAttribute("data-restore-future"));
+        });
+      });
+
       const simTestButton = document.getElementById("cc-sim-test");
       if (simTestButton) {
         simTestButton.addEventListener("click", runControlCenterSimulatedTest);
@@ -3656,6 +3820,73 @@
 <div class="cc-section-title">
           <h2>Configuration Management</h2>
         </div>
+    </div>
+  </div>
+
+
+  <div class="cc-restore-modal-overlay" id="cc-restore-modal-overlay" aria-hidden="true">
+    <div class="cc-restore-modal" role="dialog" aria-modal="true" aria-labelledby="cc-restore-modal-title">
+      <div class="cc-restore-modal-header">
+        <div>
+          <div class="cc-restore-modal-title" id="cc-restore-modal-title">Restore from GitHub Options</div>
+          <div class="cc-restore-modal-subtitle">
+            Choose a safe restore action. Live file restore is not enabled yet; current restore options are repo sync and dry-run previews only.
+          </div>
+        </div>
+        <button class="cc-btn" type="button" id="cc-restore-modal-close">Close</button>
+      </div>
+
+      <div class="cc-restore-option-grid">
+        <button class="cc-restore-option" type="button" data-restore-action="sync-repo">
+          Sync backup repo from GitHub
+          <small>Updates /opt/nut-admin/repo-template only. Does not restore live files.</small>
+        </button>
+
+        <button class="cc-restore-option" type="button" data-restore-dry-run="all">
+          Dry-run preview: all
+          <small>Preview all restore mappings. No files copied.</small>
+        </button>
+
+        <button class="cc-restore-option" type="button" data-restore-dry-run="ui">
+          Dry-run preview: UI
+          <small>Preview Control Center and dashboard UI files.</small>
+        </button>
+
+        <button class="cc-restore-option" type="button" data-restore-dry-run="nut-configs">
+          Dry-run preview: NUT configs
+          <small>Preview NUT config files and hypervisor config.</small>
+        </button>
+
+        <button class="cc-restore-option" type="button" data-restore-dry-run="scripts">
+          Dry-run preview: scripts
+          <small>Preview shutdown and orchestration helper scripts.</small>
+        </button>
+
+        <button class="cc-restore-option" type="button" data-restore-dry-run="vmware-hypervisor">
+          Dry-run preview: VMware / ESXi / Proxmox
+          <small>Preview hypervisor helper files. No host actions run.</small>
+        </button>
+
+        <button class="cc-restore-option" type="button" data-restore-dry-run="systemd">
+          Dry-run preview: systemd
+          <small>Preview service and timer files.</small>
+        </button>
+
+        <button class="cc-restore-option future" type="button" data-restore-future="selected-file">
+          Future: restore selected live file
+          <small>Not enabled yet. Will require preview, backup, and confirmation.</small>
+        </button>
+
+        <button class="cc-restore-option future" type="button" data-restore-future="category">
+          Future: restore selected category
+          <small>Not enabled yet. Will require preview, backup, and confirmation.</small>
+        </button>
+
+        <button class="cc-restore-option future" type="button" data-restore-future="full">
+          Future: full live restore
+          <small>Not enabled yet. Will require strong confirmation phrase.</small>
+        </button>
+      </div>
     </div>
   </div>
 
