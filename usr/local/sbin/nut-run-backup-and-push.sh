@@ -156,14 +156,8 @@ main() {
     log "Copied sanitized nut-orchestrator.conf"
   fi
 
-  chown -R "$HOST_USER:$HOST_GROUP" "$REPO_DIR"
-
-  run_git add .
-
-  if git diff --cached --quiet; then
-  
   # Hypervisor SSH fallback support files.
-  # Safe backup only: do not copy private SSH keys from /root/.ssh.
+  # Safe backup only: do not copy private SSH keys.
   if [ -f /etc/nut/hypervisors/hypervisor-ssh-fallback.conf ]; then
     mkdir -p ./etc/nut/hypervisors
     copy_text_file /etc/nut/hypervisors/hypervisor-ssh-fallback.conf ./etc/nut/hypervisors/hypervisor-ssh-fallback.conf 640
@@ -177,6 +171,12 @@ main() {
     copy_executable_file /usr/local/sbin/nut-vcenter-host-action-dry-run.sh ./usr/local/sbin/nut-vcenter-host-action-dry-run.sh
   fi
 
+  chown -R "$HOST_USER:$HOST_GROUP" "$REPO_DIR"
+
+  run_git add .
+
+  if git diff --cached --quiet; then
+  
   log "No changes to commit"
   else
     run_git commit -m "Full sanitized system backup $(date)"
