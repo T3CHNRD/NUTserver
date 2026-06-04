@@ -1,0 +1,249 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_DIR="/opt/nut-admin/repo-template"
+MODE="${1:-dry-run}"
+REQUESTED_ID="${2:-}"
+CONFIRMATION="${3:-}"
+
+TS="$(date +%Y%m%d-%H%M%S)"
+BACKUP_ROOT="/var/backups/nut-admin/live-restore"
+REQUIRED_CONFIRMATION="RESTORE SELECTED FILE"
+
+fail() {
+  echo "FAIL: $*" >&2
+  exit 1
+}
+
+[ -d "$REPO_DIR/.git" ] || fail "$REPO_DIR is not a Git repo"
+
+case "$MODE" in
+  dry-run|live)
+    ;;
+  *)
+    fail "mode must be dry-run or live"
+    ;;
+esac
+
+[ -n "$REQUESTED_ID" ] || fail "restore item id is required"
+
+case "$REQUESTED_ID" in
+  ui_app_py)
+    CATEGORY="ui"
+    REPO_REL="opt/nut-orchestrator-ui/app.py"
+    LIVE_PATH="/opt/nut-orchestrator-ui/app.py"
+    FILE_MODE="644"
+    SERVICE_NOTE="nut-orchestrator-ui.service restart recommended after restore"
+    ;;
+
+  ui_control_center_html)
+    CATEGORY="ui"
+    REPO_REL="opt/nut-orchestrator-ui/templates/control-center.html"
+    LIVE_PATH="/opt/nut-orchestrator-ui/templates/control-center.html"
+    FILE_MODE="644"
+    SERVICE_NOTE="nut-orchestrator-ui.service restart recommended after restore"
+    ;;
+
+  ui_index_html)
+    CATEGORY="ui"
+    REPO_REL="opt/nut-orchestrator-ui/templates/index.html"
+    LIVE_PATH="/opt/nut-orchestrator-ui/templates/index.html"
+    FILE_MODE="644"
+    SERVICE_NOTE="nut-orchestrator-ui.service restart recommended after restore"
+    ;;
+
+  ui_static_app_js)
+    CATEGORY="ui"
+    REPO_REL="opt/nut-orchestrator-ui/static/app.js"
+    LIVE_PATH="/opt/nut-orchestrator-ui/static/app.js"
+    FILE_MODE="644"
+    SERVICE_NOTE="browser refresh may be required after restore"
+    ;;
+
+  ui_theme_css)
+    CATEGORY="ui"
+    REPO_REL="opt/nut-orchestrator-ui/static/nut-ui-theme.css"
+    LIVE_PATH="/opt/nut-orchestrator-ui/static/nut-ui-theme.css"
+    FILE_MODE="644"
+    SERVICE_NOTE="browser refresh may be required after restore"
+    ;;
+
+  config_registry_json)
+    CATEGORY="ui"
+    REPO_REL="opt/nut-orchestrator-ui/lib/config_registry.json"
+    LIVE_PATH="/opt/nut-orchestrator-ui/lib/config_registry.json"
+    FILE_MODE="644"
+    SERVICE_NOTE="nut-orchestrator-ui.service restart recommended after restore"
+    ;;
+
+  dashboard_ui_json)
+    CATEGORY="nut-configs"
+    REPO_REL="etc/nut/config.d/dashboard-ui.json"
+    LIVE_PATH="/etc/nut/config.d/dashboard-ui.json"
+    FILE_MODE="640"
+    SERVICE_NOTE="no automatic restart"
+    ;;
+
+  approved_targets_yml)
+    CATEGORY="nut-configs"
+    REPO_REL="etc/nut/config.d/approved-targets.yml"
+    LIVE_PATH="/etc/nut/config.d/approved-targets.yml"
+    FILE_MODE="640"
+    SERVICE_NOTE="no automatic restart"
+    ;;
+
+  shutdown_verification_targets_conf)
+    CATEGORY="nut-configs"
+    REPO_REL="etc/nut/config.d/shutdown-verification-targets.conf"
+    LIVE_PATH="/etc/nut/config.d/shutdown-verification-targets.conf"
+    FILE_MODE="644"
+    SERVICE_NOTE="no automatic restart"
+    ;;
+
+  hypervisor_ssh_fallback_conf)
+    CATEGORY="vmware-hypervisor"
+    REPO_REL="etc/nut/hypervisors/hypervisor-ssh-fallback.conf"
+    LIVE_PATH="/etc/nut/hypervisors/hypervisor-ssh-fallback.conf"
+    FILE_MODE="640"
+    SERVICE_NOTE="no automatic restart"
+    ;;
+
+  nut_ui_live_restore_dry_run)
+    CATEGORY="scripts"
+    REPO_REL="usr/local/sbin/nut-ui-live-restore-dry-run"
+    LIVE_PATH="/usr/local/sbin/nut-ui-live-restore-dry-run"
+    FILE_MODE="750"
+    SERVICE_NOTE="no automatic restart"
+    ;;
+
+  nut_ui_live_restore_selected_dry_run)
+    CATEGORY="scripts"
+    REPO_REL="usr/local/sbin/nut-ui-live-restore-selected-dry-run"
+    LIVE_PATH="/usr/local/sbin/nut-ui-live-restore-selected-dry-run"
+    FILE_MODE="750"
+    SERVICE_NOTE="no automatic restart"
+    ;;
+
+  nut_hypervisor_ssh_readonly_preflight)
+    CATEGORY="vmware-hypervisor"
+    REPO_REL="usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh"
+    LIVE_PATH="/usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh"
+    FILE_MODE="750"
+    SERVICE_NOTE="no automatic restart"
+    ;;
+
+  nut_vmware_export_inventory)
+    CATEGORY="vmware-hypervisor"
+    REPO_REL="usr/local/sbin/nut-vmware-export-inventory.sh"
+    LIVE_PATH="/usr/local/sbin/nut-vmware-export-inventory.sh"
+    FILE_MODE="750"
+    SERVICE_NOTE="no automatic restart"
+    ;;
+
+  nut_vmware_shutdown)
+    CATEGORY="vmware-hypervisor"
+    REPO_REL="usr/local/sbin/nut-vmware-shutdown.sh"
+    LIVE_PATH="/usr/local/sbin/nut-vmware-shutdown.sh"
+    FILE_MODE="750"
+    SERVICE_NOTE="no automatic restart"
+    ;;
+
+  *)
+    fail "unknown restore item id: $REQUESTED_ID"
+    ;;
+esac
+
+REPO_SOURCE="${REPO_DIR}/${REPO_REL}"
+PRE_RESTORE_BACKUP="${BACKUP_ROOT}/${TS}${LIVE_PATH}.pre-restore"
+
+BLOCKED="false"
+BLOCK_REASON=""
+
+case "$LIVE_PATH" in
+  /root/.ssh/*|*.key|*.pem|*.pass|*.creds|*.env|*/upsd.users)
+    BLOCKED="true"
+    BLOCK_REASON="Sensitive path pattern blocked"
+    ;;
+esac
+
+echo "===== SELECTED-FILE LIVE RESTORE ENGINE ====="
+echo "mode=${MODE}"
+echo "restore_item_id=${REQUESTED_ID}"
+echo "category=${CATEGORY}"
+echo "repo_source=${REPO_SOURCE}"
+echo "live_destination=${LIVE_PATH}"
+echo "planned_mode=${FILE_MODE}"
+echo "pre_restore_backup=${PRE_RESTORE_BACKUP}"
+echo "service_note=${SERVICE_NOTE}"
+echo
+
+if [ -e "$REPO_SOURCE" ]; then
+  echo "repo_source_exists=yes"
+else
+  echo "repo_source_exists=no"
+fi
+
+if [ -e "$LIVE_PATH" ]; then
+  echo "live_destination_exists=yes"
+else
+  echo "live_destination_exists=no"
+fi
+
+echo "blocked=${BLOCKED}"
+echo "block_reason=${BLOCK_REASON}"
+
+if [ "$BLOCKED" = "true" ]; then
+  fail "restore blocked: ${BLOCK_REASON}"
+fi
+
+if [ ! -f "$REPO_SOURCE" ]; then
+  fail "repo source does not exist: $REPO_SOURCE"
+fi
+
+echo
+echo "----- RESTORE PLAN -----"
+echo "1. Create pre-restore backup if live destination exists"
+echo "2. Install repo source to live destination"
+echo "3. Set owner root:root"
+echo "4. Set mode ${FILE_MODE}"
+echo "5. Report service note"
+
+if [ "$MODE" = "dry-run" ]; then
+  echo
+  echo "actual_backup_created=false"
+  echo "actual_copy_executed=false"
+  echo "actual_chown_executed=false"
+  echo "actual_chmod_executed=false"
+  echo "actual_service_restart_executed=false"
+  echo "result=PASS"
+  echo "action=dry_run_only_no_copy"
+  exit 0
+fi
+
+if [ "$CONFIRMATION" != "$REQUIRED_CONFIRMATION" ]; then
+  fail "live restore requires exact confirmation phrase: $REQUIRED_CONFIRMATION"
+fi
+
+echo
+echo "===== LIVE RESTORE START ====="
+
+if [ -e "$LIVE_PATH" ]; then
+  mkdir -p "$(dirname "$PRE_RESTORE_BACKUP")"
+  cp -a "$LIVE_PATH" "$PRE_RESTORE_BACKUP"
+  echo "actual_backup_created=true"
+  echo "backup_path=$PRE_RESTORE_BACKUP"
+else
+  echo "actual_backup_created=false"
+  echo "backup_path=not_created_live_destination_missing"
+fi
+
+install -D -o root -g root -m "$FILE_MODE" "$REPO_SOURCE" "$LIVE_PATH"
+
+echo "actual_copy_executed=true"
+echo "actual_chown_executed=true"
+echo "actual_chmod_executed=true"
+echo "actual_service_restart_executed=false"
+echo "service_note=${SERVICE_NOTE}"
+echo "result=PASS"
+echo "action=live_restore_selected_file_complete"
+echo "===== LIVE RESTORE COMPLETE ====="

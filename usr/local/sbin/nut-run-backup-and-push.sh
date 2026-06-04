@@ -179,6 +179,10 @@ main() {
     copy_executable_file /usr/local/sbin/nut-ui-live-restore-selected-dry-run ./usr/local/sbin/nut-ui-live-restore-selected-dry-run
   fi
 
+  if [ -f /usr/local/sbin/nut-ui-live-restore-selected ]; then
+    copy_executable_file /usr/local/sbin/nut-ui-live-restore-selected ./usr/local/sbin/nut-ui-live-restore-selected
+  fi
+
   chown -R "$HOST_USER:$HOST_GROUP" "$REPO_DIR"
 
   run_git add .

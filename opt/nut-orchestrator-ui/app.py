@@ -358,6 +358,69 @@ def restore_live_dry_run():
     })
 
 
+@app.route("/api/restore/selected-file-live", methods=["POST"])
+def restore_selected_file_live():
+    payload = request.get_json(silent=True) or {}
+    item_id = str(payload.get("item_id") or "").strip()
+    confirmation = str(payload.get("confirmation") or "").strip()
+
+    allowed = {
+        "ui_app_py",
+        "ui_control_center_html",
+        "ui_index_html",
+        "ui_static_app_js",
+        "ui_theme_css",
+        "config_registry_json",
+        "dashboard_ui_json",
+        "approved_targets_yml",
+        "shutdown_verification_targets_conf",
+        "hypervisor_ssh_fallback_conf",
+        "nut_ui_live_restore_dry_run",
+        "nut_ui_live_restore_selected_dry_run",
+        "nut_hypervisor_ssh_readonly_preflight",
+        "nut_vmware_export_inventory",
+        "nut_vmware_shutdown",
+    }
+
+    required_confirmation = "RESTORE SELECTED FILE"
+
+    if item_id not in allowed:
+        return jsonify({
+            "ok": False,
+            "stdout": "",
+            "stderr": f"Invalid selected restore item id: {item_id}",
+            "output": f"Invalid selected restore item id: {item_id}",
+            "returncode": 400,
+        }), 400
+
+    if confirmation != required_confirmation:
+        return jsonify({
+            "ok": False,
+            "stdout": "",
+            "stderr": f"Live selected-file restore requires exact confirmation phrase: {required_confirmation}",
+            "output": f"Live selected-file restore requires exact confirmation phrase: {required_confirmation}",
+            "returncode": 403,
+        }), 403
+
+    cmd = [
+        "/usr/bin/sudo",
+        "/usr/local/sbin/nut-ui-live-restore-selected",
+        "live",
+        item_id,
+        confirmation,
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+
+    return jsonify({
+        "ok": result.returncode == 0,
+        "item_id": item_id,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "output": result.stdout + result.stderr,
+        "returncode": result.returncode
+    })
+
+
 # =========================
 # POWER EVENTS (NEW)
 # =========================
