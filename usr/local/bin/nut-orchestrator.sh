@@ -57,6 +57,36 @@ JSON
   chmod 644 "$state_file"
 }
 
+
+production_mode_allows_commit() {
+  local ups_name="${1:-unknown}"
+  local mode_file="/etc/nut/production-mode.conf"
+  local mode="disarmed"
+  local allow_live="0"
+  local allow_esxi="0"
+
+  if [ -f "$mode_file" ]; then
+    # shellcheck disable=SC1090
+    . "$mode_file" 2>/dev/null || true
+    mode="${NUT_PRODUCTION_MODE:-disarmed}"
+    allow_live="${NUT_ALLOW_LIVE_ACTIONS:-0}"
+    allow_esxi="${NUT_ALLOW_ESXI_SSH_FALLBACK:-0}"
+  fi
+
+  # Current enforcement rule:
+  #   storm_guard + allow_live=1 may execute existing approved commit paths.
+  #   disarmed/off block live commit actions.
+  #   armed is intentionally not enabled until final live testing is complete.
+  if [ "$mode" = "storm_guard" ] && [ "$allow_live" = "1" ]; then
+    log_line "PRODUCTION_MODE_GATE_ALLOW ups=${ups_name} mode=${mode} allow_live=${allow_live} allow_esxi=${allow_esxi}"
+    return 0
+  fi
+
+  log_line "PRODUCTION_MODE_GATE_BLOCK ups=${ups_name} mode=${mode} allow_live=${allow_live} allow_esxi=${allow_esxi} reason='live commit actions blocked by production mode'"
+  write_state "$ups_name" "$ups_name" "shutdown_blocked_by_production_mode" "production mode gate" 0 0 "Blocked by production mode: ${mode}"
+  return 1
+}
+
 run_phase2_power_restore_abort() {
   local ups_name="$1"
   local rc=0
@@ -87,6 +117,10 @@ run_phase2_power_restore_abort() {
 commit_placeholder() {
   local ups_name="$1"
   local rc=0
+
+  if ! production_mode_allows_commit "$ups_name"; then
+    return 0
+  fi
 
   case "$ups_name" in
     ups7)
