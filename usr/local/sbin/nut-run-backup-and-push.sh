@@ -79,6 +79,9 @@ main() {
   run_git fetch origin
   run_git pull --rebase origin "$TARGET_BRANCH"
 
+  log "Syncing safe live files into repo after pull"
+  /usr/local/sbin/nut-sync-live-to-repo-for-backup
+
   mkdir -p ./opt/nut-orchestrator-ui/{lib,templates,static}
   mkdir -p ./etc/systemd/system
   mkdir -p ./usr/local/sbin

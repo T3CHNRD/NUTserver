@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+
 LOG_FILE="/var/log/nut-orchestrator-ui/backup.log"
 BACKUP_SCRIPT="/usr/local/sbin/nut-run-backup-and-push.sh"
 
