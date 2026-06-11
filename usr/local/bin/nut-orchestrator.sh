@@ -74,10 +74,11 @@ production_mode_allows_commit() {
   fi
 
   # Current enforcement rule:
-  #   storm_guard + allow_live=1 may execute existing approved commit paths.
+  #   armed/protecting + allow_live=1 may execute the verified/current approved commit paths.
+  #   legacy storm_guard is accepted as an alias only.
   #   disarmed/off block live commit actions.
-  #   armed is intentionally not enabled until final live testing is complete.
-  if [ "$mode" = "storm_guard" ] && [ "$allow_live" = "1" ]; then
+  #   ESXi SSH fallback remains separately disabled unless explicitly approved.
+  if { [ "$mode" = "armed" ] || [ "$mode" = "storm_guard" ]; } && [ "$allow_live" = "1" ]; then
     log_line "PRODUCTION_MODE_GATE_ALLOW ups=${ups_name} mode=${mode} allow_live=${allow_live} allow_esxi=${allow_esxi}"
     return 0
   fi

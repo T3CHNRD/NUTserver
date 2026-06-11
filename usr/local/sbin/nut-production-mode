@@ -4,27 +4,69 @@ set -euo pipefail
 MODE_FILE="/etc/nut/production-mode.conf"
 STATUS_CMD="/usr/local/sbin/nut-production-status"
 LOG_FILE="/var/log/nut-production-mode.log"
+HYPERVISOR_CONFIG="/etc/nut/hypervisors/hypervisor-ssh-fallback.conf"
+
+set_hypervisor_fallback_enabled() {
+  local enabled="$1"
+
+  if [ ! -f "$HYPERVISOR_CONFIG" ]; then
+    echo "WARN: hypervisor fallback config missing: $HYPERVISOR_CONFIG" >&2
+    return 0
+  fi
+
+  python3 - "$HYPERVISOR_CONFIG" "$enabled" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+enabled = sys.argv[2]
+
+text = path.read_text()
+lines = text.splitlines()
+out = []
+changed = False
+
+for line in lines:
+    if line.startswith("HYPERVISOR_SSH_FALLBACK_ENABLED="):
+        out.append(f"HYPERVISOR_SSH_FALLBACK_ENABLED={enabled}")
+        changed = True
+    else:
+        out.append(line)
+
+if not changed:
+    out.insert(0, f"HYPERVISOR_SSH_FALLBACK_ENABLED={enabled}")
+
+path.write_text("\n".join(out) + "\n")
+PY
+
+  chmod 640 "$HYPERVISOR_CONFIG" 2>/dev/null || true
+}
 
 write_mode() {
   local mode="$1"
   local allow_live="$2"
   local allow_esxi="$3"
-  local note="$4"
+  local hypervisor_fallback_enabled="$4"
+  local note="$5"
+
+  set_hypervisor_fallback_enabled "$hypervisor_fallback_enabled"
 
   umask 022
   cat > "$MODE_FILE" <<EOF
 # NUT production mode status/enforcement file.
-# Valid modes:
-#   off
-#   disarmed
-#   storm_guard
-#   armed
+# User-facing modes:
+#   armed     = PROTECTING
+#   disarmed  = STANDBY FOR MAINTENANCE
+#   off       = OFF
 #
 # Current enforcement:
-#   storm_guard = allows existing approved NUT commit paths
-#   disarmed    = blocks live shutdown/orchestration commit actions
-#   armed       = reserved until live testing is complete
-#   off         = display-only unless nut-monitor.service is actually inactive
+#   armed     = production protection posture is active
+#   disarmed  = live shutdown/orchestration commit actions are blocked
+#   off       = live actions blocked; this command does not stop nut-monitor.service
+#
+# ESXi fallback:
+#   In PROTECTING mode, ESXi fallback readiness is enabled for the approved live test path.
+#   This file alone does not send shutdown, poweroff, reboot, maintenance, or VM power commands.
 
 NUT_PRODUCTION_MODE=${mode}
 NUT_ALLOW_LIVE_ACTIONS=${allow_live}
@@ -37,7 +79,7 @@ EOF
   chmod 644 "$MODE_FILE"
 
   mkdir -p "$(dirname "$LOG_FILE")"
-  echo "[$(date -Is)] mode=${mode} allow_live=${allow_live} allow_esxi=${allow_esxi} by=${SUDO_USER:-${USER:-unknown}} note=${note}" >> "$LOG_FILE"
+  echo "[$(date -Is)] mode=${mode} allow_live=${allow_live} allow_esxi=${allow_esxi} hypervisor_fallback_enabled=${hypervisor_fallback_enabled} by=${SUDO_USER:-${USER:-unknown}} note=${note}" >> "$LOG_FILE"
 
   if [ -x "$STATUS_CMD" ]; then
     "$STATUS_CMD" >/dev/null || true
@@ -60,30 +102,31 @@ case "${1:-status}" in
     fi
     ;;
 
-  disarm)
-    write_mode "disarmed" "0" "0" "DISARMED: NUT monitoring/logging stays active, but live shutdown/orchestration commit actions are blocked."
-    echo "PASS: NUT production mode set to DISARMED"
+  protect|protecting|arm|armed)
+    write_mode "armed" "1" "1" "1" "PROTECTING: NUT production protection posture is active. ESXi fallback readiness is enabled for the approved live test path."
+    echo "PASS: NUT production mode set to PROTECTING"
+    echo "NOTE: This did not send any shutdown, poweroff, reboot, maintenance, or VM power command."
     ;;
 
-  storm-guard)
-    write_mode "storm_guard" "1" "0" "STORM GUARD: existing approved NUT commit paths are allowed; ESXi SSH fallback remains disabled."
-    echo "PASS: NUT production mode set to STORM GUARD"
-    ;;
-
-  armed)
-    echo "REFUSED: ARMED mode is reserved until backend enforcement, ESXi verification, UI confirmation, and live testing are complete."
-    echo "Use: $0 storm-guard"
-    exit 2
+  standby|maintenance|standby-for-maintenance|standby_for_maintenance|disarm|disarmed)
+    write_mode "disarmed" "0" "0" "0" "STANDBY FOR MAINTENANCE: NUT monitoring/logging stays active, but live shutdown/orchestration commit actions are blocked."
+    echo "PASS: NUT production mode set to STANDBY FOR MAINTENANCE"
     ;;
 
   off)
-    write_mode "off" "0" "0" "OFF REQUESTED: live actions blocked. Note: this command does not stop nut-monitor.service."
-    echo "PASS: NUT production mode set to OFF display/block state"
+    write_mode "off" "0" "0" "0" "OFF: live actions blocked. Note: this command does not stop nut-monitor.service."
+    echo "PASS: NUT production mode set to OFF"
     echo "NOTE: nut-monitor.service was not stopped."
     ;;
 
+  storm-guard|storm_guard)
+    write_mode "armed" "1" "1" "1" "PROTECTING: legacy storm_guard request mapped to armed/protecting. ESXi fallback readiness is enabled for the approved live test path."
+    echo "PASS: legacy storm_guard mapped to PROTECTING"
+    echo "NOTE: Update UI wording to remove Storm Guard."
+    ;;
+
   *)
-    echo "Usage: $0 {status|storm-guard|disarm|off|armed}"
+    echo "Usage: $0 {status|protecting|standby|off}"
     exit 2
     ;;
 esac

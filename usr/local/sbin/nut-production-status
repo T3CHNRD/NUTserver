@@ -12,9 +12,9 @@ TEXT_OUT = pathlib.Path("/var/log/nut-production-mode-status.txt")
 
 VALID_MODES = {
     "off": "OFF",
-    "disarmed": "DISARMED",
-    "storm_guard": "STORM GUARD",
-    "armed": "ARMED",
+    "disarmed": "STANDBY FOR MAINTENANCE",
+    "storm_guard": "PROTECTING",
+    "armed": "PROTECTING",
 }
 
 
@@ -90,7 +90,7 @@ ups_online = sum(1 for item in ups if item["online"])
 payload = {
     "generated_at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
     "mode": mode,
-    "mode_label": VALID_MODES.get(mode, "DISARMED"),
+    "mode_label": VALID_MODES.get(mode, "STANDBY FOR MAINTENANCE"),
     "valid_modes": VALID_MODES,
     "nut_server": nut_server,
     "nut_monitor": nut_monitor,
