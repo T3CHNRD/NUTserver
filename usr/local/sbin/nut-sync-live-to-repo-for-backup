@@ -1,0 +1,77 @@
+#!/bin/bash
+set -euo pipefail
+
+REPO="/opt/nut-admin/repo-template"
+
+echo "===== SYNC SAFE LIVE FILES INTO BACKUP REPO ====="
+echo "repo=${REPO}"
+
+if [ ! -d "$REPO/.git" ]; then
+  echo "FAIL: repo is not a git worktree: $REPO"
+  exit 1
+fi
+
+copy_file() {
+  local src="$1"
+  local dst="$2"
+
+  if [ ! -e "$src" ]; then
+    echo "WARN: missing source: $src"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$REPO/$dst")"
+  install -m 0644 "$src" "$REPO/$dst"
+  echo "SYNCED: $src -> $REPO/$dst"
+}
+
+copy_exec() {
+  local src="$1"
+  local dst="$2"
+
+  if [ ! -e "$src" ]; then
+    echo "WARN: missing source: $src"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$REPO/$dst")"
+  install -m 0755 "$src" "$REPO/$dst"
+  echo "SYNCED: $src -> $REPO/$dst"
+}
+
+# NUT production mode / storm guard status
+copy_file /etc/nut/production-mode.conf etc/nut/production-mode.conf
+copy_exec /usr/local/sbin/nut-production-status usr/local/sbin/nut-production-status
+copy_exec /usr/local/sbin/nut-production-mode usr/local/sbin/nut-production-mode
+
+# ESXi / hypervisor SSH fallback config and read-only preflight
+copy_file /etc/nut/hypervisors/hypervisor-ssh-fallback.conf etc/nut/hypervisors/hypervisor-ssh-fallback.conf
+copy_exec /usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh
+
+# Control Center and Flask app
+copy_file /opt/nut-orchestrator-ui/templates/control-center.html opt/nut-orchestrator-ui/templates/control-center.html
+copy_file /opt/nut-orchestrator-ui/templates/control-center-restore-lab.html opt/nut-orchestrator-ui/templates/control-center-restore-lab.html
+copy_file /opt/nut-orchestrator-ui/app.py opt/nut-orchestrator-ui/app.py
+
+# NUT event path
+copy_exec /usr/local/bin/nut-orchestrator.sh usr/local/bin/nut-orchestrator.sh
+copy_file /etc/nut/upsmon.conf etc/nut/upsmon.conf
+copy_file /etc/nut/upssched.conf etc/nut/upssched.conf
+
+# Shutdown/integration wrappers we have worked around
+copy_exec /usr/local/sbin/nut-vmware-shutdown.sh usr/local/sbin/nut-vmware-shutdown.sh
+copy_exec /usr/local/sbin/nut-lansweeper-shutdown.sh usr/local/sbin/nut-lansweeper-shutdown.sh
+copy_exec /usr/local/sbin/nut-blueiris-shutdown.sh usr/local/sbin/nut-blueiris-shutdown.sh
+copy_exec /usr/local/sbin/nut-synology-shutdown.sh usr/local/sbin/nut-synology-shutdown.sh
+copy_exec /usr/local/sbin/nut-voip-shutdown.sh usr/local/sbin/nut-voip-shutdown.sh
+copy_exec /usr/local/sbin/nut-db-shutdown.sh usr/local/sbin/nut-db-shutdown.sh
+
+echo
+echo "===== SAFETY CHECK: DO NOT BACK UP SECRETS ====="
+if find "$REPO" -type f \( -path '*/root/.ssh/*' -o -name '*.pass' -o -name 'vcenter.pass' -o -name 'db-telnet.pass' \) | grep -q .; then
+  echo "FAIL: secret-like file detected in repo"
+  find "$REPO" -type f \( -path '*/root/.ssh/*' -o -name '*.pass' -o -name 'vcenter.pass' -o -name 'db-telnet.pass' \)
+  exit 1
+fi
+
+echo "PASS: safe live-file sync complete"

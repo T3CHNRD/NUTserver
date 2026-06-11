@@ -118,6 +118,7 @@ main() {
   copy_executable_file /usr/local/sbin/nut-ui-run-real-test-approved ./usr/local/sbin/nut-ui-run-real-test-approved
   copy_executable_file /usr/local/sbin/nut-ui-backup-now ./usr/local/sbin/nut-ui-backup-now
   copy_executable_file /usr/local/sbin/nut-run-backup-and-push.sh ./usr/local/sbin/nut-run-backup-and-push.sh
+  copy_executable_file /usr/local/sbin/nut-sync-live-to-repo-for-backup ./usr/local/sbin/nut-sync-live-to-repo-for-backup
   copy_executable_file /usr/local/sbin/nut-ui-rollback ./usr/local/sbin/nut-ui-rollback
   copy_executable_file /usr/local/sbin/nut-inventory-configs.sh ./usr/local/sbin/nut-inventory-configs.sh
 
