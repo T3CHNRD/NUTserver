@@ -1,0 +1,89 @@
+#!/bin/bash
+set -euo pipefail
+
+MODE_FILE="/etc/nut/production-mode.conf"
+STATUS_CMD="/usr/local/sbin/nut-production-status"
+LOG_FILE="/var/log/nut-production-mode.log"
+
+write_mode() {
+  local mode="$1"
+  local allow_live="$2"
+  local allow_esxi="$3"
+  local note="$4"
+
+  umask 022
+  cat > "$MODE_FILE" <<EOF
+# NUT production mode status/enforcement file.
+# Valid modes:
+#   off
+#   disarmed
+#   storm_guard
+#   armed
+#
+# Current enforcement:
+#   storm_guard = allows existing approved NUT commit paths
+#   disarmed    = blocks live shutdown/orchestration commit actions
+#   armed       = reserved until live testing is complete
+#   off         = display-only unless nut-monitor.service is actually inactive
+
+NUT_PRODUCTION_MODE=${mode}
+NUT_ALLOW_LIVE_ACTIONS=${allow_live}
+NUT_ALLOW_ESXI_SSH_FALLBACK=${allow_esxi}
+NUT_MODE_UPDATED_AT="$(date -Is)"
+NUT_MODE_UPDATED_BY="${SUDO_USER:-${USER:-unknown}}"
+NUT_MODE_NOTE="${note}"
+EOF
+
+  chmod 644 "$MODE_FILE"
+
+  mkdir -p "$(dirname "$LOG_FILE")"
+  echo "[$(date -Is)] mode=${mode} allow_live=${allow_live} allow_esxi=${allow_esxi} by=${SUDO_USER:-${USER:-unknown}} note=${note}" >> "$LOG_FILE"
+
+  if [ -x "$STATUS_CMD" ]; then
+    "$STATUS_CMD" >/dev/null || true
+  fi
+}
+
+case "${1:-status}" in
+  status)
+    if [ -f "$MODE_FILE" ]; then
+      cat "$MODE_FILE"
+    else
+      echo "NUT_PRODUCTION_MODE=disarmed"
+      echo "NUT_ALLOW_LIVE_ACTIONS=0"
+      echo "NUT_ALLOW_ESXI_SSH_FALLBACK=0"
+    fi
+
+    echo
+    if [ -x "$STATUS_CMD" ]; then
+      "$STATUS_CMD" | grep -E '"mode"|"mode_label"|"nut_monitor"|"ups_total"|"ups_online"|"esxi_ssh_fallback_enabled"|"allow_live_actions"|"allow_esxi_ssh_fallback"' || true
+    fi
+    ;;
+
+  disarm)
+    write_mode "disarmed" "0" "0" "DISARMED: NUT monitoring/logging stays active, but live shutdown/orchestration commit actions are blocked."
+    echo "PASS: NUT production mode set to DISARMED"
+    ;;
+
+  storm-guard)
+    write_mode "storm_guard" "1" "0" "STORM GUARD: existing approved NUT commit paths are allowed; ESXi SSH fallback remains disabled."
+    echo "PASS: NUT production mode set to STORM GUARD"
+    ;;
+
+  armed)
+    echo "REFUSED: ARMED mode is reserved until backend enforcement, ESXi verification, UI confirmation, and live testing are complete."
+    echo "Use: $0 storm-guard"
+    exit 2
+    ;;
+
+  off)
+    write_mode "off" "0" "0" "OFF REQUESTED: live actions blocked. Note: this command does not stop nut-monitor.service."
+    echo "PASS: NUT production mode set to OFF display/block state"
+    echo "NOTE: nut-monitor.service was not stopped."
+    ;;
+
+  *)
+    echo "Usage: $0 {status|storm-guard|disarm|off|armed}"
+    exit 2
+    ;;
+esac
