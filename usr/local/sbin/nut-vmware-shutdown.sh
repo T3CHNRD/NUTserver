@@ -70,11 +70,17 @@ PHASE4=(
 
 VCENTER_VM="${VMWARE_VCSA_VM:-ALBL-VCSA}"
 
+HYPERVISOR_FALLBACK_CONFIG="/etc/nut/hypervisors/hypervisor-ssh-fallback.conf"
+
+if [ -f "$HYPERVISOR_FALLBACK_CONFIG" ]; then
+  # shellcheck disable=SC1090
+  . "$HYPERVISOR_FALLBACK_CONFIG" 2>/dev/null || true
+fi
+
 ESXI_HOSTS=(
-"192.168.99.84"
-"192.168.99.72"
-"192.168.99.71"
-"192.168.99.70"
+"${ESXI_HOST_01_IP:-}"
+"${ESXI_HOST_02_IP:-}"
+"${ESXI_HOST_03_IP:-}"
 )
 
 require_python() {
