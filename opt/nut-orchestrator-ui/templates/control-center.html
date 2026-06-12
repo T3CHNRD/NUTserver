@@ -3548,8 +3548,23 @@
       }
     }
 
-    // Lab safety guard: prevent drawLoadGraph from crashing if load history is unavailable.
-    let ccLoadHistory = [];
+    // Load graph history store, keyed by UPS name.
+    let ccLoadHistory = {};
+
+    function addLoadHistorySample(upsName, rawLoadValue) {
+      const key = String(upsName || "").trim();
+      if (!key) return;
+
+      const parsed = Number.parseFloat(String(rawLoadValue ?? "").replace(/[^0-9.\-]/g, ""));
+      if (!Number.isFinite(parsed)) return;
+
+      if (!ccLoadHistory[key]) ccLoadHistory[key] = [];
+      ccLoadHistory[key].push(Math.max(0, Math.min(100, parsed)));
+
+      if (ccLoadHistory[key].length > 60) {
+        ccLoadHistory[key] = ccLoadHistory[key].slice(-60);
+      }
+    }
 
     function drawLoadGraph() {
       const canvas = document.getElementById("cc-load-graph-canvas");
@@ -3646,6 +3661,8 @@
 
 
 
+    let ccUpsDataStore = {};
+
     async function loadControlCenterRackMap() {
       const map = {};
 
@@ -3687,7 +3704,7 @@
       const rackMap = await loadControlCenterRackMap();
 
       const rows = await Promise.all(ccDisplayOrder.map(async (upsName) => {
-        let data = ccUpsDataStore[upsName];
+        let data = ccUpsDataStore[upsName] || null;
 
         if (!data) {
           try {
@@ -3882,6 +3899,10 @@
 
       try {
         const data = await fetchControlCenterUps(ccSelectedUps);
+
+        ccUpsDataStore[ccSelectedUps] = data;
+
+        addLoadHistorySample(ccSelectedUps, data["ups.load"] ?? data["ups_load"]);
 
         if (!data || Object.keys(data).length === 0) {
           throw new Error(`${ccSelectedUps}: empty response`);

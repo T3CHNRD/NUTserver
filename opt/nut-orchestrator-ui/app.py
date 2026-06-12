@@ -603,5 +603,71 @@ def rollback(config_id):
     })
 
 
+
+
+@app.post("/api/production-mode")
+def api_production_mode():
+    """Set NUT production mode from Control Center.
+
+    User-facing modes:
+    - protecting -> /usr/local/sbin/nut-production-mode protecting
+    - standby    -> /usr/local/sbin/nut-production-mode standby
+    - off        -> /usr/local/sbin/nut-production-mode off
+
+    This API does not directly send shutdown, poweroff, reboot,
+    maintenance-mode, or VM power commands.
+    """
+    data = request.get_json(silent=True) or {}
+    requested_mode = str(data.get("mode", "")).strip().lower()
+
+    allowed_map = {
+        "protecting": "protecting",
+        "protect": "protecting",
+        "armed": "protecting",
+        "arm": "protecting",
+
+        "standby": "standby",
+        "standby_for_maintenance": "standby",
+        "standby-for-maintenance": "standby",
+        "maintenance": "standby",
+        "disarmed": "standby",
+        "disarm": "standby",
+
+        "off": "off",
+    }
+
+    command_mode = allowed_map.get(requested_mode)
+    if not command_mode:
+        return jsonify({
+            "ok": False,
+            "error": "Invalid production mode request.",
+            "requested_mode": requested_mode,
+        }), 400
+
+    proc = subprocess.run(
+        ["/usr/bin/sudo", "/usr/local/sbin/nut-production-mode", command_mode],
+        text=True,
+        capture_output=True,
+        timeout=30,
+    )
+
+    status_proc = subprocess.run(
+        ["/usr/bin/sudo", "/usr/local/sbin/nut-production-status"],
+        text=True,
+        capture_output=True,
+        timeout=30,
+    )
+
+    return jsonify({
+        "ok": proc.returncode == 0,
+        "requested_mode": requested_mode,
+        "command_mode": command_mode,
+        "returncode": proc.returncode,
+        "stdout": proc.stdout,
+        "stderr": proc.stderr,
+        "status_stdout": status_proc.stdout,
+        "status_stderr": status_proc.stderr,
+    }), (200 if proc.returncode == 0 else 409)
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5080)
