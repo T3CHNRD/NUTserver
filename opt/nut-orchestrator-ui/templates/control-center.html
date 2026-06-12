@@ -2182,9 +2182,9 @@
   }
 
   #nut-production-top-banner .nut-prod-mode.storm_guard {
-    background: rgba(234,179,8,.20);
-    color: #fde68a;
-    border-color: rgba(234,179,8,.45);
+    background: rgba(34,197,94,.20);
+    color: #bbf7d0;
+    border-color: rgba(34,197,94,.45);
   }
 
   #nut-production-top-banner .nut-prod-mode.armed {
@@ -2201,18 +2201,379 @@
   #nut-production-top-banner .nut-prod-muted {
     color: rgba(203,213,225,.72);
   }
+
+  #nut-production-controls {
+    position: sticky;
+    top: 40px;
+    z-index: 998;
+    background: rgba(15, 23, 42, .96);
+    border-bottom: 1px solid rgba(148, 163, 184, .22);
+    box-shadow: 0 12px 30px rgba(0,0,0,.22);
+  }
+
+  #nut-production-controls .nut-prod-controls-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .55rem 1rem;
+    flex-wrap: wrap;
+  }
+
+  #nut-production-controls .nut-prod-controls-left {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    flex-wrap: wrap;
+  }
+
+  #nut-production-controls .nut-prod-controls-title {
+    font-size: .78rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: rgba(203,213,225,.76);
+    font-weight: 900;
+  }
+
+  #nut-production-controls .nut-prod-btn {
+    border: 1px solid rgba(148,163,184,.35);
+    background: rgba(15,23,42,.74);
+    color: rgba(226,232,240,.92);
+    border-radius: 999px;
+    padding: .42rem .8rem;
+    font-weight: 850;
+    cursor: pointer;
+  }
+
+  #nut-production-controls .nut-prod-btn:hover {
+    background: rgba(30,41,59,.92);
+  }
+
+  #nut-production-controls .nut-prod-btn.active {
+    border-color: rgba(34,197,94,.65);
+    background: rgba(22,163,74,.24);
+    color: #bbf7d0;
+  }
+
+  #nut-production-controls .nut-prod-btn.warn {
+    border-color: rgba(234,179,8,.45);
+  }
+
+  #nut-production-controls .nut-prod-btn.danger {
+    border-color: rgba(248,113,113,.45);
+  }
+
+  #nut-production-controls .nut-prod-controls-note {
+    color: rgba(203,213,225,.72);
+    font-size: .82rem;
+  }
+
+  #nut-production-confirm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(2,6,23,.72);
+  }
+
+  #nut-production-confirm-modal.open {
+    display: flex;
+  }
+
+  #nut-production-confirm-modal .nut-prod-confirm-card {
+    width: min(640px, 94vw);
+    border-radius: 1.1rem;
+    border: 1px solid rgba(148,163,184,.35);
+    background: rgba(15,23,42,.98);
+    color: rgba(226,232,240,.95);
+    box-shadow: 0 24px 70px rgba(0,0,0,.48);
+    padding: 1.15rem;
+  }
+
+  #nut-production-confirm-modal .nut-prod-confirm-title {
+    font-size: 1.1rem;
+    font-weight: 950;
+    margin-bottom: .55rem;
+  }
+
+  #nut-production-confirm-modal .nut-prod-confirm-body {
+    color: rgba(203,213,225,.86);
+    line-height: 1.45;
+    margin-bottom: 1rem;
+  }
+
+  #nut-production-confirm-modal .nut-prod-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .65rem;
+    flex-wrap: wrap;
+  }
+
+  #nut-production-confirm-modal .nut-prod-confirm-actions button {
+    border-radius: .8rem;
+    border: 1px solid rgba(148,163,184,.35);
+    padding: .55rem .85rem;
+    font-weight: 850;
+    cursor: pointer;
+  }
+
+  #nut-production-confirm-modal .nut-prod-confirm-cancel {
+    background: rgba(15,23,42,.85);
+    color: rgba(226,232,240,.9);
+  }
+
+  #nut-production-confirm-modal .nut-prod-confirm-protect {
+    background: rgba(22,163,74,.24);
+    color: #bbf7d0;
+    border-color: rgba(34,197,94,.55) !important;
+  }
+
+
+  /* Unified sticky production command header */
+  #nut-production-top-banner {
+    position: sticky;
+    top: 0;
+    z-index: 1200;
+  }
+
+  #nut-production-top-banner .nut-prod-wrap {
+    min-height: 2.65rem;
+    padding: .38rem .85rem;
+    gap: .65rem;
+    flex-wrap: nowrap;
+  }
+
+  #nut-production-top-banner .nut-prod-left {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: .55rem;
+    flex-wrap: nowrap;
+  }
+
+  #nut-production-top-banner .nut-prod-title,
+  #nut-production-top-banner .nut-prod-detail,
+  #nut-production-top-banner .nut-prod-muted {
+    white-space: nowrap;
+  }
+
+  #nut-production-top-banner .nut-prod-divider {
+    width: 1px;
+    height: 1.5rem;
+    background: rgba(148,163,184,.28);
+    display: inline-block;
+  }
+
+  #nut-production-top-banner .nut-prod-inline-controls,
+  #nut-production-top-banner .nut-prod-inline-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: .38rem;
+    white-space: nowrap;
+  }
+
+  #nut-production-top-banner .nut-prod-btn,
+  #nut-production-top-banner .nut-prod-action-btn {
+    border-radius: 999px;
+    padding: .28rem .66rem;
+    font-size: .82rem;
+    font-weight: 850;
+    line-height: 1.1;
+    cursor: pointer;
+  }
+
+  #nut-production-top-banner .nut-prod-btn {
+    border: 1px solid rgba(148,163,184,.35);
+    background: rgba(15,23,42,.72);
+    color: rgba(226,232,240,.92);
+  }
+
+  #nut-production-top-banner .nut-prod-btn:hover,
+  #nut-production-top-banner .nut-prod-action-btn:hover {
+    background: rgba(30,41,59,.92);
+  }
+
+  #nut-production-top-banner .nut-prod-btn.active {
+    border-color: rgba(34,197,94,.65);
+    background: rgba(22,163,74,.24);
+    color: #bbf7d0;
+  }
+
+  #nut-production-top-banner .nut-prod-btn.warn {
+    border-color: rgba(234,179,8,.45);
+  }
+
+  #nut-production-top-banner .nut-prod-btn.danger {
+    border-color: rgba(248,113,113,.45);
+  }
+
+  #nut-production-top-banner .nut-prod-right {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .65rem;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  #nut-production-top-banner .nut-prod-clock {
+    display: inline-flex;
+    align-items: center;
+    gap: .42rem;
+    white-space: nowrap;
+    color: rgba(226,232,240,.88);
+    font-size: .82rem;
+  }
+
+  #nut-production-top-banner .nut-prod-clock strong {
+    font-size: .95rem;
+    color: rgba(241,245,249,.96);
+  }
+
+  #nut-production-top-banner #cc-refresh-countdown {
+    color: rgba(203,213,225,.72);
+  }
+
+  #nut-production-top-banner #nut-prod-updated {
+    font-size: .78rem;
+    color: rgba(203,213,225,.68);
+  }
+
+  /* Keep the hero title cleaner now that actions live in the sticky header. */
+  .cc-top {
+    align-items: flex-start;
+  }
+
+  @media (max-width: 1500px) {
+    #nut-production-top-banner .nut-prod-wrap,
+    #nut-production-top-banner .nut-prod-left {
+      flex-wrap: wrap;
+    }
+
+    #nut-production-top-banner .nut-prod-right {
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+
+
+
+  /* Safety cleanup: no separate second production controls bar should be visible. */
+  body > #nut-production-controls {
+    display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+  }
+
+
+  /* Compact sticky production header layout */
+  #nut-production-top-banner .nut-prod-wrap {
+    min-height: 2.35rem !important;
+    padding: .30rem .75rem !important;
+    gap: .50rem !important;
+  }
+
+  #nut-production-top-banner .nut-prod-left {
+    gap: .45rem !important;
+  }
+
+  #nut-production-top-banner .nut-prod-title {
+    font-size: .72rem !important;
+  }
+
+  #nut-production-top-banner .nut-prod-mode {
+    padding: .24rem .62rem !important;
+    font-size: .78rem !important;
+  }
+
+  #nut-production-top-banner .nut-prod-detail {
+    font-size: .78rem !important;
+  }
+
+  #nut-production-top-banner .nut-prod-divider {
+    height: 1.15rem !important;
+  }
+
+  #nut-production-top-banner .nut-prod-btn,
+  #nut-production-top-banner .nut-prod-action-btn {
+    padding: .24rem .54rem !important;
+    font-size: .76rem !important;
+  }
+
+  #nut-production-top-banner .nut-prod-clock strong {
+    font-size: .82rem !important;
+  }
+
+  #nut-production-top-banner #nut-prod-updated {
+    display: none !important;
+  }
+
+  @media (max-width: 1400px) {
+    #nut-production-top-banner .nut-prod-detail {
+      display: none;
+    }
+
+    #nut-production-top-banner .nut-prod-detail:nth-of-type(1) {
+      display: inline;
+    }
+  }
+
 </style>
 
 <div id="nut-production-top-banner" aria-live="polite">
   <div class="nut-prod-wrap">
     <div class="nut-prod-left">
       <span class="nut-prod-title">NUT Production Mode</span>
-      <span id="nut-prod-mode" class="nut-prod-mode storm_guard">STORM GUARD</span>
+      <span id="nut-prod-mode" class="nut-prod-mode armed">PROTECTING</span>
       <span class="nut-prod-detail">UPS: <strong id="nut-prod-ups">--/--</strong></span>
       <span class="nut-prod-detail">Monitor: <strong id="nut-prod-monitor">--</strong></span>
-      <span class="nut-prod-detail">ESXi SSH fallback: <strong id="nut-prod-esxi">--</strong></span>
+      <span class="nut-prod-detail">ESXi: <strong id="nut-prod-esxi">--</strong></span>
+      <span class="nut-prod-divider"></span>
+      <span class="nut-prod-inline-controls" aria-live="polite">
+        <button type="button" class="nut-prod-btn" id="nut-prod-btn-protecting">Protecting</button>
+        <button type="button" class="nut-prod-btn warn" id="nut-prod-btn-standby">Standby</button>
+        <button type="button" class="nut-prod-btn danger" id="nut-prod-btn-off">Off</button>
+      </span>
+      <span id="nut-prod-controls-note" style="display:none"></span>
+      <span class="nut-prod-divider"></span>
+      <span class="nut-prod-inline-actions">
+        <button class="cc-btn cc-btn-primary nut-prod-action-btn" id="cc-backup-github">Backup</button>
+        <button class="cc-btn nut-prod-action-btn" id="cc-refresh-all">Refresh</button>
+        <button class="cc-btn nut-prod-action-btn" id="cc-restore-github">Restore</button>
+      </span>
     </div>
-    <div class="nut-prod-muted" id="nut-prod-updated">Loading status...</div>
+    <div class="nut-prod-right">
+      <span class="nut-prod-clock">
+        <strong id="cc-clock-time">--:--:--</strong>
+      </span>
+      <span id="cc-clock-date" style="display:none">Loading date...</span>
+      <span id="cc-pontiac-weather" style="display:none">Pontiac: loading temp...</span>
+      <span id="cc-refresh-countdown" style="display:none">Refresh countdown: 35s</span>
+      <span class="nut-prod-muted" id="nut-prod-updated" title="Last production status update">Updated</span>
+    </div>
+  </div>
+</div>
+
+
+
+<div id="nut-production-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="nut-prod-confirm-title">
+  <div class="nut-prod-confirm-card">
+    <div class="nut-prod-confirm-title" id="nut-prod-confirm-title">Confirm Protecting Mode</div>
+    <div class="nut-prod-confirm-body">
+      This will set NUT to <strong>PROTECTING</strong>. The backend mode becomes <strong>armed</strong>,
+      live actions are allowed, and ESXi fallback readiness is enabled for the approved production/live-test path.
+      <br><br>
+      This button does not directly send shutdown, poweroff, reboot, maintenance mode, or VM power commands.
+    </div>
+    <div class="nut-prod-confirm-actions">
+      <button type="button" class="nut-prod-confirm-cancel" id="nut-prod-confirm-cancel">Cancel</button>
+      <button type="button" class="nut-prod-confirm-protect" id="nut-prod-confirm-protect">Confirm Protecting</button>
+    </div>
   </div>
 </div>
 
@@ -2242,6 +2603,7 @@
       monEl.textContent = data.nut_monitor || 'unknown';
       esxiEl.textContent = String(data.esxi_ssh_fallback_enabled) === '1' ? 'Enabled' : 'Disabled';
       updatedEl.textContent = 'Updated: ' + (data.generated_at || 'unknown');
+      updateNutProductionButtons(mode);
     } catch (err) {
       modeEl.textContent = 'OFF';
       modeEl.className = 'nut-prod-mode off';
@@ -2249,10 +2611,107 @@
       monEl.textContent = 'unknown';
       esxiEl.textContent = 'unknown';
       updatedEl.textContent = 'Status file unavailable';
+      updateNutProductionButtons('off');
+    }
+  }
+
+
+  function updateNutProductionButtons(mode) {
+    const protecting = document.getElementById('nut-prod-btn-protecting');
+    const standby = document.getElementById('nut-prod-btn-standby');
+    const off = document.getElementById('nut-prod-btn-off');
+    const note = document.getElementById('nut-prod-controls-note');
+
+    [protecting, standby, off].forEach((btn) => {
+      if (btn) btn.classList.remove('active');
+    });
+
+    if (mode === 'armed' && protecting) {
+      protecting.classList.add('active');
+      if (note) note.textContent = 'Current state: PROTECTING. ESXi fallback readiness is enabled.';
+    } else if (mode === 'disarmed' && standby) {
+      standby.classList.add('active');
+      if (note) note.textContent = 'Current state: STANDBY FOR MAINTENANCE. Live commit actions are blocked.';
+    } else if (mode === 'off' && off) {
+      off.classList.add('active');
+      if (note) note.textContent = 'Current state: OFF. Live actions are blocked; nut-monitor.service is not stopped by this button.';
+    }
+  }
+
+  async function setNutProductionMode(mode) {
+    const note = document.getElementById('nut-prod-controls-note');
+    if (note) note.textContent = 'Setting mode...';
+
+    const payload = JSON.stringify({ mode });
+
+    let response = await fetch('/nut-ui/api/production-mode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload
+    });
+
+    if (response.status === 404) {
+      response = await fetch('/api/production-mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload
+      });
+    }
+
+    let data = {};
+    try {
+      data = await response.json();
+    } catch (err) {
+      data = { ok: false, error: String(err) };
+    }
+
+    if (!response.ok || !data.ok) {
+      if (note) note.textContent = 'Mode change failed: ' + (data.error || data.stderr || ('HTTP ' + response.status));
+      return;
+    }
+
+    await refreshNutProductionBanner();
+  }
+
+  function openProtectingConfirmModal() {
+    const modal = document.getElementById('nut-production-confirm-modal');
+    if (modal) modal.classList.add('open');
+  }
+
+  function closeProtectingConfirmModal() {
+    const modal = document.getElementById('nut-production-confirm-modal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  function wireNutProductionControls() {
+    const protecting = document.getElementById('nut-prod-btn-protecting');
+    const standby = document.getElementById('nut-prod-btn-standby');
+    const off = document.getElementById('nut-prod-btn-off');
+    const cancel = document.getElementById('nut-prod-confirm-cancel');
+    const confirm = document.getElementById('nut-prod-confirm-protect');
+    const modal = document.getElementById('nut-production-confirm-modal');
+
+    if (protecting) protecting.addEventListener('click', openProtectingConfirmModal);
+    if (standby) standby.addEventListener('click', () => setNutProductionMode('standby'));
+    if (off) off.addEventListener('click', () => setNutProductionMode('off'));
+
+    if (cancel) cancel.addEventListener('click', closeProtectingConfirmModal);
+    if (confirm) {
+      confirm.addEventListener('click', async () => {
+        closeProtectingConfirmModal();
+        await setNutProductionMode('protecting');
+      });
+    }
+
+    if (modal) {
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) closeProtectingConfirmModal();
+      });
     }
   }
 
   document.addEventListener('DOMContentLoaded', refreshNutProductionBanner);
+  document.addEventListener('DOMContentLoaded', wireNutProductionControls);
   setInterval(refreshNutProductionBanner, 60000);
 })();
 </script>
@@ -2265,26 +2724,7 @@
         <div class="cc-title">NUT Control Center</div>
         <div class="cc-subtitle">One place for UPS monitoring, power events, safe actions, configuration, and recovery visibility.</div>
       </div>
-      <div class="cc-command-center">
-        <div class="cc-command-primary">
-          <button class="cc-btn cc-btn-primary" id="cc-backup-github">Backup All to GitHub</button>
-          <button class="cc-btn" id="cc-refresh-all">Refresh</button>
-          <button class="cc-btn" id="cc-restore-github">Restore from GitHub</button>
-        </div>
 
-        <div class="cc-command-secondary">
-          <span class="cc-legacy-label">Legacy pages</span>
-          <a class="cc-legacy-link" href="/nut-ui/">NUT UI</a>
-          <a class="cc-legacy-link" href="/nutserver-dashboard.priority1.html">UPS Dashboard</a>
-        </div>
-
-        <div class="cc-clock-card">
-          <div class="cc-clock-time" id="cc-clock-time">--:--:--</div>
-          <div class="cc-clock-date" id="cc-clock-date">Loading date...</div>
-          <div class="cc-clock-weather" id="cc-pontiac-weather">Pontiac: loading temp...</div>
-          <div class="cc-clock-refresh" id="cc-refresh-countdown">Refresh countdown: 35s</div>
-        </div>
-      </div>
     </header>
 
     <nav class="cc-section-nav" aria-label="Control Center sections">
