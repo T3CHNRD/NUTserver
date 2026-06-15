@@ -6,6 +6,8 @@ TARGET_BRANCH="backup-sanitized-initial"
 LOG_FILE="/var/log/nut-orchestrator-ui/backup.log"
 HOST_USER="nutserver"
 HOST_GROUP="nutserver"
+CREATED_PRE_PULL_COMMIT="0"
+CREATED_BACKUP_COMMIT="0"
 
 if [ "${EUID:-$(id -u)}" -eq 0 ]; then
   AS_ROOT=""
@@ -30,6 +32,74 @@ require_cmd() {
     echo "Missing required command: $1" >&2
     exit 1
   }
+}
+
+repo_has_changes() {
+  if ! git diff --quiet; then
+    return 0
+  fi
+
+  if ! git diff --cached --quiet; then
+    return 0
+  fi
+
+  if [ -n "$(git ls-files --others --exclude-standard)" ]; then
+    return 0
+  fi
+
+  return 1
+}
+
+fail_if_repo_has_secrets() {
+  if find "$REPO_DIR" -type f \( \
+      -path '*/root/.ssh/*' \
+      -o -path '*/.ssh/*' \
+      -o -name '*.pass' \
+      -o -name 'vcenter.pass' \
+      -o -name 'db-telnet.pass' \
+      -o -name '*.key' \
+      -o -name '*.pem' \
+      -o -name '*.p12' \
+      -o -name '*.pfx' \
+    \) | grep -q .; then
+    log "FAIL: secret-like file detected in repo; refusing to commit"
+    find "$REPO_DIR" -type f \( \
+      -path '*/root/.ssh/*' \
+      -o -path '*/.ssh/*' \
+      -o -name '*.pass' \
+      -o -name 'vcenter.pass' \
+      -o -name 'db-telnet.pass' \
+      -o -name '*.key' \
+      -o -name '*.pem' \
+      -o -name '*.p12' \
+      -o -name '*.pfx' \
+    \) | tee -a "$LOG_FILE"
+    exit 1
+  fi
+}
+
+commit_pending_repo_changes_before_pull() {
+  if ! repo_has_changes; then
+    log "No pending repo changes before pull"
+    return 0
+  fi
+
+  log "Pending repo changes detected before pull; protecting them in a pre-pull commit"
+  log "Repo status before pre-pull commit:"
+  git status --short | tee -a "$LOG_FILE"
+
+  fail_if_repo_has_secrets
+
+  run_git add -A
+
+  if git diff --cached --quiet; then
+    log "No staged changes after add; continuing"
+    return 0
+  fi
+
+  run_git commit -m "Pre-pull saved backup state $(date)"
+  CREATED_PRE_PULL_COMMIT="1"
+  log "Pre-pull pending repo changes committed"
 }
 
 copy_text_file() {
@@ -75,6 +145,8 @@ main() {
   cd "$REPO_DIR"
 
   log "===== BACKUP START ====="
+
+  commit_pending_repo_changes_before_pull
 
   run_git fetch origin
   run_git pull --rebase origin "$TARGET_BRANCH"
@@ -134,8 +206,10 @@ main() {
     mkdir -p ./etc/nut
     sed -E 's/^(SYNOLOGY_PASSWORD=).*/\1"[REDACTED]"/' /etc/nut/synology-api.conf > ./etc/nut/synology-api.conf
     chmod 600 ./etc/nut/synology-api.conf
+    chown "$HOST_USER:$HOST_GROUP" ./etc/nut/synology-api.conf
     log "Copied sanitized /etc/nut/synology-api.conf -> ./etc/nut/synology-api.conf"
   fi
+
   copy_executable_file /usr/local/sbin/nut-voip-shutdown.sh ./usr/local/sbin/nut-voip-shutdown.sh
   copy_executable_file /usr/local/sbin/nut-db-shutdown.sh ./usr/local/sbin/nut-db-shutdown.sh
   copy_executable_file /usr/local/sbin/nut-blueiris-shutdown.sh ./usr/local/sbin/nut-blueiris-shutdown.sh
@@ -145,7 +219,7 @@ main() {
   # Core NUT configuration files.
   copy_text_file /etc/nut/ups.conf ./etc/nut/ups.conf 640
 
-  # config.d (safe)
+  # config.d safe files
   copy_text_file /etc/nut/config.d/nut-orchestrator.conf ./etc/nut/config.d/nut-orchestrator.conf 640
   copy_text_file /etc/nut/config.d/dashboard-ui.json ./etc/nut/config.d/dashboard-ui.json 640
   copy_text_file /etc/nut/config.d/approved-targets.yml ./etc/nut/config.d/approved-targets.yml 640
@@ -196,16 +270,27 @@ main() {
 
   chown -R "$HOST_USER:$HOST_GROUP" "$REPO_DIR"
 
-  run_git add .
+  fail_if_repo_has_secrets
+
+  run_git add -A
 
   if git diff --cached --quiet; then
-  
-  log "No changes to commit"
+    log "No new backup changes to commit after sync"
+
+    if [ "$CREATED_PRE_PULL_COMMIT" = "1" ]; then
+      log "Pushing pre-pull commit to GitHub"
+      run_git push origin HEAD:"$TARGET_BRANCH"
+    else
+      log "No changes to push"
+    fi
   else
     run_git commit -m "Full sanitized system backup $(date)"
+    CREATED_BACKUP_COMMIT="1"
     run_git push origin HEAD:"$TARGET_BRANCH"
   fi
 
+  log "created_pre_pull_commit=${CREATED_PRE_PULL_COMMIT}"
+  log "created_backup_commit=${CREATED_BACKUP_COMMIT}"
   log "===== BACKUP END ====="
 }
 
