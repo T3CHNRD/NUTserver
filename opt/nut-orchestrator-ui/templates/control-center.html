@@ -4752,7 +4752,9 @@ async function ccApiJson(url, options = {}) {
     document.addEventListener("DOMContentLoaded", () => {
       const refreshAllButton = document.getElementById("cc-refresh-all");
       if (refreshAllButton) {
-        refreshAllButton.addEventListener("click", refreshControlCenterAll);
+        refreshAllButton.addEventListener("click", function () {
+          window.location.reload();
+        });
       }
 
       const refreshEventsButton = document.getElementById("cc-refresh-events-2");
