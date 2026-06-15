@@ -3509,82 +3509,23 @@ function updateNutProductionButtons(mode) {
       factEl.textContent = "Did you know? " + ccFacts[index];
     }
 
-    function ccEscapeHtml(value) {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    function ccSectionHtml(label, value, open = true) {
-      const text = String(value || "").trim();
-      if (!text) return "";
-
-      return [
-        "<details " + (open ? "open" : "") + ">",
-        "<summary>" + ccEscapeHtml(label) + "</summary>",
-        "<pre>" + ccEscapeHtml(text) + "</pre>",
-        "</details>"
-      ].join("");
-    }
-
-    function ccLineHtml(label, value) {
-      if (value === undefined || value === null || value === "") return "";
-      return "<div><strong>" + ccEscapeHtml(label) + ":</strong> " + ccEscapeHtml(value) + "</div>";
-    }
-
     function setControlCenterOutput(title, payload, isError = false) {
       const output = document.getElementById("cc-action-output");
       if (!output) return;
 
+      let body = "";
+      if (typeof payload === "string") {
+        body = payload;
+      } else {
+        body = JSON.stringify(payload, null, 2);
+      }
+
       output.classList.toggle("cc-output-error", Boolean(isError));
       output.classList.toggle("cc-output-success", !isError);
-
-      if (typeof payload === "string") {
-        output.innerHTML =
-          "<div><strong>" + ccEscapeHtml(title) + "</strong></div>" +
-          "<pre>" + ccEscapeHtml(payload) + "</pre>";
-        return;
-      }
-
-      const data = payload || {};
-      const returnCode = data.returncode;
-      const okValue = data.ok;
-      const status = isError || okValue === false || (returnCode !== undefined && Number(returnCode) !== 0) ? "FAIL" : "PASS";
-
-      const stdout = typeof data.stdout === "string" ? data.stdout.trim() : "";
-      const stderr = typeof data.stderr === "string" ? data.stderr.trim() : "";
-      const outputText = typeof data.output === "string" ? data.output.trim() : "";
-      const raw = JSON.stringify(data, null, 2);
-
-      let uniqueOutput = outputText;
-      if (uniqueOutput && (uniqueOutput === stdout || uniqueOutput === (stdout + stderr).trim())) {
-        uniqueOutput = "";
-      }
-
-      const summary = [
-        "<div><strong>" + ccEscapeHtml(title) + "</strong></div>",
-        "<div><strong>Status:</strong> " + ccEscapeHtml(status) + "</div>",
-        ccLineHtml("ok", data.ok),
-        ccLineHtml("returncode", data.returncode),
-        ccLineHtml("branch", data.branch),
-        ccLineHtml("category", data.category),
-        ccLineHtml("item_id", data.item_id),
-        ccLineHtml("mode", data.mode),
-        ccLineHtml("action", data.action)
-      ].join("");
-
-      output.innerHTML =
-        summary +
-        ccSectionHtml("STDOUT", stdout, true) +
-        ccSectionHtml("STDERR", stderr, Boolean(stderr)) +
-        ccSectionHtml("OUTPUT", uniqueOutput, false) +
-        ccSectionHtml("Raw response", raw, false);
+      output.textContent = title + "\n\n" + body;
     }
 
-async function ccApiJson(url, options = {}) {
+    async function ccApiJson(url, options = {}) {
       const res = await fetch(url, options);
       const text = await res.text();
       let data;
