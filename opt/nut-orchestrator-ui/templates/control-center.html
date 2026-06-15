@@ -4224,6 +4224,76 @@ async function ccApiJson(url, options = {}) {
 
     let ccLabPendingRestoreItemId = "";
 
+    async function loadLabRestoreTargets() {
+      const select = document.getElementById("cc-lab-restore-item-dropdown");
+      if (!select) return;
+
+      select.innerHTML = "";
+      const loading = document.createElement("option");
+      loading.value = "";
+      loading.textContent = "Loading restore targets...";
+      select.appendChild(loading);
+
+      try {
+        const data = await ccApiJson("/nut-ui/api/restore/targets");
+        select.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select an approved restore item...";
+        select.appendChild(placeholder);
+
+        if (!data || !data.ok || !Array.isArray(data.targets)) {
+          const failed = document.createElement("option");
+          failed.value = "";
+          failed.disabled = true;
+          failed.textContent = "Restore target list failed to load";
+          select.appendChild(failed);
+          setControlCenterOutput("Restore Lab", data || "Restore target list failed to load", true);
+          return;
+        }
+
+        data.targets.forEach((item) => {
+          const option = document.createElement("option");
+          const id = String(item.id || "").trim();
+          const name = String(item.name || id || "Unnamed restore item").trim();
+          const livePath = String(item.live_path || "").trim();
+          const blockedReason = String(item.blocked_reason || "").trim();
+
+          const enabled =
+            Boolean(item.restore_enabled) &&
+            Boolean(item.repo_source_exists) &&
+            !Boolean(item.sensitive);
+
+          option.value = id;
+          option.dataset.label = name;
+
+          let label = name;
+          if (livePath) label += " — " + livePath;
+
+          if (!enabled) {
+            option.disabled = true;
+            let reason = blockedReason;
+            if (!reason && item.sensitive) reason = "sensitive item requires separate handling";
+            if (!reason && !item.repo_source_exists) reason = "missing GitHub-backed repo source";
+            if (!reason) reason = "restore disabled";
+            label += " — blocked: " + reason;
+          }
+
+          option.textContent = label;
+          select.appendChild(option);
+        });
+      } catch (err) {
+        select.innerHTML = "";
+        const failed = document.createElement("option");
+        failed.value = "";
+        failed.disabled = true;
+        failed.textContent = "Restore target list failed to load";
+        select.appendChild(failed);
+        setControlCenterOutput("Restore Lab Error", String(err), true);
+      }
+    }
+
     function openLabSelectedRestoreScreen() {
       closeRestoreOptionsModal();
 
@@ -4232,9 +4302,11 @@ async function ccApiJson(url, options = {}) {
         screen.classList.add("open");
         screen.setAttribute("aria-hidden", "false");
       }
+
+      loadLabRestoreTargets();
     }
 
-    function closeLabSelectedRestoreScreen() {
+function closeLabSelectedRestoreScreen() {
       const screen = document.getElementById("cc-lab-selected-restore-screen");
       if (screen) {
         screen.classList.remove("open");
@@ -5206,32 +5278,8 @@ async function ccApiJson(url, options = {}) {
           </p>
 
           <label class="cc-kicker" for="cc-lab-restore-item-dropdown">Approved restore item</label>
-          <select id="cc-lab-restore-item-dropdown" class="cc-input" style="width:100%; margin-top:.45rem;">
-            <option value="restore_test_probe" data-label="Safe test probe">Safe test probe — /etc/nut/restore-live-test-probe.txt</option>
-            <option value="ups_conf" disabled>ups.conf — /etc/nut/ups.conf — blocked: missing GitHub-backed repo source</option>
-            <option value="upsd_conf" data-label="upsd.conf">upsd.conf — /etc/nut/upsd.conf</option>
-            <option value="upsmon_conf" data-label="upsmon.conf">upsmon.conf — /etc/nut/upsmon.conf</option>
-            <option value="upssched_conf" data-label="upssched.conf">upssched.conf — /etc/nut/upssched.conf</option>
-            <option value="nut_conf" data-label="nut.conf">nut.conf — /etc/nut/nut.conf</option>
-            <option value="hosts_conf" data-label="hosts.conf">hosts.conf — /etc/nut/hosts.conf</option>
-            <option value="live_nut_orchestrator_conf" data-label="Live nut-orchestrator.conf">Live nut-orchestrator.conf — /etc/nut/nut-orchestrator.conf</option>
-            <option value="nut_orchestrator_conf" data-label="config.d nut-orchestrator.conf">config.d nut-orchestrator.conf — /etc/nut/config.d/nut-orchestrator.conf</option>
-            <option value="approved_targets_yml" data-label="Approved Targets">Approved Targets — /etc/nut/config.d/approved-targets.yml</option>
-            <option value="dashboard_ui_json" data-label="Dashboard UI Settings">Dashboard UI Settings — /etc/nut/config.d/dashboard-ui.json</option>
-            <option value="synology_shutdown_sh" data-label="nut-synology-shutdown.sh">nut-synology-shutdown.sh — /usr/local/sbin/nut-synology-shutdown.sh</option>
-            <option value="voip_shutdown_sh" data-label="nut-voip-shutdown.sh">nut-voip-shutdown.sh — /usr/local/sbin/nut-voip-shutdown.sh</option>
-            <option value="db_shutdown_sh" data-label="nut-db-shutdown.sh">nut-db-shutdown.sh — /usr/local/sbin/nut-db-shutdown.sh</option>
-            <option value="blueiris_shutdown_sh" data-label="nut-blueiris-shutdown.sh">nut-blueiris-shutdown.sh — /usr/local/sbin/nut-blueiris-shutdown.sh</option>
-            <option value="nut_ui_run_test" data-label="nut-ui-run-test">nut-ui-run-test — /usr/local/sbin/nut-ui-run-test</option>
-            <option value="nut_ui_run_real_test_approved" data-label="nut-ui-run-real-test-approved">nut-ui-run-real-test-approved — /usr/local/sbin/nut-ui-run-real-test-approved</option>
-            <option value="lansweeper_shutdown_sh" data-label="nut-lansweeper-shutdown.sh">nut-lansweeper-shutdown.sh — /usr/local/sbin/nut-lansweeper-shutdown.sh</option>
-            <option value="vmware_shutdown_sh" data-label="nut-vmware-shutdown.sh">nut-vmware-shutdown.sh — /usr/local/sbin/nut-vmware-shutdown.sh</option>
-            <option value="hypervisor_ssh_fallback_conf" data-label="Hypervisor SSH Fallback Config">Hypervisor SSH Fallback Config — /etc/nut/hypervisors/hypervisor-ssh-fallback.conf</option>
-            <option value="netapp_shutdown_sh" data-label="nut-netapp-halt.sh">nut-netapp-halt.sh — /usr/local/sbin/nut-netapp-halt.sh</option>
-            <option value="orchestrator_main_sh" data-label="nut-orchestrator.sh (main orchestration)">nut-orchestrator.sh (main orchestration) — /usr/local/bin/nut-orchestrator.sh</option>
-            <option value="db_telnet_user" disabled>DB Telnet Username — /etc/nut/db-telnet.user — blocked: missing GitHub-backed repo source</option>
-            <option value="db_telnet_pass" disabled>DB Telnet Password — /etc/nut/db-telnet.pass — blocked: sensitive_item_requires_separate_handling</option>
-            <option value="vcenter_pass" disabled>vCenter Password — /etc/nut/vcenter.pass — blocked: sensitive_item_requires_separate_handling</option>
+                    <select id="cc-lab-restore-item-dropdown" class="cc-input" style="width:100%; margin-top:.45rem;">
+            <option value="">Loading restore targets...</option>
           </select>
 
           <div style="display:flex; justify-content:flex-end; gap:.75rem; margin-top:1rem;">
