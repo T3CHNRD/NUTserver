@@ -2122,6 +2122,205 @@
       }
     }
 
+
+  /* Restored compact clock/weather/countdown block */
+  #nut-production-top-banner .nut-prod-clock {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 2px !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+  }
+
+  #nut-production-top-banner #cc-clock-time {
+    font-size: 0.95rem !important;
+    font-weight: 800 !important;
+  }
+
+  #nut-production-top-banner #cc-clock-date,
+  #nut-production-top-banner #cc-pontiac-weather,
+  #nut-production-top-banner #cc-refresh-countdown {
+    display: block !important;
+    font-size: 0.72rem !important;
+    opacity: 0.85 !important;
+  }
+
+  #nut-production-top-banner #nut-prod-updated {
+    display: none !important;
+  }
+
+
+  /* Top header mode cleanup: buttons show the active production mode. */
+  #nut-production-top-banner #nut-prod-mode {
+    display: none !important;
+  }
+
+  #nut-production-top-banner .nut-prod-btn.active {
+    background: rgba(34, 197, 94, 0.25) !important;
+    border-color: rgba(74, 222, 128, 0.95) !important;
+    color: #ecfdf5 !important;
+    box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.25), 0 0 16px rgba(34, 197, 94, 0.28) !important;
+  }
+
+  #nut-production-top-banner .nut-prod-btn.warn.active {
+    background: rgba(245, 158, 11, 0.22) !important;
+    border-color: rgba(251, 191, 36, 0.95) !important;
+    color: #fffbeb !important;
+    box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.25), 0 0 16px rgba(245, 158, 11, 0.24) !important;
+  }
+
+  #nut-production-top-banner .nut-prod-btn.danger.active {
+    background: rgba(239, 68, 68, 0.22) !important;
+    border-color: rgba(248, 113, 113, 0.95) !important;
+    color: #fef2f2 !important;
+    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.25), 0 0 16px rgba(239, 68, 68, 0.24) !important;
+  }
+
+
+  /* High-visibility active production mode buttons */
+  #nut-production-top-banner .nut-prod-btn.active {
+    transform: scale(1.08) !important;
+    font-weight: 900 !important;
+    border-width: 2px !important;
+    text-decoration: underline !important;
+    text-underline-offset: 3px !important;
+  }
+
+  #nut-production-top-banner .nut-prod-btn.active::before {
+    content: "● ";
+    font-weight: 900 !important;
+  }
+
+  #nut-production-top-banner #nut-prod-btn-protecting.active {
+    background: #16a34a !important;
+    border-color: #86efac !important;
+    color: #ffffff !important;
+    box-shadow:
+      0 0 0 2px rgba(134, 239, 172, 0.75),
+      0 0 20px rgba(34, 197, 94, 0.95),
+      inset 0 0 10px rgba(255, 255, 255, 0.16) !important;
+  }
+
+  #nut-production-top-banner #nut-prod-btn-standby.active {
+    background: #d97706 !important;
+    border-color: #fde68a !important;
+    color: #ffffff !important;
+    box-shadow:
+      0 0 0 2px rgba(253, 230, 138, 0.8),
+      0 0 20px rgba(245, 158, 11, 0.95),
+      inset 0 0 10px rgba(255, 255, 255, 0.16) !important;
+  }
+
+  #nut-production-top-banner #nut-prod-btn-off.active {
+    background: #dc2626 !important;
+    border-color: #fecaca !important;
+    color: #ffffff !important;
+    box-shadow:
+      0 0 0 2px rgba(254, 202, 202, 0.8),
+      0 0 20px rgba(239, 68, 68, 0.95),
+      inset 0 0 10px rgba(255, 255, 255, 0.16) !important;
+  }
+
+  #nut-production-top-banner .nut-prod-inline-controls {
+    gap: 10px !important;
+  }
+
+
+  /* Production mode user guidance */
+  #nut-production-top-banner .nut-prod-mode-help {
+    font-size: 0.72rem !important;
+    color: rgba(226, 232, 240, 0.78) !important;
+    border-left: 1px solid rgba(148, 163, 184, 0.32) !important;
+    padding-left: 10px !important;
+    margin-left: 4px !important;
+    white-space: nowrap !important;
+  }
+
+  #nut-production-top-banner .nut-prod-mode-help strong {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+  }
+
+  @media (max-width: 1200px) {
+    #nut-production-top-banner .nut-prod-mode-help {
+      display: none !important;
+    }
+  }
+
+
+  /* Structured production mode status fields */
+  #nut-production-top-banner .nut-prod-mode-fields {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    margin-left: 6px !important;
+    padding-left: 10px !important;
+    border-left: 1px solid rgba(148, 163, 184, 0.32) !important;
+    white-space: nowrap !important;
+    font-size: 0.74rem !important;
+    color: rgba(226, 232, 240, 0.88) !important;
+  }
+
+  #nut-production-top-banner .nut-prod-mode-field {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  #nut-production-top-banner .nut-prod-mode-field strong {
+    color: #ffffff !important;
+    font-weight: 900 !important;
+  }
+
+  #nut-production-top-banner .nut-prod-mode-field .allowed {
+    color: #86efac !important;
+    font-weight: 900 !important;
+  }
+
+  #nut-production-top-banner .nut-prod-mode-field .blocked {
+    color: #fca5a5 !important;
+    font-weight: 900 !important;
+  }
+
+  #nut-production-top-banner .nut-prod-mode-field .yes {
+    color: #fde68a !important;
+    font-weight: 900 !important;
+  }
+
+  #nut-production-top-banner .nut-prod-mode-field .no {
+    color: #93c5fd !important;
+    font-weight: 900 !important;
+  }
+
+  @media (max-width: 1300px) {
+    #nut-production-top-banner .nut-prod-mode-fields {
+      display: none !important;
+    }
+  }
+
+
+  /* Compact stacked production status fields */
+  #nut-production-top-banner .nut-prod-mode-fields {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+    margin-left: 8px !important;
+    padding-left: 10px !important;
+    border-left: 1px solid rgba(148, 163, 184, 0.35) !important;
+    white-space: nowrap !important;
+    font-size: 0.72rem !important;
+    line-height: 1.15 !important;
+    color: rgba(226, 232, 240, 0.88) !important;
+  }
+
+  #nut-production-top-banner .nut-prod-mode-field {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
 </style>
 </head>
 
@@ -2531,13 +2730,16 @@
       <span class="nut-prod-title">NUT Production Mode</span>
       <span id="nut-prod-mode" class="nut-prod-mode armed">PROTECTING</span>
       <span class="nut-prod-detail">UPS: <strong id="nut-prod-ups">--/--</strong></span>
-      <span class="nut-prod-detail">Monitor: <strong id="nut-prod-monitor">--</strong></span>
-      <span class="nut-prod-detail">ESXi: <strong id="nut-prod-esxi">--</strong></span>
       <span class="nut-prod-divider"></span>
       <span class="nut-prod-inline-controls" aria-live="polite">
         <button type="button" class="nut-prod-btn" id="nut-prod-btn-protecting">Protecting</button>
         <button type="button" class="nut-prod-btn warn" id="nut-prod-btn-standby">Standby</button>
         <button type="button" class="nut-prod-btn danger" id="nut-prod-btn-off">Off</button>
+        <span class="nut-prod-mode-fields" id="nut-prod-mode-fields">
+          <span class="nut-prod-mode-field">Live protection action: <strong id="nut-prod-live-actions">--</strong></span>
+          <span class="nut-prod-mode-field">Maintenance mode: <strong id="nut-prod-maintenance-mode">--</strong></span>
+          <span class="nut-prod-mode-field">Monitor: <strong id="nut-prod-monitor">--</strong></span>
+        </span>
       </span>
       <span id="nut-prod-controls-note" style="display:none"></span>
       <span class="nut-prod-divider"></span>
@@ -2551,9 +2753,9 @@
       <span class="nut-prod-clock">
         <strong id="cc-clock-time">--:--:--</strong>
       </span>
-      <span id="cc-clock-date" style="display:none">Loading date...</span>
-      <span id="cc-pontiac-weather" style="display:none">Pontiac: loading temp...</span>
-      <span id="cc-refresh-countdown" style="display:none">Refresh countdown: 35s</span>
+      <span id="cc-clock-date">Loading date...</span>
+      <span id="cc-pontiac-weather">Pontiac: loading temp...</span>
+      <span id="cc-refresh-countdown">Refresh countdown: 35s</span>
       <span class="nut-prod-muted" id="nut-prod-updated" title="Last production status update">Updated</span>
     </div>
   </div>
@@ -2586,13 +2788,43 @@
     const esxiEl = document.getElementById('nut-prod-esxi');
     const updatedEl = document.getElementById('nut-prod-updated');
 
-    if (!modeEl || !upsEl || !monEl || !esxiEl || !updatedEl) return;
+    if (!modeEl || !upsEl || !monEl || !updatedEl) return;
 
     try {
       const response = await fetch('/nut-state/production-mode.json?ts=' + Date.now(), { cache: 'no-store' });
       if (!response.ok) throw new Error('HTTP ' + response.status);
 
       const data = await response.json();
+
+      // Header-only fix: map current production status JSON fields to the compact top banner.
+      // Source fields confirmed from /nut-state/production-mode.json:
+      // ups_online, ups_total, nut_monitor.
+      try {
+        const headerUpsEl = document.getElementById('nut-prod-ups');
+        const headerMonitorEl = document.getElementById('nut-prod-monitor');
+
+        if (headerUpsEl) {
+          const online = Number(data.ups_online);
+          const total = Number(data.ups_total);
+
+          if (Number.isFinite(online) && Number.isFinite(total)) {
+            headerUpsEl.textContent = online + '/' + total;
+          } else if (Array.isArray(data.ups)) {
+            const computedTotal = data.ups.length;
+            const computedOnline = data.ups.filter(function(item) {
+              return item && item.online === true;
+            }).length;
+            headerUpsEl.textContent = computedOnline + '/' + computedTotal;
+          }
+        }
+
+        if (headerMonitorEl) {
+          headerMonitorEl.textContent = data.nut_monitor || '--';
+        }
+      } catch (headerErr) {
+        console.warn('Top production header UPS/Monitor mapping failed:', headerErr);
+      }
+
       const mode = data.mode || 'off';
       const modeLabel = data.mode_label || 'OFF';
 
@@ -2601,22 +2833,57 @@
 
       upsEl.textContent = String(data.ups_online ?? '--') + '/' + String(data.ups_total ?? '--');
       monEl.textContent = data.nut_monitor || 'unknown';
-      esxiEl.textContent = String(data.esxi_ssh_fallback_enabled) === '1' ? 'Enabled' : 'Disabled';
       updatedEl.textContent = 'Updated: ' + (data.generated_at || 'unknown');
+      updateNutModeStatusFields(mode);
       updateNutProductionButtons(mode);
     } catch (err) {
       modeEl.textContent = 'OFF';
       modeEl.className = 'nut-prod-mode off';
       upsEl.textContent = '--/--';
       monEl.textContent = 'unknown';
-      esxiEl.textContent = 'unknown';
       updatedEl.textContent = 'Status file unavailable';
+      updateNutModeStatusFields('unknown');
       updateNutProductionButtons('off');
     }
   }
 
 
-  function updateNutProductionButtons(mode) {
+  
+  function updateNutModeStatusFields(mode) {
+    const liveActionsEl = document.getElementById('nut-prod-live-actions');
+    const maintenanceEl = document.getElementById('nut-prod-maintenance-mode');
+
+    if (!liveActionsEl || !maintenanceEl) return;
+
+    liveActionsEl.className = '';
+    maintenanceEl.className = '';
+
+    if (mode === 'armed') {
+      liveActionsEl.textContent = 'Allowed';
+      liveActionsEl.classList.add('allowed');
+
+      maintenanceEl.textContent = 'No';
+      maintenanceEl.classList.add('no');
+    } else if (mode === 'disarmed') {
+      liveActionsEl.textContent = 'Blocked';
+      liveActionsEl.classList.add('blocked');
+
+      maintenanceEl.textContent = 'Yes';
+      maintenanceEl.classList.add('yes');
+    } else if (mode === 'off') {
+      liveActionsEl.textContent = 'Blocked';
+      liveActionsEl.classList.add('blocked');
+
+      maintenanceEl.textContent = 'Yes';
+      maintenanceEl.classList.add('yes');
+    } else {
+      liveActionsEl.textContent = '--';
+      maintenanceEl.textContent = '--';
+    }
+  }
+
+
+function updateNutProductionButtons(mode) {
     const protecting = document.getElementById('nut-prod-btn-protecting');
     const standby = document.getElementById('nut-prod-btn-standby');
     const off = document.getElementById('nut-prod-btn-off');
@@ -2628,13 +2895,13 @@
 
     if (mode === 'armed' && protecting) {
       protecting.classList.add('active');
-      if (note) note.textContent = 'Current state: PROTECTING. ESXi fallback readiness is enabled.';
+      if (note) note.textContent = 'Current state: PROTECTING. Monitoring is active. Live power-event shutdown/orchestration actions are allowed only when a valid UPS event reaches the configured threshold.';
     } else if (mode === 'disarmed' && standby) {
       standby.classList.add('active');
-      if (note) note.textContent = 'Current state: STANDBY FOR MAINTENANCE. Live commit actions are blocked.';
+      if (note) note.textContent = 'Current state: STANDBY FOR MAINTENANCE. Monitoring is active, but live shutdown/orchestration commit actions are blocked for maintenance.';
     } else if (mode === 'off' && off) {
       off.classList.add('active');
-      if (note) note.textContent = 'Current state: OFF. Live actions are blocked; nut-monitor.service is not stopped by this button.';
+      if (note) note.textContent = 'Current state: OFF. Monitoring is active, but live protection actions are blocked. This does not stop nut-monitor.service or power off any systems.';
     }
   }
 
