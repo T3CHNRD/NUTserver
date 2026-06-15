@@ -43,16 +43,55 @@ PY
 }
 
 
-ensure_nut_monitor_active() {
-  if systemctl list-unit-files nut-monitor.service >/dev/null 2>&1; then
-    systemctl start nut-monitor.service
-  fi
+MONITORING_UNITS=(
+  "nut-monitor.service"
+  "nut-apc-idf-event-monitor.timer"
+  "nut-apc-idf-event-monitor.service"
+  "nut-power-events-refresh.timer"
+  "nut-power-events-refresh.service"
+)
+
+unit_exists() {
+  local unit="$1"
+  systemctl list-unit-files "$unit" >/dev/null 2>&1
 }
 
-ensure_nut_monitor_stopped() {
-  if systemctl list-unit-files nut-monitor.service >/dev/null 2>&1; then
-    systemctl stop nut-monitor.service
-  fi
+ensure_monitoring_active() {
+  local unit=""
+
+  for unit in "${MONITORING_UNITS[@]}"; do
+    if unit_exists "$unit"; then
+      case "$unit" in
+        *.timer)
+          systemctl start "$unit"
+          ;;
+        nut-monitor.service)
+          systemctl start "$unit"
+          ;;
+        *)
+          # One-shot services are started by their timers when needed.
+          :
+          ;;
+      esac
+    fi
+  done
+}
+
+ensure_monitoring_stopped() {
+  local unit=""
+
+  # Stop services first, then timers, so no timer restarts a one-shot while OFF is being set.
+  for unit in nut-apc-idf-event-monitor.service nut-power-events-refresh.service nut-monitor.service; do
+    if unit_exists "$unit"; then
+      systemctl stop "$unit" || true
+    fi
+  done
+
+  for unit in nut-apc-idf-event-monitor.timer nut-power-events-refresh.timer; do
+    if unit_exists "$unit"; then
+      systemctl stop "$unit" || true
+    fi
+  done
 }
 
 
@@ -76,7 +115,7 @@ write_mode() {
 # Current enforcement:
 #   armed     = production protection posture is active
 #   disarmed  = live shutdown/orchestration commit actions are blocked
-#   off       = live actions blocked; nut-monitor.service is stopped
+#   off       = live actions blocked; monitoring/logging timers and nut-monitor.service are stopped
 #
 # ESXi fallback:
 #   In PROTECTING mode, ESXi fallback readiness is enabled for the approved live test path.
@@ -117,25 +156,25 @@ case "${1:-status}" in
     ;;
 
   protect|protecting|arm|armed)
-    ensure_nut_monitor_active
+    ensure_monitoring_active
     write_mode "armed" "1" "1" "1" "PROTECTING: Monitoring active. Live protection actions are allowed for qualifying UPS power events."
     echo "PASS: NUT production mode set to PROTECTING"
-    echo "PASS: nut-monitor.service is active or was started."
+    echo "PASS: monitoring/logging services are active or were started."
     echo "NOTE: This did not send any shutdown, poweroff, reboot, maintenance, or VM power command."
     ;;
 
   standby|maintenance|standby-for-maintenance|standby_for_maintenance|disarm|disarmed)
-    ensure_nut_monitor_active
+    ensure_monitoring_active
     write_mode "disarmed" "0" "0" "0" "STANDBY FOR MAINTENANCE: Monitoring active. Live protection actions are blocked for maintenance."
     echo "PASS: NUT production mode set to STANDBY FOR MAINTENANCE"
-    echo "PASS: nut-monitor.service is active or was started."
+    echo "PASS: monitoring/logging services are active or were started."
     ;;
 
   off)
     write_mode "off" "0" "0" "0" "OFF: Monitoring stopped. Live protection actions are blocked. Systems remain running."
-    ensure_nut_monitor_stopped
+    ensure_monitoring_stopped
     echo "PASS: NUT production mode set to OFF"
-    echo "PASS: nut-monitor.service was stopped."
+    echo "PASS: monitoring/logging services were stopped."
     echo "NOTE: This did not send any shutdown, poweroff, reboot, maintenance, or VM power command."
     ;;
 
