@@ -42,6 +42,20 @@ PY
   chmod 640 "$HYPERVISOR_CONFIG" 2>/dev/null || true
 }
 
+
+ensure_nut_monitor_active() {
+  if systemctl list-unit-files nut-monitor.service >/dev/null 2>&1; then
+    systemctl start nut-monitor.service
+  fi
+}
+
+ensure_nut_monitor_stopped() {
+  if systemctl list-unit-files nut-monitor.service >/dev/null 2>&1; then
+    systemctl stop nut-monitor.service
+  fi
+}
+
+
 write_mode() {
   local mode="$1"
   local allow_live="$2"
@@ -62,7 +76,7 @@ write_mode() {
 # Current enforcement:
 #   armed     = production protection posture is active
 #   disarmed  = live shutdown/orchestration commit actions are blocked
-#   off       = live actions blocked; this command does not stop nut-monitor.service
+#   off       = live actions blocked; nut-monitor.service is stopped
 #
 # ESXi fallback:
 #   In PROTECTING mode, ESXi fallback readiness is enabled for the approved live test path.
@@ -103,20 +117,26 @@ case "${1:-status}" in
     ;;
 
   protect|protecting|arm|armed)
-    write_mode "armed" "1" "1" "1" "PROTECTING: NUT production protection posture is active. ESXi fallback readiness is enabled for the approved live test path."
+    ensure_nut_monitor_active
+    write_mode "armed" "1" "1" "1" "PROTECTING: Monitoring active. Live protection actions are allowed for qualifying UPS power events."
     echo "PASS: NUT production mode set to PROTECTING"
+    echo "PASS: nut-monitor.service is active or was started."
     echo "NOTE: This did not send any shutdown, poweroff, reboot, maintenance, or VM power command."
     ;;
 
   standby|maintenance|standby-for-maintenance|standby_for_maintenance|disarm|disarmed)
-    write_mode "disarmed" "0" "0" "0" "STANDBY FOR MAINTENANCE: NUT monitoring/logging stays active, but live shutdown/orchestration commit actions are blocked."
+    ensure_nut_monitor_active
+    write_mode "disarmed" "0" "0" "0" "STANDBY FOR MAINTENANCE: Monitoring active. Live protection actions are blocked for maintenance."
     echo "PASS: NUT production mode set to STANDBY FOR MAINTENANCE"
+    echo "PASS: nut-monitor.service is active or was started."
     ;;
 
   off)
-    write_mode "off" "0" "0" "0" "OFF: live actions blocked. Note: this command does not stop nut-monitor.service."
+    write_mode "off" "0" "0" "0" "OFF: Monitoring stopped. Live protection actions are blocked. Systems remain running."
+    ensure_nut_monitor_stopped
     echo "PASS: NUT production mode set to OFF"
-    echo "NOTE: nut-monitor.service was not stopped."
+    echo "PASS: nut-monitor.service was stopped."
+    echo "NOTE: This did not send any shutdown, poweroff, reboot, maintenance, or VM power command."
     ;;
 
   storm-guard|storm_guard)
