@@ -364,34 +364,73 @@ def restore_live_dry_run():
     })
 
 
+RESTORE_TARGET_CATALOG = "/etc/nut/restore/restore-targets.json"
+
+
+def load_restore_targets():
+    targets = []
+
+    # Built-in safe probe remains available even if the catalog is missing.
+    targets.append({
+        "id": "restore_test_probe",
+        "name": "Safe test probe",
+        "live_path": "/etc/nut/restore-live-test-probe.txt",
+        "repo_source": "/opt/nut-admin/repo-template/etc/nut/restore-live-test-probe.txt",
+        "repo_source_exists": True,
+        "live_exists": True,
+        "sensitive": False,
+        "restore_enabled": True,
+        "blocked_reason": "",
+    })
+
+    try:
+        with open(RESTORE_TARGET_CATALOG, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for item in data.get("targets", []):
+            if isinstance(item, dict) and item.get("id"):
+                targets.append(item)
+    except Exception:
+        pass
+
+    return targets
+
+
+@app.route("/api/restore/targets", methods=["GET"])
+def restore_targets():
+    targets = load_restore_targets()
+
+    safe_targets = []
+    for item in targets:
+        safe_targets.append({
+            "id": item.get("id", ""),
+            "name": item.get("name", item.get("id", "")),
+            "live_path": item.get("live_path", ""),
+            "repo_source_exists": bool(item.get("repo_source_exists", False)),
+            "live_exists": bool(item.get("live_exists", False)),
+            "sensitive": bool(item.get("sensitive", False)),
+            "restore_enabled": bool(item.get("restore_enabled", False)),
+            "blocked_reason": item.get("blocked_reason", ""),
+        })
+
+    return jsonify({
+        "ok": True,
+        "targets": safe_targets,
+        "returncode": 0,
+    })
+
+
 @app.route("/api/restore/selected-file-live", methods=["POST"])
 def restore_selected_file_live():
     payload = request.get_json(silent=True) or {}
     item_id = str(payload.get("item_id") or "").strip()
     confirmation = str(payload.get("confirmation") or "").strip()
 
-    allowed = {
-        "restore_test_probe",
-        "ui_app_py",
-        "ui_control_center_html",
-        "ui_index_html",
-        "ui_static_app_js",
-        "ui_theme_css",
-        "config_registry_json",
-        "dashboard_ui_json",
-        "approved_targets_yml",
-        "shutdown_verification_targets_conf",
-        "hypervisor_ssh_fallback_conf",
-        "nut_ui_live_restore_dry_run",
-        "nut_ui_live_restore_selected_dry_run",
-        "nut_hypervisor_ssh_readonly_preflight",
-        "nut_vmware_export_inventory",
-        "nut_vmware_shutdown",
-    }
-
     required_confirmation = "RESTORE SELECTED FILE"
 
-    if item_id not in allowed:
+    targets = load_restore_targets()
+    target = next((item for item in targets if item.get("id") == item_id), None)
+
+    if not target:
         return jsonify({
             "ok": False,
             "stdout": "",
@@ -399,6 +438,36 @@ def restore_selected_file_live():
             "output": f"Invalid selected restore item id: {item_id}",
             "returncode": 400,
         }), 400
+
+    if bool(target.get("sensitive", False)):
+        reason = target.get("blocked_reason") or "sensitive restore target is blocked"
+        return jsonify({
+            "ok": False,
+            "stdout": "",
+            "stderr": f"Selected restore item is blocked: {reason}",
+            "output": f"Selected restore item is blocked: {reason}",
+            "returncode": 403,
+        }), 403
+
+    if not bool(target.get("restore_enabled", False)):
+        reason = target.get("blocked_reason") or "restore target is not enabled"
+        return jsonify({
+            "ok": False,
+            "stdout": "",
+            "stderr": f"Selected restore item is blocked: {reason}",
+            "output": f"Selected restore item is blocked: {reason}",
+            "returncode": 403,
+        }), 403
+
+    if not bool(target.get("repo_source_exists", False)):
+        reason = target.get("blocked_reason") or "missing GitHub-backed repo source"
+        return jsonify({
+            "ok": False,
+            "stdout": "",
+            "stderr": f"Selected restore item is blocked: {reason}",
+            "output": f"Selected restore item is blocked: {reason}",
+            "returncode": 403,
+        }), 403
 
     if confirmation != required_confirmation:
         return jsonify({
