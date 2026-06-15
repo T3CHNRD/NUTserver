@@ -33,10 +33,10 @@ fi
 
 case "$TARGET" in
   DB01)
-    HOST="REPLACE_WITH_DB01_IP"
+    HOST="192.168.1.9"
     ;;
   DB02)
-    HOST="REPLACE_WITH_DB02_IP"
+    HOST="192.168.1.11"
     ;;
   *)
     log "ERROR unknown target '$TARGET'"
