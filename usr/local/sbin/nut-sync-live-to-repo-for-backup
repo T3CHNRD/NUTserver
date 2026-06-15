@@ -2,6 +2,7 @@
 set -euo pipefail
 
 REPO="/opt/nut-admin/repo-template"
+REGISTRY="/opt/nut-orchestrator-ui/lib/config_registry.json"
 
 echo "===== SYNC SAFE LIVE FILES INTO BACKUP REPO ====="
 echo "repo=${REPO}"
@@ -39,6 +40,78 @@ copy_exec() {
   echo "SYNCED: $src -> $REPO/$dst"
 }
 
+is_secret_path() {
+  local src="$1"
+
+  case "$src" in
+    */.ssh/*|/root/.ssh/*|*.key|*.pem|*.p12|*.pfx|*.pass|*/vcenter.pass|*/db-telnet.pass|*/db-telnet.user)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+repo_relative_path() {
+  local src="$1"
+  printf '%s\n' "${src#/}"
+}
+
+sync_registry_managed_files() {
+  if [ ! -f "$REGISTRY" ]; then
+    echo "WARN: registry not found: $REGISTRY"
+    return 0
+  fi
+
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "WARN: jq missing; registry-managed sync skipped"
+    return 0
+  fi
+
+  echo
+  echo "===== DYNAMIC REGISTRY-MANAGED SAFE FILE SYNC ====="
+
+  jq -r '
+    .editable_configs[]
+    | [
+        .id,
+        .path,
+        (.file_mode // "644")
+      ]
+    | @tsv
+  ' "$REGISTRY" | while IFS="$(printf '\t')" read -r cfg_id src mode; do
+    if [ -z "${src:-}" ] || [ "$src" = "null" ]; then
+      echo "WARN: registry item has no path: $cfg_id"
+      continue
+    fi
+
+    if is_secret_path "$src"; then
+      echo "SKIP secret-managed file: $cfg_id $src"
+      continue
+    fi
+
+    if [ ! -e "$src" ]; then
+      echo "WARN: missing registry source: $cfg_id $src"
+      continue
+    fi
+
+    dst="$(repo_relative_path "$src")"
+
+    mkdir -p "$(dirname "$REPO/$dst")"
+
+    if [ -x "$src" ]; then
+      install -m 0755 "$src" "$REPO/$dst"
+      echo "SYNCED registry executable: $cfg_id $src -> $REPO/$dst"
+    else
+      install -m 0644 "$src" "$REPO/$dst"
+      echo "SYNCED registry file: $cfg_id $src -> $REPO/$dst"
+    fi
+  done
+}
+
+# First, dynamically capture every safe editable config registered in the UI.
+sync_registry_managed_files
+
 # NUT production mode / storm guard status
 copy_file /etc/nut/production-mode.conf etc/nut/production-mode.conf
 copy_exec /usr/local/sbin/nut-production-status usr/local/sbin/nut-production-status
@@ -68,9 +141,9 @@ copy_exec /usr/local/sbin/nut-db-shutdown.sh usr/local/sbin/nut-db-shutdown.sh
 
 echo
 echo "===== SAFETY CHECK: DO NOT BACK UP SECRETS ====="
-if find "$REPO" -type f \( -path '*/root/.ssh/*' -o -name '*.pass' -o -name 'vcenter.pass' -o -name 'db-telnet.pass' \) | grep -q .; then
+if find "$REPO" -type f \( -path '*/root/.ssh/*' -o -name '*.pass' -o -name 'vcenter.pass' -o -name 'db-telnet.pass' -o -name '*.key' -o -name '*.pem' -o -name '*.p12' -o -name '*.pfx' \) | grep -q .; then
   echo "FAIL: secret-like file detected in repo"
-  find "$REPO" -type f \( -path '*/root/.ssh/*' -o -name '*.pass' -o -name 'vcenter.pass' -o -name 'db-telnet.pass' \)
+  find "$REPO" -type f \( -path '*/root/.ssh/*' -o -name '*.pass' -o -name 'vcenter.pass' -o -name 'db-telnet.pass' -o -name '*.key' -o -name '*.pem' -o -name '*.p12' -o -name '*.pfx' \)
   exit 1
 fi
 
