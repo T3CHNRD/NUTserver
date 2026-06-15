@@ -11,7 +11,7 @@
       ],
       "apply_mode": "local",
       "owner": "root",
-      "group": "root",
+      "group": "nut",
       "file_mode": "640"
     },
     {
