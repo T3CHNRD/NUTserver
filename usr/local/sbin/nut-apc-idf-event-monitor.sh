@@ -2,19 +2,18 @@
 set -euo pipefail
 
 STATE_DIR="/var/lib/nut-apc-idf-monitor"
-LOGGER="/usr/local/sbin/nut-power-event-log"
+LOG="/var/log/nut-orchestrator-ui/power-events.log"
 PUBLISHER="/usr/local/sbin/nut-publish-power-events-json"
 
 mkdir -p "$STATE_DIR"
+mkdir -p "$(dirname "$LOG")"
+
+timestamp() {
+  date +"%Y-%m-%dT%H:%M:%S%z"
+}
 
 log_event() {
-  local msg="$1"
-
-  if [ -x "$LOGGER" ]; then
-    "$LOGGER" "$msg"
-  else
-    echo "LOGGER_MISSING $msg" >&2
-  fi
+  printf '[%s] %s\n' "$(timestamp)" "$*" >> "$LOG"
 }
 
 publish_events() {
@@ -24,72 +23,200 @@ publish_events() {
 }
 
 safe_name() {
-  echo "$1" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_' '_'
+  printf '%s\n' "$1" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '_'
 }
 
-check_target() {
+strip_html_to_lines() {
+  # Converts simple APC HTML/text into readable lines.
+  # This is intentionally conservative and read-only.
+  sed -E '
+    s/<[Bb][Rr][[:space:]]*\/?>/\n/g;
+    s/<\/[Tt][Rr]>/\n/g;
+    s/<\/[Dd][Ii][Vv]>/\n/g;
+    s/<\/[Tt][Dd]>/ /g;
+    s/<[^>]*>/ /g;
+    s/&nbsp;/ /g;
+    s/&amp;/\&/g;
+    s/&lt;/</g;
+    s/&gt;/>/g;
+    s/[[:space:]]+/ /g;
+    s/^ //;
+    s/ $//;
+  ' | sed '/^$/d'
+}
+
+is_noise_line() {
+  local line_lc="$1"
+
+  case "$line_lc" in
+    *"ntp update successful"*|\
+    *"cli user"*|\
+    *"web user"*|\
+    *"logged in"*|\
+    *"logged out"*|\
+    *"unauthorized user attempting to access the snmp interface"*|\
+    *"login"*|\
+    *"password"*|\
+    *"user name"*|\
+    *"username"*|\
+    *"maximum connections"*|\
+    *"maximum number of web connections"*|\
+    *"session"*|\
+    *"hashform"*|\
+    *"log on"*|\
+    *"reset"*)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+classify_target_line() {
+  local line="$1"
+  local line_lc
+  line_lc="$(printf '%s\n' "$line" | tr '[:upper:]' '[:lower:]')"
+
+  if is_noise_line "$line_lc"; then
+    return 1
+  fi
+
+  case "$line_lc" in
+    *"on battery"*|\
+    *"on-battery"*|\
+    *"ups on battery"*|\
+    *"operating on battery"*|\
+    *"input power failed"*|\
+    *"utility power failure"*|\
+    *"utility power lost"*|\
+    *"power failure"*|\
+    *"transfer to battery"*)
+      printf 'POWER_SOURCE_ON_BATTERY|%s\n' "$line"
+      return 0
+      ;;
+
+    *"no longer on battery"*|\
+    *"not on battery"*|\
+    *"returned from battery"*|\
+    *"utility power restored"*|\
+    *"input power restored"*|\
+    *"power restored"*|\
+    *"transfer from battery"*|\
+    *"online operation"*|\
+    *"on line"*|\
+    *"online"*)
+      printf 'POWER_SOURCE_ONLINE|%s\n' "$line"
+      return 0
+      ;;
+
+    *"self-test started"*|\
+    *"self test started"*|\
+    *"self-test running"*|\
+    *"self test running"*|\
+    *"self-test in progress"*|\
+    *"self test in progress"*)
+      printf 'SELF_TEST_RUNNING|%s\n' "$line"
+      return 0
+      ;;
+
+    *"self-test passed"*|\
+    *"self test passed"*|\
+    *"self-test completed"*|\
+    *"self test completed"*|\
+    *"self-test ok"*|\
+    *"self test ok"*)
+      printf 'SELF_TEST_PASSED|%s\n' "$line"
+      return 0
+      ;;
+
+    *"self-test failed"*|\
+    *"self test failed"*|\
+    *"self-test fault"*|\
+    *"self test fault"*)
+      printf 'SELF_TEST_FAILED|%s\n' "$line"
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+fetch_target_text() {
+  local body_file="$1"
+  shift
+
+  : > "$body_file"
+
+  local url
+  for url in "$@"; do
+    # Read-only GET. Follows APC redirects. Does not submit credentials or forms.
+    if curl -k -L -sS --max-time 12 "$url" >> "$body_file" 2>/dev/null; then
+      printf '\n' >> "$body_file"
+    fi
+  done
+}
+
+monitor_target() {
   local name="$1"
-  local dns_url="$2"
-  local ip_url="$3"
+  shift
 
   local state_name
   state_name="$(safe_name "$name")"
 
   local body_file
-  body_file="$(mktemp)"
+  body_file="$(mktemp "/tmp/${state_name}.apc-idf.XXXXXX")"
 
-  local selected_url=""
-  local http_code=""
-  local curl_rc=0
-  local status=""
+  fetch_target_text "$body_file" "$@"
 
-  # Try DNS URL first.
-  http_code="$(curl -k -L --max-time 10 --connect-timeout 5 -sS -o "$body_file" -w '%{http_code}' "$dns_url" 2>/dev/null)" || curl_rc="$?"
+  local detected_file
+  detected_file="$(mktemp "/tmp/${state_name}.apc-idf-detected.XXXXXX")"
 
-  if [ "${curl_rc:-0}" -eq 0 ] && [ "$http_code" != "000" ]; then
-    selected_url="$dns_url"
-    status="reachable"
-  else
-    # Try IP URL fallback.
-    curl_rc=0
-    http_code="$(curl -k -L --max-time 10 --connect-timeout 5 -sS -o "$body_file" -w '%{http_code}' "$ip_url" 2>/dev/null)" || curl_rc="$?"
-
-    if [ "${curl_rc:-0}" -eq 0 ] && [ "$http_code" != "000" ]; then
-      selected_url="$ip_url"
-      status="reachable"
-    else
-      selected_url="$ip_url"
-      status="unreachable"
-      http_code="000"
-      : > "$body_file"
+  strip_html_to_lines < "$body_file" | while IFS= read -r line; do
+    classified="$(classify_target_line "$line" || true)"
+    if [ -n "${classified:-}" ]; then
+      printf '%s\n' "$classified"
     fi
+  done | sort -u > "$detected_file"
+
+  local state_file="${STATE_DIR}/${state_name}.target-events.state"
+
+  # Baseline behavior:
+  # First run records what is already visible but does not publish old/stale APC event-log rows.
+  if [ ! -f "$state_file" ]; then
+    cp "$detected_file" "$state_file"
+    rm -f "$body_file" "$detected_file"
+    exit_code=0
+    return "$exit_code"
   fi
 
-  local hash
-  hash="$(sha256sum "$body_file" | awk '{print $1}')"
+  local new_file
+  new_file="$(mktemp "/tmp/${state_name}.apc-idf-new.XXXXXX")"
 
-  local state_file="${STATE_DIR}/${state_name}.state"
-  local previous=""
-  local current="status=${status}|http_code=${http_code}|hash=${hash}|url=${selected_url}"
+  comm -13 "$state_file" "$detected_file" > "$new_file" || true
 
-  if [ -f "$state_file" ]; then
-    previous="$(cat "$state_file")"
+  if [ -s "$new_file" ]; then
+    while IFS='|' read -r event_type message; do
+      [ -n "${event_type:-}" ] || continue
+      [ -n "${message:-}" ] || message="APC target event detected"
+
+      log_event "APC_IDF_TARGET_EVENT source=\"${name}\" event_type=\"${event_type}\" message=\"${message}\""
+    done < "$new_file"
+
+    cp "$detected_file" "$state_file"
   fi
 
-  if [ "$current" != "$previous" ]; then
-    if [ -z "$previous" ]; then
-      log_event "APC_IDF_EVENT source=\"${name}\" status=\"${status}\" http_code=\"${http_code}\" url=\"${selected_url}\" change=\"initial_state\""
-    else
-      log_event "APC_IDF_EVENT source=\"${name}\" status=\"${status}\" http_code=\"${http_code}\" url=\"${selected_url}\" change=\"state_changed\" previous=\"${previous}\" current=\"${current}\""
-    fi
-
-    printf '%s\n' "$current" > "$state_file"
-  fi
-
-  rm -f "$body_file"
+  rm -f "$body_file" "$detected_file" "$new_file"
 }
 
-check_target "IDF2" "http://APC-IDF2.albl.com" "http://192.168.9.251"
-check_target "IDF3" "http://apc-idf3.albl.com/" "http://192.168.9.252"
+# Read-only target checks.
+# Do not hard-code APC /NMC/<session-token>/ URLs here.
+# These root URLs are intentionally stable; the monitor no longer logs page hashes.
+monitor_target "IDF2" \
+  "http://APC-IDF2.albl.com" \
+  "http://192.168.9.251"
+
+monitor_target "IDF3" \
+  "http://apc-idf3.albl.com/" \
+  "http://192.168.9.252"
 
 publish_events
