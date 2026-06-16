@@ -2755,7 +2755,7 @@
       </span>
       <span id="cc-clock-date">Loading date...</span>
       <span id="cc-pontiac-weather">Pontiac: loading temp...</span>
-      <span id="cc-refresh-countdown">Event refresh countdown: 15m</span>
+      <span id="cc-refresh-countdown">Refresh countdown: 35s</span>
       <span class="nut-prod-muted" id="nut-prod-updated" title="Last production status update">Updated</span>
     </div>
   </div>
@@ -3391,11 +3391,6 @@ function updateNutProductionButtons(mode) {
 
       row.source = getQuotedValue(row.message, "source") || getQuotedValue(row.message, "target");
 
-      if (row.message.includes(" PASS ")) row.result = "PASS";
-      else if (row.message.includes(" FAIL ")) row.result = "FAIL";
-      else if (row.message.includes(" WARN ")) row.result = "WARN";
-      else if (row.message.includes(" UNKNOWN ")) row.result = "UNKNOWN";
-
       row.message =
         getQuotedValue(row.message, "message") ||
         getQuotedValue(row.message, "reason") ||
@@ -3418,14 +3413,6 @@ function updateNutProductionButtons(mode) {
         if (apcStatus) {
           const apcStatusLower = apcStatus.toLowerCase();
 
-          if (apcStatusLower === "reachable") row.result = "REACHABLE";
-          else if (apcStatusLower === "unreachable") row.result = "UNREACHABLE";
-          else if (apcStatusLower.includes("no longer on battery")) row.result = "ONLINE";
-          else if (apcStatusLower.includes("on battery")) row.result = "ON BATTERY";
-          else if (apcStatusLower.includes("self-test running")) row.result = "SELF TEST";
-          else if (apcStatusLower.includes("self-test passed")) row.result = "PASS";
-          else if (apcStatusLower.includes("self-test failed")) row.result = "FAIL";
-
           let compact = `APC_IDF_EVENT source="${apcSource}" status="${apcStatus}"`;
           if (apcHttpCode) compact += ` http_code="${apcHttpCode}"`;
           if (apcUrl) compact += ` url="${apcUrl}"`;
@@ -3435,19 +3422,14 @@ function updateNutProductionButtons(mode) {
 
           if (apcEventType === "POWER_SOURCE_ON_BATTERY") {
             friendly = "On battery power.";
-            row.result = "ON BATTERY";
           } else if (apcEventType === "POWER_SOURCE_ONLINE") {
             friendly = "No longer on battery power.";
-            row.result = "ONLINE";
           } else if (apcEventType === "SELF_TEST_RUNNING") {
             friendly = "Self-test running.";
-            row.result = "SELF TEST";
           } else if (apcEventType === "SELF_TEST_PASSED") {
             friendly = "Self-test passed.";
-            row.result = "PASS";
           } else if (apcEventType === "SELF_TEST_FAILED") {
             friendly = "Self-test failed.";
-            row.result = "FAIL";
           }
 
           row.message = `APC_IDF_EVENT source="${apcSource}" status="${friendly}"`;
@@ -3498,7 +3480,6 @@ function updateNutProductionButtons(mode) {
                 <th style="width:180px;">Time</th>
                 <th style="width:190px;">Type</th>
                 <th style="width:150px;">Source / Target</th>
-                <th style="width:90px;">Result</th>
                 <th>Message</th>
               </tr>
             </thead>
@@ -3508,7 +3489,7 @@ function updateNutProductionButtons(mode) {
                   <td>${escapeHtml(row.time)}</td>
                   <td>${escapeHtml(row.type)}</td>
                   <td>${escapeHtml(row.source)}</td>
-                  <td>${escapeHtml(row.result)}</td>
+                  
                   <td>${escapeHtml(row.message)}</td>
                 </tr>
               `).join("")}
@@ -3526,7 +3507,8 @@ function updateNutProductionButtons(mode) {
 
 
 
-    const CC_REFRESH_SECONDS = 900;
+    const CC_REFRESH_SECONDS = 35;
+    const CC_EVENT_REFRESH_SECONDS = 15 * 60;
     const CC_LOAD_GRAPH_SAMPLE_SECONDS = 15;
     let ccRefreshCountdown = CC_REFRESH_SECONDS;
 
@@ -3560,7 +3542,7 @@ function updateNutProductionButtons(mode) {
     function rotateControlCenterFact() {
       const factEl = document.getElementById("cc-random-fact");
       if (!factEl) return;
-      const index = Math.floor(Date.now() / 900000) % ccFacts.length;
+      const index = Math.floor(Date.now() / 35000) % ccFacts.length;
       factEl.textContent = "Did you know? " + ccFacts[index];
     }
 
@@ -4694,7 +4676,6 @@ function closeLabSelectedRestoreScreen() {
       updateControlCenterClock();
       rotateControlCenterFact();
       autoCycleControlCenterUPS();
-      loadControlCenterEvents();
       await sampleAllUpsLoadsForGraph();
       await loadControlCenterUPS();
       drawLoadGraph();
@@ -5184,7 +5165,9 @@ function closeLabSelectedRestoreScreen() {
 
       updatePontiacWeather();
       refreshControlCenterAll();
+      loadControlCenterEvents();
 
+      setInterval(loadControlCenterEvents, CC_EVENT_REFRESH_SECONDS * 1000);
       setInterval(updatePontiacWeather, 10 * 60 * 1000);
 
       setInterval(() => {
