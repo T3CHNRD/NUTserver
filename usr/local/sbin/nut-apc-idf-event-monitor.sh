@@ -199,7 +199,26 @@ monitor_target() {
       [ -n "${event_type:-}" ] || continue
       [ -n "${message:-}" ] || message="APC target event detected"
 
-      log_event "APC_IDF_TARGET_EVENT source=\"${name}\" event_type=\"${event_type}\" message=\"${message}\""
+      status_text="$message"
+      case "$event_type" in
+        POWER_SOURCE_ON_BATTERY)
+          status_text="On battery power."
+          ;;
+        POWER_SOURCE_ONLINE)
+          status_text="No longer on battery power."
+          ;;
+        SELF_TEST_RUNNING)
+          status_text="Self-test running."
+          ;;
+        SELF_TEST_PASSED)
+          status_text="Self-test passed."
+          ;;
+        SELF_TEST_FAILED)
+          status_text="Self-test failed."
+          ;;
+      esac
+
+      log_event "APC_IDF_EVENT source=\"${name}\" status=\"${status_text}\""
     done < "$new_file"
 
     cp "$detected_file" "$state_file"

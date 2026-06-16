@@ -771,7 +771,7 @@ async function loadPowerBootEvents() {
 
 window.addEventListener("DOMContentLoaded", () => {
   loadPowerBootEvents();
-  setInterval(loadPowerBootEvents, 30000);
+  setInterval(loadPowerBootEvents, 900000);
 });
 
 

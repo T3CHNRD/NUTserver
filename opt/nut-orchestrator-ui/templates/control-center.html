@@ -2755,7 +2755,7 @@
       </span>
       <span id="cc-clock-date">Loading date...</span>
       <span id="cc-pontiac-weather">Pontiac: loading temp...</span>
-      <span id="cc-refresh-countdown">Refresh countdown: 35s</span>
+      <span id="cc-refresh-countdown">Event refresh countdown: 15m</span>
       <span class="nut-prod-muted" id="nut-prod-updated" title="Last production status update">Updated</span>
     </div>
   </div>
@@ -3095,7 +3095,7 @@ function updateNutProductionButtons(mode) {
           <div class="cc-metric">
             <div class="cc-metric-label">Last Refresh</div>
             <div class="cc-metric-value" id="cc-ups-refresh">--</div>
-            <div class="cc-metric-note">Auto-refresh every 35 seconds.</div>
+            <div class="cc-metric-note">Event log auto-refreshes every 15 minutes.</div>
           </div>
         </div>
 
@@ -3387,6 +3387,8 @@ function updateNutProductionButtons(mode) {
         row.type = row.message;
       }
 
+      const originalPowerEventMessage = row.message;
+
       row.source = getQuotedValue(row.message, "source") || getQuotedValue(row.message, "target");
 
       if (row.message.includes(" PASS ")) row.result = "PASS";
@@ -3398,6 +3400,59 @@ function updateNutProductionButtons(mode) {
         getQuotedValue(row.message, "message") ||
         getQuotedValue(row.message, "reason") ||
         row.message;
+
+      if (
+        originalPowerEventMessage.includes("APC_IDF_EVENT") ||
+        originalPowerEventMessage.includes("APC_IDF_TARGET_EVENT")
+      ) {
+        const apcSource = getQuotedValue(originalPowerEventMessage, "source") || row.source || "";
+        const apcStatus = getQuotedValue(originalPowerEventMessage, "status") || "";
+        const apcHttpCode = getQuotedValue(originalPowerEventMessage, "http_code") || "";
+        const apcUrl = getQuotedValue(originalPowerEventMessage, "url") || "";
+        const apcEventType = getQuotedValue(originalPowerEventMessage, "event_type") || "";
+        const apcMessage = getQuotedValue(originalPowerEventMessage, "message") || "";
+
+        row.type = "APC_IDF_EVENT";
+        row.source = apcSource;
+
+        if (apcStatus) {
+          const apcStatusLower = apcStatus.toLowerCase();
+
+          if (apcStatusLower === "reachable") row.result = "REACHABLE";
+          else if (apcStatusLower === "unreachable") row.result = "UNREACHABLE";
+          else if (apcStatusLower.includes("no longer on battery")) row.result = "ONLINE";
+          else if (apcStatusLower.includes("on battery")) row.result = "ON BATTERY";
+          else if (apcStatusLower.includes("self-test running")) row.result = "SELF TEST";
+          else if (apcStatusLower.includes("self-test passed")) row.result = "PASS";
+          else if (apcStatusLower.includes("self-test failed")) row.result = "FAIL";
+
+          let compact = `APC_IDF_EVENT source="${apcSource}" status="${apcStatus}"`;
+          if (apcHttpCode) compact += ` http_code="${apcHttpCode}"`;
+          if (apcUrl) compact += ` url="${apcUrl}"`;
+          row.message = compact;
+        } else if (apcEventType || apcMessage) {
+          let friendly = apcMessage || apcEventType;
+
+          if (apcEventType === "POWER_SOURCE_ON_BATTERY") {
+            friendly = "On battery power.";
+            row.result = "ON BATTERY";
+          } else if (apcEventType === "POWER_SOURCE_ONLINE") {
+            friendly = "No longer on battery power.";
+            row.result = "ONLINE";
+          } else if (apcEventType === "SELF_TEST_RUNNING") {
+            friendly = "Self-test running.";
+            row.result = "SELF TEST";
+          } else if (apcEventType === "SELF_TEST_PASSED") {
+            friendly = "Self-test passed.";
+            row.result = "PASS";
+          } else if (apcEventType === "SELF_TEST_FAILED") {
+            friendly = "Self-test failed.";
+            row.result = "FAIL";
+          }
+
+          row.message = `APC_IDF_EVENT source="${apcSource}" status="${friendly}"`;
+        }
+      }
 
       return row;
     }
@@ -3471,7 +3526,7 @@ function updateNutProductionButtons(mode) {
 
 
 
-    const CC_REFRESH_SECONDS = 35;
+    const CC_REFRESH_SECONDS = 900;
     const CC_LOAD_GRAPH_SAMPLE_SECONDS = 15;
     let ccRefreshCountdown = CC_REFRESH_SECONDS;
 
@@ -3505,7 +3560,7 @@ function updateNutProductionButtons(mode) {
     function rotateControlCenterFact() {
       const factEl = document.getElementById("cc-random-fact");
       if (!factEl) return;
-      const index = Math.floor(Date.now() / 35000) % ccFacts.length;
+      const index = Math.floor(Date.now() / 900000) % ccFacts.length;
       factEl.textContent = "Did you know? " + ccFacts[index];
     }
 
