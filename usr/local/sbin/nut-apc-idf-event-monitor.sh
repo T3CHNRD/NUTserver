@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 
 STATE_DIR="/var/lib/nut-apc-idf-monitor"
 LOG="/var/log/nut-orchestrator-ui/power-events.log"
 PUBLISHER="/usr/local/sbin/nut-publish-power-events-json"
-
-mkdir -p "$STATE_DIR"
-mkdir -p "$(dirname "$LOG")"
+CRED_FILE="/etc/nut/apc-idf-web.conf"
 
 timestamp() {
-  date +"%Y-%m-%dT%H:%M:%S%z"
+  date '+%Y-%m-%d %H:%M:%S'
 }
 
 log_event() {
-  printf '[%s] %s\n' "$(timestamp)" "$*" >> "$LOG"
+  local msg="$1"
+  mkdir -p "$STATE_DIR"
+  touch "$LOG"
+  printf '[%s] %s\n' "$(timestamp)" "$msg" >> "$LOG"
 }
 
 publish_events() {
@@ -23,117 +24,37 @@ publish_events() {
 }
 
 safe_name() {
-  printf '%s\n' "$1" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9' '_'
+  printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/_/g; s/^_+//; s/_+$//'
 }
 
-strip_html_to_lines() {
-  # Converts simple APC HTML/text into readable lines.
-  # This is intentionally conservative and read-only.
-  sed -E '
-    s/<[Bb][Rr][[:space:]]*\/?>/\n/g;
-    s/<\/[Tt][Rr]>/\n/g;
-    s/<\/[Dd][Ii][Vv]>/\n/g;
-    s/<\/[Tt][Dd]>/ /g;
-    s/<[^>]*>/ /g;
-    s/&nbsp;/ /g;
-    s/&amp;/\&/g;
-    s/&lt;/</g;
-    s/&gt;/>/g;
-    s/[[:space:]]+/ /g;
-    s/^ //;
-    s/ $//;
-  ' | sed '/^$/d'
-}
-
-is_noise_line() {
-  local line_lc="$1"
-
-  case "$line_lc" in
-    *"ntp update successful"*|\
-    *"cli user"*|\
-    *"web user"*|\
-    *"logged in"*|\
-    *"logged out"*|\
-    *"unauthorized user attempting to access the snmp interface"*|\
-    *"login"*|\
-    *"password"*|\
-    *"user name"*|\
-    *"username"*|\
-    *"maximum connections"*|\
-    *"maximum number of web connections"*|\
-    *"session"*|\
-    *"hashform"*|\
-    *"log on"*|\
-    *"reset"*)
-      return 0
-      ;;
-  esac
-
-  return 1
-}
-
-classify_target_line() {
-  local line="$1"
-  local line_lc
-  line_lc="$(printf '%s\n' "$line" | tr '[:upper:]' '[:lower:]')"
-
-  if is_noise_line "$line_lc"; then
+load_credentials() {
+  if [ ! -r "$CRED_FILE" ]; then
+    log_event "APC_IDF_EVENT source=\"monitor\" status=\"credential_file_missing\" path=\"$CRED_FILE\""
     return 1
   fi
 
-  case "$line_lc" in
-    *"on battery"*|\
-    *"on-battery"*|\
-    *"ups on battery"*|\
-    *"operating on battery"*|\
-    *"input power failed"*|\
-    *"utility power failure"*|\
-    *"utility power lost"*|\
-    *"power failure"*|\
-    *"transfer to battery"*)
-      printf 'POWER_SOURCE_ON_BATTERY|%s\n' "$line"
-      return 0
-      ;;
+  # shellcheck disable=SC1090
+  . "$CRED_FILE"
 
-    *"no longer on battery"*|\
-    *"not on battery"*|\
-    *"returned from battery"*|\
-    *"utility power restored"*|\
-    *"input power restored"*|\
-    *"power restored"*|\
-    *"transfer from battery"*|\
-    *"online operation"*|\
-    *"on line"*|\
-    *"online"*)
-      printf 'POWER_SOURCE_ONLINE|%s\n' "$line"
-      return 0
-      ;;
+  if [ -z "${APC_IDF_USERNAME:-}" ] || [ -z "${APC_IDF_PASSWORD:-}" ]; then
+    log_event "APC_IDF_EVENT source=\"monitor\" status=\"credential_file_incomplete\" path=\"$CRED_FILE\""
+    return 1
+  fi
 
-    *"self-test started"*|\
-    *"self test started"*|\
-    *"self-test running"*|\
-    *"self test running"*|\
-    *"self-test in progress"*|\
-    *"self test in progress"*)
-      printf 'SELF_TEST_RUNNING|%s\n' "$line"
-      return 0
-      ;;
+  return 0
+}
 
-    *"self-test passed"*|\
-    *"self test passed"*|\
-    *"self-test completed"*|\
-    *"self test completed"*|\
-    *"self-test ok"*|\
-    *"self test ok"*)
-      printf 'SELF_TEST_PASSED|%s\n' "$line"
-      return 0
-      ;;
+is_relevant_event_message() {
+  local msg="$1"
 
-    *"self-test failed"*|\
-    *"self test failed"*|\
-    *"self-test fault"*|\
-    *"self test fault"*)
-      printf 'SELF_TEST_FAILED|%s\n' "$line"
+  case "$msg" in
+    *"UPS: On battery power"*|\
+    *"UPS: No longer on battery power"*|\
+    *"UPS: Self-Test started"*|\
+    *"UPS: Self-Test passed"*|\
+    *"UPS: Self-Test failed"*|\
+    *"UPS: Compensating for a low input voltage"*|\
+    *"UPS: No longer compensating for a low input voltage"*)
       return 0
       ;;
   esac
@@ -141,101 +62,220 @@ classify_target_line() {
   return 1
 }
 
-fetch_target_text() {
-  local body_file="$1"
-  shift
+event_severity_for_message() {
+  local msg="$1"
 
-  : > "$body_file"
+  case "$msg" in
+    *"UPS: On battery power"*) printf 'Warning' ;;
+    *"UPS: No longer on battery power"*) printf 'Informational' ;;
+    *"UPS: Self-Test failed"*) printf 'Warning' ;;
+    *"UPS: Self-Test started"*) printf 'Informational' ;;
+    *"UPS: Self-Test passed"*) printf 'Informational' ;;
+    *"Compensating for a low input voltage"*) printf 'Warning' ;;
+    *"No longer compensating for a low input voltage"*) printf 'Informational' ;;
+    *) printf 'Informational' ;;
+  esac
+}
 
-  local url
-  for url in "$@"; do
-    # Read-only GET. Follows APC redirects. Does not submit credentials or forms.
-    if curl -k -L -sS --max-time 12 "$url" >> "$body_file" 2>/dev/null; then
-      printf '\n' >> "$body_file"
+fetch_apc_event_txt() {
+  local name="$1"
+  local primary_url="$2"
+  local fallback_url="$3"
+  local tmp_dir="$4"
+  local event_txt="$5"
+
+  local url login_html login_headers cookie post_headers post_body event_headers
+  local login_action post_url base_url event_url curl_rc
+
+  login_html="$tmp_dir/${name}.login.html"
+  login_headers="$tmp_dir/${name}.login.headers.txt"
+  cookie="$tmp_dir/${name}.cookies.txt"
+  post_headers="$tmp_dir/${name}.post.headers.txt"
+  post_body="$tmp_dir/${name}.post.html"
+  event_headers="$tmp_dir/${name}.event.headers.txt"
+
+  for url in "$primary_url" "$fallback_url"; do
+    [ -n "$url" ] || continue
+
+    : > "$cookie"
+    : > "$login_html"
+    : > "$login_headers"
+    : > "$post_headers"
+    : > "$post_body"
+    : > "$event_headers"
+    : > "$event_txt"
+
+    if ! curl -k -L --max-time 20 -sS -c "$cookie" -b "$cookie" -D "$login_headers" "$url" -o "$login_html" 2>/dev/null; then
+      continue
+    fi
+
+    login_action="$(grep -Eio 'action="[^"]+"' "$login_html" | head -1 | sed -E 's/action="([^"]+)"/\1/I')"
+
+    if [ -z "$login_action" ]; then
+      continue
+    fi
+
+    case "$login_action" in
+      http://*|https://*)
+        post_url="$login_action"
+        ;;
+      /*)
+        post_url="${url%/}$login_action"
+        ;;
+      *)
+        post_url="${url%/}/$login_action"
+        ;;
+    esac
+
+    curl -k -L --max-time 20 -sS -c "$cookie" -b "$cookie" -D "$post_headers" \
+      -X POST "$post_url" \
+      --data-urlencode "login_username=$APC_IDF_USERNAME" \
+      --data-urlencode "login_password=$APC_IDF_PASSWORD" \
+      --data-urlencode "submit=Log On" \
+      -o "$post_body" >/dev/null 2>&1 || true
+
+    base_url="$(grep -i '^Location:' "$post_headers" | tail -1 | awk '{print $2}' | tr -d '\r')"
+
+    if [ -z "$base_url" ]; then
+      continue
+    fi
+
+    event_url="${base_url%/}/event.txt"
+
+    curl_rc=0
+    curl -k -L --max-time 45 -sS -c "$cookie" -b "$cookie" -D "$event_headers" "$event_url" -o "$event_txt" >/dev/null 2>&1 || curl_rc=$?
+
+    if [ -s "$event_txt" ] && grep -qi 'Content-Disposition: attachment; filename=event.txt' "$event_headers"; then
+      return 0
+    fi
+
+    if [ -s "$event_txt" ] && grep -q 'Network Management Card' "$event_txt"; then
+      return 0
+    fi
+
+    if [ "$curl_rc" -ne 0 ]; then
+      log_event "APC_IDF_EVENT source=\"$name\" status=\"event_txt_fetch_warning\" curl_rc=\"$curl_rc\""
     fi
   done
+
+  return 1
+}
+
+extract_relevant_events() {
+  local event_txt="$1"
+  local detected_file="$2"
+
+  awk '
+    BEGIN {
+      OFS="\t"
+    }
+
+    /^[0-9][0-9]\/[0-9][0-9]\/[0-9][0-9][0-9][0-9][[:space:]]+[0-9][0-9]:[0-9][0-9]:[0-9][0-9]/ {
+      date=$1
+      time=$2
+      code=$NF
+      user=$3
+
+      msg=""
+      for (i=4; i<NF; i++) {
+        msg = msg (msg == "" ? "" : " ") $i
+      }
+
+      if (msg ~ /UPS: On battery power/ ||
+          msg ~ /UPS: No longer on battery power/ ||
+          msg ~ /UPS: Self-Test started/ ||
+          msg ~ /UPS: Self-Test passed/ ||
+          msg ~ /UPS: Self-Test failed/ ||
+          msg ~ /UPS: Compensating for a low input voltage/ ||
+          msg ~ /UPS: No longer compensating for a low input voltage/) {
+        print date, time, user, msg, code
+      }
+    }
+  ' "$event_txt" | sort -u > "$detected_file"
 }
 
 monitor_target() {
   local name="$1"
-  shift
+  local primary_url="$2"
+  local fallback_url="$3"
+  local ip="$4"
+  local dns="$5"
 
-  local state_name
+  local state_name state_file tmp_dir event_txt detected_file new_file line
+  local event_date event_time event_user event_msg event_code event_severity event_time_combined
+
   state_name="$(safe_name "$name")"
+  state_file="$STATE_DIR/${state_name}.target-events.state"
 
-  local body_file
-  body_file="$(mktemp "/tmp/${state_name}.apc-idf.XXXXXX")"
+  tmp_dir="$(mktemp -d "/tmp/nut-apc-idf-${state_name}.XXXXXX")"
+  event_txt="$tmp_dir/event.txt"
+  detected_file="$tmp_dir/detected-events.txt"
+  new_file="$tmp_dir/new-events.txt"
 
-  fetch_target_text "$body_file" "$@"
+  mkdir -p "$STATE_DIR"
+  touch "$state_file"
 
-  local detected_file
-  detected_file="$(mktemp "/tmp/${state_name}.apc-idf-detected.XXXXXX")"
-
-  strip_html_to_lines < "$body_file" | while IFS= read -r line; do
-    classified="$(classify_target_line "$line" || true)"
-    if [ -n "${classified:-}" ]; then
-      printf '%s\n' "$classified"
-    fi
-  done | sort -u > "$detected_file"
-
-  local state_file="${STATE_DIR}/${state_name}.target-events.state"
-
-  # Baseline behavior:
-  # First run records what is already visible but does not publish old/stale APC event-log rows.
-  if [ ! -f "$state_file" ]; then
-    cp "$detected_file" "$state_file"
-    rm -f "$body_file" "$detected_file"
-    exit_code=0
-    return "$exit_code"
+  if ! fetch_apc_event_txt "$name" "$primary_url" "$fallback_url" "$tmp_dir" "$event_txt"; then
+    log_event "APC_IDF_EVENT source=\"$name\" status=\"event_txt_unavailable\" ip=\"$ip\" dns=\"$dns\""
+    publish_events
+    return 0
   fi
 
-  local new_file
-  new_file="$(mktemp "/tmp/${state_name}.apc-idf-new.XXXXXX")"
+  extract_relevant_events "$event_txt" "$detected_file"
 
-  comm -13 "$state_file" "$detected_file" > "$new_file" || true
+  if [ ! -s "$detected_file" ]; then
+    log_event "APC_IDF_EVENT source=\"$name\" status=\"event_txt_reachable_no_matching_events\" ip=\"$ip\" dns=\"$dns\""
+    publish_events
+    return 0
+  fi
+
+  if [ ! -s "$state_file" ]; then
+    cp "$detected_file" "$state_file"
+    chmod 0664 "$state_file" 2>/dev/null || true
+    log_event "APC_IDF_EVENT source=\"$name\" status=\"baseline_created\" event_source=\"authenticated_event_txt\" matching_events=\"$(wc -l < "$detected_file" | tr -d ' ')\" ip=\"$ip\" dns=\"$dns\""
+    publish_events
+    return 0
+  fi
+
+  comm -13 <(sort -u "$state_file") <(sort -u "$detected_file") > "$new_file"
 
   if [ -s "$new_file" ]; then
-    while IFS='|' read -r event_type message; do
-      [ -n "${event_type:-}" ] || continue
-      [ -n "${message:-}" ] || message="APC target event detected"
+    while IFS=$'\t' read -r event_date event_time event_user event_msg event_code; do
+      [ -n "$event_msg" ] || continue
 
-      status_text="$message"
-      case "$event_type" in
-        POWER_SOURCE_ON_BATTERY)
-          status_text="On battery power."
-          ;;
-        POWER_SOURCE_ONLINE)
-          status_text="No longer on battery power."
-          ;;
-        SELF_TEST_RUNNING)
-          status_text="Self-test running."
-          ;;
-        SELF_TEST_PASSED)
-          status_text="Self-test passed."
-          ;;
-        SELF_TEST_FAILED)
-          status_text="Self-test failed."
-          ;;
-      esac
+      if ! is_relevant_event_message "$event_msg"; then
+        continue
+      fi
 
-      log_event "APC_IDF_EVENT source=\"${name}\" status=\"${status_text}\""
+      event_severity="$(event_severity_for_message "$event_msg")"
+      event_time_combined="$event_date $event_time"
+
+      log_event "APC_IDF_EVENT source=\"$name\" device=\"$name\" ip=\"$ip\" dns=\"$dns\" severity=\"$event_severity\" code=\"$event_code\" event_time=\"$event_time_combined\" status=\"$event_msg\" message=\"$event_msg\" source_path=\"authenticated_event_txt\""
     done < "$new_file"
 
     cp "$detected_file" "$state_file"
+    chmod 0664 "$state_file" 2>/dev/null || true
+    publish_events
+    return 0
   fi
 
-  rm -f "$body_file" "$detected_file" "$new_file"
+  cp "$detected_file" "$state_file"
+  chmod 0664 "$state_file" 2>/dev/null || true
+  log_event "APC_IDF_EVENT source=\"$name\" status=\"no_new_matching_events\" event_source=\"authenticated_event_txt\" matching_events=\"$(wc -l < "$detected_file" | tr -d ' ')\" ip=\"$ip\" dns=\"$dns\""
+  publish_events
+  return 0
 }
 
-# Read-only target checks.
-# Do not hard-code APC /NMC/<session-token>/ URLs here.
-# These root URLs are intentionally stable; the monitor no longer logs page hashes.
-monitor_target "IDF2" \
-  "http://APC-IDF2.albl.com" \
-  "http://192.168.9.251"
+main() {
+  mkdir -p "$STATE_DIR"
 
-monitor_target "IDF3" \
-  "http://apc-idf3.albl.com/" \
-  "http://192.168.9.252"
+  if ! load_credentials; then
+    publish_events
+    exit 0
+  fi
 
-publish_events
+  monitor_target "IDF2" "http://APC-IDF2.albl.com" "http://192.168.9.251" "192.168.9.251" "APC-IDF2.albl.com"
+  monitor_target "IDF3" "http://apc-idf3.albl.com/" "http://192.168.9.252" "192.168.9.252" "apc-idf3.albl.com"
+}
+
+main "$@"
