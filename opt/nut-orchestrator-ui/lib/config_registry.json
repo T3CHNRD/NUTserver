@@ -338,6 +338,26 @@
       "owner": "root",
       "group": "root",
       "file_mode": "600"
+    },
+    {
+      "id": "nut_email_alerts_conf",
+      "name": "NUT Email Alert Settings",
+      "path": "/etc/nut/nut-email-alerts.conf",
+      "type": "shell",
+      "allowed_extensions": [
+        ".conf"
+      ],
+      "sensitive": false
+    },
+    {
+      "id": "nut_email_alerts_secret",
+      "name": "NUT Email SMTP Password",
+      "path": "/etc/nut/nut-email-alerts.secret",
+      "type": "secret",
+      "allowed_extensions": [
+        ".secret"
+      ],
+      "sensitive": true
     }
   ],
   "reference_configs": [
