@@ -55,6 +55,8 @@ fail_if_repo_has_secrets() {
       -path '*/root/.ssh/*' \
       -o -path '*/.ssh/*' \
       -o -name '*.pass' \
+      -o -name '*.secret' \
+      -o -name '*.creds' \
       -o -name 'vcenter.pass' \
       -o -name 'db-telnet.pass' \
       -o -name '*.key' \
@@ -67,6 +69,8 @@ fail_if_repo_has_secrets() {
       -path '*/root/.ssh/*' \
       -o -path '*/.ssh/*' \
       -o -name '*.pass' \
+      -o -name '*.secret' \
+      -o -name '*.creds' \
       -o -name 'vcenter.pass' \
       -o -name 'db-telnet.pass' \
       -o -name '*.key' \

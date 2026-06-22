@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+REPO_DIR="/opt/nut-admin/repo-template"
+REPO_USER="nutserver"
+REMOTE_NAME="origin"
+DEFAULT_BRANCH="backup-sanitized-initial"
+BACKUP_ROOT="/var/backups/nut-admin/github-restore"
+SSH_DIR="/var/lib/nut-orchestrator-ui/github-ssh"
+TS="$(date +%Y%m%d-%H%M%S)"
+BACKUP_DIR="$BACKUP_ROOT/$TS"
+
+MODE="restore"
+REQUESTED_BRANCH="${1:-$DEFAULT_BRANCH}"
+
+if [[ "${1:-}" == "--list" ]]; then
+  MODE="list"
+  REQUESTED_BRANCH="$DEFAULT_BRANCH"
+elif [[ "${1:-}" == "--check" ]]; then
+  MODE="check"
+  REQUESTED_BRANCH="${2:-}"
+fi
+
+run_git() {
+  sudo -u "$REPO_USER" env \
+    HOME="/var/lib/nut-orchestrator-ui" \
+    GIT_SSH_COMMAND="ssh -i $SSH_DIR/id_ed25519 -o UserKnownHostsFile=$SSH_DIR/known_hosts -o IdentitiesOnly=yes" \
+    git -C "$REPO_DIR" "$@"
+}
+
+fail() {
+  echo "FAIL: $*" >&2
+  exit 1
+}
+
+normalize_branch() {
+  local b="$1"
+  b="${b#origin/}"
+  printf '%s' "$b"
+}
+
+validate_branch_name() {
+  local b="$1"
+
+  [[ -n "$b" ]] || fail "branch name is empty"
+
+  if [[ ! "$b" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+    fail "branch contains unsafe characters: $b"
+  fi
+
+  [[ "$b" != /* ]] || fail "branch must not start with /"
+  [[ "$b" != */ ]] || fail "branch must not end with /"
+  [[ "$b" != *..* ]] || fail "branch must not contain .."
+  [[ "$b" != *@\{* ]] || fail "branch must not contain @{"
+  [[ "$b" != *\\.lock ]] || fail "branch must not end with .lock"
+}
+
+ensure_repo() {
+  [[ -d "$REPO_DIR/.git" ]] || fail "$REPO_DIR is not a Git repo"
+}
+
+fetch_remote() {
+  echo "Fetching $REMOTE_NAME..."
+  run_git fetch --prune "$REMOTE_NAME"
+}
+
+branch_exists() {
+  local b="$1"
+  run_git rev-parse --verify "refs/remotes/$REMOTE_NAME/$b^{commit}" >/dev/null
+}
+
+list_branches() {
+  ensure_repo
+  fetch_remote
+  run_git for-each-ref --format='%(refname:short)' "refs/remotes/$REMOTE_NAME" \
+    | sed "s#^$REMOTE_NAME/##" \
+    | grep -v '^HEAD$' \
+    | sort
+}
+
+REMOTE_BRANCH="$(normalize_branch "$REQUESTED_BRANCH")"
+
+if [[ "$MODE" == "list" ]]; then
+  list_branches
+  exit 0
+fi
+
+validate_branch_name "$REMOTE_BRANCH"
+ensure_repo
+
+echo "===== RESTORE FROM GITHUB START ====="
+echo "Repo: $REPO_DIR"
+echo "Repo user: $REPO_USER"
+echo "Remote source: $REMOTE_NAME/$REMOTE_BRANCH"
+echo "Backup: $BACKUP_DIR"
+echo "SSH dir: $SSH_DIR"
+echo "Mode: $MODE"
+echo "Time: $(date -Is)"
+echo
+
+fetch_remote
+
+echo
+echo "Verifying remote branch exists..."
+branch_exists "$REMOTE_BRANCH"
+
+if [[ "$MODE" == "check" ]]; then
+  echo "PASS: Branch is valid and exists: $REMOTE_NAME/$REMOTE_BRANCH"
+  exit 0
+fi
+
+mkdir -p "$BACKUP_DIR"
+
+echo
+echo "Backing up current repo state..."
+tar -C "$REPO_DIR" -czf "$BACKUP_DIR/repo-before-restore.tgz" .
+
+echo
+echo "Resetting local repo to $REMOTE_NAME/$REMOTE_BRANCH..."
+run_git reset --hard "$REMOTE_NAME/$REMOTE_BRANCH"
+
+echo
+echo "Git status after restore:"
+run_git status --short
+
+echo
+echo "===== RESTORE FROM GITHUB COMPLETE ====="
+echo "PASS: Restore completed from $REMOTE_NAME/$REMOTE_BRANCH"
+exit 0

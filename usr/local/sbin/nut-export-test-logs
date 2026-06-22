@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+EXPORT_TS="$(date +%Y%m%d-%H%M%S)"
+EXPORT_ROOT="/var/log/nut-orchestrator-ui/exports"
+EXPORT_NAME="nut-full-log-export-${EXPORT_TS}"
+EXPORT_DIR="${EXPORT_ROOT}/${EXPORT_NAME}"
+ARCHIVE="${EXPORT_ROOT}/${EXPORT_NAME}.tar.gz"
+
+mkdir -p "$EXPORT_ROOT"
+chgrp nut "$EXPORT_ROOT" 2>/dev/null || true
+chmod 2775 "$EXPORT_ROOT" 2>/dev/null || true
+
+mkdir -p "$EXPORT_DIR"/logs
+mkdir -p "$EXPORT_DIR"/state
+mkdir -p "$EXPORT_DIR"/system
+mkdir -p "$EXPORT_DIR"/configs
+mkdir -p "$EXPORT_DIR"/scripts
+mkdir -p "$EXPORT_DIR"/ui
+mkdir -p "$EXPORT_DIR"/apache
+mkdir -p "$EXPORT_DIR"/metadata
+
+{
+  echo "NUT full log export created: $EXPORT_TS"
+  echo
+  echo "Archive:"
+  echo "$ARCHIVE"
+  echo
+  echo "Purpose:"
+  echo "Operational troubleshooting bundle for NUT server UI, dashboard, event logs, service state, and selected configuration/script review."
+  echo
+  echo "Important:"
+  echo "This archive may contain hostnames, IPs, config details, usernames, service paths, and internal operational information."
+  echo "Keep internal unless reviewed/redacted."
+} > "$EXPORT_DIR/README.txt"
+
+{
+  echo "===== DATE ====="
+  date
+
+  echo
+  echo "===== HOSTNAME ====="
+  hostnamectl 2>/dev/null || hostname || true
+
+  echo
+  echo "===== EXPORT USER CONTEXT ====="
+  id || true
+
+  echo
+  echo "===== EXPORT PATHS ====="
+  echo "EXPORT_ROOT=$EXPORT_ROOT"
+  echo "EXPORT_DIR=$EXPORT_DIR"
+  echo "ARCHIVE=$ARCHIVE"
+} > "$EXPORT_DIR/metadata/export-metadata.txt"
+
+cp -a /var/log/nut-orchestrator-ui/*.log "$EXPORT_DIR/logs/" 2>/dev/null || true
+cp -a /var/www/html/nut-state/* "$EXPORT_DIR/state/" 2>/dev/null || true
+
+cp -a \
+  /var/log/nut-vmware-shutdown.log \
+  /var/log/nut-netapp-halt.log \
+  /var/log/nut-synology-shutdown.log \
+  /var/log/nut-lansweeper-shutdown.log \
+  /var/log/nut-voip-shutdown.log \
+  /var/log/nut-db-shutdown.log \
+  /var/log/nut-blueiris-shutdown.log \
+  "$EXPORT_DIR/logs/" 2>/dev/null || true
+
+cp -a /var/log/apache2/access.log "$EXPORT_DIR/apache/" 2>/dev/null || true
+cp -a /var/log/apache2/error.log "$EXPORT_DIR/apache/" 2>/dev/null || true
+cp -a /var/log/apache2/access.log.1 "$EXPORT_DIR/apache/" 2>/dev/null || true
+cp -a /var/log/apache2/error.log.1 "$EXPORT_DIR/apache/" 2>/dev/null || true
+
+journalctl -u nut-server.service --since "7 days ago" --no-pager > "$EXPORT_DIR/system/nut-server.journal.txt" 2>&1 || true
+journalctl -u nut-monitor.service --since "7 days ago" --no-pager > "$EXPORT_DIR/system/nut-monitor.journal.txt" 2>&1 || true
+journalctl -u nut-orchestrator-ui.service --since "7 days ago" --no-pager > "$EXPORT_DIR/system/nut-orchestrator-ui.journal.txt" 2>&1 || true
+journalctl -u apache2.service --since "7 days ago" --no-pager > "$EXPORT_DIR/system/apache2.journal.txt" 2>&1 || true
+
+systemctl status nut-server.service nut-monitor.service nut-orchestrator-ui.service apache2.service --no-pager -l > "$EXPORT_DIR/system/service-status.txt" 2>&1 || true
+
+{
+  echo "===== upsc -l ====="
+  upsc -l || true
+  echo
+  for ups in $(upsc -l 2>/dev/null); do
+    echo "===== $ups ====="
+    upsc "$ups" 2>/dev/null || true
+    echo
+  done
+} > "$EXPORT_DIR/system/ups-status.txt" 2>&1
+
+cp -a /etc/nut/ups.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/upsd.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/upsmon.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/upssched.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/nut.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/hosts.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/config.d/approved-targets.yml "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/config.d/dashboard-ui.json "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/config.d/shutdown-verification-targets.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/nut-orchestrator.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+
+cp -a \
+  /usr/local/sbin/nut-ui-run-test \
+  /usr/local/sbin/nut-ui-run-real-test-approved \
+  /usr/local/sbin/nut-vmware-shutdown.sh \
+  /usr/local/sbin/nut-netapp-halt.sh \
+  /usr/local/sbin/nut-synology-shutdown.sh \
+  /usr/local/sbin/nut-lansweeper-shutdown.sh \
+  /usr/local/sbin/nut-voip-shutdown.sh \
+  /usr/local/sbin/nut-db-shutdown.sh \
+  /usr/local/sbin/nut-blueiris-shutdown.sh \
+  /usr/local/sbin/nut-export-test-logs \
+  /usr/local/sbin/nut-get-power-events-json \
+  /usr/local/sbin/nut-production-status \
+  /usr/local/sbin/nut-production-mode \
+  "$EXPORT_DIR/scripts/" 2>/dev/null || true
+
+cp -a /usr/local/bin/nut-orchestrator.sh "$EXPORT_DIR/scripts/" 2>/dev/null || true
+
+cp -a /opt/nut-orchestrator-ui/app.py "$EXPORT_DIR/ui/" 2>/dev/null || true
+cp -a /opt/nut-orchestrator-ui/static/app.js "$EXPORT_DIR/ui/" 2>/dev/null || true
+cp -a /opt/nut-orchestrator-ui/static/nut-ui-theme.css "$EXPORT_DIR/ui/" 2>/dev/null || true
+cp -a /opt/nut-orchestrator-ui/templates/index.html "$EXPORT_DIR/ui/" 2>/dev/null || true
+cp -a /opt/nut-orchestrator-ui/templates/control-center.html "$EXPORT_DIR/ui/" 2>/dev/null || true
+cp -a /opt/nut-orchestrator-ui/lib/config_registry.json "$EXPORT_DIR/ui/" 2>/dev/null || true
+
+{
+  echo "===== EXPORT TREE ====="
+  find "$EXPORT_DIR" -maxdepth 4 -type f -printf '%p\t%s bytes\n' 2>/dev/null | sort || true
+} > "$EXPORT_DIR/metadata/export-file-list.txt"
+
+chown -R root:nut "$EXPORT_DIR"
+find "$EXPORT_DIR" -type d -exec chmod 2775 {} \;
+find "$EXPORT_DIR" -type f -exec chmod 0664 {} \;
+
+tar -czf "$ARCHIVE" -C "$EXPORT_ROOT" "$EXPORT_NAME"
+
+chown root:nut "$ARCHIVE"
+chmod 0664 "$ARCHIVE"
+
+rm -rf "$EXPORT_DIR"
+
+echo "$ARCHIVE"

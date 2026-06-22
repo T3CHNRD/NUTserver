@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DST="/var/www/html/nut-power-events.json"
+TMP="$(mktemp)"
+
+/usr/local/sbin/nut-get-power-events-json > "$TMP"
+
+install -o www-data -g www-data -m 0644 "$TMP" "$DST"
+rm -f "$TMP"

@@ -1,0 +1,15 @@
+# ------------------------------------------------------------------
+# GENERATED TEMPLATE: /etc/nut/upsd.users
+# Review credentials before applying.
+# ------------------------------------------------------------------
+
+[upsmon]
+  password = ChangeThisNow123!
+  upsmon master
+
+[admin]
+  password = ChangeAdminPassword789!
+  actions = SET
+  actions = FSD
+  instcmds = ALL
+

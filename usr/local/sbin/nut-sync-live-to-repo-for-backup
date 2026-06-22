@@ -12,6 +12,44 @@ if [ ! -d "$REPO/.git" ]; then
   exit 1
 fi
 
+is_secret_path() {
+  local src="$1"
+
+  case "$src" in
+    */.ssh/*|/root/.ssh/*|*.key|*.pem|*.p12|*.pfx|*.pass|*.secret|*.creds|*/vcenter.pass|*/db-telnet.pass|*/db-telnet.user)
+      return 0
+      ;;
+  esac
+
+  case "$(basename "$src")" in
+    *password*|*PASSWORD*|*passwd*|*PASSWD*|*token*|*TOKEN*|*credential*|*Credential*)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+is_temp_artifact() {
+  local src="$1"
+
+  case "$src" in
+    *.pre-*|*.bak*|*.save|*.tmp|*.swp|*.pyc|*/__pycache__/*)
+      return 0
+      ;;
+    *.broken-*|*.disabled-*|*.final-before-*|*final-before-promotion*|*restore-github.html.disabled*)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+repo_relative_path() {
+  local src="$1"
+  printf '%s\n' "${src#/}"
+}
+
 copy_file() {
   local src="$1"
   local dst="$2"
@@ -21,9 +59,19 @@ copy_file() {
     return 0
   fi
 
+  if is_secret_path "$src"; then
+    echo "SKIP secret-like file: $src"
+    return 0
+  fi
+
+  if is_temp_artifact "$src"; then
+    echo "SKIP temp artifact: $src"
+    return 0
+  fi
+
   mkdir -p "$(dirname "$REPO/$dst")"
   install -m 0644 "$src" "$REPO/$dst"
-  echo "SYNCED: $src -> $REPO/$dst"
+  echo "SYNCED file: $src -> $REPO/$dst"
 }
 
 copy_exec() {
@@ -35,26 +83,19 @@ copy_exec() {
     return 0
   fi
 
+  if is_secret_path "$src"; then
+    echo "SKIP secret-like executable: $src"
+    return 0
+  fi
+
+  if is_temp_artifact "$src"; then
+    echo "SKIP temp executable artifact: $src"
+    return 0
+  fi
+
   mkdir -p "$(dirname "$REPO/$dst")"
   install -m 0755 "$src" "$REPO/$dst"
-  echo "SYNCED: $src -> $REPO/$dst"
-}
-
-is_secret_path() {
-  local src="$1"
-
-  case "$src" in
-    */.ssh/*|/root/.ssh/*|*.key|*.pem|*.p12|*.pfx|*.pass|*/vcenter.pass|*/db-telnet.pass|*/db-telnet.user)
-      return 0
-      ;;
-  esac
-
-  return 1
-}
-
-repo_relative_path() {
-  local src="$1"
-  printf '%s\n' "${src#/}"
+  echo "SYNCED executable: $src -> $REPO/$dst"
 }
 
 sync_registry_managed_files() {
@@ -90,6 +131,11 @@ sync_registry_managed_files() {
       continue
     fi
 
+    if is_temp_artifact "$src"; then
+      echo "SKIP temp registry artifact: $cfg_id $src"
+      continue
+    fi
+
     if [ ! -e "$src" ]; then
       echo "WARN: missing registry source: $cfg_id $src"
       continue
@@ -97,53 +143,184 @@ sync_registry_managed_files() {
 
     dst="$(repo_relative_path "$src")"
 
-    mkdir -p "$(dirname "$REPO/$dst")"
-
     if [ -x "$src" ]; then
-      install -m 0755 "$src" "$REPO/$dst"
-      echo "SYNCED registry executable: $cfg_id $src -> $REPO/$dst"
+      copy_exec "$src" "$dst"
     else
-      install -m 0644 "$src" "$REPO/$dst"
-      echo "SYNCED registry file: $cfg_id $src -> $REPO/$dst"
+      copy_file "$src" "$dst"
     fi
   done
 }
 
-# First, dynamically capture every safe editable config registered in the UI.
+sync_directory_safe_files() {
+  local src_dir="$1"
+  local dst_prefix="$2"
+
+  if [ ! -d "$src_dir" ]; then
+    echo "WARN: missing directory: $src_dir"
+    return 0
+  fi
+
+  find "$src_dir" -type f | sort | while read -r src; do
+    if is_secret_path "$src"; then
+      echo "SKIP secret-like file: $src"
+      continue
+    fi
+
+    if is_temp_artifact "$src"; then
+      echo "SKIP temp artifact: $src"
+      continue
+    fi
+
+    rel="${src#$src_dir/}"
+    dst="${dst_prefix}/${rel}"
+
+    if [ -x "$src" ]; then
+      copy_exec "$src" "$dst"
+    else
+      copy_file "$src" "$dst"
+    fi
+  done
+}
+
+sync_glob_execs() {
+  local pattern="$1"
+  local dst_prefix="$2"
+
+  find "$(dirname "$pattern")" -maxdepth 1 -type f -name "$(basename "$pattern")" | sort | while read -r src; do
+    if is_secret_path "$src" || is_temp_artifact "$src"; then
+      echo "SKIP unsafe executable candidate: $src"
+      continue
+    fi
+
+    copy_exec "$src" "${dst_prefix}/$(basename "$src")"
+  done
+}
+
+sync_glob_files() {
+  local pattern="$1"
+  local dst_prefix="$2"
+
+  find "$(dirname "$pattern")" -maxdepth 1 -type f -name "$(basename "$pattern")" | sort | while read -r src; do
+    if is_secret_path "$src" || is_temp_artifact "$src"; then
+      echo "SKIP unsafe file candidate: $src"
+      continue
+    fi
+
+    copy_file "$src" "${dst_prefix}/$(basename "$src")"
+  done
+}
+
+echo
+echo "===== UI / FLASK SAFE SOURCE SYNC ====="
+sync_directory_safe_files /opt/nut-orchestrator-ui/lib opt/nut-orchestrator-ui/lib
+sync_directory_safe_files /opt/nut-orchestrator-ui/templates opt/nut-orchestrator-ui/templates
+sync_directory_safe_files /opt/nut-orchestrator-ui/static opt/nut-orchestrator-ui/static
+copy_file /opt/nut-orchestrator-ui/app.py opt/nut-orchestrator-ui/app.py
+copy_file /opt/nut-orchestrator-ui/requirements.txt opt/nut-orchestrator-ui/requirements.txt
+copy_file /opt/nut-orchestrator-ui/README.md opt/nut-orchestrator-ui/README.md
+copy_file /opt/nut-orchestrator-ui/Dashboard-README.md opt/nut-orchestrator-ui/Dashboard-README.md
+
+echo
+echo "===== REGISTRY-MANAGED SAFE CONFIG SYNC ====="
 sync_registry_managed_files
 
-# NUT production mode / storm guard status
+echo
+echo "===== NUT SAFE CONFIG SYNC ====="
+sync_glob_files "/etc/nut/*.conf" etc/nut
+sync_directory_safe_files /etc/nut/config.d etc/nut/config.d
 copy_file /etc/nut/production-mode.conf etc/nut/production-mode.conf
-copy_exec /usr/local/sbin/nut-production-status usr/local/sbin/nut-production-status
-copy_exec /usr/local/sbin/nut-production-mode usr/local/sbin/nut-production-mode
-
-# ESXi / hypervisor SSH fallback config and read-only preflight
-copy_file /etc/nut/hypervisors/hypervisor-ssh-fallback.conf etc/nut/hypervisors/hypervisor-ssh-fallback.conf
-copy_exec /usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh
-
-# Control Center and Flask app
-copy_file /opt/nut-orchestrator-ui/templates/control-center.html opt/nut-orchestrator-ui/templates/control-center.html
-copy_file /opt/nut-orchestrator-ui/templates/control-center-restore-lab.html opt/nut-orchestrator-ui/templates/control-center-restore-lab.html
-copy_file /opt/nut-orchestrator-ui/app.py opt/nut-orchestrator-ui/app.py
-
-# NUT event path
-copy_exec /usr/local/bin/nut-orchestrator.sh usr/local/bin/nut-orchestrator.sh
+copy_file /etc/nut/ups.conf etc/nut/ups.conf
+copy_file /etc/nut/upsd.conf etc/nut/upsd.conf
+copy_file /etc/nut/upsd.users etc/nut/upsd.users
 copy_file /etc/nut/upsmon.conf etc/nut/upsmon.conf
 copy_file /etc/nut/upssched.conf etc/nut/upssched.conf
+copy_file /etc/nut/upsset.conf etc/nut/upsset.conf
+copy_file /etc/nut/hosts.conf etc/nut/hosts.conf
+copy_file /etc/nut/apache-notes.txt etc/nut/apache-notes.txt
+copy_file /etc/nut/restore-live-test-probe.txt etc/nut/restore-live-test-probe.txt
+copy_file /etc/nut/nut-email-alerts.conf etc/nut/nut-email-alerts.conf
 
-# Shutdown/integration wrappers we have worked around
-copy_exec /usr/local/sbin/nut-vmware-shutdown.sh usr/local/sbin/nut-vmware-shutdown.sh
-copy_exec /usr/local/sbin/nut-lansweeper-shutdown.sh usr/local/sbin/nut-lansweeper-shutdown.sh
-copy_exec /usr/local/sbin/nut-blueiris-shutdown.sh usr/local/sbin/nut-blueiris-shutdown.sh
-copy_exec /usr/local/sbin/nut-synology-shutdown.sh usr/local/sbin/nut-synology-shutdown.sh
-copy_exec /usr/local/sbin/nut-voip-shutdown.sh usr/local/sbin/nut-voip-shutdown.sh
-copy_exec /usr/local/sbin/nut-db-shutdown.sh usr/local/sbin/nut-db-shutdown.sh
+if [ -f /etc/nut/nut-orchestrator.conf ]; then
+  mkdir -p "$REPO/etc/nut"
+  sed \
+    -e 's/VCENTER_PASSWORD=.*/VCENTER_PASSWORD="REDACTED"/' \
+    -e 's/LANSWEEPER_PASSWORD=.*/LANSWEEPER_PASSWORD="REDACTED"/' \
+    -e 's/PASSWORD=.*/PASSWORD="REDACTED"/' \
+    /etc/nut/nut-orchestrator.conf > "$REPO/etc/nut/nut-orchestrator.conf"
+  chmod 0640 "$REPO/etc/nut/nut-orchestrator.conf"
+  echo "SYNCED sanitized: /etc/nut/nut-orchestrator.conf -> $REPO/etc/nut/nut-orchestrator.conf"
+fi
+
+if [ -f /etc/nut/synology-api.conf ]; then
+  mkdir -p "$REPO/etc/nut"
+  sed -E 's/^(SYNOLOGY_PASSWORD=).*/\1"[REDACTED]"/' /etc/nut/synology-api.conf > "$REPO/etc/nut/synology-api.conf"
+  chmod 0640 "$REPO/etc/nut/synology-api.conf"
+  echo "SYNCED sanitized: /etc/nut/synology-api.conf -> $REPO/etc/nut/synology-api.conf"
+fi
+
+echo
+echo "===== SYSTEMD NUT UNIT SYNC ====="
+sync_glob_files "/etc/systemd/system/nut-*.service" etc/systemd/system
+sync_glob_files "/etc/systemd/system/nut-*.timer" etc/systemd/system
+
+echo
+echo "===== NUT EXECUTABLE SCRIPT SYNC ====="
+sync_glob_execs "/usr/local/sbin/nut-*" usr/local/sbin
+sync_glob_execs "/usr/local/bin/nut-*" usr/local/bin
+
+echo
+echo "===== SELECTED NON-NUT EXECUTABLE SUPPORT SYNC ====="
+copy_exec /usr/local/sbin/rollback-remote-access.sh usr/local/sbin/rollback-remote-access.sh
+copy_exec /usr/local/sbin/start-x11vnc.sh usr/local/sbin/start-x11vnc.sh
+
+echo
+echo "===== REMOVE UNSAFE SECRET-LIKE FILES FROM REPO COPY ONLY ====="
+find "$REPO" -type f \( \
+  -path '*/root/.ssh/*' \
+  -o -path '*/.ssh/*' \
+  -o -name '*.pass' \
+  -o -name '*.secret' \
+  -o -name '*.creds' \
+  -o -name 'vcenter.pass' \
+  -o -name 'db-telnet.pass' \
+  -o -name 'db-telnet.user' \
+  -o -name '*.key' \
+  -o -name '*.pem' \
+  -o -name '*.p12' \
+  -o -name '*.pfx' \
+\) -print -delete
 
 echo
 echo "===== SAFETY CHECK: DO NOT BACK UP SECRETS ====="
-if find "$REPO" -type f \( -path '*/root/.ssh/*' -o -name '*.pass' -o -name 'vcenter.pass' -o -name 'db-telnet.pass' -o -name '*.key' -o -name '*.pem' -o -name '*.p12' -o -name '*.pfx' \) | grep -q .; then
+if find "$REPO" -type f \( \
+    -path '*/root/.ssh/*' \
+    -o -path '*/.ssh/*' \
+    -o -name '*.pass' \
+    -o -name '*.secret' \
+    -o -name '*.creds' \
+    -o -name 'vcenter.pass' \
+    -o -name 'db-telnet.pass' \
+    -o -name 'db-telnet.user' \
+    -o -name '*.key' \
+    -o -name '*.pem' \
+    -o -name '*.p12' \
+    -o -name '*.pfx' \
+  \) | grep -q .; then
   echo "FAIL: secret-like file detected in repo"
-  find "$REPO" -type f \( -path '*/root/.ssh/*' -o -name '*.pass' -o -name 'vcenter.pass' -o -name 'db-telnet.pass' -o -name '*.key' -o -name '*.pem' -o -name '*.p12' -o -name '*.pfx' \)
+  find "$REPO" -type f \( \
+    -path '*/root/.ssh/*' \
+    -o -path '*/.ssh/*' \
+    -o -name '*.pass' \
+    -o -name '*.secret' \
+    -o -name '*.creds' \
+    -o -name 'vcenter.pass' \
+    -o -name 'db-telnet.pass' \
+    -o -name 'db-telnet.user' \
+    -o -name '*.key' \
+    -o -name '*.pem' \
+    -o -name '*.p12' \
+    -o -name '*.pfx' \
+  \)
   exit 1
 fi
 

@@ -29,3 +29,15 @@ etc/nut/lansweeper.creds
 etc/ssh/
 root/
 home/*/.ssh/
+*.pass
+.ssh/
+root/.ssh/
+*.pre-*
+*.bak*
+*.save
+*.tmp
+*.broken-*
+*.disabled-*
+*.final-before-*
+*final-before-promotion*
+*restore-github.html.disabled*
