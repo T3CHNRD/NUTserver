@@ -252,6 +252,7 @@ sync_registry_managed_files
 echo
 echo "===== NUT SAFE CONFIG SYNC ====="
 sync_glob_files "/etc/nut/*.conf" etc/nut
+sanitize_config_file /etc/nut/apc-idf-web.conf etc/nut/apc-idf-web.conf 0640
 sync_directory_safe_files /etc/nut/config.d etc/nut/config.d
 copy_file /etc/nut/production-mode.conf etc/nut/production-mode.conf
 copy_file /etc/nut/ups.conf etc/nut/ups.conf
