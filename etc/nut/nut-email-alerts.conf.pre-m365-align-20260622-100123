@@ -17,7 +17,7 @@ NUT_EMAIL_ENABLED="1"
 SMTP_SERVER="smtp.office365.com"
 SERVER_PORT="587"
 AUTHENTICATION_REQUIRED="Yes"
-USER_NAME="tvedders@aluminumblanking.com"
+USER_NAME="tvedders@albl.com"
 SMTP_PASSWORD="********"
 SSL_STATE="STARTTLS"
 
@@ -25,8 +25,8 @@ SSL_STATE="STARTTLS"
 EMAIL_RECIPIENTS="tvedders@albl.com"
 
 # Sender / subject settings
-EMAIL_FROM="tvedders@aluminumblanking.com"
-EMAIL_SUBJECT_PREFIX="[NUT Server Test]"
+EMAIL_FROM="reports@albl.com"
+EMAIL_SUBJECT_PREFIX="[NUT Server]"
 
 # OFF mode:
 # OFF means everything is off, including monitoring/logging behavior as defined by the mode system.
