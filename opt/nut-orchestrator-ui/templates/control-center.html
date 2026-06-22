@@ -3140,7 +3140,7 @@ function updateNutProductionButtons(mode) {
             <div class="cc-config-launch-title">Configuration Management</div>
             <div class="cc-config-launch-copy">
               Configuration editing is available when needed, but it stays out of the main monitoring flow.
-              Save remains disabled until the controlled dashboard-ui.json save test is approved.
+              Save is enabled for approved editable live configs. Use Validate before Save.
             </div>
             <div class="cc-config-launch-badges">
               <span class="cc-config-badge">Reload</span>
@@ -3217,7 +3217,7 @@ function updateNutProductionButtons(mode) {
               <div class="cc-config-toolbar-actions">
                 <button class="cc-btn" id="btn-load">Reload</button>
                 <button class="cc-btn cc-btn-warn" id="btn-validate">Validate</button>
-                <button class="cc-btn cc-btn-primary" id="btn-save" disabled title="Save is disabled until final controlled dashboard-ui.json test">Save Disabled</button>
+                <button class="cc-btn cc-btn-primary" id="btn-save" title="Save validated changes to the selected live config">Save</button>
                 <button class="cc-btn cc-btn-danger" id="btn-revert">Revert</button>
               </div>
             </div>
@@ -5249,7 +5249,7 @@ function closeLabSelectedRestoreScreen() {
       <div class="cc-modal-head is-config-head">
         <div>
           <div class="cc-modal-title">Configuration Management</div>
-          <div class="cc-modal-note">Edit only when needed. Save remains disabled until the controlled dashboard-ui.json save test is approved.</div>
+          <div class="cc-modal-note">Edit only when needed. Save is enabled for approved editable live configs. Use Validate before Save.</div>
         </div>
         <button class="cc-btn" id="cc-close-config-management">Close</button>
       </div>

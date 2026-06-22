@@ -347,17 +347,11 @@
       "allowed_extensions": [
         ".conf"
       ],
-      "sensitive": false
-    },
-    {
-      "id": "nut_email_alerts_secret",
-      "name": "NUT Email SMTP Password",
-      "path": "/etc/nut/nut-email-alerts.secret",
-      "type": "secret",
-      "allowed_extensions": [
-        ".secret"
-      ],
-      "sensitive": true
+      "sensitive": false,
+      "validator": "validate_nut_email_alerts_conf",
+      "owner": "root",
+      "group": "root",
+      "file_mode": "640"
     }
   ],
   "reference_configs": [
