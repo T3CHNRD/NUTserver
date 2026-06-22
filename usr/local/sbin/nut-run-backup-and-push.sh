@@ -139,6 +139,26 @@ copy_executable_file() {
   log "Copied executable $src -> $dest"
 }
 
+copy_sanitized_config_file() {
+  local src="$1"
+  local dest="$2"
+  local mode="${3:-640}"
+
+  mkdir -p "$(dirname "$dest")"
+  ${AS_ROOT} test -f "$src" || {
+    log "SKIP missing file: $src"
+    return 0
+  }
+
+  ${AS_ROOT} sed -E \
+    -e 's/^([A-Za-z0-9_]*(PASSWORD|PASS|TOKEN|SECRET|KEY)[A-Za-z0-9_]*=).*/\1"REDACTED"/I' \
+    "$src" > "$dest"
+
+  chmod "$mode" "$dest"
+  chown "$HOST_USER:$HOST_GROUP" "$dest"
+  log "Copied sanitized config $src -> $dest"
+}
+
 main() {
   require_cmd git
   require_cmd sudo
@@ -206,13 +226,7 @@ main() {
   copy_executable_file /usr/local/sbin/nut-netapp-halt.sh ./usr/local/sbin/nut-netapp-halt.sh
   copy_executable_file /usr/local/sbin/nut-synology-shutdown.sh ./usr/local/sbin/nut-synology-shutdown.sh
 
-  if [ -f /etc/nut/synology-api.conf ]; then
-    mkdir -p ./etc/nut
-    sed -E 's/^(SYNOLOGY_PASSWORD=).*/\1"[REDACTED]"/' /etc/nut/synology-api.conf > ./etc/nut/synology-api.conf
-    chmod 600 ./etc/nut/synology-api.conf
-    chown "$HOST_USER:$HOST_GROUP" ./etc/nut/synology-api.conf
-    log "Copied sanitized /etc/nut/synology-api.conf -> ./etc/nut/synology-api.conf"
-  fi
+  copy_sanitized_config_file /etc/nut/synology-api.conf ./etc/nut/synology-api.conf 640
 
   copy_executable_file /usr/local/sbin/nut-voip-shutdown.sh ./usr/local/sbin/nut-voip-shutdown.sh
   copy_executable_file /usr/local/sbin/nut-db-shutdown.sh ./usr/local/sbin/nut-db-shutdown.sh
@@ -234,16 +248,7 @@ main() {
   fi
 
   # sanitized main config
-  if ${AS_ROOT} test -f /etc/nut/nut-orchestrator.conf; then
-    ${AS_ROOT} sed \
-      -e 's/VCENTER_PASSWORD=.*/VCENTER_PASSWORD="REDACTED"/' \
-      -e 's/LANSWEEPER_PASSWORD=.*/LANSWEEPER_PASSWORD="REDACTED"/' \
-      /etc/nut/nut-orchestrator.conf > ./etc/nut/nut-orchestrator.conf
-
-    chmod 640 ./etc/nut/nut-orchestrator.conf
-    chown "$HOST_USER:$HOST_GROUP" ./etc/nut/nut-orchestrator.conf
-    log "Copied sanitized nut-orchestrator.conf"
-  fi
+  copy_sanitized_config_file /etc/nut/nut-orchestrator.conf ./etc/nut/nut-orchestrator.conf 640
 
   # Hypervisor SSH fallback support files.
   # Safe backup only: do not copy private SSH keys.
