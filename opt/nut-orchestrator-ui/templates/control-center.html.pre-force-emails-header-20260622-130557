@@ -2739,7 +2739,6 @@
           <span class="nut-prod-mode-field">Live protection action: <strong id="nut-prod-live-actions">--</strong></span>
           <span class="nut-prod-mode-field">Maintenance mode: <strong id="nut-prod-maintenance-mode">--</strong></span>
           <span class="nut-prod-mode-field">Monitor: <strong id="nut-prod-monitor">--</strong></span>
-          <span class="nut-prod-mode-field">Emails: <strong id="nut-prod-emails">--</strong></span>
         </span>
       </span>
       <span id="nut-prod-controls-note" style="display:none"></span>
@@ -2853,13 +2852,11 @@
   function updateNutModeStatusFields(mode) {
     const liveActionsEl = document.getElementById('nut-prod-live-actions');
     const maintenanceEl = document.getElementById('nut-prod-maintenance-mode');
-    const emailsEl = document.getElementById('nut-prod-emails');
 
     if (!liveActionsEl || !maintenanceEl) return;
 
     liveActionsEl.className = '';
     maintenanceEl.className = '';
-    if (emailsEl) emailsEl.className = '';
 
     if (mode === 'armed') {
       liveActionsEl.textContent = 'Allowed';
@@ -2867,43 +2864,24 @@
 
       maintenanceEl.textContent = 'No';
       maintenanceEl.classList.add('no');
-
-      if (emailsEl) {
-        emailsEl.textContent = 'yes';
-        emailsEl.classList.add('yes');
-      }
     } else if (mode === 'disarmed') {
       liveActionsEl.textContent = 'Blocked';
       liveActionsEl.classList.add('blocked');
 
       maintenanceEl.textContent = 'Yes';
       maintenanceEl.classList.add('yes');
-
-      if (emailsEl) {
-        emailsEl.textContent = 'limited';
-        emailsEl.classList.add('blocked');
-      }
     } else if (mode === 'off') {
       liveActionsEl.textContent = 'Blocked';
       liveActionsEl.classList.add('blocked');
 
       maintenanceEl.textContent = 'Yes';
       maintenanceEl.classList.add('yes');
-
-      if (emailsEl) {
-        emailsEl.textContent = 'no';
-        emailsEl.classList.add('no');
-      }
     } else {
       liveActionsEl.textContent = '--';
       maintenanceEl.textContent = '--';
-
-      if (emailsEl) {
-        emailsEl.textContent = 'unknown';
-        emailsEl.classList.add('blocked');
-      }
     }
   }
+
 
 function updateNutProductionButtons(mode) {
     const protecting = document.getElementById('nut-prod-btn-protecting');

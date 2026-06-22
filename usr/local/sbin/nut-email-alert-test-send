@@ -1,0 +1,471 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONF="/etc/nut/nut-email-alerts.conf"
+MSMTP_REBUILD="/usr/local/sbin/nut-rebuild-msmtp-from-email-config"
+LOG="/var/log/nut-orchestrator-ui/ui-actions.log"
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  nut-email-alert-test-send --list
+  nut-email-alert-test-send --preview <type>
+  nut-email-alert-test-send --send <type>
+
+Types:
+  onbatt     Power switched to UPS
+  online     Power returned to grid
+  shutdown   Protected systems are shutting down
+  cancelled  Shutdown cancelled because power returned
+  final      NUT server final shutdown warning
+  weekly     Daily UPS health report
+
+This tool sends production-format email content manually.
+It does not simulate UPS events.
+It does not trigger shutdowns.
+It does not change NUT mode.
+USAGE
+}
+
+ACTION="${1:-}"
+TYPE="${2:-}"
+
+case "$ACTION" in
+  --list)
+    echo "onbatt"
+    echo "online"
+    echo "shutdown"
+    echo "cancelled"
+    echo "final"
+    echo "weekly"
+    exit 0
+    ;;
+  --preview|--send)
+    [ -n "$TYPE" ] || { usage; exit 1; }
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac
+
+case "$TYPE" in
+  onbatt|online|shutdown|cancelled|final|weekly) ;;
+  *)
+    echo "FAIL: unknown email type: $TYPE"
+    usage
+    exit 1
+    ;;
+esac
+
+[ -f "$CONF" ] || { echo "FAIL: missing $CONF"; exit 1; }
+
+if [ "$ACTION" = "--send" ]; then
+  [ -x "$MSMTP_REBUILD" ] || { echo "FAIL: missing executable $MSMTP_REBUILD"; exit 1; }
+  "$MSMTP_REBUILD"
+fi
+
+python3 - "$ACTION" "$TYPE" <<'PY'
+from pathlib import Path
+from email.message import EmailMessage
+from email.utils import formatdate
+from datetime import datetime
+import shlex
+import subprocess
+import sys
+import socket
+import re
+
+action = sys.argv[1]
+kind = sys.argv[2]
+
+conf_path = Path("/etc/nut/nut-email-alerts.conf")
+log_path = Path("/var/log/nut-orchestrator-ui/ui-actions.log")
+
+data = {}
+for raw in conf_path.read_text(encoding="utf-8").splitlines():
+    line = raw.strip()
+    if not line or line.startswith("#") or "=" not in line:
+        continue
+    key, value = line.split("=", 1)
+    key = key.strip()
+    value = value.strip()
+    try:
+        value = shlex.split(value)[0] if value else ""
+    except Exception:
+        value = value.strip('"').strip("'")
+    data[key] = value
+
+prefix = data.get("EMAIL_SUBJECT_PREFIX", "[NUT Server]")
+sender = data.get("EMAIL_FROM", "")
+recipients_raw = data.get("EMAIL_RECIPIENTS", "")
+recipients = [x.strip() for x in recipients_raw.split(",") if x.strip()]
+
+if not sender:
+    raise SystemExit("FAIL: EMAIL_FROM is blank")
+if not recipients:
+    raise SystemExit("FAIL: EMAIL_RECIPIENTS is blank")
+
+hostname = socket.gethostname()
+now = datetime.now().astimezone()
+now_text = now.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+def get_mode_summary():
+    try:
+        proc = subprocess.run(
+            ["/usr/local/sbin/nut-production-status"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=10,
+        )
+        txt = proc.stdout
+        mode = "unknown"
+        label = "unknown"
+        live = "unknown"
+        m = re.search(r'"mode"\s*:\s*"([^"]+)"', txt)
+        if m:
+            mode = m.group(1)
+        m = re.search(r'"mode_label"\s*:\s*"([^"]+)"', txt)
+        if m:
+            label = m.group(1)
+        m = re.search(r'"allow_live_actions"\s*:\s*"([^"]+)"', txt)
+        if m:
+            live = m.group(1)
+        return mode, label, live
+    except Exception:
+        return "unknown", "unknown", "unknown"
+
+mode, mode_label, live_actions = get_mode_summary()
+
+def enforce_email_mode_policy(action, kind, mode, mode_label):
+    """
+    Enforce email behavior by NUT protection mode.
+
+    Protecting / armed:
+      all configured email types allowed
+
+    Standby / disarmed:
+      limited email types only:
+        onbatt, online, weekly
+
+    Off:
+      no emails allowed
+    """
+    if action != "--send":
+        return
+
+    allowed_by_mode = {
+        "armed": {"onbatt", "online", "shutdown", "cancelled", "final", "weekly"},
+        "disarmed": {"onbatt", "online", "weekly"},
+        "off": set(),
+    }
+
+    allowed = allowed_by_mode.get(mode, set())
+
+    if kind in allowed:
+        return
+
+    if mode == "off":
+        raise SystemExit(
+            f"EMAIL BLOCKED BY MODE: mode={mode} label={mode_label!r} "
+            f"type={kind} reason='Off mode blocks all emails'"
+        )
+
+    if mode == "disarmed":
+        raise SystemExit(
+            f"EMAIL BLOCKED BY MODE: mode={mode} label={mode_label!r} "
+            f"type={kind} reason='Standby allows only onbatt, online, and daily health emails'"
+        )
+
+    raise SystemExit(
+        f"EMAIL BLOCKED BY MODE: mode={mode} label={mode_label!r} "
+        f"type={kind} reason='Unknown mode or email type not allowed'"
+    )
+
+enforce_email_mode_policy(action, kind, mode, mode_label)
+
+def run(cmd, timeout=10):
+    try:
+        p = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=timeout,
+        )
+        return p.returncode, p.stdout.strip(), p.stderr.strip()
+    except Exception as e:
+        return 1, "", str(e)
+
+def get_ups_names():
+    rc, out, err = run(["bash", "-lc", "upsc -l 2>/dev/null"], timeout=10)
+    return [x.strip() for x in out.splitlines() if x.strip()]
+
+def get_ups_value(target, key):
+    rc, out, err = run(["upsc", target, key], timeout=5)
+    if rc == 0 and out:
+        return out
+    return "not available"
+
+
+def ping_target(ip):
+    rc, out, err = run(["ping", "-c", "3", "-W", "2", ip], timeout=10)
+    if rc == 0:
+        summary = ""
+        for line in out.splitlines():
+            if "packets transmitted" in line:
+                summary = line.strip()
+                break
+        return "reachable", summary or "ping successful"
+    summary = err.strip() or out.strip() or "ping failed"
+    return "not reachable", summary
+
+def latest_idf_event(source):
+    log = Path("/var/log/nut-orchestrator-ui/power-events.log")
+    if not log.exists():
+        return "unknown", "not found", "power event log not found"
+
+    try:
+        lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
+    except Exception as e:
+        return "unknown", "not found", f"could not read power event log: {e}"
+
+    matches = [
+        line for line in lines
+        if f'source="{source}"' in line and (
+            "On battery power" in line or
+            "No longer on battery power" in line
+        )
+    ]
+
+    if not matches:
+        return "unknown", "not found", "not found"
+
+    last = matches[-1]
+
+    if "No longer on battery power" in last:
+        power_source = "line/grid"
+    elif "On battery power" in last:
+        power_source = "battery"
+    else:
+        power_source = "unknown"
+
+    event_time = "not found"
+    for token in ('event_time="',):
+        if token in last:
+            event_time = last.split(token, 1)[1].split('"', 1)[0]
+            break
+
+    message = last
+    if 'message="' in last:
+        message = last.split('message="', 1)[1].split('"', 1)[0]
+    elif 'status="' in last:
+        message = last.split('status="', 1)[1].split('"', 1)[0]
+
+    return power_source, event_time, message
+
+def idf_status_lines():
+    targets = [
+        ("IDF 2", "IDF2", "192.168.9.251", "APC-IDF2.albl.com"),
+        ("IDF 3", "IDF3", "192.168.9.252", "apc-idf3.albl.com"),
+    ]
+
+    lines = [
+        "IDF reachability and power status:",
+    ]
+
+    for label, source, ip, dns in targets:
+        reachability, ping_summary = ping_target(ip)
+        power_source, event_time, message = latest_idf_event(source)
+
+        lines.append("")
+        lines.append(f"- {label}")
+        lines.append(f"  IP: {ip}")
+        lines.append(f"  DNS: {dns}")
+        lines.append(f"  Reachability: {reachability}")
+        lines.append(f"  Ping summary: {ping_summary}")
+        lines.append(f"  Last known power source: {power_source}")
+        lines.append(f"  Last known event time: {event_time}")
+        lines.append(f"  Last known event message: {message}")
+
+    return lines
+
+
+def ups_health_lines():
+    ups_names = get_ups_names()
+    lines = []
+    lines.append("UPS health details:")
+    if not ups_names:
+        lines.append("- UPS details unavailable from upsc at the time this email was generated.")
+        return lines
+
+    for ups in ups_names:
+        target = f"{ups}@localhost"
+        status = get_ups_value(target, "ups.status")
+        charge = get_ups_value(target, "battery.charge")
+        runtime = get_ups_value(target, "battery.runtime")
+        load = get_ups_value(target, "ups.load")
+        battv = get_ups_value(target, "battery.voltage")
+        linev = get_ups_value(target, "input.voltage")
+
+        lines.append("")
+        lines.append(f"- {ups}")
+        lines.append(f"  Status: {status}")
+        lines.append(f"  Battery charge: {charge}%")
+        lines.append(f"  Runtime remaining: {runtime} seconds")
+        lines.append(f"  Load: {load}%")
+        lines.append(f"  Battery voltage: {battv}")
+        lines.append(f"  Input voltage: {linev}")
+    return lines
+
+templates = {
+    "onbatt": {
+        "subject": "Power switched to UPS",
+        "title": "Power switched to UPS battery",
+        "body": [
+            f"Power-loss timestamp: {now_text}",
+            "",
+            "Status:",
+            "A monitored UPS has switched from line power to battery power.",
+            "",
+            "Operator action:",
+            "Monitor UPS runtime, affected equipment, and recovery status.",
+        ],
+    },
+    "online": {
+        "subject": "Power returned to grid",
+        "title": "Power returned to line/grid power",
+        "body": [
+            f"Power-restored timestamp: {now_text}",
+            "Outage duration: unavailable from manual email generation",
+            "",
+            "Status:",
+            "A monitored UPS has returned from battery power to line/grid power.",
+            "",
+            "Operator action:",
+            "Confirm equipment remains healthy and verify that no shutdown sequence is still active.",
+        ],
+    },
+    "shutdown": {
+        "subject": "Protected systems shutting down",
+        "title": "Protected systems are shutting down",
+        "body": [
+            f"Shutdown-start timestamp: {now_text}",
+            "",
+            "Status:",
+            "Protected systems are entering the configured shutdown process.",
+            "",
+            "Systems scheduled for shutdown:",
+            "- unavailable from manual email generation",
+            "",
+            "Operator action:",
+            "Monitor system shutdown status and confirm each protected target powers down cleanly.",
+        ],
+    },
+    "cancelled": {
+        "subject": "Shutdown cancelled, power restored",
+        "title": "Shutdown sequence cancelled because power returned",
+        "body": [
+            f"Power-restored timestamp: {now_text}",
+            "",
+            "Status:",
+            "Power returned before the shutdown sequence needed to continue.",
+            "",
+            "Systems already shut down:",
+            "- unavailable from manual email generation",
+            "",
+            "Systems still running:",
+            "- unavailable from manual email generation",
+            "",
+            "Operator action:",
+            "Confirm protected systems are healthy and determine whether any manual recovery is required.",
+        ],
+    },
+    "final": {
+        "subject": "NUT server final shutdown warning",
+        "title": "NUT server final shutdown due to depleted UPS runtime",
+        "body": [
+            f"Final-shutdown timestamp: {now_text}",
+            "",
+            "Status:",
+            "UPS runtime is critically low and the NUT server is preparing for final shutdown.",
+            "",
+            "Operator action:",
+            "Assume remaining automated visibility may end shortly.",
+        ],
+    },
+    "weekly": {
+        "subject": "Daily UPS health report",
+        "title": "Daily UPS health report",
+        "body": [
+            f"Report timestamp: {now_text}",
+            "",
+            "Summary:",
+            f"UPS total monitored: {len(get_ups_names())}",
+            f"NUT mode: {mode_label}",
+            f"Live actions allowed: {live_actions}",
+            "",
+            *ups_health_lines(),
+            "",
+            *idf_status_lines(),
+            "",
+            "Operator action:",
+            "Review UPS charge, runtime, status, load, IDF reachability, and any unavailable readings.",
+        ],
+    },
+}
+
+tpl = templates[kind]
+subject = f"{prefix} {tpl['subject']}"
+
+body_lines = [
+    tpl["title"],
+    "=" * len(tpl["title"]),
+    "",
+    f"NUT server: {hostname}",
+    f"NUT mode: {mode_label}",
+    "",
+    *tpl["body"],
+]
+
+body = "\n".join(body_lines)
+
+if action == "--preview":
+    print("===== EMAIL PREVIEW =====")
+    print(f"Type: {kind}")
+    print(f"From: {sender}")
+    print(f"To: {', '.join(recipients)}")
+    print(f"Subject: {subject}")
+    print()
+    print(body)
+    sys.exit(0)
+
+msg = EmailMessage()
+msg["From"] = sender
+msg["To"] = ", ".join(recipients)
+msg["Date"] = formatdate(localtime=True)
+msg["Subject"] = subject
+msg.set_content(body)
+
+proc = subprocess.run(
+    ["/usr/sbin/sendmail", "-t"],
+    input=msg.as_bytes(),
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+)
+
+log_line = f"EMAIL PRODUCTION FORMAT MANUAL SEND type={kind} rc={proc.returncode} subject={subject!r}\n"
+with log_path.open("a", encoding="utf-8") as f:
+    f.write(log_line)
+
+if proc.stdout:
+    print(proc.stdout.decode(errors="replace"))
+if proc.stderr:
+    print(proc.stderr.decode(errors="replace"), file=sys.stderr)
+
+if proc.returncode != 0:
+    raise SystemExit(proc.returncode)
+
+print(f"Sent production-format email type={kind}")
+PY
