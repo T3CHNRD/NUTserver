@@ -98,6 +98,31 @@ copy_exec() {
   echo "SYNCED executable: $src -> $REPO/$dst"
 }
 
+sanitize_config_file() {
+  local src="$1"
+  local dst="$2"
+  local mode="${3:-0640}"
+
+  if [ ! -e "$src" ]; then
+    echo "WARN: missing source: $src"
+    return 0
+  fi
+
+  if is_temp_artifact "$src"; then
+    echo "SKIP temp config artifact: $src"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$REPO/$dst")"
+
+  sed -E \
+    -e 's/^([A-Za-z0-9_]*(PASSWORD|PASS|TOKEN|SECRET|KEY)[A-Za-z0-9_]*=).*/\1"REDACTED"/I' \
+    "$src" > "$REPO/$dst"
+
+  chmod "$mode" "$REPO/$dst"
+  echo "SYNCED sanitized config: $src -> $REPO/$dst"
+}
+
 sync_registry_managed_files() {
   if [ ! -f "$REGISTRY" ]; then
     echo "WARN: registry not found: $REGISTRY"
@@ -238,7 +263,7 @@ copy_file /etc/nut/upsset.conf etc/nut/upsset.conf
 copy_file /etc/nut/hosts.conf etc/nut/hosts.conf
 copy_file /etc/nut/apache-notes.txt etc/nut/apache-notes.txt
 copy_file /etc/nut/restore-live-test-probe.txt etc/nut/restore-live-test-probe.txt
-copy_file /etc/nut/nut-email-alerts.conf etc/nut/nut-email-alerts.conf
+sanitize_config_file /etc/nut/nut-email-alerts.conf etc/nut/nut-email-alerts.conf 0640
 
 if [ -f /etc/nut/nut-orchestrator.conf ]; then
   mkdir -p "$REPO/etc/nut"
@@ -251,12 +276,7 @@ if [ -f /etc/nut/nut-orchestrator.conf ]; then
   echo "SYNCED sanitized: /etc/nut/nut-orchestrator.conf -> $REPO/etc/nut/nut-orchestrator.conf"
 fi
 
-if [ -f /etc/nut/synology-api.conf ]; then
-  mkdir -p "$REPO/etc/nut"
-  sed -E 's/^(SYNOLOGY_PASSWORD=).*/\1"[REDACTED]"/' /etc/nut/synology-api.conf > "$REPO/etc/nut/synology-api.conf"
-  chmod 0640 "$REPO/etc/nut/synology-api.conf"
-  echo "SYNCED sanitized: /etc/nut/synology-api.conf -> $REPO/etc/nut/synology-api.conf"
-fi
+sanitize_config_file /etc/nut/synology-api.conf etc/nut/synology-api.conf 0640
 
 echo
 echo "===== SYSTEMD NUT UNIT SYNC ====="
