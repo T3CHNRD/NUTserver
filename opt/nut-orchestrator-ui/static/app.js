@@ -687,6 +687,19 @@ async function loadPowerBootEvents() {
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;");
 
+    function formatPowerEventResult(line) {
+      const text = String(line || "");
+
+      const upsMonitorMatch = text.match(/NUT_MONITOR_EVENT\s+.*UPS:\s+(ups[0-9]+)@localhost\s+\(primary\)\s+\(power value\s+([0-9]+)\)/i);
+      if (upsMonitorMatch) {
+        const upsName = upsMonitorMatch[1];
+        const powerValue = upsMonitorMatch[2];
+        return `UPS ${upsName} is being monitored by this NUT server. It counts as ${powerValue} UPS power source.`;
+      }
+
+      return text;
+    }
+
     function parseLine(line) {
       const row = {
         timestamp: "",
@@ -695,7 +708,7 @@ async function loadPowerBootEvents() {
         mode: "",
         action: "",
         status: "",
-        result: line
+        result: formatPowerEventResult(line)
       };
 
       const ts = line.match(/^\[([^\]]+)\]\s*(.*)$/);
@@ -708,6 +721,10 @@ async function loadPowerBootEvents() {
       if (msg.startsWith("TARGET:")) {
         row.event = "Target";
         row.target = msg.replace("TARGET:", "").trim();
+      } else if (msg.startsWith("MODE_CHANGE")) {
+        row.event = "Mode change";
+        row.mode = msg;
+        row.status = "INFO";
       } else if (msg.startsWith("MODE:")) {
         row.event = "Mode";
         row.mode = msg.replace("MODE:", "").trim();

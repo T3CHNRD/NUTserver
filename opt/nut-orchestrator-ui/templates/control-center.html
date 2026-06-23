@@ -3384,6 +3384,19 @@ function updateNutProductionButtons(mode) {
       return text.slice(valueStart, end);
     }
 
+    function formatNutMonitorMessage(text) {
+      const raw = String(text || "");
+
+      const upsMonitorMatch = raw.match(/NUT_MONITOR_EVENT\s+.*UPS:\s+(ups[0-9]+)@localhost\s+\(primary\)\s+\(power value\s+([0-9]+)\)/i);
+      if (upsMonitorMatch) {
+        const upsName = upsMonitorMatch[1];
+        const powerValue = upsMonitorMatch[2];
+        return `UPS ${upsName} is being monitored by this NUT server. It counts as ${powerValue} UPS power source.`;
+      }
+
+      return raw;
+    }
+
     function parseEventLine(line) {
       const raw = String(line || "");
       const row = {
@@ -3416,7 +3429,7 @@ function updateNutProductionButtons(mode) {
       row.message =
         getQuotedValue(row.message, "message") ||
         getQuotedValue(row.message, "reason") ||
-        row.message;
+        formatNutMonitorMessage(row.message);
 
       if (
         originalPowerEventMessage.includes("APC_IDF_EVENT") ||

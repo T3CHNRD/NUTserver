@@ -4,6 +4,7 @@ set -euo pipefail
 MODE_FILE="/etc/nut/production-mode.conf"
 STATUS_CMD="/usr/local/sbin/nut-production-status"
 LOG_FILE="/var/log/nut-production-mode.log"
+POWER_EVENT_LOG="/var/log/nut-orchestrator-ui/power-events.log"
 HYPERVISOR_CONFIG="/etc/nut/hypervisors/hypervisor-ssh-fallback.conf"
 
 set_hypervisor_fallback_enabled() {
@@ -56,6 +57,46 @@ unit_exists() {
   systemctl list-unit-files "$unit" >/dev/null 2>&1
 }
 
+mode_label() {
+  case "$1" in
+    armed) echo "PROTECTING" ;;
+    disarmed) echo "STANDBY FOR MAINTENANCE" ;;
+    off) echo "OFF" ;;
+    storm_guard) echo "PROTECTING" ;;
+    "") echo "UNKNOWN" ;;
+    *) echo "$1" ;;
+  esac
+}
+
+current_configured_mode() {
+  if [ -f "$MODE_FILE" ]; then
+    awk -F= '/^NUT_PRODUCTION_MODE=/{gsub(/["'\'' ]/, "", $2); print $2; exit}' "$MODE_FILE"
+  else
+    echo "unknown"
+  fi
+}
+
+log_mode_change_event() {
+  local previous_mode="$1"
+  local new_mode="$2"
+  local allow_live="$3"
+  local allow_esxi="$4"
+  local note="$5"
+  local by_user="${SUDO_USER:-${USER:-unknown}}"
+
+  mkdir -p "$(dirname "$POWER_EVENT_LOG")"
+  printf '[%s] MODE_CHANGE previous="%s" new="%s" previous_mode="%s" new_mode="%s" allow_live="%s" allow_esxi="%s" by="%s" note="%s"\n' \
+    "$(date '+%Y-%m-%d %H:%M:%S')" \
+    "$(mode_label "$previous_mode")" \
+    "$(mode_label "$new_mode")" \
+    "$previous_mode" \
+    "$new_mode" \
+    "$allow_live" \
+    "$allow_esxi" \
+    "$by_user" \
+    "$note" >> "$POWER_EVENT_LOG"
+}
+
 ensure_monitoring_active() {
   local unit=""
 
@@ -101,6 +142,9 @@ write_mode() {
   local allow_esxi="$3"
   local hypervisor_fallback_enabled="$4"
   local note="$5"
+  local previous_mode
+
+  previous_mode="$(current_configured_mode)"
 
   set_hypervisor_fallback_enabled "$hypervisor_fallback_enabled"
 
@@ -133,6 +177,7 @@ EOF
 
   mkdir -p "$(dirname "$LOG_FILE")"
   echo "[$(date -Is)] mode=${mode} allow_live=${allow_live} allow_esxi=${allow_esxi} hypervisor_fallback_enabled=${hypervisor_fallback_enabled} by=${SUDO_USER:-${USER:-unknown}} note=${note}" >> "$LOG_FILE"
+  log_mode_change_event "$previous_mode" "$mode" "$allow_live" "$allow_esxi" "$note"
 
   if [ -x "$STATUS_CMD" ]; then
     "$STATUS_CMD" >/dev/null || true

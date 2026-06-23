@@ -31,6 +31,10 @@ safe_name() {
   printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/_/g; s/^_+//; s/_+$//'
 }
 
+sanitize_log_field() {
+  printf '%s' "$1" | tr -d '\r\n' | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//'
+}
+
 init_paths() {
   mkdir -p "$STATE_DIR"
   chmod 0755 "$STATE_DIR" 2>/dev/null || true
@@ -338,6 +342,12 @@ monitor_target() {
   if [ -s "$new_file" ]; then
     while IFS=$'\t' read -r event_date event_time event_user event_msg event_code; do
       [ -n "$event_msg" ] || continue
+
+      event_date="$(sanitize_log_field "$event_date")"
+      event_time="$(sanitize_log_field "$event_time")"
+      event_user="$(sanitize_log_field "$event_user")"
+      event_msg="$(sanitize_log_field "$event_msg")"
+      event_code="$(sanitize_log_field "$event_code")"
 
       event_severity="$(event_severity_for_message "$event_msg")"
       event_time_combined="$event_date $event_time"
