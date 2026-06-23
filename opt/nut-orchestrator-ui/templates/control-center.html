@@ -2923,7 +2923,7 @@ function updateNutProductionButtons(mode) {
       if (note) note.textContent = 'Current state: STANDBY FOR MAINTENANCE. Monitoring is active, but live shutdown/orchestration commit actions are blocked for maintenance.';
     } else if (mode === 'off' && off) {
       off.classList.add('active');
-      if (note) note.textContent = 'Current state: OFF. Monitoring is active, but live protection actions are blocked. This does not stop nut-monitor.service or power off any systems.';
+      if (note) note.textContent = 'Current state: OFF. Monitoring, logging, email alerts, and live protection actions are off.';
     }
   }
 

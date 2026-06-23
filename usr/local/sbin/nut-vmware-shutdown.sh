@@ -112,7 +112,7 @@ simulate_shutdown_domain() {
   run_wave_sim "4_CORE_IDENTITY" "${PHASE4[@]}"
   run_wave_sim "5_VCENTER_APPLIANCE" "$VCENTER_VM"
   run_wave_sim "6_ESXI_HOSTS_SIM_ONLY" "${ESXI_HOSTS[@]}"
-  log "SIMULATION NOTE: ESXi host shutdown is listed for Wave 2 visibility only; real ESXi shutdown is not implemented in this wrapper"
+  log "SIMULATION NOTE: ESXi host shutdown is included in the real workflow only when strict ESXi host shutdown gates are enabled"
   log "SIMULATION NOTE: NetApp/storage shutdown is handled by separate wrapper/orchestrator path"
 
   if [ -x /usr/local/sbin/nut-power-event-log ]; then
@@ -336,12 +336,110 @@ shutdown_vm_list() {
   done
 }
 
+
+shutdown_esxi_hosts() {
+  local host
+  local any_host=0
+  local failed=0
+  local rc=0
+  local delay="${ESXI_SHUTDOWN_DELAY_SECONDS:-60}"
+  local reason="${ESXI_SHUTDOWN_REASON:-power outage}"
+  local reason_safe="${reason//\'/ }"
+  local ssh_user="${ESXI_SSH_USER:-root}"
+  local ssh_key="${HYPERVISOR_SSH_KEY:-/root/.ssh/id_rsa}"
+
+  log "===== ESXI HOST SHUTDOWN PHASE ====="
+  log "SAFETY CHECK: HYPERVISOR_SSH_FALLBACK_CONFIGURED=${HYPERVISOR_SSH_FALLBACK_CONFIGURED:-0}"
+  log "SAFETY CHECK: HYPERVISOR_SSH_FALLBACK_ENABLED=${HYPERVISOR_SSH_FALLBACK_ENABLED:-0}"
+  log "SAFETY CHECK: VMWARE_FALLBACK_HOST_SHUTDOWN_METHOD=${VMWARE_FALLBACK_HOST_SHUTDOWN_METHOD:-unset}"
+  log "SAFETY CHECK: VMWARE_HOST_ACTION_APPROVED=${VMWARE_HOST_ACTION_APPROVED:-0}"
+  log "SAFETY CHECK: CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN=${CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN:-0}"
+  log "SAFETY CHECK: ALLOW_ESXI_SSH_FALLBACK=${ALLOW_ESXI_SSH_FALLBACK:-0}"
+
+  if [ "${HYPERVISOR_SSH_FALLBACK_CONFIGURED:-0}" != "1" ]; then
+    log "ERROR ESXi host shutdown blocked: fallback config is not marked configured"
+    power_classification "FAIL" "esxi_host_shutdown_blocked_not_configured"
+    return 2
+  fi
+
+  if [ "${HYPERVISOR_SSH_FALLBACK_ENABLED:-0}" != "1" ]; then
+    log "ERROR ESXi host shutdown blocked: HYPERVISOR_SSH_FALLBACK_ENABLED is not 1"
+    power_classification "FAIL" "esxi_host_shutdown_blocked_fallback_disabled"
+    return 2
+  fi
+
+  if [ "${VMWARE_FALLBACK_HOST_SHUTDOWN_METHOD:-}" != "esxi_ssh" ]; then
+    log "ERROR ESXi host shutdown blocked: VMWARE_FALLBACK_HOST_SHUTDOWN_METHOD is not esxi_ssh"
+    power_classification "FAIL" "esxi_host_shutdown_blocked_wrong_method"
+    return 2
+  fi
+
+  if [ "${ALLOW_ESXI_SSH_FALLBACK:-0}" != "1" ]; then
+    log "ERROR ESXi host shutdown blocked: ALLOW_ESXI_SSH_FALLBACK is not 1"
+    power_classification "FAIL" "esxi_host_shutdown_blocked_mode_gate"
+    return 2
+  fi
+
+  if [ "${VMWARE_HOST_ACTION_APPROVED:-0}" != "1" ]; then
+    log "ERROR ESXi host shutdown blocked: VMWARE_HOST_ACTION_APPROVED is not 1"
+    power_classification "FAIL" "esxi_host_shutdown_blocked_host_action_not_approved"
+    return 2
+  fi
+
+  if [ "${CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN:-0}" != "1" ]; then
+    log "ERROR ESXi host shutdown blocked: CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN is not 1"
+    power_classification "FAIL" "esxi_host_shutdown_blocked_missing_final_confirmation"
+    return 2
+  fi
+
+  if [ ! -r "$ssh_key" ]; then
+    log "ERROR ESXi host shutdown blocked: SSH key is not readable"
+    power_classification "FAIL" "esxi_host_shutdown_blocked_ssh_key_unreadable"
+    return 2
+  fi
+
+  for host in "${ESXI_HOSTS[@]}"; do
+    [ -n "$host" ] || continue
+    any_host=1
+
+    log "ATTEMPT ESXi host shutdown host=${host} method=ssh command='esxcli system shutdown poweroff'"
+    if ssh \
+      -o BatchMode=yes \
+      -o ConnectTimeout=8 \
+      -o StrictHostKeyChecking=accept-new \
+      -i "$ssh_key" \
+      "${ssh_user}@${host}" \
+      "esxcli system shutdown poweroff -d ${delay} -r '${reason_safe}'" >> "$LOG_FILE" 2>&1; then
+      log "SUCCESS ESXi host shutdown command accepted host=${host}"
+      power_classification "WARN" "esxi_host_shutdown_command_accepted_not_verified" "host=\"${host}\""
+    else
+      rc=$?
+      failed=1
+      log "ERROR ESXi host shutdown command failed host=${host} rc=${rc}"
+      power_classification "FAIL" "esxi_host_shutdown_command_failed" "host=\"${host}\" command_rc=${rc}"
+    fi
+  done
+
+  if [ "$any_host" -ne 1 ]; then
+    log "ERROR ESXi host shutdown blocked: no ESXi hosts are configured"
+    power_classification "FAIL" "esxi_host_shutdown_blocked_no_hosts_configured"
+    return 2
+  fi
+
+  if [ "$failed" -ne 0 ]; then
+    return 1
+  fi
+
+  return 0
+}
+
+
 real_shutdown_domain() {
   log "MODE: REAL / LIVE"
   log "SAFETY CHECK: ALLOW_REAL_TEST=${ALLOW_REAL_TEST:-0}"
   log "SAFETY CHECK: REAL_TEST_PHASE=${REAL_TEST_PHASE:-unset}"
   log "SAFETY CHECK: VMWARE_LIVE_APPROVED=${VMWARE_LIVE_APPROVED:-0}"
-  log "SCOPE: vCenter guest shutdown only; ESXi host shutdown not implemented here"
+  log "SCOPE: vCenter guest shutdown followed by gated ESXi host shutdown"
 
   if [ "${ALLOW_REAL_TEST:-0}" != "1" ]; then
     log "ERROR VMware live shutdown blocked: ALLOW_REAL_TEST is not 1"
@@ -387,10 +485,19 @@ real_shutdown_domain() {
   shutdown_vm_list "$session_id" "${PHASE4[@]}"
   shutdown_vm_list "$session_id" "$VCENTER_VM"
 
-  log "VMWARE_HOST_SHUTDOWN_NOT_IMPLEMENTED"
-  power_classification "WARN" "esxi_host_shutdown_not_implemented"
-  log "SUCCESS VMware vCenter guest shutdown workflow completed"
-  power_classification "WARN" "workflow_completed_guest_shutdowns_requested_not_verified"
+  log "VMWARE_GUEST_SHUTDOWN_PHASE_COMPLETE"
+  power_classification "WARN" "workflow_guest_shutdowns_requested_not_verified"
+
+  if shutdown_esxi_hosts; then
+    log "SUCCESS VMware ESXi host shutdown phase completed"
+  else
+    rc=$?
+    log "ERROR VMware ESXi host shutdown phase failed or was blocked rc=${rc}"
+    exit "$rc"
+  fi
+
+  log "SUCCESS VMware vCenter guest plus ESXi host shutdown workflow completed"
+  power_classification "WARN" "workflow_completed_guest_and_host_shutdowns_requested_not_verified"
   exit 0
 }
 

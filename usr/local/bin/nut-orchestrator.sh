@@ -203,12 +203,21 @@ commit_placeholder() {
       log_line "UPS_SHUTDOWN_COMMITTED ups9 broader VMware shutdown started"
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups9 VMware method='vCenter API with PowerCLI fallback'"
-      SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production VMWARE_LIVE_APPROVED=1 /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain >> "$LOG_FILE" 2>&1
+      SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production VMWARE_LIVE_APPROVED=1 ALLOW_ESXI_SSH_FALLBACK=1 VMWARE_HOST_ACTION_APPROVED=1 CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN=1 /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
         log_line "UPS_TARGET_ACTION_SUCCESS ups9 VMware"
       else
         log_line "UPS_TARGET_ACTION_FAILED ups9 VMware rc=$rc"
+      fi
+
+      log_line "UPS_TARGET_ACTION_ATTEMPT ups9 Albl-synology1 method='synology wrapper'"
+      SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full SYNOLOGY_LIVE_APPROVED=1 /usr/local/sbin/nut-synology-shutdown.sh >> "$LOG_FILE" 2>&1
+      rc=$?
+      if [ "$rc" -eq 0 ]; then
+        log_line "UPS_TARGET_ACTION_SUCCESS ups9 Albl-synology1"
+      else
+        log_line "UPS_TARGET_ACTION_FAILED ups9 Albl-synology1 rc=$rc"
       fi
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups9 Alblnetapp01 method='ONTAP CLI halt over SSH'"
@@ -229,15 +238,6 @@ commit_placeholder() {
         log_line "UPS_TARGET_ACTION_FAILED ups9 Alblnetapp02 rc=$rc"
       fi
 
-      log_line "UPS_TARGET_ACTION_ATTEMPT ups9 Albl-synology1 method='synology wrapper'"
-      SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full SYNOLOGY_LIVE_APPROVED=1 /usr/local/sbin/nut-synology-shutdown.sh >> "$LOG_FILE" 2>&1
-      rc=$?
-      if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups9 Albl-synology1"
-      else
-        log_line "UPS_TARGET_ACTION_FAILED ups9 Albl-synology1 rc=$rc"
-      fi
-
       log_line "UPS_TARGET_ACTION_ATTEMPT ups9 nutserver method='local final shutdown wrapper - should run last'"
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production NUTSERVER_LIVE_APPROVED=1 /usr/local/sbin/nut-local-final-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
@@ -247,7 +247,7 @@ commit_placeholder() {
         log_line "UPS_TARGET_ACTION_FAILED ups9 nutserver final shutdown rc=$rc"
       fi
 
-      write_state "ups9" "ups9" "shutdown_committed" "broader VMware shutdown" 0 0 "Committed; VMware wrapper executed, NetApp wrappers executed, Synology wrapper executed, NUT server final shutdown wrapper executed last"
+      write_state "ups9" "ups9" "shutdown_committed" "broader VMware shutdown" 0 0 "Committed; VMware wrapper executed, Synology wrapper executed, NetApp wrappers executed, NUT server final shutdown wrapper executed last"
       ;;
 
     ups3)
@@ -309,9 +309,9 @@ case "${1:-}" in
     ;;
 
   ups6-onbatt)
-    log_line "UPS_ONBATT_DETECTED ups6 runtime='19h2m' countdown='1500s'"
-    log_line "UPS_COUNTDOWN_STARTED ups6 scope='targeted shutdown' countdown='1500s'"
-    write_state "ups6" "ups6" "on_battery_pending" "targeted shutdown" 1500 1500 "Lansweeper pending graceful shutdown; network gear alert only"
+    log_line "UPS_ONBATT_DETECTED ups6 runtime='19h2m' countdown='300s'"
+    log_line "UPS_COUNTDOWN_STARTED ups6 scope='targeted shutdown' countdown='300s'"
+    write_state "ups6" "ups6" "on_battery_pending" "targeted shutdown" 300 300 "Lansweeper pending graceful shutdown; network gear alert only"
     ;;
 
   ups6-online)
@@ -324,9 +324,9 @@ case "${1:-}" in
     ;;
 
   ups9-onbatt)
-    log_line "UPS_ONBATT_DETECTED ups9 runtime='37m' countdown='240s'"
-    log_line "UPS_COUNTDOWN_STARTED ups9 scope='broader VMware shutdown' countdown='240s'"
-    write_state "ups9" "ups9" "on_battery_pending" "broader VMware shutdown" 240 240 "VMware/storage domain pending shutdown"
+    log_line "UPS_ONBATT_DETECTED ups9 runtime='37m' countdown='360s'"
+    log_line "UPS_COUNTDOWN_STARTED ups9 scope='broader VMware shutdown' countdown='360s'"
+    write_state "ups9" "ups9" "on_battery_pending" "broader VMware shutdown" 360 360 "VMware/storage domain pending shutdown"
     ;;
 
   ups9-online)
