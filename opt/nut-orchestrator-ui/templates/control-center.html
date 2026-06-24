@@ -4573,6 +4573,46 @@ function closeLabSelectedRestoreScreen() {
 
     let ccUpsDataStore = {};
 
+    const ccLocatorBeepUps = new Set(["ups2", "ups3", "ups6", "ups7", "ups8", "ups9"]);
+
+    function ccCanLocatorBeep(upsName) {
+      return ccLocatorBeepUps.has(String(upsName || "").trim().toLowerCase());
+    }
+
+    async function runUpsLocatorBeep(upsName) {
+      const normalizedUps = String(upsName || "").trim().toLowerCase();
+
+      if (!ccCanLocatorBeep(normalizedUps)) {
+        setControlCenterOutput("Find UPS", "Find UPS beep is not available for " + normalizedUps + ".", true);
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "Find UPS will make " + normalizedUps + " beep briefly.\n\n" +
+        "This does not send shutdown, reboot, poweroff, outlet, battery-test, maintenance-mode, or VM power commands.\n\n" +
+        "Continue?"
+      );
+
+      if (!confirmed) {
+        setControlCenterOutput("Find UPS", "Cancelled. No UPS beeper command was sent.", false);
+        return;
+      }
+
+      try {
+        setControlCenterOutput("Find UPS", "Sending short locator beep request for " + normalizedUps + "...", false);
+
+        const data = await ccApiJson(CC_BASE + "/api/ups-locator-beep", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ups: normalizedUps })
+        });
+
+        setControlCenterOutput("Find UPS - " + normalizedUps, data, !data.ok);
+      } catch (err) {
+        setControlCenterOutput("Find UPS - " + normalizedUps, String(err), true);
+      }
+    }
+
     async function loadControlCenterRackMap() {
       const map = {};
 
@@ -4609,7 +4649,7 @@ function closeLabSelectedRestoreScreen() {
       const tbody = document.getElementById("cc-rack-table-body");
       if (!tbody) return;
 
-      tbody.innerHTML = '<tr><td colspan="7">Loading UPS Rack Overview...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8">Loading UPS Rack Overview...</td></tr>';
 
       const rackMap = await loadControlCenterRackMap();
 
@@ -4640,11 +4680,24 @@ function closeLabSelectedRestoreScreen() {
             <td>${battery ? escapeHtml(String(battery) + "%") : "Not reported"}</td>
             <td>${load ? escapeHtml(String(load) + "%") : "Not reported"}</td>
             <td>${voltage ? escapeHtml(String(voltage) + " V") : "Not reported"}</td>
+            <td>
+              ${ccCanLocatorBeep(upsName)
+                ? `<button class="cc-btn cc-find-ups-button" data-ups="${escapeHtml(upsName)}" type="button">Find UPS</button>`
+                : `<span class="cc-muted">Not available</span>`}
+            </td>
           </tr>
         `;
       }));
 
       tbody.innerHTML = rows.join("");
+
+      tbody.querySelectorAll(".cc-find-ups-button[data-ups]").forEach((button) => {
+        button.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          await runUpsLocatorBeep(button.dataset.ups);
+        });
+      });
 
       tbody.querySelectorAll("tr[data-ups]").forEach((row) => {
         row.addEventListener("click", async () => {
@@ -5255,10 +5308,11 @@ function closeLabSelectedRestoreScreen() {
               <th>Battery</th>
               <th>Load</th>
               <th>Input Voltage</th>
+              <th>Find UPS</th>
             </tr>
           </thead>
           <tbody id="cc-rack-table-body">
-            <tr><td colspan="7">Loading UPS Rack Overview...</td></tr>
+            <tr><td colspan="8">Loading UPS Rack Overview...</td></tr>
           </tbody>
         </table>
       </div>

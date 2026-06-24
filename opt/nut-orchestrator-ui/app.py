@@ -804,5 +804,58 @@ def api_production_mode():
         "status_stderr": status_proc.stderr,
     }), (200 if proc.returncode == 0 else 409)
 
+
+@app.post("/api/ups-locator-beep")
+def api_ups_locator_beep():
+    """Run a short, controlled UPS locator beep.
+
+    This API only permits known UPS names and fixed short pulse values.
+    It calls /usr/local/sbin/nut-ups-locator-beep.sh through sudo.
+    It does not send shutdown, reboot, poweroff, outlet, battery-test,
+    maintenance-mode, or VM power commands.
+    """
+    data = request.get_json(silent=True) or {}
+
+    ups_name = str(data.get("ups", "")).strip().lower()
+
+    allowed_ups = {"ups2", "ups3", "ups6", "ups7", "ups8", "ups9"}
+    if ups_name not in allowed_ups:
+        return jsonify({
+            "ok": False,
+            "error": "UPS locator beep is only available for ups2, ups3, ups6, ups7, ups8, and ups9.",
+            "requested_ups": ups_name,
+        }), 400
+
+    # Keep this fixed and short from the web UI.
+    pulse_count = "3"
+    pulse_on_seconds = "1"
+    pulse_off_seconds = "1"
+
+    cmd = [
+        "/usr/bin/sudo",
+        "/usr/local/sbin/nut-ups-locator-beep.sh",
+        ups_name,
+        pulse_count,
+        pulse_on_seconds,
+        pulse_off_seconds,
+    ]
+
+    proc = subprocess.run(
+        cmd,
+        text=True,
+        capture_output=True,
+        timeout=30,
+    )
+
+    return jsonify({
+        "ok": proc.returncode == 0,
+        "action": "find-ups",
+        "ups": ups_name,
+        "returncode": proc.returncode,
+        "stdout": proc.stdout,
+        "stderr": proc.stderr,
+    }), (200 if proc.returncode == 0 else 409)
+
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5080)
