@@ -103,9 +103,73 @@ def get_reference_content(reference_id):
         "name": ref_item["name"],
         "path": ref_item["path"],
         "type": ref_item["type"],
-        "content": result.stdout
+        "content": redact_secret_config_lines(result.stdout)
     })
 
+
+
+# =========================
+# CONFIG SECRET LINE REDACTION
+# =========================
+SECRET_KEY_MARKERS = ("PASS", "PASSWORD", "SECRET", "TOKEN", "HYPERVISOR_SSH_KEY", "PRIVATE_KEY", "CREDENTIAL")
+SECRET_PLACEHOLDERS = {
+    "[REDACTED]",
+    "\"[REDACTED]\"",
+    "'[REDACTED]'",
+    "********",
+    "\"********\"",
+    "'********'",
+}
+
+
+def is_secret_config_line(line):
+    line = str(line or "")
+    if "=" not in line:
+        return False
+    key = line.split("=", 1)[0].strip().upper()
+    return any(marker in key for marker in SECRET_KEY_MARKERS)
+
+
+def redact_secret_config_lines(content):
+    out = []
+    source = str(content or "")
+    for line in source.splitlines():
+        if is_secret_config_line(line):
+            key = line.split("=", 1)[0].strip()
+            out.append(f'{key}="********"')
+        else:
+            out.append(line)
+    return "\n".join(out) + ("\n" if source.endswith("\n") else "")
+
+
+def preserve_existing_secret_config_lines(config_id, submitted_content):
+    item = get_config_by_id(config_id)
+    if not item:
+        return submitted_content
+
+    target_path = Path(item["path"])
+    if not target_path.exists():
+        return submitted_content
+
+    existing = {}
+    for line in target_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if is_secret_config_line(line) and "=" in line:
+            key, value = line.split("=", 1)
+            existing[key.strip()] = value
+
+    out = []
+    source = str(submitted_content or "")
+    for line in source.splitlines():
+        if is_secret_config_line(line) and "=" in line:
+            key, value = line.split("=", 1)
+            clean_key = key.strip()
+            clean_value = value.strip()
+            if clean_key in existing and clean_value in SECRET_PLACEHOLDERS:
+                out.append(f"{clean_key}={existing[clean_key]}")
+                continue
+        out.append(line)
+
+    return "\n".join(out) + ("\n" if source.endswith("\n") else "")
 
 # =========================
 # CONFIG READ (EDITABLE)
@@ -146,7 +210,7 @@ def get_config_content(config_id):
         "name": item["name"],
         "path": item["path"],
         "type": item["type"],
-        "content": result.stdout
+        "content": redact_secret_config_lines(result.stdout)
     })
 
 
@@ -171,6 +235,8 @@ def update_config(config_id):
             "stderr": "Sensitive config was not changed because the masked placeholder was submitted. Replace ******** with the real new value before applying.",
             "returncode": 2
         }), 400
+
+    content = preserve_existing_secret_config_lines(config_id, content)
 
     with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as tf:
         tf.write(content)

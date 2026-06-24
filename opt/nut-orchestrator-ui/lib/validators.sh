@@ -70,7 +70,7 @@ validate_nut_email_alerts_conf() {
   grep -qE '^SERVER_PORT="' "$file" || { echo "Missing SERVER_PORT"; return 1; }
   grep -qE '^AUTHENTICATION_REQUIRED="' "$file" || { echo "Missing AUTHENTICATION_REQUIRED"; return 1; }
   grep -qE '^USER_NAME="' "$file" || { echo "Missing USER_NAME"; return 1; }
-  grep -qE '^SMTP_PASSWORD="' "$file" || { echo "Missing SMTP_PASSWORD"; return 1; }
+  grep -qE '^(SMTP_PASS|SMTP_PASSWORD)=' "$file" || { echo "Missing SMTP_PASS or SMTP_PASSWORD"; return 1; }
   grep -qE '^SSL_STATE="' "$file" || { echo "Missing SSL_STATE"; return 1; }
   grep -qE '^EMAIL_RECIPIENTS="' "$file" || { echo "Missing EMAIL_RECIPIENTS"; return 1; }
   grep -qE '^EMAIL_FROM="' "$file" || { echo "Missing EMAIL_FROM"; return 1; }
@@ -83,21 +83,10 @@ validate_nut_email_alerts_conf() {
   local auth
   auth="$(grep -E '^AUTHENTICATION_REQUIRED="' "$file" | head -n 1 | sed -E 's/^AUTHENTICATION_REQUIRED="([^"]*)".*/\1/')"
   case "$auth" in
-    Yes|No|yes|no|1|0|true|false|on|off) ;;
-    *) echo "AUTHENTICATION_REQUIRED must be Yes or No"; return 1 ;;
+    Yes|No|yes|no|TRUE|FALSE|true|false|1|0) ;;
+    *) echo "AUTHENTICATION_REQUIRED must be Yes/No"; return 1 ;;
   esac
 
-  local ssl
-  ssl="$(grep -E '^SSL_STATE="' "$file" | head -n 1 | sed -E 's/^SSL_STATE="([^"]*)".*/\1/')"
-  case "$ssl" in
-    STARTTLS|TLS|SSL|Disable|Disabled|Off|ON|On|off|on) ;;
-    *) echo "SSL_STATE must be STARTTLS, TLS, SSL, or Disable"; return 1 ;;
-  esac
-
-  local recipients
-  recipients="$(grep -E '^EMAIL_RECIPIENTS="' "$file" | head -n 1 | sed -E 's/^EMAIL_RECIPIENTS="([^"]*)".*/\1/')"
-  [ -n "$recipients" ] || { echo "EMAIL_RECIPIENTS cannot be blank"; return 1; }
-
-  echo "Email alert config validation passed"
+  return 0
 }
 

@@ -22,3 +22,9 @@ if [ ! -f "$TARGET_PATH" ]; then
 fi
 
 cat "$TARGET_PATH"
+
+
+# NUT_UI_SECRET_LINE_REDACTION_V1
+redact_secret_lines() {
+  sed -E 's/^([[:space:]]*[A-Za-z0-9_]*(PASS|PASSWORD|SECRET|TOKEN)[A-Za-z0-9_]*[[:space:]]*=).*/\1"[REDACTED]"/I'
+}

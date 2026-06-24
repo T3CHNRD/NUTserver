@@ -35,7 +35,6 @@ required = [
     "SMTP_SERVER",
     "SERVER_PORT",
     "AUTHENTICATION_REQUIRED",
-    "USER_NAME",
     "SSL_STATE",
     "EMAIL_FROM",
 ]
@@ -43,11 +42,17 @@ missing = [k for k in required if not data.get(k)]
 if missing:
     raise SystemExit("FAIL: missing required email config values: " + ", ".join(missing))
 
-password = secret_path.read_text(encoding="utf-8").strip() if secret_path.exists() else ""
-if not password:
-    raise SystemExit("FAIL: SMTP secret file is empty")
-
 auth_required = data.get("AUTHENTICATION_REQUIRED", "Yes").lower() in ("yes", "1", "true", "on")
+
+username = data.get("USER_NAME", "")
+password = secret_path.read_text(encoding="utf-8").strip() if secret_path.exists() else ""
+
+if auth_required and not username:
+    raise SystemExit("FAIL: USER_NAME is required when AUTHENTICATION_REQUIRED is enabled")
+
+if auth_required and not password:
+    raise SystemExit("FAIL: SMTP secret is required when AUTHENTICATION_REQUIRED is enabled")
+
 ssl_state = data.get("SSL_STATE", "STARTTLS").upper()
 
 tls = "on" if ssl_state in ("STARTTLS", "TLS", "SSL", "ENABLE", "ENABLED", "ON") else "off"
@@ -73,7 +78,7 @@ lines = [
 
 if auth_required:
     lines.extend([
-        f"user           {data['USER_NAME']}",
+        f"user           {username}",
         f"password       {password}",
     ])
 

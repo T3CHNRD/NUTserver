@@ -209,6 +209,144 @@ def get_ups_value(target, key):
     return "not available"
 
 
+
+def get_ups_descriptions():
+    descriptions = {}
+    current = None
+
+    try:
+        with open("/etc/nut/ups.conf", "r", encoding="utf-8", errors="replace") as f:
+            for raw in f:
+                line = raw.strip()
+
+                if line.startswith("[") and line.endswith("]"):
+                    current = line.strip("[]").strip()
+                    continue
+
+                if current and line.lower().startswith("desc") and "=" in line:
+                    value = line.split("=", 1)[1].strip().strip("\"'")
+                    descriptions[current] = value
+    except Exception:
+        pass
+
+    return descriptions
+
+
+def get_ups_friendly_names(ups_names):
+    friendly = {}
+
+    for ups in ups_names:
+        try:
+            out = subprocess.check_output(
+                ["upsc", ups, "ups.id"],
+                text=True,
+                stderr=subprocess.DEVNULL,
+                timeout=8,
+            ).strip()
+            if out:
+                friendly[ups] = out
+        except Exception:
+            pass
+
+    return friendly
+
+
+
+def get_ups_rack_locations():
+    rack_map = {}
+    path = "/var/www/html/ups-rack-map.txt"
+
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+
+                ups, value = line.split("=", 1)
+                ups = ups.strip()
+                value = value.strip()
+
+                if ups and value:
+                    rack_map[ups] = value
+    except Exception:
+        pass
+
+    return rack_map
+
+
+
+def friendly_ups_label(ups, descriptions, friendly_names=None):
+    descriptions = descriptions or {}
+    friendly_names = friendly_names or {}
+
+    desc = descriptions.get(ups, "").strip()
+    friendly = friendly_names.get(ups, "").strip()
+
+    if desc and friendly:
+        return f"{ups} - {desc} - Friendly name: {friendly}"
+
+    if desc:
+        return f"{ups} - {desc}"
+
+    if friendly:
+        return f"{ups} - Friendly name: {friendly}"
+
+    return ups
+
+def friendly_ups_status(value):
+    raw = str(value or "").strip()
+    if not raw or raw == "not available":
+        return "Unavailable"
+
+    tokens = raw.split()
+    translated = []
+    mapping = {
+        "OL": "Online",
+        "OB": "On battery",
+        "OF": "Offline",
+        "LB": "Low battery",
+        "RB": "Replace battery",
+        "CHRG": "Charging",
+        "DISCHRG": "Discharging",
+        "BYPASS": "Bypass",
+        "CAL": "Calibration",
+        "BOOST": "Boost",
+        "TRIM": "Trim",
+    }
+
+    for token in tokens:
+        translated.append(mapping.get(token, token))
+
+    return ", ".join(translated)
+
+
+
+def runtime_minutes(value):
+    try:
+        seconds = float(value)
+    except Exception:
+        return "Unknown"
+
+    if seconds < 0:
+        return "Unknown"
+
+    minutes = int(round(seconds / 60.0))
+
+    if minutes < 60:
+        return f"{minutes} minute" + ("" if minutes == 1 else "s")
+
+    hours = minutes // 60
+    remaining = minutes % 60
+
+    if remaining == 0:
+        return f"{hours} hour" + ("" if hours == 1 else "s")
+
+    return (
+        f"{hours} hour" + ("" if hours == 1 else "s") +
+        f" {remaining} minute" + ("" if remaining == 1 else "s")
+    )
+
 def ping_target(ip):
     rc, out, err = run(["ping", "-c", "3", "-W", "2", ip], timeout=10)
     if rc == 0:
@@ -322,6 +460,9 @@ def idf_status_lines():
 
 def ups_health_lines():
     ups_names = get_ups_names()
+    descriptions = get_ups_descriptions()
+    friendly_names = get_ups_friendly_names(ups_names)
+    rack_locations = get_ups_rack_locations()
     lines = []
     lines.append("UPS health details:")
     if not ups_names:
@@ -338,10 +479,12 @@ def ups_health_lines():
         linev = get_ups_value(target, "input.voltage")
 
         lines.append("")
-        lines.append(f"- {ups}")
-        lines.append(f"  Status: {status}")
+        lines.append(f"- {friendly_ups_label(ups, descriptions, friendly_names)}")
+        if rack_locations.get(ups):
+            lines.append(f"  Rack / Location: {rack_locations.get(ups)}")
+        lines.append(f"  Status: {friendly_ups_status(status)}")
         lines.append(f"  Battery charge: {charge}%")
-        lines.append(f"  Runtime remaining: {runtime} seconds")
+        lines.append(f"  Runtime remaining: {runtime_minutes(runtime)}")
         lines.append(f"  Load: {load}%")
         lines.append(f"  Battery voltage: {battv}")
         lines.append(f"  Input voltage: {linev}")
