@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Copyright (c) 2026 T3CHNRD. All rights reserved.
 import argparse
 import configparser
 import csv

@@ -1,5 +1,4 @@
 #!/bin/bash
-# Copyright (c) 2026 T3CHNRD. All rights reserved.
 set -euo pipefail
 
 LOG_JSON="/var/www/html/nut-outage-log.json"

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Copyright (c) 2026 T3CHNRD. All rights reserved.
 set -euo pipefail
 
 OUT_DIR="/var/log/nut-vmware-inventory"

@@ -1,4 +1,3 @@
-# Copyright (c) 2026 T3CHNRD. All rights reserved.
 [Unit]
 Description=Fix NUT driver socket permissions after boot
 After=nut-server.service

@@ -1,4 +1,3 @@
-# Copyright (c) 2026 T3CHNRD. All rights reserved.
 [Unit]
 Description=Record NUT dashboard boot/outage event
 After=network-online.target apache2.service

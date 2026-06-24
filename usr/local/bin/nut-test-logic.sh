@@ -1,4 +1,3 @@
-# Copyright (c) 2026 T3CHNRD. All rights reserved.
 sudo cp -a /usr/local/bin/nut-test-logic.sh "/usr/local/bin/nut-test-logic.sh.bak.$(date +%F-%H%M%S)"
 
 sudo tee /usr/local/bin/nut-test-logic.sh >/dev/null <<'EOF'

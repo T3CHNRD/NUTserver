@@ -1,5 +1,4 @@
 #!/bin/bash
-# Copyright (c) 2026 T3CHNRD. All rights reserved.
 set -u
 
 CONFIG_FILE="/etc/nut/nut-orchestrator.conf"
