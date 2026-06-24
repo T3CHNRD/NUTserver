@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
 set -euo pipefail
 
 UPS_NAME="${1:-}"

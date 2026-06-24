@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
 set -euo pipefail
 
 AUTH="$(/usr/bin/x11vnc -env FD_XDM=1 -findauth :0 2>/dev/null | sed -n 's/^XAUTHORITY=//p' | tail -n 1)"

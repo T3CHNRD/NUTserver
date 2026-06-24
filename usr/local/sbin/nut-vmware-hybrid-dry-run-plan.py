@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
 import json
 import sys
 from pathlib import Path

@@ -1,3 +1,4 @@
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
 from flask import send_file, Flask, render_template, request, jsonify
 import json
 import os

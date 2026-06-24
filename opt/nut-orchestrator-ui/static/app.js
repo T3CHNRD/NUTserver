@@ -1,3 +1,4 @@
+/* Copyright (c) 2026 T3CHNRD. All rights reserved. */
 const BASE = "/nut-ui";
 
 const CONFIGS = {

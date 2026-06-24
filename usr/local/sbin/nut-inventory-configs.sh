@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
 set -euo pipefail
 
 REGISTRY="/opt/nut-orchestrator-ui/lib/config_registry.json"

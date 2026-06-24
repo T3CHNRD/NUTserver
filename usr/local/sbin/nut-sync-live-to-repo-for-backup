@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
 set -euo pipefail
 
 REPO="/opt/nut-admin/repo-template"

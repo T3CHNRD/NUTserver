@@ -1,3 +1,4 @@
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
 [Unit]
 Description=TigerVNC backup desktop on port 5900
 After=network.target

@@ -1,3 +1,4 @@
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
 [Unit]
 Description=Backup VNC server for physical console on port 5900
 After=display-manager.service network.target
