@@ -2321,6 +2321,24 @@
     gap: 4px !important;
   }
 
+
+    .cc-find-ups-button.is-finding {
+      box-shadow:
+        0 0 0 1px rgba(96, 255, 190, 0.85),
+        0 0 20px rgba(96, 255, 190, 0.55),
+        inset 0 0 12px rgba(96, 255, 190, 0.18);
+      border-color: rgba(96, 255, 190, 0.95);
+      background: rgba(25, 180, 125, 0.22);
+      color: #d8fff0;
+      cursor: wait;
+    }
+
+    .cc-find-ups-button.is-finding::after {
+      content: " • active";
+      font-size: 0.82em;
+      opacity: 0.9;
+    }
+
 </style>
 </head>
 
@@ -4579,8 +4597,9 @@ function closeLabSelectedRestoreScreen() {
       return ccLocatorBeepUps.has(String(upsName || "").trim().toLowerCase());
     }
 
-    async function runUpsLocatorBeep(upsName) {
+    async function runUpsLocatorBeep(upsName, buttonEl = null) {
       const normalizedUps = String(upsName || "").trim().toLowerCase();
+      const originalButtonText = buttonEl ? buttonEl.textContent : "";
 
       if (!ccCanLocatorBeep(normalizedUps)) {
         setControlCenterOutput("Find UPS", "Find UPS beep is not available for " + normalizedUps + ".", true);
@@ -4599,6 +4618,12 @@ function closeLabSelectedRestoreScreen() {
       }
 
       try {
+        if (buttonEl) {
+          buttonEl.classList.add("is-finding");
+          buttonEl.disabled = true;
+          buttonEl.textContent = "Finding...";
+        }
+
         setControlCenterOutput("Find UPS", "Sending short locator beep request for " + normalizedUps + "...", false);
 
         const data = await ccApiJson(CC_BASE + "/api/ups-locator-beep", {
@@ -4610,6 +4635,12 @@ function closeLabSelectedRestoreScreen() {
         setControlCenterOutput("Find UPS - " + normalizedUps, data, !data.ok);
       } catch (err) {
         setControlCenterOutput("Find UPS - " + normalizedUps, String(err), true);
+      } finally {
+        if (buttonEl) {
+          buttonEl.classList.remove("is-finding");
+          buttonEl.disabled = false;
+          buttonEl.textContent = originalButtonText || "Find UPS";
+        }
       }
     }
 
@@ -4695,7 +4726,7 @@ function closeLabSelectedRestoreScreen() {
         button.addEventListener("click", async (event) => {
           event.preventDefault();
           event.stopPropagation();
-          await runUpsLocatorBeep(button.dataset.ups);
+          await runUpsLocatorBeep(button.dataset.ups, button);
         });
       });
 
