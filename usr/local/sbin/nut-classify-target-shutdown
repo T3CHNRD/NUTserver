@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
 set -u
 
 TARGET_NAME="${1:-}"

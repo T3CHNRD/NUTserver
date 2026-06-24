@@ -1,3 +1,4 @@
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
 [Unit]
 Description=Run APC IDF2/IDF3 logging-only monitor every minute
 

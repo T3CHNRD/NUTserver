@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
 set -euo pipefail
 
 LOG_FILE="/var/log/nut-local-final-shutdown.log"
