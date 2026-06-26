@@ -258,7 +258,29 @@ sync_directory_safe_files /etc/nut/config.d etc/nut/config.d
 copy_file /etc/nut/production-mode.conf etc/nut/production-mode.conf
 copy_file /etc/nut/ups.conf etc/nut/ups.conf
 copy_file /etc/nut/upsd.conf etc/nut/upsd.conf
-copy_file /etc/nut/upsd.users etc/nut/upsd.users
+# Do not back up live /etc/nut/upsd.users because it can contain NUT credentials.
+# Keep only a safe fork/runbook template in GitHub.
+mkdir -p "$REPO/etc/nut"
+rm -f "$REPO/etc/nut/upsd.users"
+cat > "$REPO/etc/nut/upsd.users.template" <<'EOF'
+# ------------------------------------------------------------------
+# TEMPLATE ONLY: /etc/nut/upsd.users
+# Do not commit real passwords.
+# Replace [REDACTED] locally on the live server only.
+# ------------------------------------------------------------------
+
+[upsmon]
+  password = [REDACTED]
+  upsmon master
+
+[admin]
+  password = [REDACTED]
+  actions = SET
+  actions = FSD
+  instcmds = ALL
+EOF
+chmod 0640 "$REPO/etc/nut/upsd.users.template"
+echo "WROTE safe template: $REPO/etc/nut/upsd.users.template"
 copy_file /etc/nut/upsmon.conf etc/nut/upsmon.conf
 copy_file /etc/nut/upssched.conf etc/nut/upssched.conf
 copy_file /etc/nut/upsset.conf etc/nut/upsset.conf
