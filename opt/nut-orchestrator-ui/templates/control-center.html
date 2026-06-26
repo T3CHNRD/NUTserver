@@ -2360,7 +2360,7 @@
     }
 
     .cc-find-ups-button.is-finding::after {
-      content: " • beeping";
+      content: " • finding";
       font-size: 0.82em;
       opacity: 0.95;
     }
@@ -4617,20 +4617,20 @@ function closeLabSelectedRestoreScreen() {
 
     let ccUpsDataStore = {};
 
-    const ccLocatorBeepUps = new Set(["ups2", "ups3", "ups6", "ups7", "ups8", "ups9"]);
+    const ccLocatorIdentifyUps = new Set(["ups1", "ups2", "ups3", "ups4", "ups5", "ups6", "ups7", "ups8", "ups9"]);
 
-    function ccCanLocatorBeep(upsName) {
-      return ccLocatorBeepUps.has(String(upsName || "").trim().toLowerCase());
+    function ccCanLocatorIdentify(upsName) {
+      return ccLocatorIdentifyUps.has(String(upsName || "").trim().toLowerCase());
     }
 
-    async function runUpsLocatorBeep(upsName, buttonEl = null) {
+    async function runUpsLocatorIdentify(upsName, buttonEl = null) {
       const normalizedUps = String(upsName || "").trim().toLowerCase();
       const originalButtonText = buttonEl ? buttonEl.textContent : "Find UPS";
       const visualStart = Date.now();
       const visualMinimumMs = 6200;
 
-      if (!ccCanLocatorBeep(normalizedUps)) {
-        setControlCenterOutput("Find UPS", "Find UPS beep is not available for " + normalizedUps + ".", true);
+      if (!ccCanLocatorIdentify(normalizedUps)) {
+        setControlCenterOutput("Find UPS", "Find UPS is not available for " + normalizedUps + ".", true);
         return;
       }
 
@@ -4641,13 +4641,13 @@ function closeLabSelectedRestoreScreen() {
         buttonEl.classList.remove("is-finding");
         void buttonEl.offsetWidth;
         buttonEl.classList.add("is-finding");
-        buttonEl.textContent = "Beeping...";
+        buttonEl.textContent = "Finding...";
       }
 
       try {
-        setControlCenterOutput("Find UPS", "Sending short locator beep request for " + normalizedUps + "...", false);
+        setControlCenterOutput("Find UPS", "Running Find UPS check for " + normalizedUps + "...", false);
 
-        const response = await fetch(CC_BASE + "/api/ups-locator-beep", {
+        const response = await fetch(CC_BASE + "/api/ups-locator-identify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ups: normalizedUps })
@@ -4751,7 +4751,7 @@ function closeLabSelectedRestoreScreen() {
             <td>${load ? escapeHtml(String(load) + "%") : "Not reported"}</td>
             <td>${voltage ? escapeHtml(String(voltage) + " V") : "Not reported"}</td>
             <td>
-              ${ccCanLocatorBeep(upsName)
+              ${ccCanLocatorIdentify(upsName)
                 ? `<button class="cc-btn cc-find-ups-button" data-ups="${escapeHtml(upsName)}" type="button">Find UPS</button>`
                 : `<span class="cc-muted">Not available</span>`}
             </td>
@@ -4765,7 +4765,7 @@ function closeLabSelectedRestoreScreen() {
         button.addEventListener("click", async (event) => {
           event.preventDefault();
           event.stopPropagation();
-          await runUpsLocatorBeep(button.dataset.ups, button);
+          await runUpsLocatorIdentify(button.dataset.ups, button);
         });
       });
 

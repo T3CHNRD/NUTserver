@@ -806,12 +806,13 @@ def api_production_mode():
     }), (200 if proc.returncode == 0 else 409)
 
 
+@app.post("/api/ups-locator-identify")
 @app.post("/api/ups-locator-beep")
-def api_ups_locator_beep():
-    """Run a short, controlled UPS locator beep.
+def api_ups_locator_identify():
+    """Run a safe read-only Find UPS identify/status action.
 
     This API only permits known UPS names and fixed short pulse values.
-    It calls /usr/local/sbin/nut-ups-locator-beep.sh through sudo.
+    It calls /usr/local/sbin/nut-ups-locator-beep.sh directly because the script is read-only.
     It does not send shutdown, reboot, poweroff, outlet, battery-test,
     maintenance-mode, or VM power commands.
     """
@@ -819,11 +820,11 @@ def api_ups_locator_beep():
 
     ups_name = str(data.get("ups", "")).strip().lower()
 
-    allowed_ups = {"ups2", "ups3", "ups6", "ups7", "ups8", "ups9"}
+    allowed_ups = {"ups1", "ups2", "ups3", "ups4", "ups5", "ups6", "ups7", "ups8", "ups9"}
     if ups_name not in allowed_ups:
         return jsonify({
             "ok": False,
-            "error": "UPS locator beep is only available for ups2, ups3, ups6, ups7, ups8, and ups9.",
+            "error": "Find UPS is available for ups1 through ups9.",
             "requested_ups": ups_name,
         }), 400
 
@@ -833,7 +834,6 @@ def api_ups_locator_beep():
     pulse_off_seconds = "1"
 
     cmd = [
-        "/usr/bin/sudo",
         "/usr/local/sbin/nut-ups-locator-beep.sh",
         ups_name,
         pulse_count,
