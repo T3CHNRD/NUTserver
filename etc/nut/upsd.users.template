@@ -1,15 +1,15 @@
 # ------------------------------------------------------------------
-# GENERATED TEMPLATE: /etc/nut/upsd.users
-# Review credentials before applying.
+# TEMPLATE ONLY: /etc/nut/upsd.users
+# Do not commit real passwords.
+# Replace [REDACTED] locally on the live server only.
 # ------------------------------------------------------------------
 
 [upsmon]
-  password = ChangeThisNow123!
+  password = [REDACTED]
   upsmon master
 
 [admin]
-  password = ChangeAdminPassword789!
+  password = [REDACTED]
   actions = SET
   actions = FSD
   instcmds = ALL
-

@@ -41,3 +41,4 @@ root/.ssh/
 *.final-before-*
 *final-before-promotion*
 *restore-github.html.disabled*
+etc/nut/upsd.users
