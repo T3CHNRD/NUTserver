@@ -2365,6 +2365,13 @@
       opacity: 0.95;
     }
 
+
+    /* FIND_UPS_COLUMN_HIDDEN_DEFERRED_20260629 */
+    #cc-rack-overview-modal table th:nth-child(8),
+    #cc-rack-overview-modal table td:nth-child(8) {
+      display: none !important;
+    }
+
 </style>
 </head>
 
@@ -4752,7 +4759,7 @@ function closeLabSelectedRestoreScreen() {
             <td>${voltage ? escapeHtml(String(voltage) + " V") : "Not reported"}</td>
             <td>
               ${ccCanLocatorIdentify(upsName)
-                ? `<button class="cc-btn cc-find-ups-button" data-ups="${escapeHtml(upsName)}" type="button">Find UPS</button>`
+                ? `<span class="cc-muted" title="Find UPS deferred until after July 10 readiness work">Deferred</span>`
                 : `<span class="cc-muted">Not available</span>`}
             </td>
           </tr>

@@ -281,6 +281,80 @@ event_severity_for_message() {
   esac
 }
 
+
+get_snmp_community_candidate() {
+  awk '
+    BEGIN { IGNORECASE=1 }
+    /^[[:space:]]*community[[:space:]]*=/ {
+      sub(/^[[:space:]]*community[[:space:]]*=[[:space:]]*/, "", $0)
+      gsub(/["'\''"]/, "", $0)
+      print $0
+      exit
+    }
+  ' /etc/nut/ups.conf 2>/dev/null
+}
+
+idf_current_status_message() {
+  local raw="$1"
+
+  case "$raw" in
+    2) printf 'UPS: No longer on battery power.' ;;
+    3) printf 'UPS: On battery power.' ;;
+    4) printf 'UPS: No longer on battery power.' ;;
+    12) printf 'UPS: No longer on battery power.' ;;
+    1) printf 'UPS current output status is unknown.' ;;
+    5) printf 'UPS current output status is timed sleeping.' ;;
+    6) printf 'UPS current output status is software bypass.' ;;
+    7) printf 'UPS current output status is off.' ;;
+    8) printf 'UPS current output status is rebooting.' ;;
+    9) printf 'UPS current output status is switched bypass.' ;;
+    10) printf 'UPS current output status is hardware failure bypass.' ;;
+    11) printf 'UPS current output status is sleeping until power return.' ;;
+    *) printf 'UPS current output status is unmapped value '"$raw"'.' ;;
+  esac
+}
+
+log_current_power_state() {
+  local name="$1"
+  local ip="$2"
+  local dns="$3"
+  local state_name="$4"
+
+  local community status_oid state_file raw status_msg severity previous now_text
+
+  command -v snmpget >/dev/null 2>&1 || return 0
+
+  community="$(get_snmp_community_candidate)"
+  [ -n "$community" ] || return 0
+
+  status_oid=".1.3.6.1.4.1.318.1.1.1.4.1.1.0"
+  state_file="$STATE_DIR/${state_name}.current-power.state"
+
+  raw="$(
+    snmpget -v 2c -c "$community" -t 2 -r 1 -Oqv "$ip" "$status_oid" 2>/dev/null \
+      || snmpget -v 1 -c "$community" -t 2 -r 1 -Oqv "$ip" "$status_oid" 2>/dev/null \
+      || true
+  )"
+
+  raw="$(printf '%s' "$raw" | tr -dc '0-9' | head -c 8)"
+  [ -n "$raw" ] || return 0
+
+  status_msg="$(idf_current_status_message "$raw")"
+  severity="$(event_severity_for_message "$status_msg")"
+  previous="$(cat "$state_file" 2>/dev/null || true)"
+
+  if [ "$previous" != "$status_msg" ]; then
+    now_text="$(timestamp)"
+    log_event "APC_IDF_EVENT source=\"$name\" device=\"$name\" ip=\"$ip\" dns=\"$dns\" severity=\"$severity\" code=\"snmp_current_output_status\" event_time=\"$now_text\" status=\"$status_msg\" message=\"$status_msg\" source_path=\"snmp_current_output_status\""
+    printf '%s\n' "$status_msg" > "$state_file"
+    chmod 0644 "$state_file" 2>/dev/null || true
+    publish_events
+  fi
+
+  return 0
+}
+
+
 monitor_target() {
   local name="$1"
   local primary_url="$2"
@@ -309,6 +383,10 @@ monitor_target() {
   fetch_rc=0
   fetch_apc_event_txt "$name" "$primary_url" "$fallback_url" "$tmp_dir" "$event_txt" || fetch_rc=$?
 
+  # Read-only SNMP current output state check.
+  # This gives IDF2 and IDF3 the same grid/battery visibility even when event.txt has no recent UPS rows.
+  log_current_power_state "$name" "$ip" "$dns" "$state_name"
+
   if [ "$fetch_rc" -eq 20 ]; then
     # APC NMC web session table is full. Do not spam the dashboard.
     # Leave a quiet state marker only; retry later when sessions expire.
@@ -327,7 +405,9 @@ monitor_target() {
   matching_events="$(wc -l < "$detected_file" | tr -d ' ')"
 
   if [ ! -s "$detected_file" ]; then
-    record_failure "$name" "$ip" "$dns" "event_txt_no_matching_events" "$fail_file"
+    # event.txt was downloaded successfully, but there are no matching UPS power events.
+    # This is normal for a quiet IDF UPS and must not create user-facing APC_IDF_STATUS noise.
+    record_success "$name" "$ip" "$dns" "$fail_file" "0" "ok"
     return 0
   fi
 
