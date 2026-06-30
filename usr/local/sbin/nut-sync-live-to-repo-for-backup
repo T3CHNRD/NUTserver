@@ -258,6 +258,32 @@ sync_directory_safe_files /etc/nut/config.d etc/nut/config.d
 copy_file /etc/nut/production-mode.conf etc/nut/production-mode.conf
 copy_file /etc/nut/ups.conf etc/nut/ups.conf
 copy_file /etc/nut/upsd.conf etc/nut/upsd.conf
+
+sanitize_upsmon_file() {
+  local src="$1"
+  local dst="$2"
+  local mode="${3:-0640}"
+
+  mkdir -p "$(dirname "$REPO/$dst")"
+
+  awk '
+    /^[[:space:]]*MONITOR[[:space:]]/ {
+      n=split($0,f,/[[:space:]]+/)
+      if (n >= 6) {
+        f[5]="[REDACTED]"
+        out=f[1]
+        for (i=2; i<=n; i++) out=out " " f[i]
+        print out
+        next
+      }
+    }
+    { print }
+  ' "$src" > "$REPO/$dst"
+
+  chmod "$mode" "$REPO/$dst"
+  echo "SYNCED sanitized upsmon config: $src -> $REPO/$dst"
+}
+
 # Do not back up live /etc/nut/upsd.users because it can contain NUT credentials.
 # Keep only a safe fork/runbook template in GitHub.
 mkdir -p "$REPO/etc/nut"
@@ -281,7 +307,7 @@ cat > "$REPO/etc/nut/upsd.users.template" <<'EOF'
 EOF
 chmod 0640 "$REPO/etc/nut/upsd.users.template"
 echo "WROTE safe template: $REPO/etc/nut/upsd.users.template"
-copy_file /etc/nut/upsmon.conf etc/nut/upsmon.conf
+sanitize_upsmon_file /etc/nut/upsmon.conf etc/nut/upsmon.conf 0640
 copy_file /etc/nut/upssched.conf etc/nut/upssched.conf
 copy_file /etc/nut/upsset.conf etc/nut/upsset.conf
 copy_file /etc/nut/hosts.conf etc/nut/hosts.conf
