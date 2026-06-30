@@ -307,7 +307,7 @@ cat > "$REPO/etc/nut/upsd.users.template" <<'EOF'
 EOF
 chmod 0640 "$REPO/etc/nut/upsd.users.template"
 echo "WROTE safe template: $REPO/etc/nut/upsd.users.template"
-sanitize_upsmon_file /etc/nut/upsmon.conf etc/nut/upsmon.conf 0640
+sanitize_upsmon_file /etc/nut/upsmon.conf etc/nut/upsmon.conf 0644
 copy_file /etc/nut/upssched.conf etc/nut/upssched.conf
 copy_file /etc/nut/upsset.conf etc/nut/upsset.conf
 copy_file /etc/nut/hosts.conf etc/nut/hosts.conf

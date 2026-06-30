@@ -5,6 +5,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+import time
 
 APP_ROOT = Path("/opt/nut-orchestrator-ui")
 REGISTRY_PATH = APP_ROOT / "lib" / "config_registry.json"
@@ -702,19 +703,46 @@ def power_events_table():
 @app.route("/api/export-logs", methods=["GET"])
 def export_logs():
     try:
-        result = subprocess.run(
-            ["/usr/bin/sudo", "/usr/local/sbin/nut-export-test-logs"],
-            capture_output=True,
-            text=True,
-            timeout=120,
-            check=True,
-        )
-        archive_path = result.stdout.strip().splitlines()[-1]
+        export_dir = "/var/log/nut-orchestrator-ui/exports"
+        max_age_seconds = 300
+
+        newest_archive = None
+        newest_mtime = 0
+
+        if os.path.isdir(export_dir):
+            for name in os.listdir(export_dir):
+                if not name.startswith("nut-full-log-export-") or not name.endswith(".tar.gz"):
+                    continue
+                candidate = os.path.join(export_dir, name)
+                try:
+                    st = os.stat(candidate)
+                except OSError:
+                    continue
+                if not os.path.isfile(candidate):
+                    continue
+                if st.st_mtime > newest_mtime:
+                    newest_archive = candidate
+                    newest_mtime = st.st_mtime
+
+        now = time.time()
+        if newest_archive and newest_mtime and (now - newest_mtime) <= max_age_seconds:
+            archive_path = newest_archive
+        else:
+            result = subprocess.run(
+                ["/usr/bin/sudo", "/usr/local/sbin/nut-export-test-logs"],
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=True,
+            )
+            archive_path = result.stdout.strip().splitlines()[-1]
+
         return send_file(
             archive_path,
             as_attachment=True,
             download_name=os.path.basename(archive_path),
             mimetype="application/gzip",
+            max_age=0,
         )
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 500
