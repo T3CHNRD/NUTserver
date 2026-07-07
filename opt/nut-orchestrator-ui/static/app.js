@@ -676,7 +676,7 @@ async function loadPowerBootEvents() {
         })
       : [];
 
-    const lines = rawLines.filter(line => String(line || "").trim() !== "").slice(-160);
+    const lines = rawLines.filter(line => String(line || "").trim() !== "").slice(0, 160);
 
     if (!lines.length) {
       panel.textContent = "No log entries found.";

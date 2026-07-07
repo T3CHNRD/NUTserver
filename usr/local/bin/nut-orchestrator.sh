@@ -9,8 +9,8 @@ UI_POWER_LOG="/var/log/nut-orchestrator-ui/power-events.log"
 
 mkdir -p "$STATE_DIR"
 touch "$LOG_FILE" "$EVENT_LOG"
-chmod 755 "$STATE_DIR"
-chmod 644 "$EVENT_LOG"
+chmod 2775 "$STATE_DIR" 2>/dev/null || true
+chmod 0664 "$EVENT_LOG" 2>/dev/null || true
 
 ts() {
   date '+%Y-%m-%d %H:%M:%S'
@@ -24,7 +24,7 @@ log_line() {
 
   mkdir -p "$(dirname "$UI_POWER_LOG")"
   touch "$UI_POWER_LOG"
-  chmod 644 "$UI_POWER_LOG"
+  chmod 0664 "$UI_POWER_LOG" 2>/dev/null || true
   echo "$line" >> "$UI_POWER_LOG"
 }
 
@@ -55,7 +55,7 @@ write_state() {
 }
 JSON
 
-  chmod 644 "$state_file"
+  chmod 0664 "$state_file" 2>/dev/null || true
 }
 
 

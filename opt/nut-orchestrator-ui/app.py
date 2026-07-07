@@ -173,6 +173,54 @@ def preserve_existing_secret_config_lines(config_id, submitted_content):
 
     return "\n".join(out) + ("\n" if source.endswith("\n") else "")
 
+
+def get_current_protection_mode():
+    """
+    Return the current NUT protection mode from nut-production-status.
+
+    Expected mode values:
+    - armed     = PROTECTING
+    - disarmed  = STANDBY FOR MAINTENANCE
+    - off       = OFF
+    """
+    try:
+        result = subprocess.run(
+            ["/usr/bin/sudo", "/usr/local/sbin/nut-production-status"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if result.returncode != 0:
+            return ""
+        data = json.loads(result.stdout or "{}")
+        return str(data.get("mode", "")).strip().lower()
+    except Exception:
+        return ""
+
+
+def block_if_protecting(action_name):
+    """
+    Block maintenance/config/test/restore actions while NUT is actively protecting.
+
+    PROTECTING mode is for live outage protection only. Maintenance changes must be
+    made from STANDBY FOR MAINTENANCE or OFF.
+    """
+    current_mode = get_current_protection_mode()
+    if current_mode == "armed":
+        return jsonify({
+            "ok": False,
+            "blocked": True,
+            "mode": "PROTECTING",
+            "action": action_name,
+            "error": (
+                "Blocked: NUT is in PROTECTING mode. "
+                "Switch to STANDBY FOR MAINTENANCE before making UI, config, test, backup, or restore changes."
+            ),
+            "returncode": 423,
+        }), 423
+    return None
+
+
 # =========================
 # CONFIG READ (EDITABLE)
 # =========================
@@ -221,6 +269,10 @@ def get_config_content(config_id):
 # =========================
 @app.route("/api/config/<config_id>", methods=["POST"])
 def update_config(config_id):
+    blocked = block_if_protecting("config update")
+    if blocked:
+        return blocked
+
     item = get_config_by_id(config_id)
 
     if not item or not is_allowed_file(item):
@@ -274,6 +326,10 @@ def update_config(config_id):
 # =========================
 @app.route("/api/test/<mode>", methods=["POST"])
 def run_test(mode):
+    blocked = block_if_protecting("test run")
+    if blocked:
+        return blocked
+
     if mode not in ("simulate", "real"):
         return jsonify({"ok": False, "error": "Invalid mode"}), 400
 
@@ -338,6 +394,10 @@ def run_test(mode):
 # =========================
 @app.route("/api/backup", methods=["POST"])
 def backup_now():
+    blocked = block_if_protecting("backup")
+    if blocked:
+        return blocked
+
     cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-backup-now"]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
 
@@ -375,6 +435,10 @@ def restore_branches():
 
 @app.route("/api/restore", methods=["POST"])
 def restore_now():
+    blocked = block_if_protecting("restore from github")
+    if blocked:
+        return blocked
+
     payload = request.get_json(silent=True) or {}
     branch = str(payload.get("branch") or "backup-sanitized-initial").strip()
 
@@ -393,6 +457,10 @@ def restore_now():
 
 @app.route("/api/restore/live-dry-run", methods=["POST"])
 def restore_live_dry_run():
+    blocked = block_if_protecting("live restore dry run")
+    if blocked:
+        return blocked
+
     payload = request.get_json(silent=True) or {}
     category = str(payload.get("category") or "all").strip()
 
@@ -489,6 +557,10 @@ def restore_targets():
 
 @app.route("/api/restore/selected-file-live", methods=["POST"])
 def restore_selected_file_live():
+    blocked = block_if_protecting("selected file live restore")
+    if blocked:
+        return blocked
+
     payload = request.get_json(silent=True) or {}
     item_id = str(payload.get("item_id") or "").strip()
     confirmation = str(payload.get("confirmation") or "").strip()
@@ -750,6 +822,10 @@ def export_logs():
 
 @app.route("/api/rollback/<config_id>", methods=["POST"])
 def rollback(config_id):
+    blocked = block_if_protecting("rollback")
+    if blocked:
+        return blocked
+
     item = get_config_by_id(config_id)
 
     if not item or not is_allowed_file(item):
@@ -837,6 +913,10 @@ def api_production_mode():
 @app.post("/api/ups-locator-identify")
 @app.post("/api/ups-locator-beep")
 def api_ups_locator_identify():
+    blocked = block_if_protecting("ups locator")
+    if blocked:
+        return blocked
+
     """Run a safe read-only Find UPS identify/status action.
 
     This API only permits known UPS names and fixed short pulse values.
