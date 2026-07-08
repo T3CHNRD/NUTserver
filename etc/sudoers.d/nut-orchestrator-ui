@@ -1,0 +1,12 @@
+
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-apply-config *
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-run-test *
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-backup-now
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-rollback *
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-read-config *
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-read-reference *
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-restore-github
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-get-power-events-json
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-run-real-test-approved
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-live-restore-dry-run *
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-live-restore-selected *

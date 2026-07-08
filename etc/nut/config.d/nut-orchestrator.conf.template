@@ -1,0 +1,15 @@
+# TEMPLATE FILE - SANITIZED
+# Copy this file to the matching live path and replace CHANGE_ME values locally.
+# Do not commit live passwords, tokens, private keys, or production-only secrets.
+
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+# NUT orchestrator configuration
+# UI-managed source-of-truth file
+
+[general]
+mode=production
+dashboard_path=/var/www/html/nutserver-dashboard.html
+log_dir=/var/log/nut-orchestrator-ui
+backup_dir=/var/lib/nut-orchestrator-ui/backups
+state_dir=/var/lib/nut-orchestrator-ui/state
+staging_dir=/var/lib/nut-orchestrator-ui/staging

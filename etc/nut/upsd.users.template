@@ -1,15 +1,19 @@
+# TEMPLATE FILE - SANITIZED
+# Copy this file to the matching live path and replace CHANGE_ME values locally.
+# Do not commit live passwords, tokens, private keys, or production-only secrets.
+
 # ------------------------------------------------------------------
-# TEMPLATE ONLY: /etc/nut/upsd.users
-# Do not commit real passwords.
-# Replace [REDACTED] locally on the live server only.
+# GENERATED TEMPLATE: /etc/nut/upsd.users
+# Review credentials before applying.
 # ------------------------------------------------------------------
 
 [upsmon]
-  password = [REDACTED]
+  password = CHANGE_ME
   upsmon master
 
 [admin]
-  password = [REDACTED]
+  password = CHANGE_ME
   actions = SET
   actions = FSD
   instcmds = ALL
+

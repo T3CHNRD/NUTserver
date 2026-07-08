@@ -1,0 +1,7 @@
+# NUT Orchestrator UI production-mode controls.
+# Allows www-data to run only the local production mode/status scripts.
+# No general sudo access is granted.
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-production-status
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-production-mode protecting
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-production-mode standby
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-production-mode off

@@ -1,0 +1,43 @@
+#!/bin/bash
+set -u
+
+LOG_FILE="/var/log/nut-orchestrator.log"
+EVENT_LOG="/var/www/html/nut-state/events.log"
+UI_POWER_LOG="/var/log/nut-orchestrator-ui/power-events.log"
+
+ts() {
+  date '+%Y-%m-%d %H:%M:%S'
+}
+
+log_all() {
+  local line="[$(ts)] $1"
+
+  echo "$line" >> "$LOG_FILE"
+  echo "$line" >> "$EVENT_LOG"
+
+  mkdir -p "$(dirname "$UI_POWER_LOG")"
+  touch "$UI_POWER_LOG"
+  chmod 0664 "$UI_POWER_LOG" 2>/dev/null || true
+  echo "$line" >> "$UI_POWER_LOG"
+}
+
+if [ "${1:-}" != "--ups" ] || [ -z "${2:-}" ]; then
+  log_all "PHASE2_HELPER_USAGE_ERROR expected='phase2-power-restore-abort --ups <ups_name>'"
+  exit 64
+fi
+
+UPS_NAME="$2"
+
+case "$UPS_NAME" in
+  ups3)
+    log_all "PHASE2_HELPER_ACCEPTED ups=${UPS_NAME}"
+    log_all "PHASE2_HELPER_ACTION power_restore_abort ups=${UPS_NAME}"
+    log_all "PHASE2_HELPER_RESULT ups=${UPS_NAME} rc=0"
+    exit 0
+    ;;
+
+  *)
+    log_all "PHASE2_HELPER_REJECTED unsupported_ups=${UPS_NAME}"
+    exit 65
+    ;;
+esac

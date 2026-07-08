@@ -1,0 +1,3 @@
+# Allow NUT Orchestrator UI to generate a downloadable diagnostics/log export bundle.
+# This does not grant shutdown execution.
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-export-test-logs

@@ -1,0 +1,64 @@
+# TEMPLATE FILE - SANITIZED
+# Copy this file to the matching live path and replace CHANGE_ME values locally.
+# Do not commit live passwords, tokens, private keys, or production-only secrets.
+
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+
+# NUT Orchestrator Shared Config
+# Updated to match current environment.
+# Keep this file root-readable only.
+
+# Virtualization provider
+VIRT_PROVIDER="vmware"
+VMWARE_MODE="vcenter_api"
+PROXMOX_READY="1"
+
+# VMware / vCenter
+VCENTER_SERVER=CHANGE_ME_HOST_OR_URL
+VCENTER_USERNAME=CHANGE_ME_USERNAME
+VCENTER_PASSWORD=CHANGE_ME
+VCENTER_DATACENTER=""
+VCENTER_INSECURE="1"
+
+
+# Future Proxmox placeholders
+PROXMOX_API_URL=CHANGE_ME_HOST_OR_URL
+PROXMOX_API_TOKEN_ID=CHANGE_ME
+PROXMOX_API_TOKEN_SECRET=CHANGE_ME
+PROXMOX_VERIFY_TLS="1"
+PROXMOX_NODE_LIST=""
+
+# NetApp
+NETAPP_USERNAME=CHANGE_ME_USERNAME
+NETAPP_PASSWORD=CHANGE_ME
+
+NETAPP01_HOST=CHANGE_ME_HOST_OR_URL
+NETAPP01_NODE="alblnetapp01"
+NETAPP01_NODE_A="alblnetapp01-01"
+NETAPP01_NODE_B="alblnetapp01-02"
+
+NETAPP02_HOST=CHANGE_ME_HOST_OR_URL
+NETAPP02_NODE="alblnetapp02"
+NETAPP02_NODE_A="alblnetapp02-01"
+NETAPP02_NODE_B="alblnetapp02-02"
+
+# Lansweeper
+LANSWEEPER_IP=CHANGE_ME_HOST_OR_URL
+LANSWEEPER_METHOD="rpc"
+LANSWEEPER_DOMAIN="ALBL"
+LANSWEEPER_USERNAME=CHANGE_ME_USERNAME
+LANSWEEPER_PASSWORD=CHANGE_ME
+LANSWEEPER_CREDS="/etc/nut/lansweeper.creds"
+LANSWEEPER_SHUTDOWN_CMD="shutdown.exe"
+
+# Priority 3 virtualization-finalization placeholders
+
+# VMware current-environment placeholders
+VMWARE_VCSA_VM="albl-vcsa"
+VMWARE_FINAL_HOST_MODE=CHANGE_ME_HOST_OR_URL
+VMWARE_FINAL_HOST_PLACEHOLDER=CHANGE_ME_HOST_OR_URL
+
+# Future Proxmox placeholders
+PROXMOX_MGMT_VM="CHANGE_ME_PROXMOX_MGMT_VM"
+PROXMOX_FINAL_NODE_MODE="detect"
+PROXMOX_FINAL_NODE_PLACEHOLDER="CHANGE_ME_PROXMOX_FINAL_NODE"

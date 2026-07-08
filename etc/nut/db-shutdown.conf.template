@@ -1,0 +1,27 @@
+# TEMPLATE FILE - SANITIZED
+# Copy this file to the matching live path and replace CHANGE_ME values locally.
+# Do not commit live passwords, tokens, private keys, or production-only secrets.
+
+# DB shutdown connection settings for DB01 / DB02.
+# Managed through NUT Control Center.
+# Do not commit real passwords to GitHub.
+#
+# Current Solaris DB01 / DB02 method:
+#   DB_SHUTDOWN_METHOD="telnet"
+#
+# Future Linux / Ubuntu DB host method may be:
+#   DB_SHUTDOWN_METHOD="ssh"
+
+DB_SHUTDOWN_METHOD="telnet"
+
+DB01_HOST=CHANGE_ME_HOST_OR_URL
+DB02_HOST=CHANGE_ME_HOST_OR_URL
+
+DB_USERNAME=CHANGE_ME_USERNAME
+DB_PASSWORD=CHANGE_ME
+
+DB_TELNET_LOGIN_TIMEOUT=CHANGE_ME_USERNAME
+DB_TELNET_COMMAND_TIMEOUT="30"
+
+DB_TELNET_SHUTDOWN_COMMAND="/usr/sbin/shutdown -i5 -g0 -y 'UPS power event'"
+DB_SSH_SHUTDOWN_COMMAND="sudo /usr/sbin/poweroff"

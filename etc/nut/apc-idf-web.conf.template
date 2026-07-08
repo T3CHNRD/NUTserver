@@ -1,0 +1,7 @@
+# TEMPLATE FILE - SANITIZED
+# Copy this file to the matching live path and replace CHANGE_ME values locally.
+# Do not commit live passwords, tokens, private keys, or production-only secrets.
+
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+APC_IDF_USERNAME=CHANGE_ME_USERNAME
+APC_IDF_PASSWORD=CHANGE_ME
