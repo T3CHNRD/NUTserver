@@ -568,7 +568,7 @@ templates = {
             "",
             "Before rebooting or restarting affected equipment, perform a full power drain.",
             "Power-drain documentation:",
-            r"P:\\IT Tracking - Requests_Projects\\IT Governance\\How to and checklist\\How To Troubleshoot Server Power Issues",
+            "P:\\IT Tracking - Requests_Projects\\IT Governance\\How to and checklist\\How To Troubleshoot Server Power Issues",
         ],
     },
     "weekly": {
