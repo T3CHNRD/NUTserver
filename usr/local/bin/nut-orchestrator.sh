@@ -263,9 +263,44 @@ commit_placeholder() {
   esac
 }
 
+send_outage_email() {
+  local kind="${1:-}"
+  local reason="${2:-automatic UPS power event}"
+  local email_cmd="/usr/local/sbin/nut-email-alert-test-send"
+  local rc=0
+
+  if [ -z "$kind" ]; then
+    return 0
+  fi
+
+  if [ ! -x "$email_cmd" ]; then
+    if declare -F log_line >/dev/null 2>&1; then
+      log_line "EMAIL_NOTIFY_SKIPPED type=${kind} reason=\"email_command_missing\""
+    fi
+    return 0
+  fi
+
+  "$email_cmd" --send "$kind" >> "$LOG_FILE" 2>&1
+  rc=$?
+
+  if [ "$rc" -eq 0 ]; then
+    if declare -F log_line >/dev/null 2>&1; then
+      log_line "EMAIL_NOTIFY_SENT type=${kind} reason=\"${reason}\""
+    fi
+  else
+    if declare -F log_line >/dev/null 2>&1; then
+      log_line "EMAIL_NOTIFY_FAILED type=${kind} rc=${rc} reason=\"${reason}\""
+    fi
+  fi
+
+  return 0
+}
+
+
 case "${1:-}" in
   ups7-onbatt)
     log_line "UPS_ONBATT_DETECTED ups7 runtime='18m' countdown='240s'"
+    send_outage_email "onbatt" "ups7 on battery / grid power lost"
     log_line "UPS_COUNTDOWN_STARTED ups7 scope='targeted shutdown' countdown='240s'"
     write_state "ups7" "ups7" "on_battery_pending" "targeted shutdown" 240 240 "DB01 and DB02 pending graceful shutdown"
     ;;
@@ -273,6 +308,7 @@ case "${1:-}" in
   ups7-online)
     log_line "UPS_SHUTDOWN_CANCELED_POWER_RESTORED ups7 before_commit='yes'"
     write_state "ups7" "ups7" "power_restored_canceled" "targeted shutdown" 0 0 "Shutdown canceled / power restored"
+    send_outage_email "cancelled" "ups7 power restored before shutdown"
     ;;
 
   ups7-commit)
@@ -281,6 +317,7 @@ case "${1:-}" in
 
   ups2-onbatt)
     log_line "UPS_ONBATT_DETECTED ups2 runtime='30m' countdown='420s'"
+    send_outage_email "onbatt" "ups2 on battery / grid power lost"
     log_line "UPS_COUNTDOWN_STARTED ups2 scope='targeted shutdown' countdown='420s'"
     write_state "ups2" "ups2" "on_battery_pending" "targeted shutdown" 420 420 "Blue Iris pending graceful shutdown"
     ;;
@@ -288,6 +325,7 @@ case "${1:-}" in
   ups2-online)
     log_line "UPS_SHUTDOWN_CANCELED_POWER_RESTORED ups2 before_commit='yes'"
     write_state "ups2" "ups2" "power_restored_canceled" "targeted shutdown" 0 0 "Shutdown canceled / power restored"
+    send_outage_email "cancelled" "ups2 power restored before shutdown"
     ;;
 
   ups2-commit)
@@ -296,6 +334,7 @@ case "${1:-}" in
 
   ups8-onbatt)
     log_line "UPS_ONBATT_DETECTED ups8 runtime='15m' countdown='180s'"
+    send_outage_email "onbatt" "ups8 on battery / grid power lost"
     log_line "UPS_COUNTDOWN_STARTED ups8 scope='targeted shutdown' countdown='180s'"
     write_state "ups8" "ups8" "on_battery_pending" "targeted shutdown" 180 180 "ups8 framework active; VOIP executable, VME and Merlin alert only"
     ;;
@@ -303,6 +342,7 @@ case "${1:-}" in
   ups8-online)
     log_line "UPS_SHUTDOWN_CANCELED_POWER_RESTORED ups8 before_commit='yes'"
     write_state "ups8" "ups8" "power_restored_canceled" "targeted shutdown" 0 0 "Shutdown canceled / power restored"
+    send_outage_email "cancelled" "ups8 power restored before shutdown"
     ;;
 
   ups8-commit)
@@ -311,6 +351,7 @@ case "${1:-}" in
 
   ups6-onbatt)
     log_line "UPS_ONBATT_DETECTED ups6 runtime='19h2m' countdown='300s'"
+    send_outage_email "onbatt" "ups6 on battery / grid power lost"
     log_line "UPS_COUNTDOWN_STARTED ups6 scope='targeted shutdown' countdown='300s'"
     write_state "ups6" "ups6" "on_battery_pending" "targeted shutdown" 300 300 "Lansweeper pending graceful shutdown; network gear alert only"
     ;;
@@ -318,6 +359,7 @@ case "${1:-}" in
   ups6-online)
     log_line "UPS_SHUTDOWN_CANCELED_POWER_RESTORED ups6 before_commit='yes'"
     write_state "ups6" "ups6" "power_restored_canceled" "targeted shutdown" 0 0 "Shutdown canceled / power restored"
+    send_outage_email "cancelled" "ups6 power restored before shutdown"
     ;;
 
   ups6-commit)
@@ -326,6 +368,7 @@ case "${1:-}" in
 
   ups9-onbatt)
     log_line "UPS_ONBATT_DETECTED ups9 runtime='37m' countdown='360s'"
+    send_outage_email "onbatt" "ups9 on battery / grid power lost"
     log_line "UPS_COUNTDOWN_STARTED ups9 scope='broader VMware shutdown' countdown='360s'"
     write_state "ups9" "ups9" "on_battery_pending" "broader VMware shutdown" 360 360 "VMware/storage domain pending shutdown"
     ;;
@@ -333,6 +376,7 @@ case "${1:-}" in
   ups9-online)
     log_line "UPS_SHUTDOWN_CANCELED_POWER_RESTORED ups9 before_commit='yes'"
     write_state "ups9" "ups9" "power_restored_canceled" "broader VMware shutdown" 0 0 "Shutdown canceled / power restored"
+    send_outage_email "cancelled" "ups9 power restored before shutdown"
     ;;
 
   ups9-commit)
@@ -341,6 +385,7 @@ case "${1:-}" in
 
   ups3-onbatt)
     log_line "UPS_ONBATT_DETECTED ups3 runtime='unknown' countdown='300s'"
+    send_outage_email "onbatt" "ups3 on battery / grid power lost"
     log_line "UPS_COUNTDOWN_STARTED ups3 scope='phase2 validation' countdown='300s'"
     write_state "ups3" "ups3" "on_battery_pending" "phase2 validation" 300 300 "Phase 2 ups3 power-restore-abort validation pending"
     ;;
@@ -350,6 +395,7 @@ case "${1:-}" in
     rc=$?
     if [ "$rc" -eq 0 ]; then
       write_state "ups3" "ups3" "power_restored_canceled" "phase2 validation" 0 0 "Phase 2 power restore abort completed for ups3"
+    send_outage_email "cancelled" "ups3 power restored before shutdown"
     else
       write_state "ups3" "ups3" "power_restore_abort_failed" "phase2 validation" 0 0 "Phase 2 power restore abort failed for ups3 rc=${rc}"
     fi
