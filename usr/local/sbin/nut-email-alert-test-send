@@ -565,6 +565,10 @@ templates = {
             "",
             "Operator action:",
             "Assume remaining automated visibility may end shortly.",
+            "",
+            "Before rebooting or restarting affected equipment, perform a full power drain.",
+            "Power-drain documentation:",
+            r"P:\\IT Tracking - Requests_Projects\\IT Governance\\How to and checklist\\How To Troubleshoot Server Power Issues",
         ],
     },
     "weekly": {
