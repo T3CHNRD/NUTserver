@@ -353,6 +353,20 @@
       "owner": "root",
       "group": "nut",
       "file_mode": "640"
+    },
+    {
+      "id": "local_final_shutdown_sh",
+      "name": "nut-local-final-shutdown.sh",
+      "path": "/usr/local/sbin/nut-local-final-shutdown.sh",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [
+        ".sh"
+      ],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "nut",
+      "file_mode": "750"
     }
   ],
   "reference_configs": [
