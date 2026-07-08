@@ -224,6 +224,45 @@ run_simulate() {
   fi
 }
 
+verify_lansweeper_nut_runtime_access() {
+  local wrapper="/usr/local/sbin/nut-lansweeper-shutdown.sh"
+  local creds="/etc/nut/lansweeper.creds"
+  local log="/var/log/nut-lansweeper-shutdown.log"
+  local rc=0
+
+  log_line "===== LANSWEEPER PRODUCTION RUNTIME PREFLIGHT ====="
+
+  if sudo -u nut test -x "$wrapper"; then
+    pass "nut can execute Lansweeper wrapper"
+  else
+    fail "nut cannot execute Lansweeper wrapper (${wrapper})"
+    rc=1
+  fi
+
+  if sudo -u nut test -r "$creds"; then
+    pass "nut can read Lansweeper creds"
+  else
+    fail "nut cannot read Lansweeper creds (${creds})"
+    rc=1
+  fi
+
+  if sudo -u nut test -w "$log"; then
+    pass "nut can write Lansweeper log"
+  else
+    fail "nut cannot write Lansweeper log (${log})"
+    rc=1
+  fi
+
+  if [ "$rc" -ne 0 ]; then
+    power_event "REAL TEST PHASE1 BLOCKED target=\"Lansweeper\" result=\"nut runtime access preflight failed\""
+    return "$rc"
+  fi
+
+  power_event "REAL TEST PHASE1 PREFLIGHT PASS target=\"Lansweeper\" result=\"nut runtime access verified\""
+  return 0
+}
+
+
 run_real() {
   local phase="${1:-phase3-full}"
 
@@ -251,7 +290,11 @@ run_real() {
       log_line "===== PHASE 1: LANSWEEPER ONLY ====="
       power_event "REAL TEST PHASE1 start target=Lansweeper"
 
-      REAL_TEST_PHASE=phase1-lansweeper LANSWEEPER_LIVE_APPROVED=1 run_real_wrapper "Lansweeper" /usr/local/sbin/nut-lansweeper-shutdown.sh
+      if verify_lansweeper_nut_runtime_access; then
+        REAL_TEST_PHASE=phase1-lansweeper LANSWEEPER_LIVE_APPROVED=1 run_real_wrapper "Lansweeper" /usr/local/sbin/nut-lansweeper-shutdown.sh
+      else
+        fail "Phase 1 Lansweeper blocked before live wrapper execution"
+      fi
       ;;
 
     phase2-power-restore-abort)

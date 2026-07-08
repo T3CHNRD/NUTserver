@@ -221,6 +221,81 @@ def block_if_protecting(action_name):
     return None
 
 
+
+# BEGIN_PASSWORD_MASKING_OVERRIDE_20260707
+# Centralized masking override for editable config files.
+# Any password-like key must never be returned to the browser in clear text.
+
+SECRET_KEYWORDS = (
+    "PASSWORD",
+    "PASS",
+    "SECRET",
+    "TOKEN",
+    "API_KEY",
+    "PRIVATE_KEY",
+    "ACCESS_KEY",
+)
+
+
+def is_secret_config_line(line):
+    raw = str(line or "")
+    stripped = raw.strip()
+
+    if not stripped or stripped.startswith("#") or "=" not in stripped:
+        return False
+
+    key = stripped.split("=", 1)[0].strip().upper()
+    return any(keyword in key for keyword in SECRET_KEYWORDS)
+
+
+def redact_secret_config_lines(content):
+    out = []
+    source = str(content or "")
+
+    for line in source.splitlines():
+        if is_secret_config_line(line) and "=" in line:
+            key = line.split("=", 1)[0].strip()
+            out.append(f"{key}=********")
+        else:
+            out.append(line)
+
+    return chr(10).join(out) + (chr(10) if source.endswith(chr(10)) else "")
+
+
+def preserve_existing_secret_config_lines(config_id, submitted_content):
+    item = get_config_by_id(config_id)
+    if not item:
+        return submitted_content
+
+    target_path = Path(item["path"])
+    if not target_path.exists():
+        return submitted_content
+
+    existing = {}
+    for line in target_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if is_secret_config_line(line) and "=" in line:
+            key, value = line.split("=", 1)
+            existing[key.strip()] = value
+
+    out = []
+    source = str(submitted_content or "")
+
+    for line in source.splitlines():
+        if is_secret_config_line(line) and "=" in line:
+            key, value = line.split("=", 1)
+            clean_key = key.strip()
+            clean_value = value.strip().strip('"').strip("'")
+
+            if clean_key in existing and clean_value in SECRET_PLACEHOLDERS:
+                out.append(f"{clean_key}={existing[clean_key]}")
+                continue
+
+        out.append(line)
+
+    return chr(10).join(out) + (chr(10) if source.endswith(chr(10)) else "")
+
+# END_PASSWORD_MASKING_OVERRIDE_20260707
+
 # =========================
 # CONFIG READ (EDITABLE)
 # =========================

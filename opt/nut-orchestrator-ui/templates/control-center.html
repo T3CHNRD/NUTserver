@@ -3894,6 +3894,59 @@ async function ccApiJson(url, options = {}) {
       }
     }
 
+
+    function maskDbShutdownPasswordEditor() {
+      const editor = document.getElementById("config-editor");
+      const configId = ccConfigState && ccConfigState.currentConfigId;
+
+      if (!editor || configId !== "db_shutdown_conf") {
+        return;
+      }
+
+      const original = editor.value || "";
+      const lines = original.split("\n");
+      let changed = false;
+
+      for (let i = 0; i < lines.length; i++) {
+        const match = lines[i].match(/^(\s*DB_PASSWORD\s*=\s*)(.*)$/);
+        if (!match) {
+          continue;
+        }
+
+        const rawValue = (match[2] || "").trim();
+
+        if (!rawValue || rawValue === "********" || rawValue === "\"********\"" || rawValue === "'********'") {
+          continue;
+        }
+
+        window.ccPendingDbPasswordValue = match[2];
+        lines[i] = match[1] + "********";
+        changed = true;
+      }
+
+      if (changed) {
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        editor.value = lines.join("\n");
+        editor.selectionStart = Math.min(start, editor.value.length);
+        editor.selectionEnd = Math.min(end, editor.value.length);
+      }
+    }
+
+    function buildConfigContentForSave(configId, editorValue) {
+      let content = String(editorValue || "");
+
+      if (configId === "db_shutdown_conf" && window.ccPendingDbPasswordValue) {
+        content = content.replace(
+          /^(\s*DB_PASSWORD\s*=\s*)\*{8}\s*$/m,
+          "$1" + window.ccPendingDbPasswordValue
+        );
+      }
+
+      return content;
+    }
+
+
     async function saveControlCenterConfig() {
       const configId = ccConfigState.currentId;
       const editor = ccGet("config-editor");
@@ -3920,12 +3973,17 @@ async function ccApiJson(url, options = {}) {
         const data = await ccApiJson(CC_BASE + "/api/config/" + encodeURIComponent(configId), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: editor.value, mode: "apply" })
+          body: JSON.stringify({ content: buildConfigContentForSave(configId, editor.value), mode: "apply" })
         });
 
         ccConfigState.original[configId] = editor.value;
 
         const statusEl = ccGet("meta-status");
+        if (data.ok) {
+          window.ccPendingDbPasswordValue = "";
+          await loadControlCenterConfig(configId);
+        }
+
         if (statusEl) statusEl.textContent = "Saved";
 
         setControlCenterOutput("Save", data, !data.ok);
@@ -5114,6 +5172,11 @@ function closeLabSelectedRestoreScreen() {
       const saveButton = document.getElementById("btn-save");
       if (saveButton) {
         saveButton.addEventListener("click", saveControlCenterConfig);
+      }
+
+      const configEditor = document.getElementById("config-editor");
+      if (configEditor) {
+        configEditor.addEventListener("input", maskDbShutdownPasswordEditor);
       }
 
       const revertButton = document.getElementById("btn-revert");

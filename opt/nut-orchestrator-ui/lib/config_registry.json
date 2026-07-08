@@ -152,7 +152,7 @@
       ],
       "apply_mode": "local",
       "owner": "root",
-      "group": "root",
+      "group": "nut",
       "file_mode": "750"
     },
     {
@@ -166,7 +166,7 @@
       ],
       "apply_mode": "local",
       "owner": "root",
-      "group": "root",
+      "group": "nut",
       "file_mode": "750"
     },
     {
@@ -180,8 +180,23 @@
       ],
       "apply_mode": "local",
       "owner": "root",
-      "group": "root",
+      "group": "nut",
       "file_mode": "750"
+    },
+    {
+      "id": "db_shutdown_conf",
+      "name": "DB Shutdown Config",
+      "path": "/etc/nut/db-shutdown.conf",
+      "type": "shell",
+      "sensitive": false,
+      "validator": "validate_text_generic",
+      "allowed_extensions": [
+        ".conf"
+      ],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "nut",
+      "file_mode": "640"
     },
     {
       "id": "blueiris_shutdown_sh",
@@ -250,7 +265,7 @@
       ],
       "apply_mode": "local",
       "owner": "root",
-      "group": "root",
+      "group": "nut",
       "file_mode": "750"
     },
     {
@@ -264,7 +279,7 @@
       ],
       "apply_mode": "local",
       "owner": "root",
-      "group": "root",
+      "group": "nut",
       "file_mode": "640"
     },
     {
@@ -278,7 +293,7 @@
       ],
       "apply_mode": "local",
       "owner": "root",
-      "group": "root",
+      "group": "nut",
       "file_mode": "750"
     },
     {
@@ -307,8 +322,8 @@
       ],
       "apply_mode": "local",
       "owner": "root",
-      "group": "root",
-      "file_mode": "600"
+      "group": "nut",
+      "file_mode": "640"
     },
     {
       "id": "nut_email_alerts_conf",
@@ -322,6 +337,21 @@
       "validator": "validate_nut_email_alerts_conf",
       "owner": "root",
       "group": "root",
+      "file_mode": "640"
+    },
+    {
+      "id": "synology_api_conf",
+      "name": "Synology API Config",
+      "path": "/etc/nut/synology-api.conf",
+      "type": "shell",
+      "sensitive": true,
+      "validator": "validate_text_generic",
+      "allowed_extensions": [
+        ".conf"
+      ],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "nut",
       "file_mode": "640"
     }
   ],
