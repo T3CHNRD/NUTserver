@@ -296,35 +296,6 @@
       "file_mode": "750"
     },
     {
-      "id": "db_telnet_user",
-      "name": "DB Telnet Username",
-      "path": "/etc/nut/db-telnet.user",
-      "type": "text",
-      "validator": "validate_text_generic",
-      "allowed_extensions": [
-        ".user"
-      ],
-      "apply_mode": "local",
-      "owner": "root",
-      "group": "root",
-      "file_mode": "600"
-    },
-    {
-      "id": "db_telnet_pass",
-      "name": "DB Telnet Password",
-      "path": "/etc/nut/db-telnet.pass",
-      "type": "password",
-      "sensitive": true,
-      "validator": "validate_text_generic",
-      "allowed_extensions": [
-        ".pass"
-      ],
-      "apply_mode": "local",
-      "owner": "root",
-      "group": "root",
-      "file_mode": "600"
-    },
-    {
       "id": "vcenter_pass",
       "name": "vCenter Password",
       "path": "/etc/nut/vcenter.pass",

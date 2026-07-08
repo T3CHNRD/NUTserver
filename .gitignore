@@ -42,3 +42,20 @@ root/.ssh/
 *final-before-promotion*
 *restore-github.html.disabled*
 etc/nut/upsd.users
+
+# NUT sensitive live configuration files - do not back up real usernames/passwords/secrets
+etc/nut/*.creds
+etc/nut/*.pass
+etc/nut/*.secret
+etc/nut/*.token
+etc/nut/db-shutdown.conf
+etc/nut/db-telnet.user
+etc/nut/db-telnet.pass
+etc/nut/lansweeper.creds
+etc/nut/synology-api.conf
+etc/nut/nut-orchestrator.conf
+etc/nut/apc-idf-web.conf
+etc/nut/ups.conf
+etc/nut/nut-email-alerts.conf
+etc/nut/hypervisors/hypervisor-ssh-fallback.conf
+etc/nut/config.d/nut-orchestrator.conf
