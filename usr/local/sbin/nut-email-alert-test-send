@@ -67,6 +67,7 @@ if [ "$ACTION" = "--send" ]; then
 fi
 
 python3 - "$ACTION" "$TYPE" <<'PY'
+import os
 from pathlib import Path
 from email.message import EmailMessage
 from email.utils import formatdate
@@ -109,6 +110,26 @@ if not recipients:
 
 hostname = socket.gethostname()
 now = datetime.now().astimezone()
+def env_text(name, default):
+    value = os.environ.get(name, "").strip()
+    return value if value else default
+
+def env_list_lines(name, default_line):
+    value = os.environ.get(name, "").strip()
+    if not value:
+        return [default_line]
+    parts = [p.strip() for p in value.replace("\\n", "\n").split("\n") if p.strip()]
+    if not parts:
+        return [default_line]
+    return [p if p.startswith("- ") else f"- {p}" for p in parts]
+
+outage_duration_text = env_text("NUT_OUTAGE_DURATION", "unavailable from current email context")
+shutdown_attempted_text = env_text("NUT_SHUTDOWN_ATTEMPTED", "No")
+manual_recovery_text = env_text("NUT_MANUAL_RECOVERY_REQUIRED", "No, unless equipment shows issues")
+systems_scheduled_lines = env_list_lines("NUT_SYSTEMS_SCHEDULED", "- unavailable from current email context")
+systems_down_lines = env_list_lines("NUT_SYSTEMS_SHUT_DOWN", "- None reported")
+systems_running_lines = env_list_lines("NUT_SYSTEMS_STILL_RUNNING", "- Protected systems remained online or status is unknown")
+
 now_text = now.strftime("%Y-%m-%d %H:%M:%S %Z")
 
 def get_mode_summary():
@@ -510,7 +531,13 @@ templates = {
         "title": "Power returned to line/grid power",
         "body": [
             f"Power-restored timestamp: {now_text}",
-            "Outage duration: unavailable from manual email generation",
+            f"Outage duration: {outage_duration_text}",
+            f"Shutdown attempted: {shutdown_attempted_text}",
+            "Systems already shut down:",
+            *systems_down_lines,
+            "Systems still running / not shut down:",
+            *systems_running_lines,
+            f"Manual recovery required: {manual_recovery_text}",
             "",
             "Status:",
             "A monitored UPS has returned from battery power to line/grid power.",
@@ -529,7 +556,9 @@ templates = {
             "Protected systems are entering the configured shutdown process.",
             "",
             "Systems scheduled for shutdown:",
-            "- unavailable from manual email generation",
+            *systems_scheduled_lines,
+            "",
+            f"Manual recovery required: {manual_recovery_text}",
             "",
             "Operator action:",
             "Monitor system shutdown status and confirm each protected target powers down cleanly.",
@@ -545,10 +574,13 @@ templates = {
             "Power returned before the shutdown sequence needed to continue.",
             "",
             "Systems already shut down:",
-            "- unavailable from manual email generation",
+            *systems_down_lines,
             "",
-            "Systems still running:",
-            "- unavailable from manual email generation",
+            "Systems still running / not shut down:",
+            *systems_running_lines,
+            "",
+            f"Outage duration: {outage_duration_text}",
+            f"Manual recovery required: {manual_recovery_text}",
             "",
             "Operator action:",
             "Confirm protected systems are healthy and determine whether any manual recovery is required.",

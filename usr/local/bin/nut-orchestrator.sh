@@ -273,6 +273,96 @@ commit_placeholder() {
   esac
 }
 
+EMAIL_STATE_DIR="/var/www/html/nut-state"
+
+email_ups_from_reason() {
+  printf '%s\n' "${1:-}" | grep -oE 'ups[0-9]+' | head -1
+}
+
+email_mark_outage_start() {
+  local ups_name="${1:-unknown}"
+  mkdir -p "$EMAIL_STATE_DIR" 2>/dev/null || true
+  date +%s > "$EMAIL_STATE_DIR/email-outage-start-${ups_name}.epoch" 2>/dev/null || true
+}
+
+email_duration_for_ups() {
+  local ups_name="${1:-unknown}"
+  local file="$EMAIL_STATE_DIR/email-outage-start-${ups_name}.epoch"
+  local start now elapsed minutes seconds
+
+  if [ ! -s "$file" ]; then
+    echo "unavailable - outage start timestamp was not found"
+    return 0
+  fi
+
+  start="$(cat "$file" 2>/dev/null || echo "")"
+  now="$(date +%s)"
+
+  case "$start" in
+    ''|*[!0-9]*)
+      echo "unavailable - outage start timestamp was invalid"
+      return 0
+      ;;
+  esac
+
+  elapsed=$((now - start))
+  if [ "$elapsed" -lt 0 ]; then
+    elapsed=0
+  fi
+
+  minutes=$((elapsed / 60))
+  seconds=$((elapsed % 60))
+  echo "${minutes} minutes ${seconds} seconds"
+}
+
+email_context_for_type() {
+  local kind="${1:-}"
+  local reason="${2:-}"
+  local ups_name
+
+  ups_name="$(email_ups_from_reason "$reason")"
+
+  export NUT_EMAIL_REASON="$reason"
+  export NUT_OUTAGE_DURATION=""
+  export NUT_SHUTDOWN_ATTEMPTED=""
+  export NUT_SYSTEMS_SCHEDULED=""
+  export NUT_SYSTEMS_SHUT_DOWN=""
+  export NUT_SYSTEMS_STILL_RUNNING=""
+  export NUT_MANUAL_RECOVERY_REQUIRED=""
+
+  case "$kind" in
+    onbatt)
+      [ -n "$ups_name" ] && email_mark_outage_start "$ups_name"
+      export NUT_SHUTDOWN_ATTEMPTED="No"
+      export NUT_SYSTEMS_STILL_RUNNING="Protected systems remain online. Shutdown countdown has started only if this UPS has a configured timer."
+      export NUT_MANUAL_RECOVERY_REQUIRED="No, unless equipment shows issues."
+      ;;
+    online|cancelled)
+      if [ -n "$ups_name" ]; then
+        export NUT_OUTAGE_DURATION="$(email_duration_for_ups "$ups_name")"
+      else
+        export NUT_OUTAGE_DURATION="unavailable - UPS name was not available"
+      fi
+      export NUT_SHUTDOWN_ATTEMPTED="No"
+      export NUT_SYSTEMS_SHUT_DOWN="None reported by the NUT orchestrator before power returned."
+      export NUT_SYSTEMS_STILL_RUNNING="Protected systems remained online or shutdown was canceled before additional action was required."
+      export NUT_MANUAL_RECOVERY_REQUIRED="No, unless equipment shows issues."
+      ;;
+    shutdown)
+      export NUT_SHUTDOWN_ATTEMPTED="Yes"
+      export NUT_SYSTEMS_SCHEDULED="${reason}"
+      export NUT_SYSTEMS_STILL_RUNNING="Status pending. Review NUT event log and target system status after shutdown sequence completes."
+      export NUT_MANUAL_RECOVERY_REQUIRED="Yes if any shutdown action fails or a protected target does not return cleanly."
+      ;;
+    final)
+      export NUT_SHUTDOWN_ATTEMPTED="Yes"
+      export NUT_SYSTEMS_SCHEDULED="Final NUT server shutdown step reached."
+      export NUT_SYSTEMS_STILL_RUNNING="Automated visibility may end shortly after this email."
+      export NUT_MANUAL_RECOVERY_REQUIRED="Yes. Follow the power-drain documentation before rebooting or restarting affected equipment."
+      ;;
+  esac
+}
+
 send_outage_email() {
   local kind="${1:-}"
   local reason="${2:-automatic UPS power event}"
@@ -290,6 +380,7 @@ send_outage_email() {
     return 0
   fi
 
+  email_context_for_type "$kind" "$reason"
   "$email_cmd" --send "$kind" >> "$LOG_FILE" 2>&1
   rc=$?
 
