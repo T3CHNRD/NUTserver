@@ -3698,6 +3698,23 @@ function updateNutProductionButtons(mode) {
       return "<div><strong>" + ccEscapeHtml(label) + ":</strong> " + ccEscapeHtml(value) + "</div>";
     }
 
+    function ccWeatherFlashColor() {
+      var weather = document.getElementById("cc-pontiac-weather");
+      var text = weather ? (weather.innerText || weather.textContent || "") : "";
+      var match = text.match(/(-?\d+)\s*°?\s*F/i);
+      var temp = match ? parseInt(match[1], 10) : null;
+
+      if (temp === null || isNaN(temp)) {
+        return { bg: "#1f6feb", fg: "#ffffff", glow: "rgba(31,111,235,.95)" };
+      }
+
+      if (temp <= 32) return { bg: "#7dd3fc", fg: "#10233f", glow: "rgba(125,211,252,.95)" };
+      if (temp <= 55) return { bg: "#38bdf8", fg: "#10233f", glow: "rgba(56,189,248,.95)" };
+      if (temp <= 75) return { bg: "#34d399", fg: "#082f1f", glow: "rgba(52,211,153,.95)" };
+      if (temp <= 85) return { bg: "#f59e0b", fg: "#1f1300", glow: "rgba(245,158,11,.95)" };
+      return { bg: "#f97316", fg: "#1f0900", glow: "rgba(249,115,22,.95)" };
+    }
+
     function ccFlashCopyButton(button, message) {
       if (!button) return;
 
@@ -3706,15 +3723,42 @@ function updateNutProductionButtons(mode) {
 
       if (button.blur) button.blur();
 
+      var colors = ccWeatherFlashColor();
+      var on = false;
+
       button.textContent = message;
-      button.classList.remove("cc-copy-flashing");
-      void button.offsetWidth;
-      button.classList.add("cc-copy-flashing");
+      button.style.setProperty("outline", "0", "important");
+
+      function applyFlash() {
+        on = !on;
+        if (on) {
+          button.style.setProperty("background", colors.bg, "important");
+          button.style.setProperty("color", colors.fg, "important");
+          button.style.setProperty("border-color", "#ffffff", "important");
+          button.style.setProperty("box-shadow", "0 0 0 3px #ffffff, 0 0 28px " + colors.glow, "important");
+          button.style.setProperty("transform", "translateY(1px)", "important");
+        } else {
+          button.style.setProperty("background", "#ffffff", "important");
+          button.style.setProperty("color", "#10233f", "important");
+          button.style.setProperty("border-color", colors.bg, "important");
+          button.style.setProperty("box-shadow", "0 0 0 3px " + colors.bg + ", 0 0 28px rgba(255,255,255,.95)", "important");
+          button.style.setProperty("transform", "translateY(0)", "important");
+        }
+      }
+
+      applyFlash();
+      var timer = setInterval(applyFlash, 180);
 
       setTimeout(function () {
+        clearInterval(timer);
         button.textContent = original;
-        button.classList.remove("cc-copy-flashing");
-      }, 1300);
+        button.style.removeProperty("background");
+        button.style.removeProperty("color");
+        button.style.removeProperty("border-color");
+        button.style.removeProperty("box-shadow");
+        button.style.removeProperty("transform");
+        button.style.setProperty("outline", "0", "important");
+      }, 1600);
     }
 
     function ccSelectActionOutput(output) {
