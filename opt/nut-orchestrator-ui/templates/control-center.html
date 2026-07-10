@@ -3355,8 +3355,7 @@ function updateNutProductionButtons(mode) {
         <h2>Action Output</h2>
       </div>
       <div class="cc-output-toolbar" style="display:flex;gap:10px;align-items:center;margin:0 0 10px 0;flex-wrap:wrap;">
-        <button type="button" class="cc-btn" id="cc-output-copy">Copy Full Output</button>
-        <span class="cc-mini" id="cc-output-copy-status" style="opacity:.85;">Copies the full action output log.</span>
+        <button type="button" class="cc-btn" id="cc-output-copy" title="Selects and copies the full action output log">Copy Full Output</button>
       </div>
       <div class="cc-output" id="cc-action-output">No action has been run from this page yet.</div>
 
@@ -3662,23 +3661,44 @@ function updateNutProductionButtons(mode) {
       return "<div><strong>" + ccEscapeHtml(label) + ":</strong> " + ccEscapeHtml(value) + "</div>";
     }
 
-    function ccSetOutputCopyStatus(message) {
-      var status = document.getElementById("cc-output-copy-status");
-      if (status) status.textContent = message;
+    function ccFlashCopyButton(button, message) {
+      if (!button) return;
+      var original = button.getAttribute("data-original-text") || button.textContent;
+      button.setAttribute("data-original-text", original);
+      button.textContent = message;
+      button.style.filter = "brightness(1.35)";
+      button.style.boxShadow = "0 0 0 2px rgba(98,179,255,.45), 0 0 18px rgba(98,179,255,.35)";
+      setTimeout(function () {
+        button.textContent = original;
+        button.style.filter = "";
+        button.style.boxShadow = "";
+      }, 1200);
+    }
+
+    function ccSelectActionOutput(output) {
+      var range = document.createRange();
+      range.selectNodeContents(output);
+      var selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
     }
 
     function ccCopyFullActionOutput() {
       var output = document.getElementById("cc-action-output");
+      var button = document.getElementById("cc-output-copy");
+
       if (!output) {
-        ccSetOutputCopyStatus("No action output box found.");
+        ccFlashCopyButton(button, "No Output Box");
         return;
       }
 
       var text = output.innerText || output.textContent || "";
       if (!text.replace(/\s+/g, "")) {
-        ccSetOutputCopyStatus("No action output to copy.");
+        ccFlashCopyButton(button, "No Output");
         return;
       }
+
+      ccSelectActionOutput(output);
 
       var temp = document.createElement("textarea");
       temp.value = text;
@@ -3698,11 +3718,12 @@ function updateNutProductionButtons(mode) {
       }
 
       document.body.removeChild(temp);
+      ccSelectActionOutput(output);
 
       if (copied) {
-        ccSetOutputCopyStatus("Copied full action output to clipboard.");
+        ccFlashCopyButton(button, "Copied!");
       } else {
-        ccSetOutputCopyStatus("Copy failed. Click inside the output, press Ctrl+A, then Ctrl+C.");
+        ccFlashCopyButton(button, "Selected");
       }
     }
 
