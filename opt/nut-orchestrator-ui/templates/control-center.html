@@ -3051,7 +3051,6 @@ function updateNutProductionButtons(mode) {
 
   document.addEventListener('DOMContentLoaded', refreshNutProductionBanner);
   document.addEventListener('DOMContentLoaded', wireNutProductionControls);
-  document.addEventListener('DOMContentLoaded', wireActionOutputCopyControls);
   setInterval(refreshNutProductionBanner, 60000);
 })();
 </script>
@@ -3355,7 +3354,7 @@ function updateNutProductionButtons(mode) {
         <h2>Action Output</h2>
       </div>
       <div class="cc-output-toolbar" style="display:flex;gap:10px;align-items:center;margin:0 0 10px 0;flex-wrap:wrap;">
-        <button type="button" class="cc-btn" id="cc-output-copy" title="Selects and copies the full action output log">Copy Full Output</button>
+        <button type="button" class="cc-btn" id="cc-output-copy" title="Selects and copies the full action output log" onclick="return ccCopyFullActionOutput(event);" style="outline:none;">Copy Full Output</button>
       </div>
       <div class="cc-output" id="cc-action-output">No action has been run from this page yet.</div>
 
@@ -3663,19 +3662,23 @@ function updateNutProductionButtons(mode) {
 
     function ccFlashCopyButton(button, message) {
       if (!button) return;
-      var original = button.getAttribute("data-original-text") || button.textContent;
+      var original = button.getAttribute("data-original-text") || "Copy Full Output";
       button.setAttribute("data-original-text", original);
       button.textContent = message;
-      button.style.filter = "brightness(1.35)";
+      button.style.outline = "none";
+      button.style.borderColor = "rgba(98,179,255,.95)";
+      button.style.background = "rgba(40,95,150,.95)";
       button.style.boxShadow = "0 0 0 2px rgba(98,179,255,.45), 0 0 18px rgba(98,179,255,.35)";
       setTimeout(function () {
         button.textContent = original;
-        button.style.filter = "";
+        button.style.borderColor = "";
+        button.style.background = "";
         button.style.boxShadow = "";
-      }, 1200);
+      }, 1400);
     }
 
     function ccSelectActionOutput(output) {
+      if (!output) return;
       var range = document.createRange();
       range.selectNodeContents(output);
       var selection = window.getSelection();
@@ -3683,23 +3686,7 @@ function updateNutProductionButtons(mode) {
       selection.addRange(range);
     }
 
-    function ccCopyFullActionOutput() {
-      var output = document.getElementById("cc-action-output");
-      var button = document.getElementById("cc-output-copy");
-
-      if (!output) {
-        ccFlashCopyButton(button, "No Output Box");
-        return;
-      }
-
-      var text = output.innerText || output.textContent || "";
-      if (!text.replace(/\s+/g, "")) {
-        ccFlashCopyButton(button, "No Output");
-        return;
-      }
-
-      ccSelectActionOutput(output);
-
+    function ccCopyTextFallback(text) {
       var temp = document.createElement("textarea");
       temp.value = text;
       temp.setAttribute("readonly", "readonly");
@@ -3718,21 +3705,45 @@ function updateNutProductionButtons(mode) {
       }
 
       document.body.removeChild(temp);
-      ccSelectActionOutput(output);
-
-      if (copied) {
-        ccFlashCopyButton(button, "Copied!");
-      } else {
-        ccFlashCopyButton(button, "Selected");
-      }
+      return copied;
     }
 
-    function wireActionOutputCopyControls() {
-      var copyBtn = document.getElementById("cc-output-copy");
-      if (copyBtn && !copyBtn.getAttribute("data-wired")) {
-        copyBtn.setAttribute("data-wired", "1");
-        copyBtn.onclick = ccCopyFullActionOutput;
+    function ccCopyFullActionOutput(event) {
+      if (event && event.preventDefault) event.preventDefault();
+
+      var output = document.getElementById("cc-action-output");
+      var button = document.getElementById("cc-output-copy");
+
+      if (!output) {
+        ccFlashCopyButton(button, "No Output Box");
+        return false;
       }
+
+      var text = output.innerText || output.textContent || "";
+      if (!text.replace(/\s+/g, "")) {
+        ccFlashCopyButton(button, "No Output");
+        return false;
+      }
+
+      ccSelectActionOutput(output);
+
+      var copied = false;
+
+      if (window.clipboardData && window.clipboardData.setData) {
+        try {
+          copied = window.clipboardData.setData("Text", text);
+        } catch (err1) {
+          copied = false;
+        }
+      }
+
+      if (!copied) {
+        copied = ccCopyTextFallback(text);
+      }
+
+      ccSelectActionOutput(output);
+      ccFlashCopyButton(button, copied ? "Copied!" : "Selected");
+      return false;
     }
 
     function setControlCenterOutput(title, payload, isError = false) {
