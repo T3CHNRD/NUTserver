@@ -2372,6 +2372,44 @@
       display: none !important;
     }
 
+
+    @keyframes ccCopyButtonFlash {
+      0% {
+        background: rgba(31,111,235,.98) !important;
+        color: #ffffff !important;
+        border-color: rgba(255,255,255,.98) !important;
+        box-shadow: 0 0 0 2px rgba(255,255,255,.85), 0 0 22px rgba(31,111,235,.95) !important;
+      }
+      35% {
+        background: rgba(255,255,255,.98) !important;
+        color: #10233f !important;
+        border-color: rgba(31,111,235,.95) !important;
+        box-shadow: 0 0 0 2px rgba(31,111,235,.85), 0 0 24px rgba(255,255,255,.95) !important;
+      }
+      70% {
+        background: rgba(31,111,235,.98) !important;
+        color: #ffffff !important;
+        border-color: rgba(255,255,255,.98) !important;
+        box-shadow: 0 0 0 2px rgba(255,255,255,.85), 0 0 22px rgba(31,111,235,.95) !important;
+      }
+      100% {
+        background: rgba(255,255,255,.98) !important;
+        color: #10233f !important;
+        border-color: rgba(31,111,235,.95) !important;
+        box-shadow: 0 0 0 2px rgba(31,111,235,.85), 0 0 24px rgba(255,255,255,.95) !important;
+      }
+    }
+
+    #cc-output-copy.cc-copy-flashing {
+      animation: ccCopyButtonFlash 1.2s ease-in-out 1 !important;
+      outline: 0 !important;
+    }
+
+    #cc-output-copy:focus {
+      outline: 0 !important;
+      box-shadow: none;
+    }
+
 </style>
 </head>
 
@@ -3662,19 +3700,21 @@ function updateNutProductionButtons(mode) {
 
     function ccFlashCopyButton(button, message) {
       if (!button) return;
+
       var original = button.getAttribute("data-original-text") || "Copy Full Output";
       button.setAttribute("data-original-text", original);
+
+      if (button.blur) button.blur();
+
       button.textContent = message;
-      button.style.outline = "none";
-      button.style.borderColor = "rgba(98,179,255,.95)";
-      button.style.background = "rgba(40,95,150,.95)";
-      button.style.boxShadow = "0 0 0 2px rgba(98,179,255,.45), 0 0 18px rgba(98,179,255,.35)";
+      button.classList.remove("cc-copy-flashing");
+      void button.offsetWidth;
+      button.classList.add("cc-copy-flashing");
+
       setTimeout(function () {
         button.textContent = original;
-        button.style.borderColor = "";
-        button.style.background = "";
-        button.style.boxShadow = "";
-      }, 1400);
+        button.classList.remove("cc-copy-flashing");
+      }, 1300);
     }
 
     function ccSelectActionOutput(output) {
