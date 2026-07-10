@@ -3051,6 +3051,7 @@ function updateNutProductionButtons(mode) {
 
   document.addEventListener('DOMContentLoaded', refreshNutProductionBanner);
   document.addEventListener('DOMContentLoaded', wireNutProductionControls);
+  document.addEventListener('DOMContentLoaded', wireActionOutputCopyControls);
   setInterval(refreshNutProductionBanner, 60000);
 })();
 </script>
@@ -3352,6 +3353,11 @@ function updateNutProductionButtons(mode) {
 
       <div class="cc-section-title">
         <h2>Action Output</h2>
+      </div>
+      <div class="cc-output-toolbar" style="display:flex;gap:10px;align-items:center;margin:0 0 10px 0;flex-wrap:wrap;">
+        <button type="button" class="cc-btn" id="cc-output-select-all">Select All</button>
+        <button type="button" class="cc-btn" id="cc-output-copy">Copy Output</button>
+        <span class="cc-mini" id="cc-output-copy-status">Copies the full action output log.</span>
       </div>
       <div class="cc-output" id="cc-action-output">No action has been run from this page yet.</div>
 
@@ -3655,6 +3661,73 @@ function updateNutProductionButtons(mode) {
     function ccLineHtml(label, value) {
       if (value === undefined || value === null || value === "") return "";
       return "<div><strong>" + ccEscapeHtml(label) + ":</strong> " + ccEscapeHtml(value) + "</div>";
+    }
+
+    function ccGetActionOutputText() {
+      const output = document.getElementById("cc-action-output");
+      if (!output) return "";
+      return output.innerText || output.textContent || "";
+    }
+
+    function ccSetOutputCopyStatus(message) {
+      const status = document.getElementById("cc-output-copy-status");
+      if (status) status.textContent = message;
+    }
+
+    function ccSelectAllActionOutput() {
+      const output = document.getElementById("cc-action-output");
+      if (!output) return;
+
+      const range = document.createRange();
+      range.selectNodeContents(output);
+
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      ccSetOutputCopyStatus("Full action output selected.");
+    }
+
+    async function ccCopyActionOutput() {
+      const text = ccGetActionOutputText();
+      if (!text.trim()) {
+        ccSetOutputCopyStatus("No action output to copy.");
+        return;
+      }
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const temp = document.createElement("textarea");
+          temp.value = text;
+          temp.setAttribute("readonly", "readonly");
+          temp.style.position = "fixed";
+          temp.style.left = "-9999px";
+          document.body.appendChild(temp);
+          temp.select();
+          document.execCommand("copy");
+          document.body.removeChild(temp);
+        }
+        ccSetOutputCopyStatus("Copied full action output to clipboard.");
+      } catch (err) {
+        ccSetOutputCopyStatus("Copy failed. Use Select All, then Ctrl+C.");
+      }
+    }
+
+    function wireActionOutputCopyControls() {
+      const selectBtn = document.getElementById("cc-output-select-all");
+      const copyBtn = document.getElementById("cc-output-copy");
+
+      if (selectBtn && !selectBtn.dataset.wired) {
+        selectBtn.dataset.wired = "1";
+        selectBtn.addEventListener("click", ccSelectAllActionOutput);
+      }
+
+      if (copyBtn && !copyBtn.dataset.wired) {
+        copyBtn.dataset.wired = "1";
+        copyBtn.addEventListener("click", ccCopyActionOutput);
+      }
     }
 
     function setControlCenterOutput(title, payload, isError = false) {
