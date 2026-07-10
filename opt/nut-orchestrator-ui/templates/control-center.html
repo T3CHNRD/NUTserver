@@ -2819,8 +2819,7 @@
   <div class="nut-prod-confirm-card">
     <div class="nut-prod-confirm-title" id="nut-prod-confirm-title">Confirm Protecting Mode</div>
     <div class="nut-prod-confirm-body">
-      This will set NUT to <strong>PROTECTING</strong>. The backend mode becomes <strong>armed</strong>,
-      live actions are allowed, and ESXi fallback readiness is enabled for the approved protection/live-test path.
+      This will set NUT to <strong>PROTECTING</strong>. Monitoring remains active, and live protection actions are allowed when a valid UPS power event reaches the configured threshold.
       <br><br>
       This button does not directly send shutdown, poweroff, reboot, maintenance mode, or VM power commands.
     </div>
@@ -2971,10 +2970,10 @@ function updateNutProductionButtons(mode) {
       if (note) note.textContent = 'Current state: PROTECTING. Monitoring is active. Live power-event shutdown/orchestration actions are allowed only when a valid UPS event reaches the configured threshold.';
     } else if (mode === 'disarmed' && standby) {
       standby.classList.add('active');
-      if (note) note.textContent = 'Current state: STANDBY FOR MAINTENANCE. Monitoring is active, but live shutdown/orchestration commit actions are blocked for maintenance.';
+      if (note) note.textContent = 'Current state: STANDBY. Monitoring and logging are active, but live protection actions are blocked.';
     } else if (mode === 'off' && off) {
       off.classList.add('active');
-      if (note) note.textContent = 'Current state: OFF. Monitoring, logging, email alerts, and live protection actions are off.';
+      if (note) note.textContent = 'Current state: OFF. Monitoring, logging, email reports, and live protection actions are off.';
     }
   }
 
