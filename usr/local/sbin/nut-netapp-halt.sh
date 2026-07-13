@@ -95,8 +95,11 @@ fi
 log "Starting NetApp halt wrapper"
 log "Target=$TARGET Host=$HOST Array=$ARRAY_NAME NodeA=${NODE_A:-n/a} NodeB=${NODE_B:-n/a}"
 
-CMD_PREVIEW="ssh ${NETAPP_USERNAME}@${HOST} \"system node halt -node ${ARRAY_NAME} -reason 'UPS power event'\""
-log "SIMULATION ONLY: would run ${CMD_PREVIEW}"
+CMD_PREVIEW_A="ssh ${NETAPP_USERNAME}@${HOST} \"printf '%s\\n' y | halt -node ${NODE_A} -inhibit-takeover true -skip-lif-migration true\""
+CMD_PREVIEW_B="ssh ${NETAPP_USERNAME}@${HOST} \"printf '%s\\n' y | halt -node ${NODE_B} -inhibit-takeover true -skip-lif-migration true\""
+log "SIMULATION ONLY: would run node-by-node ONTAP halt sequence"
+log "SIMULATION ONLY: would run ${CMD_PREVIEW_A}"
+log "SIMULATION ONLY: would run ${CMD_PREVIEW_B}"
 
 if [ "$SIMULATE" = "1" ]; then
   log "SIMULATION RESULT: wrapper validated, no NetApp halt command sent"
@@ -147,17 +150,39 @@ if [ "${NETAPP_LIVE_APPROVED:-0}" != "1" ]; then
   exit 2
 fi
 
-log "APPROVED: executing NetApp halt command"
-ssh -o BatchMode=yes -o ConnectTimeout=10 "${NETAPP_USERNAME}@${HOST}" "system node halt -node ${ARRAY_NAME} -reason 'UPS power event'" >> "$LOG_FILE" 2>&1
-RC=$?
-
-if [ "$RC" -ne 0 ]; then
-  log "ERROR NetApp halt command failed for $TARGET rc=$RC"
-  power_classification "FAIL" "command_failed" "command_rc=${RC}"
-  exit "$RC"
+if [ -z "${NODE_A:-}" ] || [ -z "${NODE_B:-}" ]; then
+  log "ERROR Node A or Node B missing for $TARGET"
+  power_classification "FAIL" "missing_netapp_node_names"
+  exit 1
 fi
 
-log "SUCCESS NetApp halt command sent to $TARGET"
+log "APPROVED: executing NetApp node-by-node ONTAP halt sequence"
+log "APPROVED: target=$TARGET cluster_mgmt=$HOST node_a=$NODE_A node_b=$NODE_B"
+
+log "APPROVED: halting NetApp node $NODE_A"
+printf '%s\n' y | ssh -o BatchMode=yes -o ConnectTimeout=10 "${NETAPP_USERNAME}@${HOST}" "halt -node ${NODE_A} -inhibit-takeover true -skip-lif-migration true" >> "$LOG_FILE" 2>&1
+RC_A=$?
+
+if [ "$RC_A" -ne 0 ]; then
+  log "ERROR NetApp halt command failed for $TARGET node=$NODE_A rc=$RC_A"
+  power_classification "FAIL" "command_failed_node_a" "command_rc=${RC_A}"
+  exit "$RC_A"
+fi
+
+log "SUCCESS NetApp halt command sent for $TARGET node=$NODE_A"
+
+log "APPROVED: halting NetApp node $NODE_B"
+printf '%s\n' y | ssh -o BatchMode=yes -o ConnectTimeout=10 "${NETAPP_USERNAME}@${HOST}" "halt -node ${NODE_B} -inhibit-takeover true -skip-lif-migration true" >> "$LOG_FILE" 2>&1
+RC_B=$?
+
+if [ "$RC_B" -ne 0 ]; then
+  log "ERROR NetApp halt command failed for $TARGET node=$NODE_B rc=$RC_B"
+  power_classification "FAIL" "command_failed_node_b" "command_rc=${RC_B}"
+  exit "$RC_B"
+fi
+
+RC=0
+log "SUCCESS NetApp node-by-node halt sequence sent to $TARGET"
 
 if [ -x /usr/local/sbin/nut-classify-target-shutdown ]; then
   CLASSIFY_NAME="$(classify_name)"
