@@ -154,7 +154,7 @@ commit_placeholder() {
     ups2)
       log_line "UPS_SHUTDOWN_COMMITTED ups2 targeted shutdown started"
 
-      log_line "UPS_TARGET_ACTION_ATTEMPT ups2 Blue Iris method='Windows RPC shutdown via wrapper'"
+      log_line "UPS_TARGET_ACTION_ATTEMPT ups2 Blue Iris method='native shutdown.exe via wrapper'"
     send_outage_email "shutdown" "shutdown sequence started / Blue Iris target action attempted"
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full BLUEIRIS_LIVE_APPROVED=1 /usr/local/sbin/nut-blueiris-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
