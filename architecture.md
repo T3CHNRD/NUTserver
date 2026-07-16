@@ -95,11 +95,11 @@ Use this section first when trying to find a feature, workflow, button, script, 
 | Wrapper shutdowns | NUT event orchestrator target actions | `usr/local/sbin/nut-*-shutdown.sh` | Verify permissions, configs, and logs before live reliance |
 | VMware workflow | VMware wrapper | `usr/local/sbin/nut-vmware-shutdown.sh`, `etc/nut/config.d/vmware-vm-map.conf`, `etc/nut/hypervisors/*` | ESXi SSH fallback remains disabled unless approved |
 | Synology workflow | Synology wrapper | `usr/local/sbin/nut-synology-shutdown.sh` | Verify config readability and log writing |
-| NetApp workflow | Storage target workflow | Orchestrator/config mappings | Verify exact wrapper/config path before testing |
+| NetApp / ONTAP workflow | Storage cluster shutdown workflow | `usr/local/sbin/nut-netapp-halt.sh`, `etc/nut/nut-orchestrator.conf` | Complete / PASS - node-by-node ONTAP halt workflow patched, committed, and pushed |
 | Lansweeper workflow | Lansweeper wrapper | `usr/local/sbin/nut-lansweeper-shutdown.sh` | Known prior issue involved credentials/log permissions |
 | DB workflow | DB wrapper | `usr/local/sbin/nut-db-shutdown.sh`, `etc/nut/db-shutdown.conf` | Verify config readability and log writing |
 | VOIP workflow | VOIP wrapper | `usr/local/sbin/nut-voip-shutdown.sh` | Verify before live reliance |
-| Blue Iris workflow | Blue Iris wrapper | `usr/local/sbin/nut-blueiris-shutdown.sh` | Pending/skipped static readiness |
+| Blue Iris workflow | Blue Iris wrapper | `usr/local/sbin/nut-blueiris-shutdown.sh` | Complete / PASS - in orchestrator, target confirmed, Windows RPC method clarified |
 | Final local NUT shutdown | Final local shutdown wrapper | `usr/local/sbin/nut-local-final-shutdown.sh` | Only run during approved live/final shutdown |
 
 
@@ -1979,4 +1979,139 @@ Update this document whenever any of the following change:
 - Runbook expectations
 
 If this file and the actual repo disagree, audit the repo and update this file.
+
+
+---
+
+## 19. July 2026 Static Readiness Updates: NetApp / ONTAP and Blue Iris
+
+### 19.1 Purpose
+
+This section records the July 2026 static-readiness updates completed after the OFF-mode email/report fix, the NetApp ONTAP procedure review, and the Blue Iris wrapper review.
+
+These updates are for future administrators, runbook users, and future AI-assisted review sessions.
+
+### 19.2 Safety Position
+
+These updates were completed as static review, code review, and documentation work.
+
+The following were not performed during this review:
+
+- No UPS shutdown command was sent.
+- No IDF device was changed.
+- No NetApp system was halted.
+- No VMware, Synology, Blue Iris, DB, VOIP, Lansweeper, or NUT final shutdown wrapper was live-tested.
+- No load-off, shutdown, driver kill-power, battery-test, or panel-test UPS command was used.
+
+### 19.3 NetApp / ONTAP Workflow
+
+NetApp shutdown is an ONTAP storage-cluster shutdown workflow. It is not an ESXi shutdown workflow.
+
+Confirmed NetApp targets:
+
+| Target | Cluster management IP | Cluster name | Node A | Node B |
+|---|---:|---|---|---|
+| Alblnetapp01 | 192.168.99.20 | alblnetapp01 | alblnetapp01-01 | alblnetapp01-02 |
+| Alblnetapp02 | 192.168.99.30 | alblnetapp02 | alblnetapp02-01 | alblnetapp02-02 |
+
+Relevant files:
+
+| File | Purpose |
+|---|---|
+| /usr/local/sbin/nut-netapp-halt.sh | Live NetApp halt wrapper |
+| usr/local/sbin/nut-netapp-halt.sh | Repo copy of NetApp halt wrapper |
+| /etc/nut/nut-orchestrator.conf | Live NetApp host and node configuration |
+| etc/nut/nut-orchestrator.conf | Repo copy of NetApp host and node configuration |
+| /var/log/nut-netapp-halt.log | NetApp halt wrapper log |
+
+### 19.4 NetApp Wrapper Behavior
+
+The NetApp wrapper now uses a node-by-node ONTAP halt sequence.
+
+The old behavior was a single cluster or array halt-style command using the array name.
+
+The corrected behavior is:
+
+1. Confirm SIMULATE=0.
+2. Confirm ALLOW_REAL_TEST=1.
+3. Confirm REAL_TEST_PHASE is approved for NetApp.
+4. Confirm NETAPP_LIVE_APPROVED=1.
+5. Confirm both ONTAP node names are present.
+6. Halt Node A.
+7. Halt Node B.
+8. Log success or failure and call classification.
+
+Approved ONTAP halt pattern:
+
+    halt -node <node-name> -inhibit-takeover true -skip-lif-migration true
+
+The wrapper auto-answers y only after all live safety gates have passed.
+
+### 19.5 NetApp Git Reference
+
+NetApp wrapper update commit:
+
+    dc59be6 Align NetApp halt wrapper with ONTAP node shutdown procedure
+
+### 19.6 Blue Iris Workflow
+
+Blue Iris is included in the orchestrator. It is not skipped.
+
+Confirmed Blue Iris target:
+
+| Target | IP | Confirmation |
+|---|---:|---|
+| BlueIris | 192.168.1.25 | HTTP response on port 81 returned BlueServer/5.9.9.98 and page content identified Blue Iris Login |
+
+Relevant files:
+
+| File | Purpose |
+|---|---|
+| /usr/local/sbin/nut-blueiris-shutdown.sh | Live Blue Iris shutdown wrapper |
+| usr/local/sbin/nut-blueiris-shutdown.sh | Repo copy of Blue Iris shutdown wrapper |
+| etc/nut/config.d/shutdown-verification-targets.conf | Verification target entry for Blue Iris |
+| /var/log/nut-blueiris-shutdown.log | Blue Iris wrapper log |
+
+### 19.7 Blue Iris Wrapper Behavior
+
+The Blue Iris wrapper uses Windows RPC shutdown.
+
+The wrapper defaults to simulation mode:
+
+    SIMULATE="${SIMULATE:-1}"
+
+A live Blue Iris shutdown requires all of the following:
+
+    ALLOW_REAL_TEST=1
+    REAL_TEST_PHASE=phase3-full
+    BLUEIRIS_LIVE_APPROVED=1
+
+The wrapper uses the shared Windows RPC credential source:
+
+    /etc/nut/lansweeper.creds
+
+The wrapper checks for the credential file and required RPC password before attempting live action.
+
+### 19.8 Blue Iris Git Reference
+
+Blue Iris static-readiness cleanup commit:
+
+    8ffbf07 Confirm Blue Iris target and clarify shutdown method
+
+### 19.9 Current Static-Readiness Target Status
+
+| Target | Status |
+|---|---:|
+| Lansweeper | Static readiness complete / PASS |
+| DB | Static readiness complete / PASS |
+| VMware | Static readiness complete / PASS |
+| Synology | Static readiness complete / PASS |
+| NetApp | Complete / PASS - patched, committed, and pushed |
+| Blue Iris | Static readiness complete / PASS |
+| VOIP | Static readiness complete / PASS |
+| NUT local final shutdown | Static readiness complete / PASS |
+
+### 19.10 Documentation Follow-Up
+
+After this Architecture update, regenerate or update the Word copy of the architecture document if a DOCX version is still being maintained for the runbook.
 
