@@ -2115,3 +2115,220 @@ Blue Iris static-readiness cleanup commit:
 
 After this Architecture update, regenerate or update the Word copy of the architecture document if a DOCX version is still being maintained for the runbook.
 
+
+---
+
+## 20. Planned Feature: UPS Maintenance Mode
+
+### 20.1 Planning Status
+
+UPS Maintenance Mode is a planned feature. It is not implemented yet.
+
+This section records the agreed design before programming begins. As each UPS Maintenance Mode build phase is completed and verified, this architecture file must be updated during that build phase and then committed/pushed to GitHub.
+
+Do not treat this section as live behavior until the corresponding code is built, verified, documented, committed, and pushed.
+
+### 20.2 Purpose
+
+UPS Maintenance Mode allows intentional UPS work while grid power appears available. It must prevent false NUT-triggered shutdown actions when a UPS is intentionally unplugged, serviced, replaced, consolidated, or retired.
+
+Critical warning to show in the UI, logs, and alerts:
+
+    UPS Maintenance Mode prevents false NUT-triggered shutdown actions. It does not protect equipment from power loss while the UPS or batteries are physically disconnected.
+
+### 20.3 Covered Scenarios
+
+| Scenario | Meaning |
+|---|---|
+| Battery replacement | Same UPS is expected to return after batteries are replaced |
+| UPS replacement | One old UPS is replaced by one new UPS, same size or larger |
+| UPS consolidation | Multiple old UPS units are replaced by one larger UPS |
+| UPS removal / retirement | A UPS is intentionally removed from the NUT setup with no replacement planned |
+| Ignore for now | Operator is not ready to decide; issue remains visible until resolved |
+
+### 20.4 Automatic Detection Rule
+
+UPS Maintenance Mode should trigger automatically when one or more UPS units go offline while grid power appears present. The operator should not be required to manually start maintenance before unplugging or servicing a UPS.
+
+| Condition | Agreed behavior |
+|---|---|
+| One UPS goes offline | Check grid-power witnesses and begin unresolved UPS offline tracking |
+| Any two non-maintenance UPS units are ONLINE | Automatically enter UPS Maintenance Mode for the offline UPS and suppress false shutdown actions for that UPS |
+| Only one non-maintenance UPS is ONLINE | Use warning-only suppression that continues until resolved; show prominently in the UI with an ignore option |
+| Same UPS returns | Auto-complete immediately after identity comparison passes |
+| Different UPS appears | Trigger replacement/setup review |
+| Multiple old UPS units stay offline and one new UPS appears after the consolidation delay | Trigger consolidation review/setup review |
+| Operator confirms UPS was intentionally removed | Trigger UPS removal/retirement review |
+
+### 20.5 Grid-Power Witness Rule
+
+Version 1 grid-power witness rule: any two non-maintenance UPS units must report ONLINE.
+
+The physical NUT server should not be assumed to know directly whether it is on grid power versus UPS power unless a separate hardware power signal is added later.
+
+| Rule | Decision |
+|---|---|
+| Primary grid-power rule | Any two non-maintenance UPS units are ONLINE |
+| One witness only | Warning-only suppression continues until resolved; do not treat it as fully confirmed grid power |
+| Manual confirmation | Useful in the UI, but automatic detection must still work without pre-confirmation |
+| Future enhancement | A preferred grid-witness UPS or hardware power sensor can be added later if needed |
+
+
+### 20.6 Real Outage During UPS Maintenance Mode
+
+| Situation | System behavior |
+|---|---|
+| Selected maintenance UPS goes offline but other UPS units still show ONLINE | Treat as planned maintenance or unresolved maintenance. Log and alert. Do not start shutdown for that UPS |
+| Other monitored UPS units report ONBATT / power failure | Treat as a real outage. Alert urgently |
+| Maintenance UPS is physically unavailable during a real outage | Alert that protected equipment may already have lost UPS protection |
+| Shutdown logic for non-maintenance UPS units | Continue normally if Protecting mode allows it |
+| Shutdown logic for the maintenance UPS target during automatic maintenance | Do not assume shutdown succeeded. Alert that NUT could not validate that the items connected to that UPS shut down correctly. Manual verification is required |
+
+### 20.7 Weather and Grid-Risk Advisory
+
+Weather should be advisory only, not blocking. The existing weather feature should be used to warn when UPS maintenance is not recommended due to storms, high heat, or elevated grid-load risk.
+
+| Area | Decision |
+|---|---|
+| UI warning | Show advisory such as: Weather advisory: storms, high heat, or severe weather risk detected. UPS Maintenance Mode is not recommended right now |
+| Blocking behavior | Advisory only; allow the operator to continue |
+| Daily UPS Health email | May include a recommendation that today is or is not a good day for UPS maintenance based on weather/grid-risk context |
+
+### 20.8 Standby and Protecting Mode Behavior
+
+UPS Maintenance Mode must work in both Standby and Protecting mode. Protecting mode and Standby mode should both give full access to replacement, consolidation, removal, and retirement actions. Actions completed while in Protecting mode must be clearly logged as having been performed in Protecting mode.
+
+| Feature | Standby | Protecting |
+|---|---|---|
+| Battery replacement | Allowed; automatic detection and auto-complete allowed | Allowed; automatic detection and auto-complete allowed |
+| UPS replacement review | Allowed; dry-run preview, approval, and apply allowed | Allowed; if applied, log that it was done in Protecting mode |
+| UPS consolidation review | Allowed; dry-run preview, approval, and apply allowed | Allowed; if applied, log that it was done in Protecting mode |
+| UPS removal / retirement | Allowed | Allowed with clear warning/log entry that retirement or removal was done in Protecting mode |
+| Live shutdown actions caused by maintenance | Blocked for maintenance-triggered events while grid power appears present | Blocked for maintenance-triggered events while grid power appears present |
+
+
+### 20.9 Replacement / Setup Review
+
+Replacement/setup review triggers when a UPS that was offline during UPS Maintenance Mode returns with a different identity, a new UPS appears, or the operator manually selects replacement. NUT must not automatically remap equipment without review.
+
+| Trigger | Behavior |
+|---|---|
+| Old UPS does not return with matching identity | Trigger replacement/setup review |
+| New UPS appears with different serial, model, or manufacturer | Trigger replacement/setup review |
+| Old UPS name returns but identity data changed | Trigger replacement/setup review |
+| Old UPS missing and new unassigned UPS appears | Show as candidate replacement |
+| Operator manually selects Replace this UPS | Start replacement/setup review |
+
+| Review step | Required behavior |
+|---|---|
+| Show old UPS details | Name, last known model, serial if available, last seen online time, shutdown mappings/actions, and current status |
+| Show new UPS candidates | New or changed UPS units, unassigned UPS units, or manually selected candidates |
+| Show dry-run preview | Display exact UPS role, mapping, retired/disabled status, and shutdown-action changes before applying |
+| Approval options | Provide clear OK, Approve, or Yes action before applying the change to live production setup |
+| Backup/Git commit | If possible, automatically back up the new setting or change after apply |
+| Maintenance note | Require or capture a short operator note in logs. Include it in Daily UPS Health only after a new UPS has been detected and setup is completed |
+
+### 20.10 UPS Consolidation Review
+
+UPS consolidation is part of the first planned design. It covers replacing multiple smaller UPS units with one larger UPS, including cases where several UPS units are destroyed by a surge or intentionally consolidated.
+
+| Rule | Agreed behavior |
+|---|---|
+| Detection delay | Roughly 45 minutes. It may be 46 or 47 minutes, but must not be shorter than 40 minutes or longer than 50 minutes |
+| Trigger pattern | Multiple old UPS units are offline and remain offline; only one new UPS comes online after the waiting period |
+| Review workflow | Trigger consolidation review/setup review |
+| Automatic remap | Not allowed without review, dry-run preview, and approval |
+| Old UPS entries | Mark Retired/Disabled once confirmed replaced or swapped with a new unit; do not delete automatically |
+| Maintenance records | Log retired, replaced, and consolidated units for maintenance history |
+
+### 20.11 UPS Removal / Retirement Workflow
+
+UPS removal/retirement is a first-class option. It handles a UPS that is intentionally removed with no replacement, such as a test UPS used during NUT setup.
+
+| Requirement | Agreed behavior |
+|---|---|
+| UI option | Provide Remove / retire this UPS as a separate option from Ignore for now |
+| Mode behavior | Allow in both Standby and Protecting |
+| Protecting-mode logging | If removal/retirement is performed in Protecting mode, log a clear warning that the action was done in Protecting mode |
+| Mappings review | Show any shutdown mappings tied to the UPS before approval |
+| Mappings on replacement | If a new UPS replaces the old one, apply old mappings to the new UPS through review/approval |
+| Retired records | Once confirmed removed or replaced, mark retired/disabled and log for maintenance records |
+| Do not delete automatically | Keep history for audit, rollback, and maintenance tracking |
+
+### 20.12 UI Workflow
+
+| UI item | Behavior |
+|---|---|
+| Automatic detection | Backend detection must work even if no one opens the UI |
+| Manual panel | Control Center should include a UPS Maintenance panel for review and manual actions |
+| Question prompt | Ask: What happened to this UPS? |
+| Options | Battery maintenance; Replace this UPS; Consolidate into another UPS; Remove / retire this UPS; Ignore for now; Not sure |
+| Ignore for now | Separate from remove/retire. Keeps unresolved state visible until batteries are replaced or a new UPS is configured/setup |
+| Review status | Replacement, consolidation, or removal review required should be visible on the main Control Center page |
+| Read-only reference files | Maintenance records must be viewable and downloadable in the Read-Only Reference File area in Configuration |
+
+
+### 20.13 Timeout, Repeat Alerts, and Daily Health Email
+
+| Rule | Agreed behavior |
+|---|---|
+| Default maintenance timeout | 65 minutes |
+| During first 65 minutes | Send/log the initial maintenance/offline alert, but do not repeat every 10.5 minutes yet |
+| Auto-complete on same UPS return | Immediate after identity comparison passes |
+| Auto-complete after replacement/consolidation | Immediate after approval and successful setup |
+| Repeat alert interval | Every 10.5 minutes |
+| When repeat alerts start | Only after the 65-minute timeout has expired and there is no resolution |
+| Repeat alert duration | Continue every 10.5 minutes until the UPS returns online, replacement/setup review determines it was replaced, or one day passes |
+| After one day | Stop frequent 10.5-minute alerts and update the Daily UPS Health email until the UPS comes back online or is determined replaced |
+| UI unresolved state | Show in UI until resolved, with an ignore option until batteries are replaced or a new UPS is configured/setup |
+
+### 20.14 Maintenance Records and Query Requirements
+
+Maintenance history is required and should be queryable later for maintenance planning and audit history.
+
+| Record type | Examples |
+|---|---|
+| Battery replacement | UPS name, date/time, old identity, returned identity, operator note if available |
+| UPS replacement | Old UPS, new UPS, mapping changes, approval, backup/commit reference |
+| UPS consolidation | Old UPS units retired, new UPS assigned, mappings moved, approval, backup/commit reference |
+| UPS removal/retirement | UPS retired/disabled, mappings status, reason/note, mode used |
+| Unresolved maintenance | Offline start time, witness UPS status, repeat alert state, daily health reporting state |
+| Real outage during maintenance | Maintenance UPS, outage time, validation warning, manual verification required |
+
+| Storage / access requirement | Decision |
+|---|---|
+| Dedicated log file | Plan a dedicated UPS maintenance log, such as /var/log/nut-ups-maintenance.log |
+| Dedicated state/history file | Plan a state/history JSON file, such as /var/www/html/nut-state/ups-maintenance.json |
+| Downloadable records | Maintenance records must be downloadable |
+| Read-only UI visibility | Maintenance records must be viewable in the Read-Only Reference File area in Configuration |
+| Search/query support | Plan UI support to search by UPS name, date, action type, old/new identity, retired/replaced state, and notes |
+| Daily UPS Health email | Include a UPS Maintenance Records section only when relevant: maintenance in last 24 hours, unresolved items, replaced/retired/setup items, or overdue maintenance attention |
+
+### 20.15 Event Names for Email and Logs
+
+These event names should feed existing email/log behavior only when UPS maintenance is happening or has happened within the relevant reporting window.
+
+- UPS_MAINTENANCE_STARTED
+- UPS_MAINTENANCE_UPS_OFFLINE
+- UPS_MAINTENANCE_UPS_RETURNED
+- UPS_MAINTENANCE_TIMEOUT_WARNING
+- UPS_MAINTENANCE_TIMEOUT_EXPIRED
+- UPS_MAINTENANCE_REPLACEMENT_DETECTED
+- UPS_MAINTENANCE_COMPLETED
+- UPS_MAINTENANCE_REAL_OUTAGE_DETECTED
+- UPS_MAINTENANCE_CONSOLIDATION_REVIEW_REQUIRED
+- UPS_MAINTENANCE_REMOVAL_REVIEW_REQUIRED
+- UPS_MAINTENANCE_RETIREMENT_COMPLETED
+
+### 20.16 Architecture Documentation Rule During Build
+
+The architecture file must be updated as each section of UPS Maintenance Mode is completed, verified, and marked PASS. Do not defer architecture updates until the full feature is complete.
+
+| Rule | Requirement |
+|---|---|
+| Before programming begins | Add this planning section and mark it as planning-only |
+| During build | Update architecture.md after each completed and verified section |
+| Verification | Do not mark a section PASS until it has been verified during the build process |
+| GitHub backup | Commit and push each verified phase to GitHub |
+| Reuse | Keep the implementation portable enough to use in another project where practical |
+
