@@ -96,7 +96,28 @@ def main():
     records.append(record)
     del records[:-200]
 
-    state["implemented_phase"] = "phase2-state-writer-helper"
+    active_sessions = state.setdefault("active_sessions", [])
+    unresolved_items = state.setdefault("unresolved_items", [])
+
+    if args.event == "UPS_MAINTENANCE_UPS_OFFLINE" and args.ups:
+        active_sessions[:] = [item for item in active_sessions if item.get("ups") != args.ups]
+        unresolved_items[:] = [item for item in unresolved_items if item.get("ups") != args.ups]
+        session = {
+            "ups": args.ups,
+            "started_at": record["timestamp"],
+            "last_event": args.event,
+            "mode": args.mode,
+            "status": args.status or "active",
+            "message": args.message,
+        }
+        active_sessions.append(session)
+        unresolved_items.append(session.copy())
+
+    elif args.event in ("UPS_MAINTENANCE_UPS_RETURNED", "UPS_MAINTENANCE_COMPLETED", "UPS_MAINTENANCE_RETIREMENT_COMPLETED") and args.ups:
+        active_sessions[:] = [item for item in active_sessions if item.get("ups") != args.ups]
+        unresolved_items[:] = [item for item in unresolved_items if item.get("ups") != args.ups]
+
+    state["implemented_phase"] = "phase5-active-session-tracking"
     state["status"] = args.status or state.get("status", "initialized")
     state["updated_at"] = record["timestamp"]
 

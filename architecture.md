@@ -2422,3 +2422,22 @@ Phase 4 added initial UPS Maintenance Mode communication-event hooks. These hook
 | Safety boundary | These hooks only record maintenance communication events; they do not suppress shutdowns and do not execute shutdown wrappers |
 | Not yet implemented | Shutdown suppression, replacement/consolidation/removal review workflows, UI maintenance panel, timeout alerting, and identity comparison are not implemented yet |
 
+
+### 20.21 Implemented Phase 5: UPS Maintenance Shutdown Suppression
+
+Status: Complete / PASS.
+
+Phase 5 added active maintenance-session tracking and a shutdown suppression gate. When a UPS has an active UPS Maintenance Mode session, the orchestrator suppresses the final shutdown commit path before any target shutdown wrapper can run.
+
+| Item | Implemented result |
+|---|---|
+| Active session tracking | UPS_MAINTENANCE_UPS_OFFLINE now creates active_sessions and unresolved_items entries |
+| Session clearing | UPS_MAINTENANCE_UPS_RETURNED, UPS_MAINTENANCE_COMPLETED, and UPS_MAINTENANCE_RETIREMENT_COMPLETED clear the matching active session |
+| Suppression helper | /usr/local/sbin/nut-ups-maintenance-suppression-check added and installed |
+| Orchestrator gate | commit_placeholder now checks UPS Maintenance suppression before production-mode live action approval |
+| Suppression behavior | Active maintenance session returns SUPPRESS_SHUTDOWN and blocks shutdown commit actions |
+| Safe test | ups3 active maintenance session plus ups3-commit produced UPS_MAINTENANCE_SHUTDOWN_SUPPRESSED and did not run shutdown wrappers |
+| Backup workflow | nut-run-backup-and-push.sh now includes /usr/local/sbin/nut-ups-maintenance-suppression-check |
+| Safety boundary | This phase suppresses shutdown commits only when active UPS Maintenance Mode state exists; it does not implement replacement, consolidation, removal, or UI review workflows |
+| Not yet implemented | Identity comparison, replacement/consolidation/removal workflows, manual Control Center panel, timeout/repeat alerts, Daily Health summary, phone push notifications, and APC IDF flicker-to-email integration are not implemented yet |
+

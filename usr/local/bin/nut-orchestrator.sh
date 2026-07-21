@@ -144,9 +144,37 @@ ups_maintenance_commok() {
   /usr/local/sbin/nut-ups-maintenance-state --event UPS_MAINTENANCE_UPS_RETURNED --ups "$ups_name" --mode commok --status initialized --message "UPS communication restored. Replacement/consolidation identity review is not implemented yet." >> "$LOG_FILE" 2>&1 || true
 }
 
+ups_maintenance_suppresses_commit() {
+  local ups_name="$1"
+  local result=""
+  local rc=1
+
+  result="$(/usr/local/sbin/nut-ups-maintenance-suppression-check --ups "$ups_name" 2>&1)"
+  rc=$?
+
+  if [ "$rc" -eq 0 ]; then
+    log_line "UPS_MAINTENANCE_SHUTDOWN_SUPPRESSED ${ups_name} ${result}"
+    write_state "$ups_name" "$ups_name" "shutdown_suppressed_by_ups_maintenance" "UPS Maintenance Mode" 0 0 "Shutdown suppressed because UPS Maintenance Mode is active"
+    /usr/local/sbin/nut-ups-maintenance-state --event UPS_MAINTENANCE_NOTE --ups "$ups_name" --mode suppression --status active --message "Shutdown commit suppressed because UPS Maintenance Mode is active. No shutdown actions performed." >> "$LOG_FILE" 2>&1 || true
+    return 0
+  fi
+
+  if [ "$rc" -eq 2 ]; then
+    log_line "UPS_MAINTENANCE_SUPPRESSION_CHECK_ERROR ${ups_name} ${result}"
+  else
+    log_line "UPS_MAINTENANCE_SUPPRESSION_NOT_ACTIVE ${ups_name} ${result}"
+  fi
+
+  return 1
+}
+
 commit_placeholder() {
   local ups_name="$1"
   local rc=0
+
+  if ups_maintenance_suppresses_commit "$ups_name"; then
+    return 0
+  fi
 
   if ! production_mode_allows_commit "$ups_name"; then
     return 0
