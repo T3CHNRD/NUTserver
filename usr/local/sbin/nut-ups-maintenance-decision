@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+"""
+UPS Maintenance Mode decision helper.
+
+Phase 3 helper only:
+- reads current ups.status values
+- counts online non-target UPS units
+- classifies grid-power witness confidence
+- does not perform shutdown actions
+- does not suppress shutdown actions by itself
+"""
+
+import argparse
+import json
+import subprocess
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+DEFAULT_UPS_LIST = ["ups1", "ups2", "ups3", "ups4", "ups5", "ups6", "ups7", "ups8", "ups9"]
+
+
+def now_iso():
+    return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def read_status(ups):
+    try:
+        result = subprocess.run(
+            ["upsc", f"{ups}@localhost", "ups.status"],
+            text=True,
+            capture_output=True,
+            timeout=5,
+            check=False,
+        )
+    except Exception as exc:
+        return {"ups": ups, "status": "NO_RESPONSE", "online": False, "error": str(exc)}
+
+    status = (result.stdout or "").strip()
+    if result.returncode != 0 or not status:
+        return {
+            "ups": ups,
+            "status": "NO_RESPONSE",
+            "online": False,
+            "error": (result.stderr or "").strip(),
+        }
+
+    tokens = status.split()
+    return {
+        "ups": ups,
+        "status": status,
+        "online": "OL" in tokens and "OB" not in tokens,
+        "error": "",
+    }
+
+
+def classify(target_ups, ups_list):
+    readings = [read_status(ups) for ups in ups_list]
+    witnesses = [item for item in readings if item["ups"] != target_ups and item["online"]]
+    target = next((item for item in readings if item["ups"] == target_ups), None)
+
+    witness_count = len(witnesses)
+
+    if witness_count >= 2:
+        decision = "GRID_CONFIRMED"
+        should_suppress = True
+        reason = "At least two non-target UPS units are online."
+    elif witness_count == 1:
+        decision = "WARNING_ONLY"
+        should_suppress = True
+        reason = "Only one non-target UPS unit is online; suppress false maintenance shutdown but mark warning-only."
+    else:
+        decision = "REAL_OUTAGE_OR_UNKNOWN"
+        should_suppress = False
+        reason = "Fewer than one non-target UPS unit is online; do not treat as maintenance."
+
+    return {
+        "timestamp": now_iso(),
+        "target_ups": target_ups,
+        "decision": decision,
+        "should_suppress_shutdown": should_suppress,
+        "witness_online_count": witness_count,
+        "witness_online_ups": [item["ups"] for item in witnesses],
+        "target_status": target,
+        "all_statuses": readings,
+        "reason": reason,
+        "phase": "phase3-decision-helper",
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Classify UPS Maintenance Mode grid witness state")
+    parser.add_argument("--target-ups", required=True)
+    parser.add_argument("--ups-list", default=",".join(DEFAULT_UPS_LIST))
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+
+    ups_list = [item.strip() for item in args.ups_list.split(",") if item.strip()]
+    result = classify(args.target_ups, ups_list)
+
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print(
+            "decision={decision} should_suppress_shutdown={suppress} "
+            "witness_online_count={count} witness_online_ups={witnesses} reason=\"{reason}\"".format(
+                decision=result["decision"],
+                suppress=str(result["should_suppress_shutdown"]).lower(),
+                count=result["witness_online_count"],
+                witnesses=",".join(result["witness_online_ups"]),
+                reason=result["reason"],
+            )
+        )
+
+
+if __name__ == "__main__":
+    main()

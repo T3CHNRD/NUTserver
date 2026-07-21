@@ -235,6 +235,7 @@ main() {
   copy_executable_file /usr/local/bin/nut-orchestrator.sh ./usr/local/bin/nut-orchestrator.sh
   copy_executable_file /usr/local/sbin/nut-local-final-shutdown.sh ./usr/local/sbin/nut-local-final-shutdown.sh
   copy_executable_file /usr/local/sbin/nut-ups-maintenance-state ./usr/local/sbin/nut-ups-maintenance-state
+  copy_executable_file /usr/local/sbin/nut-ups-maintenance-decision ./usr/local/sbin/nut-ups-maintenance-decision
 
   # Core NUT configuration files.
   copy_text_file /etc/nut/ups.conf ./etc/nut/ups.conf 640
