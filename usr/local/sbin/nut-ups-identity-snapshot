@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+"""
+UPS identity snapshot helper.
+
+Creates a baseline UPS identity file used later for replacement,
+consolidation, and removal review workflows.
+
+This helper is read-only against NUT. It does not perform shutdown actions.
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import subprocess
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+OUT_PATH = Path("/var/www/html/nut-state/ups-identity-baseline.json")
+UPS_NAMES = ["ups1", "ups2", "ups3", "ups4", "ups5", "ups6", "ups7", "ups8", "ups9"]
+
+IDENTITY_KEYS = [
+    "device.mfr",
+    "device.model",
+    "device.serial",
+    "device.type",
+    "driver.name",
+    "driver.parameter.port",
+    "ups.id",
+    "ups.mfr",
+    "ups.model",
+    "ups.serial",
+    "ups.status",
+]
+
+
+def now_local():
+    return datetime.now(ZoneInfo("America/Detroit")).isoformat(timespec="seconds")
+
+
+def read_upsc(ups_name):
+    result = subprocess.run(
+        ["upsc", f"{ups_name}@localhost"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=10,
+        check=False,
+    )
+    data = {}
+    if result.returncode != 0:
+        return data, result.returncode, result.stderr.strip()
+
+    for line in result.stdout.splitlines():
+        if ": " not in line:
+            continue
+        key, value = line.split(": ", 1)
+        if key in IDENTITY_KEYS:
+            data[key] = value.strip()
+    return data, 0, ""
+
+
+def fingerprint_for(ups_name, data):
+    parts = [
+        ups_name,
+        data.get("device.mfr") or data.get("ups.mfr") or "",
+        data.get("device.model") or data.get("ups.model") or "",
+        data.get("device.serial") or data.get("ups.serial") or "",
+        data.get("driver.name") or "",
+        data.get("driver.parameter.port") or "",
+        data.get("ups.id") or "",
+    ]
+    raw = "|".join(parts)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest(), raw
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Create a UPS identity baseline snapshot")
+    parser.add_argument("--output", default=str(OUT_PATH))
+    args = parser.parse_args()
+
+    output = Path(args.output)
+    records = []
+
+    for ups_name in UPS_NAMES:
+        data, rc, error = read_upsc(ups_name)
+        fingerprint, fingerprint_source = fingerprint_for(ups_name, data)
+        serial = data.get("device.serial") or data.get("ups.serial") or ""
+        records.append({
+            "ups_name": ups_name,
+            "read_ok": rc == 0,
+            "read_rc": rc,
+            "read_error": error,
+            "identity": data,
+            "identity_quality": "strong" if serial else "medium_no_serial",
+            "identity_fingerprint": fingerprint,
+            "identity_fingerprint_source": fingerprint_source,
+        })
+
+    payload = {
+        "schema_version": 1,
+        "feature": "UPS Maintenance Mode",
+        "purpose": "UPS identity baseline for replacement, consolidation, and removal review workflows",
+        "generated_at": now_local(),
+        "records": records,
+        "note": "Read-only identity baseline. This file does not perform shutdown actions.",
+    }
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    tmp = output.with_suffix(output.suffix + ".tmp")
+    tmp.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    os.chown(tmp, 0, 124)
+    os.chmod(tmp, 0o664)
+    tmp.replace(output)
+    os.chown(output, 0, 124)
+    os.chmod(output, 0o664)
+
+    print(f"PASS wrote UPS identity baseline: {output}")
+    for item in records:
+        ident = item["identity"]
+        print(
+            f"{item['ups_name']} "
+            f"quality={item['identity_quality']} "
+            f"model={ident.get('device.model') or ident.get('ups.model') or ''} "
+            f"serial={ident.get('device.serial') or ident.get('ups.serial') or ''} "
+            f"port={ident.get('driver.parameter.port') or ''}"
+        )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

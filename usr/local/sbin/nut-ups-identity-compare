@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+"""
+UPS identity comparison helper.
+
+Compares current NUT UPS identity values against the saved baseline.
+
+This helper is read-only against NUT. It does not perform shutdown actions.
+"""
+
+import argparse
+import hashlib
+import json
+import subprocess
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+BASELINE_PATH = Path("/var/www/html/nut-state/ups-identity-baseline.json")
+UPS_NAMES = ["ups1", "ups2", "ups3", "ups4", "ups5", "ups6", "ups7", "ups8", "ups9"]
+
+IDENTITY_KEYS = [
+    "device.mfr",
+    "device.model",
+    "device.serial",
+    "device.type",
+    "driver.name",
+    "driver.parameter.port",
+    "ups.id",
+    "ups.mfr",
+    "ups.model",
+    "ups.serial",
+    "ups.status",
+]
+
+
+def now_local():
+    return datetime.now(ZoneInfo("America/Detroit")).isoformat(timespec="seconds")
+
+
+def read_upsc(ups_name):
+    result = subprocess.run(
+        ["upsc", f"{ups_name}@localhost"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=10,
+        check=False,
+    )
+    data = {}
+    if result.returncode != 0:
+        return data, result.returncode, result.stderr.strip()
+
+    for line in result.stdout.splitlines():
+        if ": " not in line:
+            continue
+        key, value = line.split(": ", 1)
+        if key in IDENTITY_KEYS:
+            data[key] = value.strip()
+    return data, 0, ""
+
+
+def fingerprint_for(ups_name, data):
+    parts = [
+        ups_name,
+        data.get("device.mfr") or data.get("ups.mfr") or "",
+        data.get("device.model") or data.get("ups.model") or "",
+        data.get("device.serial") or data.get("ups.serial") or "",
+        data.get("driver.name") or "",
+        data.get("driver.parameter.port") or "",
+        data.get("ups.id") or "",
+    ]
+    raw = "|".join(parts)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest(), raw
+
+
+def quality_for(data):
+    serial = data.get("device.serial") or data.get("ups.serial") or ""
+    return "strong" if serial else "medium_no_serial"
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Compare current UPS identity to saved baseline")
+    parser.add_argument("--baseline", default=str(BASELINE_PATH))
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+
+    baseline_path = Path(args.baseline)
+
+    try:
+        baseline = json.loads(baseline_path.read_text())
+    except Exception as exc:
+        print(f"FAIL baseline_unreadable path={baseline_path} error={exc}")
+        return 2
+
+    baseline_by_name = {
+        item.get("ups_name"): item
+        for item in baseline.get("records", [])
+        if item.get("ups_name")
+    }
+
+    results = []
+    exit_code = 0
+
+    for ups_name in UPS_NAMES:
+        old = baseline_by_name.get(ups_name)
+        current_data, rc, error = read_upsc(ups_name)
+        current_fp, current_source = fingerprint_for(ups_name, current_data)
+
+        if not old:
+            state = "missing_from_baseline"
+            exit_code = max(exit_code, 1)
+        elif rc != 0:
+            state = "current_unreadable"
+            exit_code = max(exit_code, 1)
+        elif old.get("identity_fingerprint") == current_fp:
+            state = "same"
+        else:
+            state = "changed"
+            exit_code = max(exit_code, 1)
+
+        result = {
+            "ups_name": ups_name,
+            "state": state,
+            "current_read_ok": rc == 0,
+            "current_read_rc": rc,
+            "current_read_error": error,
+            "baseline_quality": old.get("identity_quality") if old else "",
+            "current_quality": quality_for(current_data),
+            "baseline_fingerprint": old.get("identity_fingerprint") if old else "",
+            "current_fingerprint": current_fp,
+            "baseline_fingerprint_source": old.get("identity_fingerprint_source") if old else "",
+            "current_fingerprint_source": current_source,
+            "baseline_identity": old.get("identity") if old else {},
+            "current_identity": current_data,
+        }
+        results.append(result)
+
+    payload = {
+        "schema_version": 1,
+        "feature": "UPS Maintenance Mode",
+        "purpose": "UPS identity comparison for replacement, consolidation, and removal review workflows",
+        "generated_at": now_local(),
+        "baseline": str(baseline_path),
+        "results": results,
+    }
+
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    else:
+        for item in results:
+            print(
+                f"{item['ups_name']} "
+                f"state={item['state']} "
+                f"baseline_quality={item['baseline_quality']} "
+                f"current_quality={item['current_quality']}"
+            )
+
+    return exit_code
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
