@@ -116,6 +116,34 @@ run_phase2_power_restore_abort() {
   return 127
 }
 
+ups_maintenance_commbad() {
+  local ups_name="$1"
+  local decision_output=""
+
+  decision_output="$(/usr/local/sbin/nut-ups-maintenance-decision --target-ups "$ups_name" 2>/dev/null || true)"
+
+  log_line "UPS_MAINTENANCE_COMM_BAD ${ups_name} ${decision_output}"
+
+  if echo "$decision_output" | grep -q 'decision=GRID_CONFIRMED'; then
+    /usr/local/sbin/nut-ups-maintenance-state --event UPS_MAINTENANCE_UPS_OFFLINE --ups "$ups_name" --mode commbad --status active --message "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet." >> "$LOG_FILE" 2>&1 || true
+    return 0
+  fi
+
+  if echo "$decision_output" | grep -q 'decision=WARNING_ONLY'; then
+    /usr/local/sbin/nut-ups-maintenance-state --event UPS_MAINTENANCE_TIMEOUT_WARNING --ups "$ups_name" --mode commbad --status warning --message "UPS communication lost with only one online witness. Warning-only maintenance state recorded. Automatic shutdown suppression not implemented yet." >> "$LOG_FILE" 2>&1 || true
+    return 0
+  fi
+
+  /usr/local/sbin/nut-ups-maintenance-state --event UPS_MAINTENANCE_REAL_OUTAGE_DETECTED --ups "$ups_name" --mode commbad --status warning --message "UPS communication lost but grid witness confidence was not sufficient for maintenance classification." >> "$LOG_FILE" 2>&1 || true
+}
+
+ups_maintenance_commok() {
+  local ups_name="$1"
+
+  log_line "UPS_MAINTENANCE_COMM_OK ${ups_name}"
+  /usr/local/sbin/nut-ups-maintenance-state --event UPS_MAINTENANCE_UPS_RETURNED --ups "$ups_name" --mode commok --status initialized --message "UPS communication restored. Replacement/consolidation identity review is not implemented yet." >> "$LOG_FILE" 2>&1 || true
+}
+
 commit_placeholder() {
   local ups_name="$1"
   local rc=0
@@ -399,6 +427,54 @@ send_outage_email() {
 
 
 case "${1:-}" in
+  ups7-commbad)
+    ups_maintenance_commbad "ups7"
+    ;;
+
+  ups7-commok)
+    ups_maintenance_commok "ups7"
+    ;;
+
+  ups2-commbad)
+    ups_maintenance_commbad "ups2"
+    ;;
+
+  ups2-commok)
+    ups_maintenance_commok "ups2"
+    ;;
+
+  ups8-commbad)
+    ups_maintenance_commbad "ups8"
+    ;;
+
+  ups8-commok)
+    ups_maintenance_commok "ups8"
+    ;;
+
+  ups6-commbad)
+    ups_maintenance_commbad "ups6"
+    ;;
+
+  ups6-commok)
+    ups_maintenance_commok "ups6"
+    ;;
+
+  ups9-commbad)
+    ups_maintenance_commbad "ups9"
+    ;;
+
+  ups9-commok)
+    ups_maintenance_commok "ups9"
+    ;;
+
+  ups3-commbad)
+    ups_maintenance_commbad "ups3"
+    ;;
+
+  ups3-commok)
+    ups_maintenance_commok "ups3"
+    ;;
+
   ups7-onbatt)
     log_line "UPS_ONBATT_DETECTED ups7 runtime='18m' countdown='240s'"
     send_outage_email "onbatt" "ups7 on battery / grid power lost"
