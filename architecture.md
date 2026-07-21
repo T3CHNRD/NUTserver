@@ -2348,3 +2348,21 @@ Phase 1 created the UPS Maintenance Mode state/log foundation and exposed the re
 | Read-only helper test | nut-ui-read-reference successfully reads both maintenance files through the registry |
 | Not yet implemented | Automatic detection, maintenance sessions, UI workflow, review/approval actions, and shutdown suppression logic are not implemented yet |
 
+
+### 20.18 Implemented Phase 2: UPS Maintenance State Writer Helper
+
+Status: Complete / PASS.
+
+Phase 2 added the reusable backend helper used to safely write UPS Maintenance Mode records to the maintenance state JSON and maintenance log.
+
+| Item | Implemented result |
+|---|---|
+| Helper script | /usr/local/sbin/nut-ups-maintenance-state created and installed |
+| Repository copy | usr/local/sbin/nut-ups-maintenance-state added to the repository |
+| Safe write test | UPS_MAINTENANCE_NOTE test records successfully written; no shutdown actions performed |
+| State JSON permissions | Helper preserves /var/www/html/nut-state/ups-maintenance.json as root:nut mode 664 after atomic writes |
+| Log permissions | /var/log/nut-ups-maintenance.log remains root:nut mode 664 |
+| JSON validation | Normal user can read and validate ups-maintenance.json after helper writes |
+| Backup workflow | nut-run-backup-and-push.sh now includes /usr/local/sbin/nut-ups-maintenance-state so the Backup button can capture the helper |
+| Not yet implemented | Automatic detection, grid-power witness decisions, UI maintenance panel, replacement/consolidation/removal review workflows, and shutdown suppression logic are not implemented yet |
+
