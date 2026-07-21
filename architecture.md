@@ -2366,3 +2366,23 @@ Phase 2 added the reusable backend helper used to safely write UPS Maintenance M
 | Backup workflow | nut-run-backup-and-push.sh now includes /usr/local/sbin/nut-ups-maintenance-state so the Backup button can capture the helper |
 | Not yet implemented | Automatic detection, grid-power witness decisions, UI maintenance panel, replacement/consolidation/removal review workflows, and shutdown suppression logic are not implemented yet |
 
+
+### 20.19 Implemented Phase 3: UPS Maintenance Decision Helper
+
+Status: Complete / PASS.
+
+Phase 3 added a read-only UPS Maintenance Mode decision helper. This helper checks current UPS status values and classifies whether enough non-target UPS units are online to treat the target UPS event as likely maintenance while grid power appears present.
+
+| Item | Implemented result |
+|---|---|
+| Helper script | /usr/local/sbin/nut-ups-maintenance-decision created and installed |
+| Repository copy | usr/local/sbin/nut-ups-maintenance-decision added to the repository |
+| UPS status source | Uses upsc against ups.status for the configured UPS list |
+| Decision values | GRID_CONFIRMED, WARNING_ONLY, or REAL_OUTAGE_OR_UNKNOWN |
+| Grid witness rule | GRID_CONFIRMED requires at least two non-target UPS units online |
+| Read-only behavior | Helper does not perform shutdown actions and does not suppress shutdown actions by itself |
+| JSON output | Helper supports JSON output for later UI/orchestrator use |
+| Backup workflow | nut-run-backup-and-push.sh now includes /usr/local/sbin/nut-ups-maintenance-decision so the Backup button can capture the helper |
+| Verified test result | With all 9 UPS units online, target UPS tests returned GRID_CONFIRMED with 8 online witnesses |
+| Not yet implemented | Orchestrator hook-in, automatic shutdown suppression, UI maintenance panel, replacement/consolidation/removal review workflows, and timeout alert logic are not implemented yet |
+
