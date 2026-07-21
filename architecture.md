@@ -2332,3 +2332,19 @@ The architecture file must be updated as each section of UPS Maintenance Mode is
 | GitHub backup | Commit and push each verified phase to GitHub |
 | Reuse | Keep the implementation portable enough to use in another project where practical |
 
+
+### 20.17 Implemented Phase 1: State, Log, and Read-Only Reference Foundation
+
+Status: Complete / PASS.
+
+Phase 1 created the UPS Maintenance Mode state/log foundation and exposed the records through the existing Configuration read-only reference file system.
+
+| Item | Implemented result |
+|---|---|
+| Live state file | /var/www/html/nut-state/ups-maintenance.json created as valid JSON, owned root:nut, mode 664 |
+| Live log file | /var/log/nut-ups-maintenance.log created, owned root:nut, mode 664 |
+| Initial event | UPS_MAINTENANCE_FOUNDATION_CREATED written to the maintenance log |
+| Reference registry | ups_maintenance_state_ref and ups_maintenance_log_ref added to repo and live config_registry.json |
+| Read-only helper test | nut-ui-read-reference successfully reads both maintenance files through the registry |
+| Not yet implemented | Automatic detection, maintenance sessions, UI workflow, review/approval actions, and shutdown suppression logic are not implemented yet |
+

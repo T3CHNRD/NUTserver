@@ -435,6 +435,18 @@
       "name": "Shutdown Flow Chart - UPS Timers and Test Phases",
       "path": "/opt/nut-orchestrator-ui/docs/shutdown-flow-chart.md",
       "type": "text"
+    },
+    {
+      "id": "ups_maintenance_state_ref",
+      "name": "UPS Maintenance State JSON",
+      "path": "/var/www/html/nut-state/ups-maintenance.json",
+      "type": "json"
+    },
+    {
+      "id": "ups_maintenance_log_ref",
+      "name": "UPS Maintenance Log",
+      "path": "/var/log/nut-ups-maintenance.log",
+      "type": "text"
     }
   ],
   "blocked_patterns": [
