@@ -2386,3 +2386,39 @@ Phase 3 added a read-only UPS Maintenance Mode decision helper. This helper chec
 | Verified test result | With all 9 UPS units online, target UPS tests returned GRID_CONFIRMED with 8 online witnesses |
 | Not yet implemented | Orchestrator hook-in, automatic shutdown suppression, UI maintenance panel, replacement/consolidation/removal review workflows, and timeout alert logic are not implemented yet |
 
+
+### 20.20 Implemented Phase 4: UPS Maintenance Communication Event Hooks
+
+Status: Complete / PASS.
+
+Phase 4 added initial UPS Maintenance Mode communication-event hooks. These hooks record COMMBAD and COMMOK events into the UPS Maintenance state/log workflow. They do not suppress shutdowns yet and do not run shutdown actions.
+
+| Item | Implemented result |
+|---|---|
+| Event source | upsmon already had COMMBAD and COMMOK notify flags enabled with SYSLOG+EXEC |
+| upssched hooks | COMMBAD and COMMOK EXECUTE handlers added for ups2, ups3, ups6, ups7, ups8, and ups9 |
+| Orchestrator handlers | nut-orchestrator.sh now includes ups_maintenance_commbad and ups_maintenance_commok handlers |
+| Decision helper integration | COMMBAD handler calls /usr/local/sbin/nut-ups-maintenance-decision before recording maintenance state |
+| State/log integration | COMMBAD records UPS_MAINTENANCE_UPS_OFFLINE when grid witness is confirmed; COMMOK records UPS_MAINTENANCE_UPS_RETURNED |
+| Safe manual test | Manual ups3-commbad and ups3-commok handler tests completed successfully |
+| Safety boundary | These hooks only record maintenance communication events; they do not suppress shutdowns and do not execute shutdown wrappers |
+| Not yet implemented | Shutdown suppression, replacement/consolidation/removal review workflows, UI maintenance panel, timeout alerting, and identity comparison are not implemented yet |
+
+
+### 20.20 Implemented Phase 4: UPS Maintenance Communication Event Hooks
+
+Status: Complete / PASS.
+
+Phase 4 added initial UPS Maintenance Mode communication-event hooks. These hooks record COMMBAD and COMMOK events into the UPS Maintenance state/log workflow. They do not suppress shutdowns yet and do not run shutdown actions.
+
+| Item | Implemented result |
+|---|---|
+| Event source | upsmon already had COMMBAD and COMMOK notify flags enabled with SYSLOG+EXEC |
+| upssched hooks | COMMBAD and COMMOK EXECUTE handlers added for ups2, ups3, ups6, ups7, ups8, and ups9 |
+| Orchestrator handlers | nut-orchestrator.sh now includes ups_maintenance_commbad and ups_maintenance_commok handlers |
+| Decision helper integration | COMMBAD handler calls /usr/local/sbin/nut-ups-maintenance-decision before recording maintenance state |
+| State/log integration | COMMBAD records UPS_MAINTENANCE_UPS_OFFLINE when grid witness is confirmed; COMMOK records UPS_MAINTENANCE_UPS_RETURNED |
+| Safe manual test | Manual ups3-commbad and ups3-commok handler tests completed successfully |
+| Safety boundary | These hooks only record maintenance communication events; they do not suppress shutdowns and do not execute shutdown wrappers |
+| Not yet implemented | Shutdown suppression, replacement/consolidation/removal review workflows, UI maintenance panel, timeout alerting, and identity comparison are not implemented yet |
+
