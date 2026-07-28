@@ -512,6 +512,220 @@ def ups_health_lines():
         lines.append(f"  Input voltage: {linev}")
     return lines
 
+
+def ups_weather_grid_risk_lines():
+    import json
+    import urllib.request
+
+    lines = []
+    blockers = []
+    cautions = []
+    positives = []
+
+    # Pontiac, MI approximate coordinates.
+    url = (
+        "https://api.open-meteo.com/v1/forecast"
+        "?latitude=42.6389"
+        "&longitude=-83.2910"
+        "&current=temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m"
+        "&daily=temperature_2m_max,weather_code,precipitation_probability_max,wind_gusts_10m_max"
+        "&temperature_unit=fahrenheit"
+        "&wind_speed_unit=mph"
+        "&timezone=America%2FDetroit"
+        "&forecast_days=1"
+    )
+
+    severe_codes = {
+        95: "Thunderstorm",
+        96: "Thunderstorm with hail",
+        99: "Severe thunderstorm with hail",
+    }
+    storm_codes = {
+        51: "Light drizzle",
+        53: "Moderate drizzle",
+        55: "Dense drizzle",
+        61: "Slight rain",
+        63: "Moderate rain",
+        65: "Heavy rain",
+        80: "Rain showers",
+        81: "Moderate rain showers",
+        82: "Violent rain showers",
+    }
+
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "nutserver-daily-health"})
+        with urllib.request.urlopen(req, timeout=12) as response:
+            data = json.loads(response.read().decode("utf-8"))
+
+        current = data.get("current", {})
+        daily = data.get("daily", {})
+
+        temp = current.get("temperature_2m")
+        code = current.get("weather_code")
+        wind = current.get("wind_speed_10m")
+        gust = current.get("wind_gusts_10m")
+
+        max_temp = None
+        max_gust = None
+        precip_prob = None
+        daily_code = None
+
+        if daily.get("temperature_2m_max"):
+            max_temp = daily["temperature_2m_max"][0]
+        if daily.get("wind_gusts_10m_max"):
+            max_gust = daily["wind_gusts_10m_max"][0]
+        if daily.get("precipitation_probability_max"):
+            precip_prob = daily["precipitation_probability_max"][0]
+        if daily.get("weather_code"):
+            daily_code = daily["weather_code"][0]
+
+        lines.append("Weather / grid-risk advisory:")
+        lines.append(f"- Pontiac current temperature: {temp} F")
+        lines.append(f"- Today's forecast high: {max_temp} F")
+        lines.append(f"- Current wind / gusts: {wind} mph / {gust} mph")
+        lines.append(f"- Forecast max gusts: {max_gust} mph")
+        lines.append(f"- Forecast precipitation probability: {precip_prob}%")
+
+        if code in severe_codes:
+            blockers.append(f"Current weather risk: {severe_codes[code]}.")
+        elif daily_code in severe_codes:
+            blockers.append(f"Forecast weather risk today: {severe_codes[daily_code]}.")
+
+        if code in storm_codes or daily_code in storm_codes:
+            cautions.append("Rain/storm conditions are possible today; check the radar before planned UPS work.")
+
+        if max_temp is not None and max_temp >= 90:
+            blockers.append(f"High heat/grid-load risk: forecast high is {max_temp} F.")
+        elif max_temp is not None and max_temp >= 85:
+            cautions.append(f"Elevated heat/grid-load caution: forecast high is {max_temp} F.")
+
+        if max_gust is not None and max_gust >= 40:
+            blockers.append(f"High wind risk: forecast gusts up to {max_gust} mph.")
+        elif max_gust is not None and max_gust >= 30:
+            cautions.append(f"Wind caution: forecast gusts up to {max_gust} mph.")
+
+        if precip_prob is not None and precip_prob >= 70:
+            cautions.append(f"High precipitation probability today: {precip_prob}%.")
+
+        if not blockers and not cautions:
+            positives.append("Weather/grid risk does not appear elevated based on the current forecast.")
+
+    except Exception as exc:
+        lines.append("Weather / grid-risk advisory:")
+        cautions.append(f"Weather/grid-risk check could not be completed automatically: {exc}")
+        cautions.append("Verify local weather, storms, heat, and utility conditions manually before UPS maintenance.")
+
+    return lines, blockers, cautions, positives
+
+
+def ups_maintenance_recommendation_lines():
+    import json
+    import subprocess
+    from pathlib import Path
+
+    lines = []
+    blockers = []
+    cautions = []
+    positives = []
+
+    lines.append("UPS maintenance recommendation:")
+
+    ups_names = get_ups_names()
+    online_count = 0
+    offline = []
+
+    for ups in ups_names:
+        status = get_ups_value(f"{ups}@localhost", "ups.status")
+        if "OL" in (status or ""):
+            online_count += 1
+        else:
+            offline.append(f"{ups} status={status or 'unknown'}")
+
+    if ups_names and online_count == len(ups_names):
+        positives.append(f"All {online_count} monitored UPS units are online.")
+    else:
+        blockers.append(f"Only {online_count} of {len(ups_names)} monitored UPS units are online.")
+        for item in offline:
+            blockers.append(item)
+
+    if str(mode_label).upper() == "OFF":
+        blockers.append("NUT mode is OFF, so monitoring, logging, and email reports may be disabled.")
+    else:
+        positives.append(f"NUT mode is {mode_label}.")
+
+    if str(live_actions) == "0":
+        positives.append("Live protection actions are currently blocked, which is safer for planned maintenance.")
+    else:
+        cautions.append("Live protection actions are allowed; use extra caution before planned maintenance.")
+
+    maint_path = Path("/var/www/html/nut-state/ups-maintenance.json")
+    try:
+        maint = json.loads(maint_path.read_text())
+        active = maint.get("active_sessions", [])
+        unresolved = maint.get("unresolved_items", [])
+        if active or unresolved:
+            blockers.append(f"UPS Maintenance Mode has active/unresolved items: active={len(active)}, unresolved={len(unresolved)}.")
+        else:
+            positives.append("No active or unresolved UPS Maintenance Mode items were found.")
+    except Exception as exc:
+        blockers.append(f"UPS Maintenance state could not be read: {exc}")
+
+    compare_cmd = "/usr/local/sbin/nut-ups-identity-compare"
+    try:
+        result = subprocess.run(
+            [compare_cmd],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=30,
+            check=False,
+        )
+        if result.returncode == 0:
+            positives.append("UPS identity comparison matches the saved baseline.")
+        else:
+            blockers.append("UPS identity comparison found a mismatch or unreadable UPS.")
+            for line in result.stdout.splitlines()[:12]:
+                blockers.append(line)
+    except Exception as exc:
+        blockers.append(f"UPS identity comparison could not run: {exc}")
+
+    for source in ("IDF2", "IDF3"):
+        power_source, event_time, message = latest_idf_event(source)
+        if power_source == "battery":
+            blockers.append(f"{source} last known power source is battery at {event_time}: {message}")
+        elif power_source == "line/grid":
+            positives.append(f"{source} last known power source is line/grid.")
+        else:
+            cautions.append(f"{source} last known power source is unknown; last event time: {event_time}.")
+
+    weather_lines, weather_blockers, weather_cautions, weather_positives = ups_weather_grid_risk_lines()
+    blockers.extend(weather_blockers)
+    cautions.extend(weather_cautions)
+    positives.extend(weather_positives)
+
+    if blockers:
+        lines.append("Status: NOT RECOMMENDED for planned UPS swaps or battery maintenance today.")
+    elif cautions:
+        lines.append("Status: CAUTION - verify conditions before planned UPS swaps or battery maintenance today.")
+    else:
+        lines.append("Status: OK for planned UPS swaps or battery maintenance today.")
+
+    lines.append("")
+    lines.append("Reasons / risk checks:")
+    for item in blockers:
+        lines.append(f"- BLOCKER: {item}")
+    for item in cautions:
+        lines.append(f"- CAUTION: {item}")
+    for item in positives:
+        lines.append(f"- OK: {item}")
+
+    lines.append("")
+    lines.extend(weather_lines)
+
+    lines.append("")
+    lines.append("Reminder: UPS Maintenance Mode can suppress false NUT-triggered shutdowns, but it does not protect equipment from power loss while a UPS or battery is physically disconnected.")
+    return lines
+
 templates = {
     "onbatt": {
         "subject": "Power switched to UPS",
@@ -613,6 +827,8 @@ templates = {
             f"UPS total monitored: {len(get_ups_names())}",
             f"NUT mode: {mode_label}",
             f"Live actions allowed: {live_actions}",
+            "",
+            *ups_maintenance_recommendation_lines(),
             "",
             *ups_health_lines(),
             "",
