@@ -2441,3 +2441,22 @@ Phase 5 added active maintenance-session tracking and a shutdown suppression gat
 | Safety boundary | This phase suppresses shutdown commits only when active UPS Maintenance Mode state exists; it does not implement replacement, consolidation, removal, or UI review workflows |
 | Not yet implemented | Identity comparison, replacement/consolidation/removal workflows, manual Control Center panel, timeout/repeat alerts, Daily Health summary, phone push notifications, and APC IDF flicker-to-email integration are not implemented yet |
 
+
+### 20.22 Implemented Phase 6: UPS Identity Baseline and Comparison
+
+Status: Complete / PASS.
+
+Phase 6 added read-only UPS identity baseline and comparison helpers. These helpers support later replacement, consolidation, and removal review workflows. They do not perform shutdown actions.
+
+| Item | Implemented result |
+|---|---|
+| Identity snapshot helper | /usr/local/sbin/nut-ups-identity-snapshot captures UPS identity values from upsc |
+| Identity baseline file | /var/www/html/nut-state/ups-identity-baseline.json created with root:nut 664 permissions |
+| Identity comparison helper | /usr/local/sbin/nut-ups-identity-compare compares current UPS identity values against the saved baseline |
+| Identity quality | UPS units with serial numbers are marked strong; UPS units without exposed serial numbers are marked medium_no_serial |
+| Current comparison result | All nine UPS units matched the saved baseline during Phase 6 verification |
+| Read-only reference visibility | UPS Identity Baseline JSON added to the Configuration read-only reference area |
+| Backup workflow | nut-run-backup-and-push.sh includes the identity snapshot and comparison helpers |
+| Safety boundary | Identity helpers are read-only against NUT and do not execute shutdown wrappers or change UPS mappings |
+| Not yet implemented | Replacement approval, consolidation approval, removal/retirement approval, UI workflow, and automatic remapping are not implemented yet |
+

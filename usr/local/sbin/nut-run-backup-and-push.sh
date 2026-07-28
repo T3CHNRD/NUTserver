@@ -237,6 +237,8 @@ main() {
   copy_executable_file /usr/local/sbin/nut-ups-maintenance-state ./usr/local/sbin/nut-ups-maintenance-state
   copy_executable_file /usr/local/sbin/nut-ups-maintenance-decision ./usr/local/sbin/nut-ups-maintenance-decision
   copy_executable_file /usr/local/sbin/nut-ups-maintenance-suppression-check ./usr/local/sbin/nut-ups-maintenance-suppression-check
+  copy_executable_file /usr/local/sbin/nut-ups-identity-compare ./usr/local/sbin/nut-ups-identity-compare
+  copy_executable_file /usr/local/sbin/nut-ups-identity-snapshot ./usr/local/sbin/nut-ups-identity-snapshot
 
   # Core NUT configuration files.
   copy_text_file /etc/nut/ups.conf ./etc/nut/ups.conf 640

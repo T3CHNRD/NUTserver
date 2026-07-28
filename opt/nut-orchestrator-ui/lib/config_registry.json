@@ -447,6 +447,12 @@
       "name": "UPS Maintenance Log",
       "path": "/var/log/nut-ups-maintenance.log",
       "type": "text"
+    },
+    {
+      "id": "ups_identity_baseline_ref",
+      "name": "UPS Identity Baseline JSON",
+      "path": "/var/www/html/nut-state/ups-identity-baseline.json",
+      "type": "json"
     }
   ],
   "blocked_patterns": [
