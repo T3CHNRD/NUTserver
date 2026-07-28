@@ -22,6 +22,60 @@ log_event() {
   printf '[%s] %s\n' "$(timestamp)" "$msg" >> "$LOG"
 }
 
+idf_should_email_event() {
+  local msg="$1"
+
+  case "$msg" in
+    *"UPS: On battery power"*|\
+    *"UPS: No longer on battery power"*|\
+    *"UPS: Compensating for a low input voltage"*|\
+    *"UPS: No longer compensating for a low input voltage"*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+send_idf_power_email() {
+  local name="$1"
+  local ip="$2"
+  local dns="$3"
+  local severity="$4"
+  local event_time="$5"
+  local message="$6"
+  local source_path="$7"
+
+  local email_cmd="/usr/local/sbin/nut-email-alert-test-send"
+  local rc
+
+  idf_should_email_event "$message" || return 0
+
+  if [ ! -x "$email_cmd" ]; then
+    log_event "APC_IDF_EMAIL_SKIPPED source=\"$name\" reason=\"email_helper_missing\" helper=\"$email_cmd\""
+    return 0
+  fi
+
+  NUT_IDF_SOURCE="$name" \
+  NUT_IDF_IP="$ip" \
+  NUT_IDF_DNS="$dns" \
+  NUT_IDF_SEVERITY="$severity" \
+  NUT_IDF_EVENT_TIME="$event_time" \
+  NUT_IDF_MESSAGE="$message" \
+  NUT_IDF_SOURCE_PATH="$source_path" \
+    "$email_cmd" --send idf_power >/dev/null 2>&1
+  rc=$?
+
+  if [ "$rc" -eq 0 ]; then
+    log_event "APC_IDF_EMAIL_SENT source=\"$name\" type=\"idf_power\" message=\"$message\""
+  else
+    log_event "APC_IDF_EMAIL_FAILED source=\"$name\" type=\"idf_power\" rc=\"$rc\" message=\"$message\""
+  fi
+
+  return 0
+}
+
 publish_events() {
   if [ -x "$PUBLISHER" ]; then
     "$PUBLISHER" >/dev/null 2>&1 || true
@@ -346,6 +400,7 @@ log_current_power_state() {
   if [ "$previous" != "$status_msg" ]; then
     now_text="$(timestamp)"
     log_event "APC_IDF_EVENT source=\"$name\" device=\"$name\" ip=\"$ip\" dns=\"$dns\" severity=\"$severity\" code=\"snmp_current_output_status\" event_time=\"$now_text\" status=\"$status_msg\" message=\"$status_msg\" source_path=\"snmp_current_output_status\""
+    send_idf_power_email "$name" "$ip" "$dns" "$severity" "$now_text" "$status_msg" "snmp_current_output_status"
     printf '%s\n' "$status_msg" > "$state_file"
     chmod 0644 "$state_file" 2>/dev/null || true
     publish_events
@@ -434,6 +489,7 @@ monitor_target() {
       event_time_combined="$event_date $event_time"
 
       log_event "APC_IDF_EVENT source=\"$name\" device=\"$name\" ip=\"$ip\" dns=\"$dns\" severity=\"$event_severity\" code=\"$event_code\" event_time=\"$event_time_combined\" status=\"$event_msg\" message=\"$event_msg\" source_path=\"authenticated_event_txt_v2\""
+      send_idf_power_email "$name" "$ip" "$dns" "$event_severity" "$event_time_combined" "$event_msg" "authenticated_event_txt_v2"
     done < "$new_file"
 
     cp "$detected_file" "$state_file"

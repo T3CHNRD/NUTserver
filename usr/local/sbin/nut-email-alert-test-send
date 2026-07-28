@@ -20,6 +20,7 @@ Types:
   cancelled  Shutdown cancelled because power returned
   final      NUT server final shutdown warning
   weekly     Daily UPS health report
+  idf_power  APC IDF2/IDF3 power or input-quality event
 
 This tool sends production-format email content manually.
 It does not simulate UPS events.
@@ -39,6 +40,7 @@ case "$ACTION" in
     echo "cancelled"
     echo "final"
     echo "weekly"
+    echo "idf_power"
     exit 0
     ;;
   --preview|--send)
@@ -51,7 +53,7 @@ case "$ACTION" in
 esac
 
 case "$TYPE" in
-  onbatt|online|shutdown|cancelled|final|weekly) ;;
+  onbatt|online|shutdown|cancelled|final|weekly|idf_power) ;;
   *)
     echo "FAIL: unknown email type: $TYPE"
     usage
@@ -130,6 +132,14 @@ systems_scheduled_lines = env_list_lines("NUT_SYSTEMS_SCHEDULED", "- unavailable
 systems_down_lines = env_list_lines("NUT_SYSTEMS_SHUT_DOWN", "- None reported")
 systems_running_lines = env_list_lines("NUT_SYSTEMS_STILL_RUNNING", "- Protected systems remained online or status is unknown")
 
+idf_source_text = env_text("NUT_IDF_SOURCE", "IDF source unavailable")
+idf_ip_text = env_text("NUT_IDF_IP", "IP unavailable")
+idf_dns_text = env_text("NUT_IDF_DNS", "DNS unavailable")
+idf_severity_text = env_text("NUT_IDF_SEVERITY", "Severity unavailable")
+idf_event_time_text = env_text("NUT_IDF_EVENT_TIME", "event time unavailable")
+idf_message_text = env_text("NUT_IDF_MESSAGE", "IDF power event details unavailable")
+idf_source_path_text = env_text("NUT_IDF_SOURCE_PATH", "source path unavailable")
+
 now_text = now.strftime("%Y-%m-%d %H:%M:%S %Z")
 
 def get_mode_summary():
@@ -169,7 +179,7 @@ def enforce_email_mode_policy(action, kind, mode, mode_label):
 
     Standby / disarmed:
       limited email types only:
-        onbatt, online, weekly
+        onbatt, online, weekly, idf_power
 
     Off:
       no emails allowed
@@ -178,8 +188,8 @@ def enforce_email_mode_policy(action, kind, mode, mode_label):
         return
 
     allowed_by_mode = {
-        "armed": {"onbatt", "online", "shutdown", "cancelled", "final", "weekly"},
-        "disarmed": {"onbatt", "online", "weekly"},
+        "armed": {"onbatt", "online", "shutdown", "cancelled", "final", "weekly", "idf_power"},
+        "disarmed": {"onbatt", "online", "weekly", "idf_power"},
         "off": set(),
     }
 
@@ -197,7 +207,7 @@ def enforce_email_mode_policy(action, kind, mode, mode_label):
     if mode == "disarmed":
         raise SystemExit(
             f"EMAIL BLOCKED BY MODE: mode={mode} label={mode_label!r} "
-            f"type={kind} reason='Standby allows only onbatt, online, and daily health emails'"
+            f"type={kind} reason='Standby allows only onbatt, online, daily health, and IDF power emails'"
         )
 
     raise SystemExit(
@@ -829,6 +839,32 @@ templates = {
             "Before rebooting or restarting affected equipment, perform a full power drain.",
             "Power-drain documentation:",
             "P:\\IT Tracking - Requests_Projects\\IT Governance\\How to and checklist\\How To Troubleshoot Server Power Issues",
+        ],
+    },
+    "idf_power": {
+        "subject": "APC IDF power event detected",
+        "title": "APC IDF power event detected",
+        "body": [
+            f"IDF event timestamp: {idf_event_time_text}",
+            "",
+            "Affected IDF device:",
+            f"- Source: {idf_source_text}",
+            f"- IP: {idf_ip_text}",
+            f"- DNS: {idf_dns_text}",
+            f"- Severity: {idf_severity_text}",
+            f"- Source path: {idf_source_path_text}",
+            "",
+            "Event message:",
+            f"- {idf_message_text}",
+            "",
+            "Status:",
+            "An APC IDF UPS reported a power or input-quality event.",
+            "",
+            "Operator action:",
+            "Check the NUT Control Center, APC IDF status, and nearby network equipment if this event repeats or coincides with building power issues.",
+            "",
+            "Note:",
+            "This email is informational only. It does not trigger shutdowns, change NUT mode, or send power commands.",
         ],
     },
     "weekly": {
