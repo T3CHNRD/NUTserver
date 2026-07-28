@@ -551,6 +551,18 @@ def ups_weather_grid_risk_lines():
         81: "Moderate rain showers",
         82: "Violent rain showers",
     }
+    winter_codes = {
+        56: "Freezing drizzle",
+        57: "Dense freezing drizzle",
+        66: "Freezing rain",
+        67: "Heavy freezing rain",
+        71: "Slight snow",
+        73: "Moderate snow",
+        75: "Heavy snow",
+        77: "Snow grains",
+        85: "Snow showers",
+        86: "Heavy snow showers",
+    }
 
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "nutserver-daily-health"})
@@ -593,6 +605,9 @@ def ups_weather_grid_risk_lines():
 
         if code in storm_codes or daily_code in storm_codes:
             cautions.append("Rain/storm conditions are possible today; check the radar before planned UPS work.")
+
+        if code in winter_codes or daily_code in winter_codes:
+            cautions.append("Snow, ice, or freezing precipitation is possible today; verify conditions before planned UPS work.")
 
         if max_temp is not None and max_temp >= 90:
             blockers.append(f"High heat/grid-load risk: forecast high is {max_temp} F.")
@@ -650,6 +665,8 @@ def ups_maintenance_recommendation_lines():
 
     if str(mode_label).upper() == "OFF":
         blockers.append("NUT mode is OFF, so monitoring, logging, and email reports may be disabled.")
+    elif str(mode_label).upper() == "PROTECTING":
+        cautions.append("NUT mode is PROTECTING, so live protection behavior is active.")
     else:
         positives.append(f"NUT mode is {mode_label}.")
 
@@ -718,9 +735,6 @@ def ups_maintenance_recommendation_lines():
         lines.append(f"- CAUTION: {item}")
     for item in positives:
         lines.append(f"- OK: {item}")
-
-    lines.append("")
-    lines.extend(weather_lines)
 
     lines.append("")
     lines.append("Reminder: UPS Maintenance Mode can suppress false NUT-triggered shutdowns, but it does not protect equipment from power loss while a UPS or battery is physically disconnected.")

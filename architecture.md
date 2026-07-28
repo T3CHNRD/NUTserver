@@ -2460,3 +2460,22 @@ Phase 6 added read-only UPS identity baseline and comparison helpers. These help
 | Safety boundary | Identity helpers are read-only against NUT and do not execute shutdown wrappers or change UPS mappings |
 | Not yet implemented | Replacement approval, consolidation approval, removal/retirement approval, UI workflow, and automatic remapping are not implemented yet |
 
+
+### 20.23 Implemented: Daily UPS Health Maintenance Recommendation
+
+Status: Complete / PASS.
+
+The Daily UPS Health email now includes a UPS maintenance recommendation section for planned UPS swaps, battery replacement, and maintenance work. The recommendation is advisory and does not block operator action.
+
+| Item | Implemented result |
+|---|---|
+| UPS status check | Recommendation checks that all monitored UPS units are online |
+| NUT mode check | STANDBY is treated as safer for planned maintenance; PROTECTING is treated as caution because live protection behavior is active |
+| Live action check | Live actions blocked is marked safer for maintenance; live actions allowed is marked caution |
+| Maintenance state check | Active or unresolved UPS Maintenance Mode items make planned work not recommended |
+| Identity check | The recommendation runs the UPS identity comparison helper and warns if identities do not match baseline |
+| IDF power check | IDF2 and IDF3 last known battery status can block planned maintenance if battery power is detected |
+| Weather/grid-risk check | Weather is checked for storm, rain, high heat/grid-load risk, high wind, snow, ice, and freezing precipitation |
+| Email formatting | Detailed weather measurements are not printed; weather only influences OK, CAUTION, or NOT RECOMMENDED reasoning |
+| Safety reminder | Email reminds operators that UPS Maintenance Mode does not protect equipment from power loss while a UPS or battery is physically disconnected |
+
