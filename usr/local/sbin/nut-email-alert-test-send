@@ -732,10 +732,40 @@ def ups_maintenance_recommendation_lines():
 
     if blockers:
         lines.append("Status: NOT RECOMMENDED for planned UPS swaps or battery maintenance today.")
+        primary_heading = "Primary reason(s) for NOT RECOMMENDED:"
+        primary_items = blockers
+        primary_prefix = "BLOCKER"
     elif cautions:
         lines.append("Status: CAUTION - verify conditions before planned UPS swaps or battery maintenance today.")
+        primary_heading = "Primary reason(s) for CAUTION:"
+        primary_items = cautions
+        primary_prefix = "CAUTION"
     else:
         lines.append("Status: OK for planned UPS swaps or battery maintenance today.")
+        primary_heading = "Primary reason:"
+        primary_items = ["No blockers or cautions were found."]
+        primary_prefix = "OK"
+
+    lines.append("")
+    lines.append(primary_heading)
+    for item in primary_items[:3]:
+        lines.append(f"- {primary_prefix}: {item}")
+    if len(primary_items) > 3:
+        lines.append(f"- {primary_prefix}: Additional items are listed below in Reasons / risk checks.")
+
+    lines.append("")
+    lines.append("Weather / grid risk summary:")
+    if weather_blockers:
+        for item in weather_blockers[:3]:
+            lines.append(f"- BLOCKER: {item}")
+    elif weather_cautions:
+        for item in weather_cautions[:3]:
+            lines.append(f"- CAUTION: {item}")
+    elif weather_positives:
+        for item in weather_positives[:3]:
+            lines.append(f"- OK: {item}")
+    else:
+        lines.append("- CAUTION: Weather/grid-risk result was not available in this report.")
 
     lines.append("")
     lines.append("Reasons / risk checks:")
