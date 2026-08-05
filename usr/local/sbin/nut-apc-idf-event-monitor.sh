@@ -467,7 +467,10 @@ monitor_target() {
   fi
 
   if [ ! -s "$state_file" ]; then
-    cp "$detected_file" "$state_file"
+    {
+      cat "$state_file" "$detected_file"
+    } | sort -u > "${state_file}.tmp"
+    mv "${state_file}.tmp" "$state_file"
     chmod 0644 "$state_file" 2>/dev/null || true
     record_success "$name" "$ip" "$dns" "$fail_file" "$matching_events" "baseline_created"
     return 0
@@ -492,7 +495,10 @@ monitor_target() {
       send_idf_power_email "$name" "$ip" "$dns" "$event_severity" "$event_time_combined" "$event_msg" "authenticated_event_txt_v2"
     done < "$new_file"
 
-    cp "$detected_file" "$state_file"
+    {
+      cat "$state_file" "$detected_file"
+    } | sort -u > "${state_file}.tmp"
+    mv "${state_file}.tmp" "$state_file"
     chmod 0644 "$state_file" 2>/dev/null || true
     write_count "$fail_file" 0
     publish_events

@@ -19,6 +19,9 @@ Types:
   shutdown   Protected systems are shutting down
   cancelled  Shutdown cancelled because power returned
   final      NUT server final shutdown warning
+  lowbatt    UPS battery has reached low-battery state
+  commbad    UPS communication has been lost
+  commok     UPS communication has been restored
   weekly     Daily UPS health report
   idf_power  APC IDF2/IDF3 power or input-quality event
 
@@ -39,6 +42,9 @@ case "$ACTION" in
     echo "shutdown"
     echo "cancelled"
     echo "final"
+    echo "lowbatt"
+    echo "commbad"
+    echo "commok"
     echo "weekly"
     echo "idf_power"
     exit 0
@@ -53,7 +59,7 @@ case "$ACTION" in
 esac
 
 case "$TYPE" in
-  onbatt|online|shutdown|cancelled|final|weekly|idf_power) ;;
+  onbatt|online|shutdown|cancelled|final|lowbatt|commbad|commok|weekly|idf_power) ;;
   *)
     echo "FAIL: unknown email type: $TYPE"
     usage
@@ -125,6 +131,7 @@ def env_list_lines(name, default_line):
         return [default_line]
     return [p if p.startswith("- ") else f"- {p}" for p in parts]
 
+event_reason_text = env_text("NUT_EMAIL_REASON", "Event source was not supplied")
 outage_duration_text = env_text("NUT_OUTAGE_DURATION", "unavailable from current email context")
 shutdown_attempted_text = env_text("NUT_SHUTDOWN_ATTEMPTED", "No")
 manual_recovery_text = env_text("NUT_MANUAL_RECOVERY_REQUIRED", "No, unless equipment shows issues")
@@ -188,8 +195,27 @@ def enforce_email_mode_policy(action, kind, mode, mode_label):
         return
 
     allowed_by_mode = {
-        "armed": {"onbatt", "online", "shutdown", "cancelled", "final", "weekly", "idf_power"},
-        "disarmed": {"onbatt", "online", "weekly", "idf_power"},
+        "armed": {
+            "onbatt",
+            "online",
+            "shutdown",
+            "cancelled",
+            "final",
+            "lowbatt",
+            "commbad",
+            "commok",
+            "weekly",
+            "idf_power",
+        },
+        "disarmed": {
+            "onbatt",
+            "online",
+            "lowbatt",
+            "commbad",
+            "commok",
+            "weekly",
+            "idf_power",
+        },
         "off": set(),
     }
 
@@ -207,7 +233,7 @@ def enforce_email_mode_policy(action, kind, mode, mode_label):
     if mode == "disarmed":
         raise SystemExit(
             f"EMAIL BLOCKED BY MODE: mode={mode} label={mode_label!r} "
-            f"type={kind} reason='Standby allows only onbatt, online, daily health, and IDF power emails'"
+            f"type={kind} reason='Standby allows power, battery, communication, daily health, and IDF power emails'"
         )
 
     raise SystemExit(
@@ -871,6 +897,50 @@ templates = {
             "P:\\IT Tracking - Requests_Projects\\IT Governance\\How to and checklist\\How To Troubleshoot Server Power Issues",
         ],
     },
+    "lowbatt": {
+        "subject": "CRITICAL: UPS battery is low",
+        "title": "UPS low-battery condition detected",
+        "body": [
+            f"Low-battery timestamp: {now_text}",
+            f"Event details: {event_reason_text}",
+            "",
+            "Status:",
+            "A monitored UPS has entered its low-battery state.",
+            "",
+            "Operator action:",
+            "Immediately review the NUT Control Center, UPS runtime, protected systems, and active shutdown state.",
+            "Confirm that configured shutdown actions are progressing as expected.",
+        ],
+    },
+    "commbad": {
+        "subject": "UPS communication lost",
+        "title": "Communication with a monitored UPS was lost",
+        "body": [
+            f"Communication-loss timestamp: {now_text}",
+            f"Event details: {event_reason_text}",
+            "",
+            "Status:",
+            "The NUT server can no longer communicate with a monitored UPS.",
+            "",
+            "Operator action:",
+            "Check UPS power, USB or network connectivity, NUT driver status, and nearby grid-witness information.",
+            "Review UPS Maintenance Mode before disconnecting or replacing equipment.",
+        ],
+    },
+    "commok": {
+        "subject": "UPS communication restored",
+        "title": "Communication with a monitored UPS was restored",
+        "body": [
+            f"Communication-restored timestamp: {now_text}",
+            f"Event details: {event_reason_text}",
+            "",
+            "Status:",
+            "The NUT server has restored communication with a monitored UPS.",
+            "",
+            "Operator action:",
+            "Confirm the UPS identity, status, charge, runtime, and load readings are valid.",
+        ],
+    },
     "idf_power": {
         "subject": "APC IDF power event detected",
         "title": "APC IDF power event detected",
@@ -921,17 +991,36 @@ templates = {
 }
 
 tpl = templates[kind]
-subject = f"{prefix} {tpl['subject']}"
+
+test_mode = os.environ.get("NUT_EMAIL_TEST", "").strip() == "1"
+
+if test_mode:
+    subject = f"{prefix} [TEST - NO ACTION REQUIRED] {tpl['subject']}"
+    display_title = f"TEST ONLY - {tpl['title']}"
+else:
+    subject = f"{prefix} {tpl['subject']}"
+    display_title = tpl["title"]
 
 body_lines = [
-    tpl["title"],
-    "=" * len(tpl["title"]),
+    display_title,
+    "=" * len(display_title),
     "",
+]
+
+if test_mode:
+    body_lines.extend([
+        "THIS IS A CONTROLLED EMAIL TEST.",
+        "NO REAL UPS, POWER, BATTERY, OR COMMUNICATION EVENT HAS OCCURRED.",
+        "NO ACTION IS REQUIRED.",
+        "",
+    ])
+
+body_lines.extend([
     f"NUT server: {hostname}",
     f"NUT mode: {mode_label}",
     "",
     *tpl["body"],
-]
+])
 
 body = "\n".join(body_lines)
 

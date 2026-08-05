@@ -206,6 +206,13 @@ def block_if_protecting(action_name):
     made from STANDBY FOR MAINTENANCE or OFF.
     """
     current_mode = get_current_protection_mode()
+    normalized_action = str(action_name or "").strip().lower()
+
+    # Creating a backup is safe in every mode. Backup does not change
+    # monitoring, configuration, restore state, tests, or live actions.
+    if normalized_action == "backup":
+        return None
+
     if current_mode == "armed":
         return jsonify({
             "ok": False,

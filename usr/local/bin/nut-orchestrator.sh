@@ -126,15 +126,18 @@ ups_maintenance_commbad() {
 
   if echo "$decision_output" | grep -q 'decision=GRID_CONFIRMED'; then
     /usr/local/sbin/nut-ups-maintenance-state --event UPS_MAINTENANCE_UPS_OFFLINE --ups "$ups_name" --mode commbad --status active --message "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet." >> "$LOG_FILE" 2>&1 || true
+    send_outage_email "commbad" "$ups_name communication lost while grid power appears present"
     return 0
   fi
 
   if echo "$decision_output" | grep -q 'decision=WARNING_ONLY'; then
     /usr/local/sbin/nut-ups-maintenance-state --event UPS_MAINTENANCE_TIMEOUT_WARNING --ups "$ups_name" --mode commbad --status warning --message "UPS communication lost with only one online witness. Warning-only maintenance state recorded. Automatic shutdown suppression not implemented yet." >> "$LOG_FILE" 2>&1 || true
+    send_outage_email "commbad" "$ups_name communication lost with only one online grid witness"
     return 0
   fi
 
   /usr/local/sbin/nut-ups-maintenance-state --event UPS_MAINTENANCE_REAL_OUTAGE_DETECTED --ups "$ups_name" --mode commbad --status warning --message "UPS communication lost but grid witness confidence was not sufficient for maintenance classification." >> "$LOG_FILE" 2>&1 || true
+  send_outage_email "commbad" "$ups_name communication lost and grid witness confidence was insufficient"
 }
 
 ups_maintenance_commok() {
@@ -142,6 +145,14 @@ ups_maintenance_commok() {
 
   log_line "UPS_MAINTENANCE_COMM_OK ${ups_name}"
   /usr/local/sbin/nut-ups-maintenance-state --event UPS_MAINTENANCE_UPS_RETURNED --ups "$ups_name" --mode commok --status initialized --message "UPS communication restored. Replacement/consolidation identity review is not implemented yet." >> "$LOG_FILE" 2>&1 || true
+  send_outage_email "commok" "$ups_name communication restored"
+}
+
+ups_lowbatt_alert() {
+  local ups_name="$1"
+
+  log_line "UPS_LOWBATT_DETECTED ${ups_name}"
+  send_outage_email "lowbatt" "$ups_name entered low-battery state"
 }
 
 ups_maintenance_suppresses_commit() {
@@ -455,6 +466,30 @@ send_outage_email() {
 
 
 case "${1:-}" in
+  ups7-lowbatt)
+    ups_lowbatt_alert "ups7"
+    ;;
+
+  ups2-lowbatt)
+    ups_lowbatt_alert "ups2"
+    ;;
+
+  ups8-lowbatt)
+    ups_lowbatt_alert "ups8"
+    ;;
+
+  ups6-lowbatt)
+    ups_lowbatt_alert "ups6"
+    ;;
+
+  ups9-lowbatt)
+    ups_lowbatt_alert "ups9"
+    ;;
+
+  ups3-lowbatt)
+    ups_lowbatt_alert "ups3"
+    ;;
+
   ups7-commbad)
     ups_maintenance_commbad "ups7"
     ;;
