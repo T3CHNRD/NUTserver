@@ -593,6 +593,32 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 
 /* Power / Boot Event Log Panel - readable mirror of main dashboard source */
+
+function formatUsEventDateTime(value) {
+  const text = String(value || "").trim();
+
+  const match = text.match(
+    /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})(.*)$/
+  );
+
+  if (!match) {
+    return text;
+  }
+
+  const year = match[1];
+  const month = match[2];
+  const day = match[3];
+  let hour = Number(match[4]);
+  const minute = match[5];
+  const second = match[6];
+  const suffix = match[7] || "";
+
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+
+  return `${month}/${day}/${year} ${hour}:${minute}:${second} ${ampm}${suffix}`;
+}
 async function loadPowerBootEvents() {
   const targetId = "power-boot-event-log";
   let panel = document.getElementById(targetId);
@@ -715,7 +741,7 @@ async function loadPowerBootEvents() {
       const ts = line.match(/^\[([^\]]+)\]\s*(.*)$/);
       let msg = line;
       if (ts) {
-        row.timestamp = ts[1];
+        row.timestamp = formatUsEventDateTime(ts[1]);
         msg = ts[2];
       }
 

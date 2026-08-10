@@ -147,7 +147,7 @@ idf_event_time_text = env_text("NUT_IDF_EVENT_TIME", "event time unavailable")
 idf_message_text = env_text("NUT_IDF_MESSAGE", "IDF power event details unavailable")
 idf_source_path_text = env_text("NUT_IDF_SOURCE_PATH", "source path unavailable")
 
-now_text = now.strftime("%Y-%m-%d %H:%M:%S %Z")
+now_text = now.strftime("%m/%d/%Y %-I:%M:%S %p %Z")
 
 def get_mode_summary():
     try:

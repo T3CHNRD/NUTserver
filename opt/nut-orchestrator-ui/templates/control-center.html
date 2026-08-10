@@ -3488,6 +3488,32 @@ function updateNutProductionButtons(mode) {
       return raw;
     }
 
+    function formatUsDateTime(value) {
+      const text = String(value || "").trim();
+
+      const match = text.match(
+        /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})(.*)$/
+      );
+
+      if (!match) {
+        return text;
+      }
+
+      const year = match[1];
+      const month = match[2];
+      const day = match[3];
+      let hour = Number(match[4]);
+      const minute = match[5];
+      const second = match[6];
+      const suffix = match[7] || "";
+
+      const ampm = hour >= 12 ? "PM" : "AM";
+      hour = hour % 12;
+      if (hour === 0) hour = 12;
+
+      return `${month}/${day}/${year} ${hour}:${minute}:${second} ${ampm}${suffix}`;
+    }
+
     function parseEventLine(line) {
       const raw = String(line || "");
       const row = {
@@ -3501,7 +3527,7 @@ function updateNutProductionButtons(mode) {
       if (raw.startsWith("[")) {
         const end = raw.indexOf("]");
         if (end > 0) {
-          row.time = raw.slice(1, end);
+          row.time = formatUsDateTime(raw.slice(1, end));
           row.message = raw.slice(end + 1).trim();
         }
       }
@@ -3653,7 +3679,12 @@ function updateNutProductionButtons(mode) {
       const dateEl = document.getElementById("cc-clock-date");
       const countdownEl = document.getElementById("cc-refresh-countdown");
 
-      if (timeEl) timeEl.textContent = now.toLocaleTimeString();
+      if (timeEl) timeEl.textContent = now.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true
+        });
       if (dateEl) {
         dateEl.textContent = now.toLocaleDateString(undefined, {
           weekday: "long",
@@ -5195,7 +5226,12 @@ function closeLabSelectedRestoreScreen() {
 
         const statusText = pickValue(data, ["ups.status", "ups_status", "status"]);
         setUpsText("cc-ups-status", statusText);
-        setUpsText("cc-ups-refresh", new Date().toLocaleTimeString());
+        setUpsText("cc-ups-refresh", new Date().toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true
+        }));
 
         setUpsText("cc-ups-status-main", "Online (" + ccSelectedUps + ")");
         setUpsText("cc-ups-status-sub", String(friendlyName));

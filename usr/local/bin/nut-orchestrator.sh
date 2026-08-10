@@ -448,7 +448,7 @@ send_outage_email() {
   fi
 
   email_context_for_type "$kind" "$reason"
-  "$email_cmd" --send "$kind" >> "$LOG_FILE" 2>&1
+  sudo -n "$email_cmd" --send "$kind" >> "$LOG_FILE" 2>&1
   rc=$?
 
   if [ "$rc" -eq 0 ]; then
@@ -636,16 +636,18 @@ case "${1:-}" in
     ;;
 
   phase2-power-restore-abort-ups3)
+    # Production notification must never depend on the legacy Phase 2 helper.
+    write_state "ups3" "ups3" "power_restored_canceled" "phase2 validation" 0 0 "Power restored before UPS3 shutdown commit"
+    send_outage_email "online" "ups3 power restored / grid returned"
+    send_outage_email "cancelled" "ups3 power restored before shutdown"
+
     run_phase2_power_restore_abort "ups3"
     rc=$?
-    if [ "$rc" -eq 0 ]; then
-      write_state "ups3" "ups3" "power_restored_canceled" "phase2 validation" 0 0 "Phase 2 power restore abort completed for ups3"
-      send_outage_email "online" "ups3 power restored / grid returned"
-    send_outage_email "cancelled" "ups3 power restored before shutdown"
-    else
-      write_state "ups3" "ups3" "power_restore_abort_failed" "phase2 validation" 0 0 "Phase 2 power restore abort failed for ups3 rc=${rc}"
+    if [ "$rc" -ne 0 ]; then
+      log_line "PHASE2_POWER_RESTORE_ABORT_NONFATAL ups3 rc=${rc}"
     fi
-    exit "$rc"
+
+    exit 0
     ;;
 
   ups3-commit)
