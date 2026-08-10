@@ -466,6 +466,86 @@ send_outage_email() {
 
 
 case "${1:-}" in
+  # ============================================================
+  # UPS1 / UPS4 / UPS5 - ALERT ONLY
+  # Monitoring, email, event logging, and state only.
+  # NO shutdown countdowns.
+  # NO shutdown commits.
+  # NO equipment shutdown actions.
+  # ============================================================
+
+  ups1-onbatt)
+    log_line "UPS_ONBATT_DETECTED ups1 scope='alert_only' countdown='none'"
+    send_outage_email "onbatt" "ups1 on battery / grid power lost"
+    write_state "ups1" "ups1" "on_battery_alert" "alert_only" 0 0 "UPS on battery; alert-only monitoring; no automatic shutdown configured"
+    ;;
+
+  ups1-online)
+    log_line "UPS_POWER_RESTORED ups1 scope='alert_only'"
+    write_state "ups1" "ups1" "normal" "alert_only" 0 0 "Power restored; alert-only UPS returned online"
+    send_outage_email "online" "ups1 power restored / grid returned"
+    ;;
+
+  ups1-lowbatt)
+    ups_lowbatt_alert "ups1"
+    ;;
+
+  ups1-commbad)
+    ups_maintenance_commbad "ups1"
+    ;;
+
+  ups1-commok)
+    ups_maintenance_commok "ups1"
+    ;;
+
+  ups4-onbatt)
+    log_line "UPS_ONBATT_DETECTED ups4 scope='alert_only' countdown='none'"
+    send_outage_email "onbatt" "ups4 on battery / grid power lost"
+    write_state "ups4" "ups4" "on_battery_alert" "alert_only" 0 0 "UPS on battery; alert-only monitoring; no automatic shutdown configured"
+    ;;
+
+  ups4-online)
+    log_line "UPS_POWER_RESTORED ups4 scope='alert_only'"
+    write_state "ups4" "ups4" "normal" "alert_only" 0 0 "Power restored; alert-only UPS returned online"
+    send_outage_email "online" "ups4 power restored / grid returned"
+    ;;
+
+  ups4-lowbatt)
+    ups_lowbatt_alert "ups4"
+    ;;
+
+  ups4-commbad)
+    ups_maintenance_commbad "ups4"
+    ;;
+
+  ups4-commok)
+    ups_maintenance_commok "ups4"
+    ;;
+
+  ups5-onbatt)
+    log_line "UPS_ONBATT_DETECTED ups5 scope='alert_only' countdown='none'"
+    send_outage_email "onbatt" "ups5 on battery / grid power lost"
+    write_state "ups5" "ups5" "on_battery_alert" "alert_only" 0 0 "UPS on battery; alert-only monitoring; no automatic shutdown configured"
+    ;;
+
+  ups5-online)
+    log_line "UPS_POWER_RESTORED ups5 scope='alert_only'"
+    write_state "ups5" "ups5" "normal" "alert_only" 0 0 "Power restored; alert-only UPS returned online"
+    send_outage_email "online" "ups5 power restored / grid returned"
+    ;;
+
+  ups5-lowbatt)
+    ups_lowbatt_alert "ups5"
+    ;;
+
+  ups5-commbad)
+    ups_maintenance_commbad "ups5"
+    ;;
+
+  ups5-commok)
+    ups_maintenance_commok "ups5"
+    ;;
+
   ups7-lowbatt)
     ups_lowbatt_alert "ups7"
     ;;
