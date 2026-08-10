@@ -329,6 +329,25 @@ fi
 sanitize_config_file /etc/nut/synology-api.conf etc/nut/synology-api.conf 0640
 
 echo
+
+echo
+echo "===== NUT SUDOERS SAFE SYNC ====="
+
+SUDOERS_SRC="/etc/sudoers.d/nut-event-email"
+SUDOERS_DST="$REPO/etc/sudoers.d/nut-event-email"
+
+if [ -f "$SUDOERS_SRC" ]; then
+    mkdir -p "$(dirname "$SUDOERS_DST")"
+
+    # This file contains command authorization only.
+    # It must never contain passwords, tokens, or SMTP credentials.
+    install -m 0440 "$SUDOERS_SRC" "$SUDOERS_DST"
+
+    echo "SYNCED file: $SUDOERS_SRC -> $SUDOERS_DST"
+else
+    echo "WARN: missing source: $SUDOERS_SRC"
+fi
+
 echo "===== SYSTEMD NUT UNIT SYNC ====="
 sync_glob_files "/etc/systemd/system/nut-*.service" etc/systemd/system
 sync_glob_files "/etc/systemd/system/nut-*.timer" etc/systemd/system

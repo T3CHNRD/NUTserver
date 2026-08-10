@@ -1,0 +1,12 @@
+# NUT event email delivery only.
+# Allows the nut runtime account to use the root-owned SMTP configuration.
+Defaults!/usr/local/sbin/nut-email-alert-test-send env_keep += "NUT_EMAIL_REASON NUT_OUTAGE_DURATION NUT_SHUTDOWN_ATTEMPTED NUT_SYSTEMS_SCHEDULED NUT_SYSTEMS_SHUT_DOWN NUT_SYSTEMS_STILL_RUNNING NUT_MANUAL_RECOVERY_REQUIRED NUT_EMAIL_TEST"
+
+nut ALL=(root) NOPASSWD: /usr/local/sbin/nut-email-alert-test-send --send onbatt
+nut ALL=(root) NOPASSWD: /usr/local/sbin/nut-email-alert-test-send --send online
+nut ALL=(root) NOPASSWD: /usr/local/sbin/nut-email-alert-test-send --send shutdown
+nut ALL=(root) NOPASSWD: /usr/local/sbin/nut-email-alert-test-send --send cancelled
+nut ALL=(root) NOPASSWD: /usr/local/sbin/nut-email-alert-test-send --send final
+nut ALL=(root) NOPASSWD: /usr/local/sbin/nut-email-alert-test-send --send lowbatt
+nut ALL=(root) NOPASSWD: /usr/local/sbin/nut-email-alert-test-send --send commbad
+nut ALL=(root) NOPASSWD: /usr/local/sbin/nut-email-alert-test-send --send commok
