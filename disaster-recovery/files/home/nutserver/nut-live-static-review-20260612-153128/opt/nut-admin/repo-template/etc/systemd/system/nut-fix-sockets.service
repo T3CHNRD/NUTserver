@@ -1,0 +1,12 @@
+[Unit]
+Description=Fix NUT driver socket permissions after boot
+After=nut-server.service
+Wants=nut-server.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/nut-fix-sockets.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

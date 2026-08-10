@@ -1,0 +1,11 @@
+{
+  "ups_name": "ups8",
+  "display_name": "ups8",
+  "state": "shutdown_committed",
+  "scope": "targeted shutdown",
+  "countdown_seconds": 0,
+  "commit_seconds": 0,
+  "updated_epoch": 1783118179,
+  "updated_at": "2026-07-03 18:36:19",
+  "note": "Committed; VOIP wrapper executed, VME and Merlin alert only"
+}

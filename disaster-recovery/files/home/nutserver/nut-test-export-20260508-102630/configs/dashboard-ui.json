@@ -1,0 +1,7 @@
+{
+  "dashboardTitle": "NUT Server Dashboard",
+  "showSimulatedButton": true,
+  "showRealButton": true,
+  "showBackupButton": true,
+  "outputMaxLines": 500
+}

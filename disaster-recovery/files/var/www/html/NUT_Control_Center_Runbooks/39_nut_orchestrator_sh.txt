@@ -1,0 +1,22 @@
+SCRIPT RUNBOOK - nut-orchestrator.sh
+
+Path:
+  /usr/local/bin/nut-orchestrator.sh
+
+Purpose:
+  Main orchestration script.
+
+Controls:
+  - Overall shutdown orchestration flow.
+  - Target order.
+  - Integration calls.
+  - Logging/classification.
+  - Final orchestration behavior during UPS events.
+
+Risk:
+  Very high. This is the core production orchestration script.
+
+Use only when:
+  - Updating shutdown order.
+  - Updating orchestration logic.
+  - Troubleshooting real event behavior.

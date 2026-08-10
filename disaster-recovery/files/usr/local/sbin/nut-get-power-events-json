@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+import json
+import re
+import subprocess
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+
+LOG = Path("/var/log/nut-orchestrator-ui/power-events.log")
+NOW = datetime.now().astimezone()
+CUTOFF = NOW - timedelta(days=5)
+
+LOG_TS_RE = re.compile(r'^\[(?P<ts>[0-9]{4}-[0-9]{2}-[0-9]{2}(?:[ T])[0-9]{2}:[0-9]{2}:[0-9]{2}(?:[+-][0-9]{2}:?[0-9]{2})?)\]')
+JOURNAL_TS_RE = re.compile(r'^(?P<mon>[A-Z][a-z]{2})\s+(?P<day>[0-9]{1,2})\s+(?P<time>[0-9]{2}:[0-9]{2}:[0-9]{2})\s+')
+
+INTERESTING_JOURNAL_RE = re.compile(
+    r'(on battery|on line power|battery is low|low battery|upssched|exec_cmd|permission denied|returned)',
+    re.IGNORECASE
+)
+
+IGNORE_JOURNAL_RE = re.compile(
+    r'UPS:\s+ups[0-9]+@localhost\s+\(primary\)\s+\(power value\s+[0-9]+\)',
+    re.IGNORECASE
+)
+
+MONTHS = {
+    "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4,
+    "May": 5, "Jun": 6, "Jul": 7, "Aug": 8,
+    "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12,
+}
+
+def parse_log_ts(line):
+    m = LOG_TS_RE.match(line)
+    if not m:
+        return None
+
+    raw = m.group("ts").replace("T", " ")
+
+    if re.search(r'[+-][0-9]{2}:[0-9]{2}$', raw):
+        raw = raw[:-3] + raw[-2:]
+
+    for fmt in ("%Y-%m-%d %H:%M:%S%z", "%Y-%m-%d %H:%M:%S"):
+        try:
+            dt = datetime.strptime(raw, fmt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=NOW.tzinfo)
+            return dt.astimezone(NOW.tzinfo)
+        except ValueError:
+            pass
+
+    return None
+
+def parse_journal_ts(line):
+    m = JOURNAL_TS_RE.match(line)
+    if not m:
+        return None
+
+    try:
+        month = MONTHS[m.group("mon")]
+        day = int(m.group("day"))
+        hour, minute, second = map(int, m.group("time").split(":"))
+        dt = datetime(NOW.year, month, day, hour, minute, second, tzinfo=NOW.tzinfo)
+
+        # Handle year boundary safely if journal line is from Dec while now is Jan.
+        if dt > NOW + timedelta(days=1):
+            dt = dt.replace(year=NOW.year - 1)
+
+        return dt
+    except Exception:
+        return None
+
+def normalize_journal_line(line, dt):
+    # Keep the original journal message, but put it into the same bracketed timestamp format
+    # so both Dashboard and NUT UI parse/render it consistently.
+    msg = JOURNAL_TS_RE.sub("", line).strip()
+    return f"[{dt.strftime('%Y-%m-%d %H:%M:%S')}] NUT_MONITOR_EVENT {msg}"
+
+events = []
+
+# Source 1: orchestrator/UI power log
+try:
+    raw_log = LOG.read_bytes().decode("utf-8", errors="replace").replace("\r", "")
+    for idx, line in enumerate(raw_log.splitlines()):
+        dt = parse_log_ts(line)
+        if dt and dt >= CUTOFF:
+            events.append({
+                "dt": dt,
+                "idx": idx,
+                "source": "power-log",
+                "line": line,
+            })
+except FileNotFoundError:
+    pass
+
+# Source 2: NUT monitor journal, so detected UPS events still show even if orchestrator failed.
+try:
+    result = subprocess.run(
+        ["/usr/bin/journalctl", "-u", "nut-monitor", "--since", "5 days ago", "--no-pager"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+
+    for idx, line in enumerate(result.stdout.splitlines()):
+        if not INTERESTING_JOURNAL_RE.search(line):
+            continue
+
+        if IGNORE_JOURNAL_RE.search(line):
+            continue
+
+        dt = parse_journal_ts(line)
+        if dt and dt >= CUTOFF:
+            events.append({
+                "dt": dt,
+                "idx": idx,
+                "source": "journal",
+                "line": normalize_journal_line(line, dt),
+            })
+except Exception:
+    pass
+
+# Deduplicate exact rendered lines.
+deduped = {}
+for event in events:
+    deduped[event["line"]] = event
+
+events = list(deduped.values())
+events.sort(key=lambda e: (e["dt"], e["source"], e["idx"]), reverse=True)
+
+json.dump(
+    [{"line": e["line"]} for e in events],
+    sys.stdout,
+    indent=2
+)
+print()

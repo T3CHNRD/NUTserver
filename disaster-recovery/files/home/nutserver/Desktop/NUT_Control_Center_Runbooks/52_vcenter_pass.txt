@@ -1,0 +1,18 @@
+PROTECTED FILE RUNBOOK - vcenter.pass
+
+Path:
+  /etc/nut/vcenter.pass
+
+Purpose:
+  Stores or references the vCenter password used by VMware integration.
+
+Risk:
+  Sensitive credential material.
+
+Use only when:
+  - Rotating vCenter password.
+  - Moving VMware integration away from fallback config.
+  - Correcting VMware authentication.
+
+Important:
+  Do not paste real credential values into chat.

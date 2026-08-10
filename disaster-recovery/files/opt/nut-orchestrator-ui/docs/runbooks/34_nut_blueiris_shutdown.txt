@@ -1,0 +1,19 @@
+SCRIPT RUNBOOK - nut-blueiris-shutdown.sh
+
+Path:
+  /usr/local/sbin/nut-blueiris-shutdown.sh
+
+Purpose:
+  Controls Blue Iris shutdown behavior.
+
+Controls:
+  - Blue Iris shutdown sequence.
+  - Remote command method.
+  - Safety checks and logging.
+
+Risk:
+  High. Live execution can shut down Blue Iris or its host.
+
+Use only when:
+  - Preparing Blue Iris live shutdown testing.
+  - Updating Blue Iris shutdown behavior.

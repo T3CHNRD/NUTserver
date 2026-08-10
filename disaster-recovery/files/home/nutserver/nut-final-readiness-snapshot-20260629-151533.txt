@@ -1,0 +1,77 @@
+===== FINAL MODE / LIVE GATE STATUS =====
+    "mode": "disarmed",
+    "mode_label": "STANDBY FOR MAINTENANCE",
+    "nut_monitor": "active",
+    "ups_total": 9,
+    "ups_online": 9,
+    "allow_live_actions": "0",
+    "allow_esxi_ssh_fallback": "0",
+
+===== ACTIVE WRAPPER PERMISSIONS =====
+
+----- /usr/local/sbin/nut-db-shutdown.sh -----
+path=/usr/local/sbin/nut-db-shutdown.sh owner=root group=root mode=-rwxr-xr-x numeric=755
+PASS: [REDACTED]
+PASS: [REDACTED]
+
+----- /usr/local/sbin/nut-blueiris-shutdown.sh -----
+path=/usr/local/sbin/nut-blueiris-shutdown.sh owner=root group=nut mode=-rwxr-x--- numeric=750
+PASS: [REDACTED]
+PASS: [REDACTED]
+
+----- /usr/local/sbin/nut-lansweeper-shutdown.sh -----
+path=/usr/local/sbin/nut-lansweeper-shutdown.sh owner=root group=nut mode=-rwxr-x--- numeric=750
+PASS: [REDACTED]
+PASS: [REDACTED]
+
+----- /usr/local/sbin/nut-voip-shutdown.sh -----
+path=/usr/local/sbin/nut-voip-shutdown.sh owner=root group=nut mode=-rwxr-x--- numeric=750
+PASS: [REDACTED]
+PASS: [REDACTED]
+
+----- /usr/local/sbin/nut-vmware-shutdown.sh -----
+path=/usr/local/sbin/nut-vmware-shutdown.sh owner=root group=root mode=-rwxr-xr-x numeric=755
+PASS: [REDACTED]
+PASS: [REDACTED]
+
+----- /usr/local/sbin/nut-synology-shutdown.sh -----
+path=/usr/local/sbin/nut-synology-shutdown.sh owner=root group=nut mode=-rwxr-x--- numeric=750
+PASS: [REDACTED]
+PASS: [REDACTED]
+
+----- /usr/local/sbin/nut-netapp-halt.sh -----
+path=/usr/local/sbin/nut-netapp-halt.sh owner=root group=nut mode=-rwxr-x--- numeric=750
+PASS: [REDACTED]
+PASS: [REDACTED]
+
+----- /usr/local/sbin/nut-local-final-shutdown.sh -----
+path=/usr/local/sbin/nut-local-final-shutdown.sh owner=root group=nut mode=-rwxr-x--- numeric=750
+PASS: [REDACTED]
+PASS: [REDACTED]
+
+===== ACTIVE UPSSCHED PATHS =====
+2:CMDSCRIPT /usr/local/bin/nut-orchestrator.sh
+7:AT ONBATT ups7@localhost EXECUTE ups7-onbatt
+8:AT ONBATT ups7@localhost START-TIMER ups7-commit 240
+9:AT ONLINE ups7@localhost CANCEL-TIMER ups7-commit ups7-online
+12:AT ONBATT ups2@localhost EXECUTE ups2-onbatt
+13:AT ONBATT ups2@localhost START-TIMER ups2-commit 420
+14:AT ONLINE ups2@localhost CANCEL-TIMER ups2-commit ups2-online
+17:AT ONBATT ups8@localhost EXECUTE ups8-onbatt
+18:AT ONBATT ups8@localhost START-TIMER ups8-commit 180
+19:AT ONLINE ups8@localhost CANCEL-TIMER ups8-commit ups8-online
+22:AT ONBATT ups6@localhost EXECUTE ups6-onbatt
+23:AT ONBATT ups6@localhost START-TIMER ups6-commit 300
+24:AT ONLINE ups6@localhost CANCEL-TIMER ups6-commit ups6-online
+27:AT ONBATT ups9@localhost EXECUTE ups9-onbatt
+28:AT ONBATT ups9@localhost START-TIMER ups9-commit 360
+29:AT ONLINE ups9@localhost CANCEL-TIMER ups9-commit ups9-online
+33:AT ONBATT ups3@localhost EXECUTE ups3-onbatt
+34:AT ONBATT ups3@localhost START-TIMER ups3-commit 300
+35:AT ONLINE ups3@localhost CANCEL-TIMER ups3-commit phase2-power-restore-abort-ups3
+
+===== FINAL IDF CURRENT STATE =====
+795:[2026-06-29 14:40:32] APC_IDF_EVENT source="IDF2" device="IDF2" ip="192.168.9.251" dns="APC-IDF2.albl.com" severity="Informational" code="snmp_current_output_status" event_time="2026-06-29 14:40:32" status="UPS: No longer on battery power." message="UPS: No longer on battery power." source_path="snmp_current_output_status"
+796:[2026-06-29 14:40:56] APC_IDF_EVENT source="IDF3" device="IDF3" ip="192.168.9.252" dns="apc-idf3.albl.com" severity="Informational" code="snmp_current_output_status" event_time="2026-06-29 14:40:56" status="UPS: No longer on battery power." message="UPS: No longer on battery power." source_path="snmp_current_output_status"
+797:[2026-06-29 14:42:49] APC_IDF_EVENT source="IDF2" device="IDF2" ip="192.168.9.251" dns="APC-IDF2.albl.com" severity="Informational" code="snmp_current_output_status" event_time="2026-06-29 14:42:49" status="UPS: No longer on battery power." message="UPS: No longer on battery power." source_path="snmp_current_output_status"
+798:[2026-06-29 14:42:49] APC_IDF_EVENT source="IDF3" device="IDF3" ip="192.168.9.252" dns="apc-idf3.albl.com" severity="Informational" code="snmp_current_output_status" event_time="2026-06-29 14:42:49" status="UPS: No longer on battery power." message="UPS: No longer on battery power." source_path="snmp_current_output_status"

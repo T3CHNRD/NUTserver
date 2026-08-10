@@ -1,0 +1,31 @@
+{
+  "ups_name": "ups2",
+  "display_name": "ups2",
+  "state": "shutdown_committed",
+  "scope": "targeted_shutdown",
+  "countdown_active": false,
+  "countdown_seconds_remaining": 0,
+  "commit_seconds_remaining": 0,
+  "current_phase": "target_shutdown",
+  "last_event": "shutdown_committed",
+  "last_event_time": "2026-03-30 11:05:21",
+  "shutdown_committed": true,
+  "shutdown_canceled": false,
+  "finalized": false,
+  "recent_history": [
+    "UPS_ONBATT_DETECTED",
+    "UPS_COUNTDOWN_STARTED",
+    "UPS_SHUTDOWN_CANCELED_POWER_RESTORED",
+    "UPS_SHUTDOWN_COMMITTED"
+  ],
+  "target_results": [
+    {
+      "target": "Blue Iris",
+      "result": "skipped",
+      "detail": "exact command path still not wired"
+    }
+  ],
+  "note": "Committed; Blue Iris exact command path not yet wired",
+  "updated_epoch": 1774883121,
+  "updated_at": "2026-03-30 11:05:21"
+}

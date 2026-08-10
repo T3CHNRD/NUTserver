@@ -1,0 +1,496 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+set -uo pipefail
+
+LOG_FILE="/var/log/nut-orchestrator-ui/tests.log"
+POWER_EVENT_LOG="/var/log/nut-orchestrator-ui/power-events.log"
+REGISTRY="/opt/nut-orchestrator-ui/lib/config_registry.json"
+
+MODE="${1:-simulate}"
+REAL_PHASE="${2:-phase3-full}"
+
+PASS_COUNT=[REDACTED]
+FAIL_COUNT=0
+
+mkdir -p "$(dirname "$LOG_FILE")"
+touch "$LOG_FILE" "$POWER_EVENT_LOG"
+
+ts() {
+  date -Is
+}
+
+log_line() {
+  echo "[$(ts)] $1" | tee -a "$LOG_FILE"
+}
+
+power_event() {
+  echo "[$(ts)] $1" | tee -a "$POWER_EVENT_LOG" >> "$LOG_FILE"
+}
+
+pass() {
+  PASS_COUNT=$((PASS_COUNT + 1))
+  log_line "PASS $1"
+}
+
+fail() {
+  FAIL_COUNT=$((FAIL_COUNT + 1))
+  log_line "FAIL $1"
+}
+
+check_file() {
+  local path="$1"
+  local label="$2"
+
+  if [ -e "$path" ]; then
+    pass "$label ($path)"
+  else
+    fail "$label missing ($path)"
+  fi
+}
+
+check_exec() {
+  local path="$1"
+  local label="$2"
+
+  if [ -x "$path" ]; then
+    pass "$label executable ($path)"
+  else
+    fail "$label not executable ($path)"
+  fi
+}
+
+validate_managed_configs() {
+  local id path name tmp
+
+  while IFS=$'\t' read -r id path name; do
+    if [ ! -f "$path" ]; then
+      fail "Managed config missing for ${id} (${path})"
+      continue
+    fi
+
+    tmp="$(mktemp)"
+    cp -f "$path" "$tmp"
+
+    if /usr/local/sbin/nut-ui-apply-config "$id" "$tmp" dry-run | tee -a "$LOG_FILE"; then
+      pass "Validated managed config ${id} (${name})"
+    else
+      fail "Validation failed for ${id} (${name})"
+    fi
+
+    rm -f "$tmp"
+  done < <(jq -r '.editable_configs[] | [.id, .path, .name] | @tsv' "$REGISTRY")
+}
+
+run_sim_wrapper() {
+  local label="$1"
+  shift
+  local script_path="$1"
+  shift
+
+  local action="would run ${script_path} $*"
+
+  log_line "TARGET: ${label}"
+  log_line "MODE: SIMULATED / DRY-RUN"
+  log_line "ACTION: ${action}"
+
+  if [ ! -x "$script_path" ]; then
+    fail "${label} missing executable (${script_path})"
+    power_event "SIMULATED FAIL target=\"${label}\" result=\"missing executable\" script=\"${script_path}\""
+    log_line ""
+    return
+  fi
+
+  if SIMULATE=1 "$script_path" "$@" >/dev/null 2>&1; then
+    pass "${label} simulated execution OK"
+    power_event "SIMULATED PASS target=\"${label}\" result=\"would shutdown/orchestrate successfully\" action=\"${script_path} $*\""
+  else
+    fail "${label} simulated execution FAILED"
+    power_event "SIMULATED FAIL target=\"${label}\" result=\"simulated command failed\" action=\"${script_path} $*\""
+  fi
+
+  log_line ""
+}
+
+run_real_wrapper() {
+  local label="$1"
+  shift
+  local script_path="$1"
+  shift
+
+  local action="executing ${script_path} $*"
+
+  log_line "TARGET: ${label}"
+  log_line "MODE: REAL / LIVE"
+  log_line "ACTION: ${action}"
+  power_event "REAL START target=\"${label}\" action=\"${script_path} $*\""
+
+  if [ ! -x "$script_path" ]; then
+    fail "${label} missing executable (${script_path})"
+    power_event "REAL FAIL target=\"${label}\" result=\"missing executable\" script=\"${script_path}\""
+    log_line ""
+    return
+  fi
+
+  if SIMULATE=0 "$script_path" "$@" | tee -a "$LOG_FILE"; then
+    pass "${label} real execution OK"
+    power_event "REAL PASS target=\"${label}\" result=\"command succeeded\" action=\"${script_path} $*\""
+  else
+    fail "${label} real execution FAILED"
+    power_event "REAL FAIL target=\"${label}\" result=\"command failed\" action=\"${script_path} $*\""
+  fi
+
+  log_line ""
+}
+
+run_prechecks() {
+  check_file "$REGISTRY" "Config registry exists"
+  check_exec "/usr/local/sbin/nut-ui-apply-config" "Apply wrapper"
+  check_exec "/usr/local/sbin/nut-ui-run-test" "Test runner"
+
+  check_file "/etc/nut/hosts.conf" "hosts.conf exists"
+  check_file "/etc/nut/nut-orchestrator.conf" "Live orchestrator config exists"
+  check_file "/etc/nut/config.d/nut-orchestrator.conf" "config.d orchestrator config exists"
+  check_file "/etc/nut/config.d/approved-targets.yml" "Approved targets config exists"
+  check_file "/etc/nut/config.d/dashboard-ui.json" "Dashboard UI settings config exists"
+  check_file "/var/www/html/nutserver-dashboard.priority1.html" "Priority dashboard exists"
+
+  if command -v jq >/dev/null 2>&1; then
+    pass "jq is available"
+  else
+    fail "jq is missing"
+  fi
+
+  if command -v python3 >/dev/null 2>&1; then
+    pass "python3 is available"
+  else
+    fail "python3 is missing"
+  fi
+
+  validate_managed_configs
+}
+
+run_simulate() {
+  log_line "TEST START mode=simulate"
+  log_line "NOTE Simulated Test does not perform real shutdowns."
+  log_line "NOTE Graceful vs abrupt shutdown can only be confirmed during Real Test or real UPS event."
+  power_event "SIMULATED TEST START mode=simulate note=\"no real shutdown commands executed\""
+
+  run_prechecks
+
+  log_line ""
+  log_line "===== SIMULATED SHUTDOWN PLAN ====="
+
+  log_line ""
+  log_line "===== VMWARE ORCHESTRATION ====="
+  log_line ""
+
+  if SIMULATE=1 /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain | tee -a "$LOG_FILE"; then
+    pass "VMware orchestration simulation"
+  else
+    fail "VMware orchestration simulation"
+  fi
+
+  log_line ""
+  log_line "===== VMWARE VCSA DETECT ====="
+  log_line ""
+
+  if SIMULATE=1 /usr/local/sbin/nut-vmware-shutdown.sh detect_vcsa_host | tee -a "$LOG_FILE"; then
+    pass "VMware VCSA host-detect simulation"
+  else
+    fail "VMware VCSA host-detect simulation"
+  fi
+
+  run_sim_wrapper "NetApp01" /usr/local/sbin/nut-netapp-halt.sh Alblnetapp01
+  run_sim_wrapper "NetApp02" /usr/local/sbin/nut-netapp-halt.sh Alblnetapp02
+  run_sim_wrapper "Synology" /usr/local/sbin/nut-synology-shutdown.sh
+  run_sim_wrapper "VOIP" /usr/local/sbin/nut-voip-shutdown.sh
+  run_sim_wrapper "DB01" /usr/local/sbin/nut-db-shutdown.sh DB01
+  run_sim_wrapper "DB02" /usr/local/sbin/nut-db-shutdown.sh DB02
+  run_sim_wrapper "Blue Iris" /usr/local/sbin/nut-blueiris-shutdown.sh
+  run_sim_wrapper "Lansweeper" /usr/local/sbin/nut-lansweeper-shutdown.sh
+
+  if [ "$FAIL_COUNT" -eq 0 ]; then
+    log_line ""
+    log_line "SUMMARY PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    power_event "SIMULATED TEST SUMMARY result=PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+    exit 0
+  else
+    log_line ""
+    log_line "SUMMARY FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    power_event "SIMULATED TEST SUMMARY result=FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+    exit 1
+  fi
+}
+
+verify_lansweeper_nut_runtime_access() {
+  local wrapper="/usr/local/sbin/nut-lansweeper-shutdown.sh"
+  local creds="/etc/nut/lansweeper.creds"
+  local log="/var/log/nut-lansweeper-shutdown.log"
+  local rc=0
+
+  log_line "===== LANSWEEPER PRODUCTION RUNTIME PREFLIGHT ====="
+
+  if sudo -u nut test -x "$wrapper"; then
+    pass "nut can execute Lansweeper wrapper"
+  else
+    fail "nut cannot execute Lansweeper wrapper (${wrapper})"
+    rc=1
+  fi
+
+  if sudo -u nut test -r "$creds"; then
+    pass "nut can read Lansweeper creds"
+  else
+    fail "nut cannot read Lansweeper creds (${creds})"
+    rc=1
+  fi
+
+  if sudo -u nut test -w "$log"; then
+    pass "nut can write Lansweeper log"
+  else
+    fail "nut cannot write Lansweeper log (${log})"
+    rc=1
+  fi
+
+  if [ "$rc" -ne 0 ]; then
+    power_event "REAL TEST PHASE1 BLOCKED target=\"Lansweeper\" result=\"nut runtime access preflight failed\""
+    return "$rc"
+  fi
+
+  power_event "REAL TEST PHASE1 PREFLIGHT PASS target=\"Lansweeper\" result=\"nut runtime access verified\""
+  return 0
+}
+
+
+run_real() {
+  local phase="${1:-phase3-full}"
+
+  log_line "TEST START mode=real"
+  log_line "REAL TEST PHASE: ${phase}"
+  power_event "REAL TEST REQUESTED mode=real"
+  power_event "REAL TEST PHASE selected phase=${phase}"
+
+  if [ "${ALLOW_REAL_TEST:-0}" != "1" ]; then
+    log_line "FAIL Real Test blocked. Set ALLOW_REAL_TEST=1 to enable."
+    log_line "SUMMARY FAIL passes=0 failures=1"
+    power_event "REAL TEST BLOCKED result=FAIL reason=\"ALLOW_REAL_TEST not set to 1\""
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+    exit 1
+  fi
+
+  log_line "WARNING REAL TEST ENABLED - LIVE SHUTDOWN COMMANDS MAY EXECUTE"
+  power_event "REAL TEST START mode=real warning=\"live shutdown commands may execute\""
+
+  run_prechecks
+
+  case "$phase" in
+    phase1-lansweeper)
+      log_line ""
+      log_line "===== PHASE 1: LANSWEEPER ONLY ====="
+      power_event "REAL TEST PHASE1 start target=Lansweeper"
+
+      if verify_lansweeper_nut_runtime_access; then
+        REAL_TEST_PHASE=phase1-lansweeper LANSWEEPER_LIVE_APPROVED=1 run_real_wrapper "Lansweeper" /usr/local/sbin/nut-lansweeper-shutdown.sh
+      else
+        fail "Phase 1 Lansweeper blocked before live wrapper execution"
+      fi
+      ;;
+
+    phase2-power-restore-abort)
+      log_line "===== PHASE 2: REAL UPS3 POWER RESTORE ABORT TEST ====="
+      power_event "REAL TEST PHASE2 start ups=ups3 mode=real-observe"
+      power_event "REAL TEST PHASE2 operator_action=\"Pull UPS3 AC input power now\""
+      power_event "REAL TEST PHASE2 note=\"This test waits for ups3@localhost to become OB, then waits for it to return OL before 300 seconds\""
+
+      UPS_NAME="ups3@localhost"
+      UPS_SHORT="ups3"
+      WAIT_ONBATT_SECONDS=180
+      WAIT_RESTORE_SECONDS=300
+      POLL_SECONDS=2
+
+      phase2_cancel() {
+        power_event "REAL TEST PHASE2 result=CANCELED ups=${UPS_SHORT} reason=\"operator interrupted or UI request stopped\""
+        /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+        exit 130
+      }
+
+      trap phase2_cancel INT TERM
+
+      start_status="$(upsc "$UPS_NAME" ups.status 2>/dev/null || true)"
+      power_event "REAL TEST PHASE2 initial_status ups=${UPS_SHORT} status=\"${start_status}\""
+
+      if ! echo "$start_status" | grep -qw "OL"; then
+        power_event "REAL TEST PHASE2 result=FAIL ups=${UPS_SHORT} reason=\"ups3 not online before test\" status=\"${start_status}\""
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+        break
+      fi
+
+      power_event "REAL TEST PHASE2 waiting_for_on_battery ups=${UPS_SHORT} timeout=${WAIT_ONBATT_SECONDS}s"
+      power_event "REAL TEST PHASE2 operator_action=\"Pull UPS3 AC input power now\""
+
+      onbatt_seen=0
+      elapsed=0
+      while [ "$elapsed" -lt "$WAIT_ONBATT_SECONDS" ]; do
+        current_status="$(upsc "$UPS_NAME" ups.status 2>/dev/null || true)"
+
+        if echo "$current_status" | grep -qw "OB"; then
+          onbatt_seen=1
+          power_event "REAL TEST PHASE2 on_battery_detected ups=${UPS_SHORT} status=\"${current_status}\" elapsed=${elapsed}s"
+          break
+        fi
+
+        sleep "$POLL_SECONDS"
+        elapsed=$((elapsed+POLL_SECONDS))
+      done
+
+      if [ "$onbatt_seen" -ne 1 ]; then
+        power_event "REAL TEST PHASE2 result=FAIL ups=${UPS_SHORT} reason=\"ups3 did not enter OB before timeout\" timeout=${WAIT_ONBATT_SECONDS}s"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+        break
+      fi
+
+      power_event "REAL TEST PHASE2 operator_action=\"Restore UPS3 AC input power now\""
+      power_event "REAL TEST PHASE2 waiting_for_power_restore ups=${UPS_SHORT} timeout=${WAIT_RESTORE_SECONDS}s"
+
+      restore_seen=0
+      elapsed=0
+      while [ "$elapsed" -lt "$WAIT_RESTORE_SECONDS" ]; do
+        current_status="$(upsc "$UPS_NAME" ups.status 2>/dev/null || true)"
+
+        if echo "$current_status" | grep -qw "OL"; then
+          restore_seen=1
+          power_event "REAL TEST PHASE2 power_restored_detected ups=${UPS_SHORT} status=\"${current_status}\" elapsed=${elapsed}s"
+          break
+        fi
+
+        sleep "$POLL_SECONDS"
+        elapsed=$((elapsed+POLL_SECONDS))
+      done
+
+      if [ "$restore_seen" -ne 1 ]; then
+        power_event "REAL TEST PHASE2 result=FAIL ups=${UPS_SHORT} reason=\"ups3 did not return OL before timeout\" timeout=${WAIT_RESTORE_SECONDS}s"
+        FAIL_COUNT=$((FAIL_COUNT+1))
+        /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+        break
+      fi
+
+      power_event "REAL TEST PHASE2 waiting_for_orchestrator_abort ups=${UPS_SHORT}"
+
+      sleep 8
+
+      abort_log_found=0
+      state_found=0
+
+      if grep -q "PHASE2_POWER_RESTORE_ABORT_RESULT ups3 rc=0" /var/log/nut-orchestrator.log 2>/dev/null; then
+        abort_log_found=1
+      fi
+
+      if grep -q '"state": "power_restored_canceled"' /var/www/html/nut-state/ups3.json 2>/dev/null; then
+        state_found=1
+      fi
+
+      if [ "$abort_log_found" -eq 1 ] || [ "$state_found" -eq 1 ]; then
+        power_event "REAL TEST PHASE2 result=PASS ups=${UPS_SHORT} power_restored=true abort_confirmed=true"
+        PASS_COUNT=$((PASS_COUNT+1))
+      else
+        power_event "REAL TEST PHASE2 result=FAIL ups=${UPS_SHORT} reason=\"power restored but abort confirmation not found\""
+        FAIL_COUNT=$((FAIL_COUNT+1))
+      fi
+
+      trap - INT TERM
+      /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+      ;;
+
+    phase3-full)
+      log_line ""
+      log_line "===== PHASE 3: ACCELERATED UPS-SPLIT FULL SHUTDOWN PROOF ====="
+      log_line "NOTE Phase 3 no longer runs a separate flat target list."
+      log_line "NOTE Phase 3 now calls the same UPS-specific commit handlers used by Protecting mode, without waiting for real upssched timers."
+      log_line "NOTE ups9 includes NUT server final shutdown last; a real Phase 3 run may end before this test runner can write its final summary."
+      power_event "REAL TEST PHASE3 start accelerated-ups-split-full-shutdown"
+
+      log_line ""
+      log_line "===== PHASE 3 / UPS2: BLUE IRIS COMMIT PATH ====="
+      power_event "REAL TEST PHASE3 accelerated_commit ups=ups2 target=BlueIris"
+      if ALLOW_REAL_TEST=1 SIMULATE=0 /usr/local/bin/nut-orchestrator.sh ups2-commit | tee -a "$LOG_FILE"; then
+        pass "Phase 3 ups2 accelerated commit path"
+      else
+        fail "Phase 3 ups2 accelerated commit path"
+      fi
+
+      log_line ""
+      log_line "===== PHASE 3 / UPS6: LANSWEEPER COMMIT PATH ====="
+      power_event "REAL TEST PHASE3 accelerated_commit ups=ups6 target=Lansweeper"
+      if ALLOW_REAL_TEST=1 SIMULATE=0 /usr/local/bin/nut-orchestrator.sh ups6-commit | tee -a "$LOG_FILE"; then
+        pass "Phase 3 ups6 accelerated commit path"
+      else
+        fail "Phase 3 ups6 accelerated commit path"
+      fi
+
+      log_line ""
+      log_line "===== PHASE 3 / UPS7: DB01 THEN DB02 COMMIT PATH ====="
+      power_event "REAL TEST PHASE3 accelerated_commit ups=ups7 target=DB01_DB02"
+      if ALLOW_REAL_TEST=1 SIMULATE=0 /usr/local/bin/nut-orchestrator.sh ups7-commit | tee -a "$LOG_FILE"; then
+        pass "Phase 3 ups7 accelerated commit path"
+      else
+        fail "Phase 3 ups7 accelerated commit path"
+      fi
+
+      log_line ""
+      log_line "===== PHASE 3 / UPS8: VOIP COMMIT PATH ====="
+      power_event "REAL TEST PHASE3 accelerated_commit ups=ups8 target=VOIP"
+      if ALLOW_REAL_TEST=1 SIMULATE=0 /usr/local/bin/nut-orchestrator.sh ups8-commit | tee -a "$LOG_FILE"; then
+        pass "Phase 3 ups8 accelerated commit path"
+      else
+        fail "Phase 3 ups8 accelerated commit path"
+      fi
+
+      log_line ""
+      log_line "===== PHASE 3 / UPS9: VMWARE/ESXI, SYNOLOGY, NETAPP, NUT FINAL COMMIT PATH ====="
+      log_line "NOTE ups9 is intentionally last because it includes the NUT server final shutdown wrapper."
+      power_event "REAL TEST PHASE3 accelerated_commit ups=ups9 target=VMware_ESXi_Synology_NetApp_NUTFinal"
+      if ALLOW_REAL_TEST=1 SIMULATE=0 /usr/local/bin/nut-orchestrator.sh ups9-commit | tee -a "$LOG_FILE"; then
+        pass "Phase 3 ups9 accelerated commit path"
+      else
+        fail "Phase 3 ups9 accelerated commit path"
+      fi
+      ;;
+
+    *)
+      log_line "ERROR unknown real test phase: ${phase}"
+      power_event "REAL TEST ERROR unknown_phase=${phase}"
+      /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+      exit 2
+      ;;
+  esac
+
+  if [ "$FAIL_COUNT" -eq 0 ]; then
+    log_line ""
+    log_line "SUMMARY PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    power_event "REAL TEST SUMMARY result=PASS passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+    exit 0
+  else
+    log_line ""
+    log_line "SUMMARY FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    power_event "REAL TEST SUMMARY result=FAIL passes=${PASS_COUNT} failures=${FAIL_COUNT}"
+    /usr/local/sbin/nut-publish-power-events-json >/dev/null 2>&1 || true
+    exit 1
+  fi
+}
+
+case "$MODE" in
+  simulate)
+    run_simulate
+    ;;
+  real)
+    run_real "$REAL_PHASE"
+    ;;
+  *)
+    echo "Unknown mode: $MODE" >&2
+    exit 1
+    ;;
+esac

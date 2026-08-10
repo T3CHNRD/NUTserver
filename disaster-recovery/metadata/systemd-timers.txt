@@ -1,0 +1,24 @@
+NEXT                            LEFT LAST                              PASSED UNIT                            ACTIVATES
+Mon 2026-08-10 09:26:51 EDT 1min 52s Mon 2026-08-10 08:33:35 EDT    51min ago fwupd-refresh.timer             fwupd-refresh.service
+Mon 2026-08-10 09:30:00 EDT     5min Mon 2026-08-10 09:20:03 EDT 4min 55s ago sysstat-collect.timer           sysstat-collect.service
+Mon 2026-08-10 09:32:48 EDT     7min Mon 2026-08-10 08:30:39 EDT    54min ago anacron.timer                   anacron.service
+Mon 2026-08-10 11:40:03 EDT 2h 15min Sun 2026-08-09 04:23:26 EDT 1 day 5h ago man-db.timer                    man-db.service
+Mon 2026-08-10 12:09:16 EDT 2h 44min Mon 2026-08-10 09:09:16 EDT    15min ago apport-autoreport.timer         apport-autoreport.service
+Mon 2026-08-10 16:00:00 EDT       6h Mon 2026-08-10 06:00:33 EDT 3h 24min ago nut-daily-health-email.timer    nut-daily-health-email.service
+Mon 2026-08-10 19:21:19 EDT       9h Mon 2026-08-10 02:23:39 EDT       7h ago motd-news.timer                 motd-news.service
+Mon 2026-08-10 23:58:13 EDT      14h Mon 2026-08-10 07:48:33 EDT 1h 36min ago apt-daily.timer                 apt-daily.service
+Tue 2026-08-11 00:00:00 EDT      14h Mon 2026-08-10 00:00:13 EDT       9h ago dpkg-db-backup.timer            dpkg-db-backup.service
+Tue 2026-08-11 00:00:00 EDT      14h Mon 2026-08-10 00:00:13 EDT       9h ago logrotate.timer                 logrotate.service
+Tue 2026-08-11 00:07:00 EDT      14h Mon 2026-08-10 00:07:28 EDT       9h ago sysstat-summary.timer           sysstat-summary.service
+Tue 2026-08-11 06:05:46 EDT      20h Mon 2026-08-10 06:30:16 EDT 2h 54min ago apt-daily-upgrade.timer         apt-daily-upgrade.service
+Tue 2026-08-11 06:47:46 EDT      21h Mon 2026-08-10 06:47:46 EDT 2h 37min ago update-notifier-download.timer  update-notifier-download.service
+Tue 2026-08-11 06:56:06 EDT      21h Mon 2026-08-10 06:56:06 EDT 2h 28min ago systemd-tmpfiles-clean.timer    systemd-tmpfiles-clean.service
+Thu 2026-08-13 15:23:38 EDT   3 days Tue 2026-08-04 11:12:13 EDT   5 days ago update-notifier-motd.timer      update-notifier-motd.service
+Sun 2026-08-16 03:10:35 EDT   5 days Sun 2026-08-09 03:10:39 EDT 1 day 6h ago e2scrub_all.timer               e2scrub_all.service
+Mon 2026-08-17 00:47:03 EDT   6 days Mon 2026-08-10 00:50:53 EDT       8h ago fstrim.timer                    fstrim.service
+-                                  - Tue 2026-08-04 15:15:10 EDT            - nut-apc-idf-event-monitor.timer nut-apc-idf-event-monitor.service
+-                                  - Mon 2026-06-22 14:50:38 EDT            - nut-power-events-refresh.timer  nut-power-events-refresh.service
+-                                  - -                                      - snapd.snap-repair.timer         snapd.snap-repair.service
+-                                  - -                                      - ua-timer.timer                  ua-timer.service
+
+21 timers listed.

@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+set -euo pipefail
+
+CONF="/etc/nut/nut-email-alerts.conf"
+SECRET="[REDACTED]"
+OUT="/etc/msmtprc"
+LOG="/var/log/nut-orchestrator-ui/ui-actions.log"
+
+[ -f "$CONF" ] || { echo "FAIL: missing $CONF"; exit 1; }
+[ -f "$SECRET" ] || { echo "FAIL: missing $SECRET"; exit 1; }
+
+python3 <<'PY'
+from pathlib import Path
+import shlex
+
+conf_path = Path("/etc/nut/nut-email-alerts.conf")
+secret_path = [REDACTED]
+out_path = Path("/etc/msmtprc")
+
+data = {}
+for raw in conf_path.read_text(encoding="utf-8").splitlines():
+    line = raw.strip()
+    if not line or line.startswith("#") or "=" not in line:
+        continue
+    key, value = line.split("=", 1)
+    key = key.strip()
+    value = value.strip()
+    try:
+        value = shlex.split(value)[0] if value else ""
+    except Exception:
+        value = value.strip('"').strip("'")
+    data[key] = value
+
+required = [
+    "SMTP_SERVER",
+    "SERVER_PORT",
+    "AUTHENTICATION_REQUIRED",
+    "SSL_STATE",
+    "EMAIL_FROM",
+]
+missing = [k for k in required if not data.get(k)]
+if missing:
+    raise SystemExit("FAIL: missing required email config values: " + ", ".join(missing))
+
+auth_required = data.get("AUTHENTICATION_REQUIRED", "Yes").lower() in ("yes", "1", "true", "on")
+
+username = data.get("USER_NAME", "")
+password = [REDACTED]
+
+if auth_required and not username:
+    raise SystemExit("FAIL: USER_NAME is required when AUTHENTICATION_REQUIRED is enabled")
+
+if auth_required and not password:
+    raise SystemExit("FAIL: SMTP secret is required when AUTHENTICATION_REQUIRED is enabled")
+
+ssl_state = data.get("SSL_STATE", "STARTTLS").upper()
+
+tls = "on" if ssl_state in ("STARTTLS", "TLS", "SSL", "ENABLE", "ENABLED", "ON") else "off"
+tls_starttls = "on" if ssl_state == "STARTTLS" else "off"
+
+lines = [
+    "# /etc/msmtprc",
+    "# Generated for NUT email alerts from /etc/nut/nut-email-alerts.conf",
+    "# Do not paste this file into chat because it contains the SMTP password.",
+    "",
+    "defaults",
+    "auth           on" if auth_required else "auth           off",
+    f"tls            {tls}",
+    f"tls_starttls   {tls_starttls}",
+    "tls_trust_file /etc/ssl/certs/ca-certificates.crt",
+    "logfile        /var/log/msmtp.log",
+    "",
+    "account        nut-alerts",
+    f"host           {data['SMTP_SERVER']}",
+    f"port           {data['SERVER_PORT']}",
+    f"from           {data['EMAIL_FROM']}",
+]
+
+if auth_required:
+    lines.extend([
+        f"user           {username}",
+        f"password       {password}",
+    ])
+
+lines.extend([
+    "",
+    "account default : nut-alerts",
+    "",
+])
+
+out_path.write_text("\n".join(lines), encoding="utf-8")
+PY
+
+chown root:root "$OUT"
+chmod 0600 "$OUT"
+
+mkdir -p "$(dirname "$LOG")"
+echo "[$(date -Is)] MSMTP REBUILD OK source=\"$CONF\" target=\"$OUT\"" | tee -a "$LOG"
+
+echo "Rebuilt /etc/msmtprc from NUT email config"

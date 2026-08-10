@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NUT Orchestrator UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/nut-ui/static/nut-ui-theme.css">
+</head>
+<body>
+  <div class="nutui-toast-wrap" id="toast-wrap"></div>
+
+  <div class="nutui-shell">
+    <header class="nutui-topbar">
+      <div class="nutui-title-wrap">
+        <h1>NUT Orchestrator UI</h1>
+        <p>Edit live NUT/orchestrator configs and inspect historical/reference files safely.</p>
+      </div>
+
+<div class="nutui-top-actions">
+  <button class="nutui-btn nutui-btn-secondary" id="btn-sim-test">Simulated Test</button>
+  <button class="nutui-btn nutui-btn-warn" id="btn-real-test">Real Test</button>
+  <button class="nutui-btn nutui-btn-primary" id="btn-backup-github">Backup All to GitHub</button>
+  <button class="nutui-btn nutui-btn-secondary" id="btn-restore-github">Restore from GitHub</button>
+  <a class="nutui-btn nutui-btn-secondary" href="/nutserver-dashboard.priority1.html" target="_blank">Open Main Dashboard</a>
+</div>   
+ </header>
+
+    <div class="nutui-statusbar" id="top-status">
+      <span class="nutui-spinner" id="top-spinner"></span>
+      <span id="top-status-text">Loading approved configs...</span>
+    </div>
+
+    <div class="nutui-grid">
+      <aside class="nutui-card nutui-sidebar">
+        <label class="nutui-label" for="config-select">Editable Live Config</label>
+        <select class="nutui-select" id="config-select">
+          {% for item in editable_configs %}
+          <option value="{{ item.id }}">{{ item.name }}</option>
+          {% endfor %}
+        </select>
+
+        <br><br>
+
+        <label class="nutui-label" for="reference-select">Read-Only Reference File</label>
+        <select class="nutui-select" id="reference-select">
+          <option value="">-- Select a reference file --</option>
+          {% for item in reference_configs %}
+          <option value="{{ item.id }}">{{ item.name }}</option>
+          {% endfor %}
+        </select>
+
+        <div class="nutui-meta">
+          <div class="nutui-mini">
+            <div class="k">Selected Path</div>
+            <div class="v" id="meta-path">-</div>
+          </div>
+          <div class="nutui-mini">
+            <div class="k">Type</div>
+            <div class="v" id="meta-type">-</div>
+          </div>
+          <div class="nutui-mini">
+            <div class="k">Status</div>
+            <div class="v" id="meta-status">Ready</div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="nutui-main">
+        <section class="nutui-two-col">
+          <div class="nutui-card nutui-section nutui-pane">
+            <div class="nutui-pane-head">
+              <div class="nutui-pane-title-wrap">
+                <div class="nutui-pane-title" id="editor-title">Config Editor</div>
+                <div class="nutui-pane-subtitle" id="editor-subtitle">Select a live config to load and edit its current server content.</div>
+              </div>
+              <div class="nutui-pane-actions">
+                <button class="nutui-btn nutui-btn-secondary" id="btn-load">Reload</button>
+                <button class="nutui-btn nutui-btn-warn" id="btn-validate">Validate</button>
+                <button class="nutui-btn nutui-btn-primary" id="btn-save">Save</button>
+                <button class="nutui-btn nutui-btn-danger" id="btn-revert">Revert</button>
+              </div>
+            </div>
+
+            <textarea class="nutui-editor" id="config-editor" spellcheck="false"></textarea>
+          </div>
+
+          <div class="nutui-card nutui-section nutui-pane">
+            <div class="nutui-pane-head">
+              <div class="nutui-pane-title-wrap">
+                <div class="nutui-pane-title">Reference Viewer</div>
+                <div class="nutui-pane-subtitle">Read-only comparison files for planning, rollback, hardware changes, and Proxmox migration work.</div>
+              </div>
+              <div class="nutui-pane-actions nutui-pane-actions-placeholder" aria-hidden="true">
+                <span class="nutui-btn nutui-btn-secondary nutui-ghost-btn">Reload</span>
+                <span class="nutui-btn nutui-btn-warn nutui-ghost-btn">Validate</span>
+                <span class="nutui-btn nutui-btn-primary nutui-ghost-btn">Save</span>
+                <span class="nutui-btn nutui-btn-danger nutui-ghost-btn">Revert</span>
+              </div>
+            </div>
+
+            <textarea class="nutui-editor" id="reference-viewer" spellcheck="false" readonly></textarea>
+          </div>
+        </section>
+
+        <section class="nutui-card nutui-section">
+          <div style="font-size:1.2rem;font-weight:800;margin-bottom:12px;">Action Output</div>
+          <div class="nutui-output" id="action-output"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="/nut-ui/static/app.js"></script>
+</body>
+</html>

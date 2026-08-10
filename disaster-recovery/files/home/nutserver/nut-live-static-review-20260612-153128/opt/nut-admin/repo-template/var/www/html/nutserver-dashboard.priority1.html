@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NUT Server Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --line: #374151;
+      --good: #065f46;
+      --good-border: #10b981;
+      --warn: #78350f;
+      --warn-border: #f59e0b;
+      --bad: #7f1d1d;
+      --bad-border: #ef4444;
+      --table-hover: #1e293b;
+      --selected: #0b3b2e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .topSticky {
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      background: var(--bg);
+      padding-top: 20px;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    .topSticky .summary-grid {
+      margin-bottom: 0;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .title {
+      font-size: 34px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .clockbox {
+      text-align: right;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      min-width: 270px;
+    }
+
+    #clock {
+      font-size: 30px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    #dateLine {
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .refresh-note {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .alert-box {
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 18px;
+      font-size: 18px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .alert-ok {
+      background: var(--good);
+      border-color: var(--good-border);
+      color: #ecfdf5;
+    }
+
+    .alert-warn {
+      background: var(--warn);
+      border-color: var(--warn-border);
+      color: #fffbeb;
+    }
+
+    .alert-bad {
+      background: var(--bad);
+      border-color: var(--bad-border);
+      color: #fef2f2;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1.2fr repeat(6, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      min-height: 110px;
+    }
+
+    .card h3,
+    .card h4 {
+      margin: 0 0 8px 0;
+      font-size: 15px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .big-value {
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    #deviceModel {
+      font-size: 18px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .mid-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1.4fr);
+      gap: 18px;
+      margin-bottom: 18px;
+      align-items: stretch;
+    }
+
+    .mid-grid > .card {
+      min-width: 0;
+      height: 100%;
+    }
+
+    .chart-card canvas {
+      width: 100%;
+      max-width: 100%;
+      background: #111;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      display: block;
+    }
+
+    .overview-wrap {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    tbody tr {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    tbody tr:hover {
+      background: var(--table-hover);
+    }
+
+    tbody tr.selected {
+      background: var(--selected);
+    }
+
+    tbody tr.alert-row {
+      outline: 1px solid var(--bad-border);
+      outline-offset: -1px;
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    #triviaBox,
+    #outageLogBox {
+      color: var(--text);
+    }
+
+    .legend {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .legend span {
+      display: inline-block;
+      margin-right: 14px;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .dot-good { background: var(--good-border); }
+    .dot-warn { background: var(--warn-border); }
+    .dot-bad  { background: var(--bad-border); }
+
+    @media (max-width: 1400px) {
+      .summary-grid { grid-template-columns: repeat(3, 1fr); }
+      .mid-grid { grid-template-columns: 1fr; }
+      .topbar { grid-template-columns: 1fr; }
+      .clockbox { text-align: left; }
+    }
+
+    @media (max-width: 900px) {
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .title { font-size: 28px; }
+      .big-value { font-size: 24px; }
+    }
+  
+
+.mid-grid,
+.mid-grid > .card {
+  min-width: 0;
+}
+
+#lastBootSummary {
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  white-space: normal !important;
+}
+
+#outageLogBox {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+
+#outageLogBox .power-log-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+#outageLogBox .power-log-table th,
+#outageLogBox .power-log-table td {
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  max-width: 1px;
+}
+
+#outageLogBox .power-log-table td:last-child {
+  font-size: 12px;
+  line-height: 1.35;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topSticky">
+    <div class="topbar">
+      <div>
+        <div class="title">UPS Monitoring Dashboard</div>
+        <div class="subtle" id="deviceModel">Loading UPS model...</div>
+      </div>
+
+      <div class="clockbox">
+        <div id="clock">--:--:--</div>
+        <div id="dateLine">Loading date...</div>
+        <div class="refresh-note">Refresh countdown: <span id="countdown">30</span>s</div>
+      </div>
+    </div>
+
+    <div id="statusBox" class="alert-box alert-ok">Loading...</div>
+
+    <div class="summary-grid">
+      <div class="card">
+        <h3>Selected UPS</h3>
+        <div class="big-value" id="selectedUpsLabel">ups1</div>
+        <div class="subtle" style="margin-top:6px;">Click a row below to focus details</div>
+      </div>
+
+      <div class="card">
+        <h3>Battery Charge</h3>
+        <div class="big-value" id="batteryCharge">--</div>
+      </div>
+
+      <div class="card">
+        <h3>UPS Load</h3>
+        <div class="big-value" id="upsLoad">--</div>
+      </div>
+
+      <div class="card">
+        <h3>Runtime Remaining</h3>
+        <div class="big-value" id="runtime">--</div>
+      </div>
+
+      <div class="card">
+        <h3>Battery Temp</h3>
+        <div class="big-value" id="tempF">--</div>
+      </div>
+
+      <div class="card">
+        <h3>Input Voltage</h3>
+        <div class="big-value" id="inputVoltage">--</div>
+      </div>
+
+      <div class="card">
+        <h3>Output Voltage</h3>
+        <div class="big-value" id="outputVoltage">--</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mid-grid">
+    <div class="card chart-card">
+      <div class="subtle" style="margin-bottom:10px;">Live Load History (Selected UPS)</div>
+      <canvas id="loadChart" width="900" height="280"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="subtle" style="margin-bottom:10px;">UPS Trivia / Legend</div>
+
+<div id="nut-ui-trivia-launcher" style="margin: 14px 0 18px 0;">
+  <a href="/nut-ui" target="_blank" rel="noopener noreferrer"
+     style="display:inline-flex; align-items:center; justify-content:center; padding:10px 16px; border-radius:10px; text-decoration:none; font-weight:600; white-space:nowrap; box-shadow:0 4px 14px rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.18); background:#1f2937; color:#ffffff; font-family:Arial, sans-serif; font-size:14px;">
+    Open Orchestrator UI
+  </a>
+</div>
+
+      <div id="triviaBox" style="font-size:15px; line-height:1.6;">Loading trivia...</div>
+      <div class="legend">
+        <span><span class="dot dot-good"></span>Online</span>
+        <span><span class="dot dot-warn"></span>Warning</span>
+        <span><span class="dot dot-bad"></span>Offline</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="subtle" style="margin-bottom:10px;">Power / Boot Event Log</div>
+      <div id="lastBootSummary" style="font-size:15px; margin-bottom:10px;">Loading boot event summary...</div>
+      <div id="outageLogBox" style="font-size:14px; line-height:1.5; max-height:220px; overflow-y:auto; white-space:pre-line;">
+        Loading outage log...
+      </div>
+    </div>
+  </div>
+
+  <div class="overview-wrap">
+    <div class="subtle" style="margin-bottom:10px;">UPS Rack Overview</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>System</th>
+          <th>Rack</th>
+          <th>Make / Model</th>
+          <th>Status</th>
+          <th>Battery</th>
+          <th>Load</th>
+          <th>Output</th>
+        </tr>
+      </thead>
+      <tbody id="upsTableBody">
+        <tr data-ups="ups1" class="selected">
+          <td>ups1</td>
+          <td id="tblRack-ups1">--</td>
+          <td id="tblModel-ups1">--</td>
+          <td id="tblStatus-ups1">--</td>
+          <td id="tblBattery-ups1">--</td>
+          <td id="tblLoad-ups1">--</td>
+          <td id="tblVoltage-ups1">--</td>
+        </tr>
+        <tr data-ups="ups2">
+          <td>ups2</td>
+          <td id="tblRack-ups2">--</td>
+          <td id="tblModel-ups2">--</td>
+          <td id="tblStatus-ups2">--</td>
+          <td id="tblBattery-ups2">--</td>
+          <td id="tblLoad-ups2">--</td>
+          <td id="tblVoltage-ups2">--</td>
+        </tr>
+        <tr data-ups="ups3">
+          <td>ups3</td>
+          <td id="tblRack-ups3">--</td>
+          <td id="tblModel-ups3">--</td>
+          <td id="tblStatus-ups3">--</td>
+          <td id="tblBattery-ups3">--</td>
+          <td id="tblLoad-ups3">--</td>
+          <td id="tblVoltage-ups3">--</td>
+        </tr>
+        <tr data-ups="ups4">
+          <td>ups4</td>
+          <td id="tblRack-ups4">--</td>
+          <td id="tblModel-ups4">--</td>
+          <td id="tblStatus-ups4">--</td>
+          <td id="tblBattery-ups4">--</td>
+          <td id="tblLoad-ups4">--</td>
+          <td id="tblVoltage-ups4">--</td>
+        </tr>
+        <tr data-ups="ups5">
+          <td>ups5</td>
+          <td id="tblRack-ups5">--</td>
+          <td id="tblModel-ups5">--</td>
+          <td id="tblStatus-ups5">--</td>
+          <td id="tblBattery-ups5">--</td>
+          <td id="tblLoad-ups5">--</td>
+          <td id="tblVoltage-ups5">--</td>
+        </tr>
+        <tr data-ups="ups6">
+          <td>ups6</td>
+          <td id="tblRack-ups6">--</td>
+          <td id="tblModel-ups6">--</td>
+          <td id="tblStatus-ups6">--</td>
+          <td id="tblBattery-ups6">--</td>
+          <td id="tblLoad-ups6">--</td>
+          <td id="tblVoltage-ups6">--</td>
+        </tr>
+        <tr data-ups="ups7">
+          <td>ups7</td>
+          <td id="tblRack-ups7">--</td>
+          <td id="tblModel-ups7">--</td>
+          <td id="tblStatus-ups7">--</td>
+          <td id="tblBattery-ups7">--</td>
+          <td id="tblLoad-ups7">--</td>
+          <td id="tblVoltage-ups7">--</td>
+        </tr>
+        <tr data-ups="ups8">
+          <td>ups8</td>
+          <td id="tblRack-ups8">--</td>
+          <td id="tblModel-ups8">--</td>
+          <td id="tblStatus-ups8">--</td>
+          <td id="tblBattery-ups8">--</td>
+          <td id="tblLoad-ups8">--</td>
+          <td id="tblVoltage-ups8">--</td>
+        </tr>
+        <tr data-ups="ups9">
+          <td>ups9</td>
+          <td id="tblRack-ups9">--</td>
+          <td id="tblModel-ups9">--</td>
+          <td id="tblStatus-ups9">--</td>
+          <td id="tblBattery-ups9">--</td>
+          <td id="tblLoad-ups9">--</td>
+          <td id="tblVoltage-ups9">--</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="footer-note">
+      Rack names are pulled from <code>/var/www/html/ups-rack-map.txt</code>. Friendly UPS names are pulled live from the NUT JSON endpoint when available.
+    </div>
+  </div>
+
+</div>
+
+<script>
+const refreshSeconds = 30;
+let countdown = refreshSeconds;
+let triviaIndex = 0;
+let selectedUPS = "ups1";
+const loadHistory = {};
+const upsDataStore = {};
+let outageLogData = [];
+
+let autoCycleEnabled = true;
+let autoCyclePauseUntil = 0;
+let autoCycleIndex = 0;
+
+const allUps = ["ups1","ups2","ups3","ups4","ups5","ups6","ups7","ups8","ups9"];
+const displayOrder = ["ups1","ups2","ups3","ups4","ups5","ups8","ups6","ups7","ups9"];
+
+const triviaFacts = [
+  "Did you know? Most UPS batteries last around 3 to 5 years.",
+  "Lead-acid UPS batteries prefer cool temperatures for longer life.",
+  "NUT supports USB, SNMP, serial, and network-connected UPS systems.",
+  "A UPS protects against outages, brownouts, and voltage fluctuations.",
+  "APC Smart-UPS models are widely used in server rooms and network closets.",
+  "Battery temperature has a direct impact on battery longevity.",
+  "On-battery events usually appear as status OB in NUT.",
+  "Low battery usually appears as status LB in NUT."
+];
+
+function secondsToReadable(sec) {
+  sec = parseInt(sec || "0", 10);
+  if (!sec || sec < 0) return "--";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return `${h}h ${m}m`;
+}
+
+function updateClock() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+  const dateStr = now.toLocaleDateString([], {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+  document.getElementById("clock").textContent = timeStr;
+  document.getElementById("dateLine").textContent = dateStr;
+}
+
+function reorderUpsRows() {
+  const tbody = document.getElementById("upsTableBody");
+  displayOrder.forEach((upsName) => {
+    const row = tbody.querySelector(`tr[data-ups="${upsName}"]`);
+    if (row) tbody.appendChild(row);
+  });
+}
+
+async function loadRackMap() {
+  try {
+    const res = await fetch("ups-rack-map.txt?v=" + Date.now(), { cache: "no-store" });
+    const text = await res.text();
+    const lines = text.split(/\r?\n/);
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) return;
+      const parts = trimmed.split("=");
+      if (parts.length < 2) return;
+      const upsName = parts[0].trim();
+      const rackValue = parts.slice(1).join("=").trim();
+      const rackCell = document.getElementById("tblRack-" + upsName);
+      if (rackCell) rackCell.textContent = rackValue || "--";
+    });
+  } catch (e) {
+  }
+}
+
+function drawChart() {
+  const canvas = document.getElementById("loadChart");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+  const history = loadHistory[selectedUPS] || [];
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = 20 + ((h - 40) / 5) * i;
+    ctx.beginPath();
+    ctx.moveTo(30, y);
+    ctx.lineTo(w - 10, y);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "#aaa";
+  ctx.font = "12px Arial";
+  ctx.fillText("100%", 2, 24);
+  ctx.fillText("0%", 10, h - 18);
+
+  if (history.length < 2) return;
+
+  ctx.strokeStyle = "#00ff9c";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+
+  for (let i = 0; i < history.length; i++) {
+    const x = 30 + (i * ((w - 50) / Math.max(history.length - 1, 1)));
+    const y = (h - 20) - ((history[i] / 100) * (h - 40));
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+
+  ctx.stroke();
+}
+
+function updateTrivia() {
+  document.getElementById("triviaBox").textContent = triviaFacts[triviaIndex];
+  triviaIndex = (triviaIndex + 1) % triviaFacts.length;
+}
+
+function mapDisplayStatus(statusRaw) {
+  const s = (statusRaw || "").toUpperCase().trim();
+
+  if (!s) return "Offline";
+
+  if (s.includes("OB") || s.includes("LB") || s.includes("RB") || s.includes("CAL") || s.includes("BYPASS") || s.includes("TRIM") || s.includes("BOOST") || s.includes("OVER") || s.includes("FSD") || s.includes("ALARM")) {
+    return "Warning";
+  }
+
+  if (s.includes("OL")) {
+    return "Online";
+  }
+
+  return "Warning";
+}
+
+function markUpsOffline(upsName) {
+  delete upsDataStore[upsName];
+
+  const modelCell = document.getElementById("tblModel-" + upsName);
+  const statusCell = document.getElementById("tblStatus-" + upsName);
+  const batteryCell = document.getElementById("tblBattery-" + upsName);
+  const loadCell = document.getElementById("tblLoad-" + upsName);
+  const voltageCell = document.getElementById("tblVoltage-" + upsName);
+  const row = document.querySelector('tr[data-ups="' + upsName + '"]');
+
+  if (modelCell) modelCell.textContent = "--";
+  if (statusCell) statusCell.textContent = "Offline";
+  if (batteryCell) batteryCell.textContent = "--";
+  if (loadCell) loadCell.textContent = "--";
+  if (voltageCell) voltageCell.textContent = "--";
+
+  if (row) row.classList.remove("alert-row");
+
+  if (upsName === selectedUPS) {
+    const statusBox = document.getElementById("statusBox");
+    document.getElementById("selectedUpsLabel").textContent = upsName;
+    document.getElementById("deviceModel").textContent = "Offline";
+    document.getElementById("batteryCharge").textContent = "Offline";
+    document.getElementById("upsLoad").textContent = "Offline";
+    document.getElementById("runtime").textContent = "Offline";
+    document.getElementById("tempF").textContent = "Offline";
+    document.getElementById("inputVoltage").textContent = "Offline";
+    document.getElementById("outputVoltage").textContent = "Offline";
+    statusBox.className = "alert-box alert-bad";
+    statusBox.textContent = "Offline (" + upsName + ")";
+  }
+}
+
+function applySelectedUPSDetails() {
+  const data = upsDataStore[selectedUPS];
+  const statusBox = document.getElementById("statusBox");
+  const modelHeader = document.getElementById("deviceModel");
+  const selectedLabel = document.getElementById("selectedUpsLabel");
+
+  selectedLabel.textContent = selectedUPS;
+
+  if (!data) {
+    modelHeader.textContent = "Loading UPS model...";
+    document.getElementById("batteryCharge").textContent = "--";
+    document.getElementById("upsLoad").textContent = "--";
+    document.getElementById("runtime").textContent = "--";
+    document.getElementById("tempF").textContent = "--";
+    document.getElementById("inputVoltage").textContent = "--";
+    document.getElementById("outputVoltage").textContent = "--";
+    statusBox.className = "alert-box alert-ok";
+    statusBox.textContent = "Loading...";
+    return;
+  }
+
+  const friendlySystemName = (data.friendly_system_name || selectedUPS).trim() || selectedUPS;
+  const makeModel =
+    [data.device_mfr, data.device_model].filter(Boolean).join(" ") ||
+    friendlySystemName;
+
+  selectedLabel.textContent = friendlySystemName;
+  modelHeader.textContent = makeModel;
+
+  document.getElementById("batteryCharge").textContent =
+    data.battery_charge ? (data.battery_charge + "%") : "Not reported";
+
+  document.getElementById("upsLoad").textContent =
+    data.ups_load ? (data.ups_load + "%") : "Not reported";
+
+  document.getElementById("runtime").textContent =
+    data.battery_runtime ? secondsToReadable(data.battery_runtime) : "Not reported";
+
+  document.getElementById("tempF").textContent =
+    data.battery_temp_f ? (data.battery_temp_f + " °F") : "Not reported";
+
+  document.getElementById("inputVoltage").textContent =
+    data.input_voltage ? (data.input_voltage + " V") : "Not reported";
+
+  document.getElementById("outputVoltage").textContent =
+    data.output_voltage ? (data.output_voltage + " V") : "Not reported";
+
+  const status = data.ups_status || "";
+  const displayStatus = mapDisplayStatus(status);
+
+  if (displayStatus === "Warning") {
+    statusBox.className = "alert-box alert-warn";
+    statusBox.textContent = "Warning (" + friendlySystemName + ")";
+  } else if (displayStatus === "Online") {
+    statusBox.className = "alert-box alert-ok";
+    statusBox.textContent = "Online (" + friendlySystemName + ")";
+  } else {
+    statusBox.className = "alert-box alert-bad";
+    statusBox.textContent = "Offline (" + friendlySystemName + ")";
+  }
+
+  document.querySelectorAll("#upsTableBody tr").forEach((row) => {
+    row.classList.toggle("selected", row.dataset.ups === selectedUPS);
+  });
+
+  drawChart();
+}
+
+function setSelectedRowVisual() {
+  document.querySelectorAll("#upsTableBody tr").forEach((row) => {
+    row.classList.remove("selected");
+    if (row.dataset.ups === selectedUPS) {
+      row.classList.add("selected");
+    }
+  });
+}
+
+function updateTableRow(upsName, data) {
+  const makeModel = [data.device_mfr, data.device_model].filter(Boolean).join(" ").trim();
+  const modelCell = document.getElementById("tblModel-" + upsName);
+  const statusCell = document.getElementById("tblStatus-" + upsName);
+  const batteryCell = document.getElementById("tblBattery-" + upsName);
+  const loadCell = document.getElementById("tblLoad-" + upsName);
+  const voltageCell = document.getElementById("tblVoltage-" + upsName);
+  const row = document.querySelector('tr[data-ups="' + upsName + '"]');
+  const friendlySystemName = (data.friendly_system_name || upsName).trim() || upsName;
+
+  if (row && row.children[0]) {
+    row.children[0].textContent = friendlySystemName;
+  }
+
+  if (modelCell) modelCell.textContent = makeModel || "--";
+  if (statusCell) statusCell.textContent = mapDisplayStatus(data.ups_status);
+  if (batteryCell) batteryCell.textContent = data.battery_charge ? (data.battery_charge + "%") : "Not reported";
+  if (loadCell) loadCell.textContent = data.ups_load ? (data.ups_load + "%") : "Not reported";
+  if (voltageCell) voltageCell.textContent = data.output_voltage ? (data.output_voltage + " V") : "Not reported";
+
+  if (row) {
+    if ((data.ups_status || "").includes("OB")) row.classList.add("alert-row");
+    else row.classList.remove("alert-row");
+  }
+}
+
+async function fetchUpsData(upsName) {
+  try {
+    const resp = await fetch("/cgi-bin/nut/upsjson.sh?ups=" + encodeURIComponent(upsName) + "&_=" + Date.now());
+    const data = await resp.json();
+
+    if (data.error) {
+      markUpsOffline(upsName);
+      return;
+    }
+
+    upsDataStore[upsName] = data;
+
+    const loadVal = parseFloat(data.ups_load || "0");
+    if (!isNaN(loadVal)) {
+      if (!loadHistory[upsName]) loadHistory[upsName] = [];
+      loadHistory[upsName].push(loadVal);
+      if (loadHistory[upsName].length > 60) loadHistory[upsName].shift();
+    }
+
+    updateTableRow(upsName, data);
+
+    if (upsName === selectedUPS) {
+      applySelectedUPSDetails();
+    }
+  } catch (e) {
+    markUpsOffline(upsName);
+  }
+}
+
+function refreshAllUPS() {
+  allUps.forEach(fetchUpsData);
+}
+
+function tickCountdown() {
+  countdown -= 1;
+  document.getElementById("countdown").textContent = countdown;
+
+  if (countdown <= 0) {
+    countdown = refreshSeconds;
+    updateTrivia();
+    autoCycleSelectedUPS();
+    refreshAllUPS();
+  }
+}
+
+function initRowSelection() {
+  document.querySelectorAll("#upsTableBody tr").forEach((row) => {
+    row.addEventListener("click", () => {
+      selectedUPS = row.dataset.ups;
+      autoCyclePauseUntil = Date.now() + 45000;
+      autoCycleIndex = displayOrder.indexOf(selectedUPS);
+      if (autoCycleIndex < 0) autoCycleIndex = 0;
+      setSelectedRowVisual();
+      applySelectedUPSDetails();
+    });
+  });
+}
+
+async function loadOutageLog() {
+  try {
+    const resp = await fetch("nut-power-events.json?v=" + Date.now(), { cache: "no-store" });
+    const data = await resp.json();
+
+    const summary = document.getElementById("lastBootSummary");
+    const box = document.getElementById("outageLogBox");
+
+    if (!Array.isArray(data) || data.length === 0) {
+      summary.textContent = "No power/test events recorded yet.";
+      box.textContent = "No log entries found.";
+      return;
+    }
+
+    outageLogData = data;
+
+    const latest = data[0]?.line || "unknown";
+    let latestSummary = "Latest power/test event shown below.";
+
+    if (latest.includes("APC_IDF_EVENT")) {
+      const sourceMatch = latest.match(/source="([^"]+)"/);
+      const changeMatch = latest.match(/change="([^"]+)"/);
+      const severityMatch = latest.match(/severity="([^"]+)"/);
+      const codeMatch = latest.match(/code="([^"]+)"/);
+
+      const source = sourceMatch ? sourceMatch[1] : "APC IDF";
+      const change = changeMatch ? changeMatch[1].replaceAll("_", " ") : "event";
+      const severity = severityMatch ? severityMatch[1] + " " : "";
+      const code = codeMatch ? " " + codeMatch[1] : "";
+
+      latestSummary = `Latest power/test event: ${source} ${severity}${change}${code}`;
+    } else if (latest.includes("NUT_MONITOR_EVENT")) {
+      latestSummary = "Latest power/test event: NUT monitor event shown below.";
+    } else if (latest.includes("SHUTDOWN_CLASSIFICATION")) {
+      latestSummary = "Latest power/test event: shutdown classification shown below.";
+    }
+
+    summary.textContent = latestSummary;
+
+    const esc = (value) => String(value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+
+    function parseLine(line) {
+      const row = {
+        timestamp: "",
+        event: "",
+        target: "",
+        mode: "",
+        action: "",
+        status: "",
+        result: line
+      };
+
+      const ts = String(line || "").match(/^\[([^\]]+)\]\s*(.*)$/);
+      let msg = String(line || "");
+
+      if (ts) {
+        row.timestamp = ts[1];
+        msg = ts[2];
+      }
+
+      if (msg.startsWith("TARGET:")) {
+        row.event = "Target";
+        row.target = msg.replace("TARGET:", "").trim();
+      } else if (msg.startsWith("MODE:")) {
+        row.event = "Mode";
+        row.mode = msg.replace("MODE:", "").trim();
+      } else if (msg.startsWith("ACTION:")) {
+        row.event = "Action";
+        row.action = msg.replace("ACTION:", "").trim();
+      } else if (msg.includes("PASS")) {
+        row.event = "Result";
+        row.status = "PASS";
+      } else if (msg.includes("FAIL") || msg.includes("ERROR")) {
+        row.event = "Result";
+        row.status = "FAIL";
+      } else if (msg.includes("SUMMARY")) {
+        row.event = "Summary";
+      } else if (msg.toUpperCase().includes("REAL TEST BLOCKED")) {
+        row.event = "Real test blocked";
+        row.status = "FAIL";
+      } else if (msg.toUpperCase().includes("POWER") || msg.toUpperCase().includes("BATTERY")) {
+        row.event = "Power / battery event";
+      } else {
+        row.event = "Event";
+      }
+
+      return row;
+    }
+
+    const rows = data
+      .map((entry) => entry.line || "")
+      .filter((line) => String(line || "").trim() !== "")
+      .map(parseLine);
+
+    box.innerHTML = `
+      <table class="power-log-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Event</th>
+            <th>Target</th>
+            <th>Mode</th>
+            <th>Action</th>
+            <th>PASS / FAIL</th>
+            <th>Result text</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(row => `
+            <tr>
+              <td>${esc(row.timestamp)}</td>
+              <td>${esc(row.event)}</td>
+              <td>${esc(row.target)}</td>
+              <td>${esc(row.mode)}</td>
+              <td>${esc(row.action)}</td>
+              <td>${esc(row.status)}</td>
+              <td>${esc(row.result)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    document.getElementById("lastBootSummary").textContent = "Unable to load power/test event summary.";
+    document.getElementById("outageLogBox").textContent = "Unable to load power/test event log.";
+  }
+}
+
+function autoCycleSelectedUPS() {
+  if (!autoCycleEnabled) return;
+
+  const now = Date.now();
+  if (now < autoCyclePauseUntil) return;
+
+  const orderedUps = displayOrder.filter((upsName) => {
+    return document.querySelector('tr[data-ups="' + upsName + '"]');
+  });
+
+  if (!orderedUps.length) return;
+
+  const currentIndex = orderedUps.indexOf(selectedUPS);
+
+  if (currentIndex >= 0) {
+    autoCycleIndex = (currentIndex + 1) % orderedUps.length;
+  } else {
+    autoCycleIndex = autoCycleIndex % orderedUps.length;
+  }
+
+  selectedUPS = orderedUps[autoCycleIndex];
+  setSelectedRowVisual();
+  applySelectedUPSDetails();
+}
+
+reorderUpsRows();
+loadRackMap();
+updateClock();
+setInterval(updateClock, 1000);
+
+initRowSelection();
+setSelectedRowVisual();
+updateTrivia();
+loadOutageLog();
+refreshAllUPS();
+
+setInterval(tickCountdown, 1000);
+setInterval(loadOutageLog, 60000);
+</script>
+  
+</body>
+</html>
+
+<style>
+/* ===== Power / Boot Event Log table layout aligned with NUT UI ===== */
+#outageLogBox {
+  max-height: 220px !important;
+  overflow: auto !important;
+  white-space: normal !important;
+  background: #050914 !important;
+  color: #e5e7eb !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(148,163,184,.22) !important;
+}
+
+#outageLogBox .power-log-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: auto !important;
+  font-size: 12px !important;
+}
+
+#outageLogBox .power-log-table th,
+#outageLogBox .power-log-table td {
+  border-bottom: 1px solid rgba(148,163,184,.22) !important;
+  text-align: left !important;
+  padding: 6px !important;
+  vertical-align: top !important;
+  line-height: 1.35 !important;
+}
+
+#outageLogBox .power-log-table th {
+  color: #bfdbfe !important;
+  font-weight: 700 !important;
+}
+</style>
+
+/* ===== Dashboard containment fix for long Power / Boot Event Log lines ===== */
+

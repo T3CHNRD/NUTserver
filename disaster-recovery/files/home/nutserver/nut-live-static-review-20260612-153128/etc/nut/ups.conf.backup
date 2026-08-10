@@ -1,0 +1,39 @@
+# ------------------------------------------------------------------
+# GENERATED TEMPLATE: /etc/nut/ups.conf
+# Review and edit each UPS block before applying.
+# Replace placeholder values with confirmed data from discovery/HCL.
+# ------------------------------------------------------------------
+
+maxretry = 3
+
+[ups1]
+    driver = usbhid-ups
+    port = auto
+    vendorid = 051d
+    desc = "APC Smart-UPS 1500 (USB)"
+
+# Example serial UPS block
+#[ups2]
+#    driver = apcsmart
+#    port = /dev/ttyUSB0
+#    desc = "UPS 2 - APC serial - REVIEW REQUIRED"
+
+# Example Tripp Lite USB block
+#[ups3]
+#    driver = tripplite_usb
+#    port = auto
+#    desc = "UPS 3 - Tripp Lite USB - REVIEW REQUIRED"
+
+# Example SNMP UPS block
+#[ups4]
+#    driver = snmp-ups
+#    port = 192.168.1.50
+#    community = [REDACTED]
+#    snmp_version = v1
+#    desc = "UPS 4 - SNMP - REVIEW REQUIRED"
+
+# Add additional UPS entries for ups5 through ups9 after confirming:
+# - driver
+# - port
+# - vendor/product IDs if needed
+# - serial/SNMP details if applicable

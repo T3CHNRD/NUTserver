@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "feature": "UPS Maintenance Mode",
+  "implemented_phase": "phase5-active-session-tracking",
+  "status": "initialized",
+  "active_sessions": [],
+  "unresolved_items": [],
+  "recent_records": [
+    {
+      "timestamp": "2026-07-21T08:17:46-04:00",
+      "event": "UPS_MAINTENANCE_NOTE",
+      "ups": "test",
+      "mode": "standby",
+      "status": "initialized",
+      "operator": "",
+      "message": "Phase 2 helper safe write test completed. No shutdown actions performed."
+    },
+    {
+      "timestamp": "2026-07-21T08:18:50-04:00",
+      "event": "UPS_MAINTENANCE_NOTE",
+      "ups": "test",
+      "mode": "standby",
+      "status": "initialized",
+      "operator": "",
+      "message": "Phase 2 helper permission fix test completed. No shutdown actions performed."
+    },
+    {
+      "timestamp": "2026-07-21T08:19:53-04:00",
+      "event": "UPS_MAINTENANCE_NOTE",
+      "ups": "test",
+      "mode": "standby",
+      "status": "initialized",
+      "operator": "",
+      "message": "Phase 2 patched live helper permission test completed. No shutdown actions performed."
+    },
+    {
+      "timestamp": "2026-07-21T08:41:18-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups3",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-07-21T08:41:18-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups3",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-07-21T08:52:40-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups3",
+      "mode": "test",
+      "status": "active",
+      "operator": "",
+      "message": "Phase 5 active-session tracking test started. No shutdown actions performed."
+    },
+    {
+      "timestamp": "2026-07-21T08:52:40-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups3",
+      "mode": "test",
+      "status": "initialized",
+      "operator": "",
+      "message": "Phase 5 active-session tracking test completed. No shutdown actions performed."
+    },
+    {
+      "timestamp": "2026-07-21T08:56:05-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups3",
+      "mode": "suppression-check-test",
+      "status": "active",
+      "operator": "",
+      "message": "Phase 5 suppression check test started. No shutdown actions performed."
+    },
+    {
+      "timestamp": "2026-07-21T08:56:05-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups3",
+      "mode": "suppression-check-test",
+      "status": "initialized",
+      "operator": "",
+      "message": "Phase 5 suppression check test completed and cleared."
+    },
+    {
+      "timestamp": "2026-07-21T09:03:03-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups3",
+      "mode": "suppression-test",
+      "status": "active",
+      "operator": "",
+      "message": "Phase 5 shutdown suppression test started. No shutdown actions should run."
+    },
+    {
+      "timestamp": "2026-07-21T09:03:03-04:00",
+      "event": "UPS_MAINTENANCE_NOTE",
+      "ups": "ups3",
+      "mode": "suppression",
+      "status": "active",
+      "operator": "",
+      "message": "Shutdown commit suppressed because UPS Maintenance Mode is active. No shutdown actions performed."
+    },
+    {
+      "timestamp": "2026-07-21T09:03:04-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups3",
+      "mode": "suppression-test",
+      "status": "initialized",
+      "operator": "",
+      "message": "Phase 5 shutdown suppression test completed and cleared."
+    }
+  ],
+  "created_at": "2026-07-17T10:43:36.329668-04:00",
+  "updated_at": "2026-07-21T09:03:04-04:00",
+  "note": "State foundation only. Automatic detection and UI workflows are not implemented yet."
+}

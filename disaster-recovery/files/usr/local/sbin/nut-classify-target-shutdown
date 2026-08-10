@@ -1,0 +1,88 @@
+#!/bin/bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+set -u
+
+TARGET_NAME="${1:-}"
+COMMAND_RC="${2:-}"
+
+LOOKUP_HELPER="/usr/local/sbin/nut-get-verification-target"
+VERIFY_HELPER="/usr/local/sbin/nut-verify-target-down.sh"
+CLASSIFY_HELPER="/usr/local/sbin/nut-classify-shutdown-result"
+POWER_EVENT_LOGGER="/usr/local/sbin/nut-power-event-log"
+PUBLISH_POWER_EVENTS="/usr/local/sbin/nut-publish-power-events-json"
+
+if [ -z "$TARGET_NAME" ] || [ -z "$COMMAND_RC" ]; then
+  echo "Usage: nut-classify-target-shutdown <target_name> <command_rc>" >&2
+  exit 64
+fi
+
+case "$COMMAND_RC" in
+  ''|*[!0-9]*)
+    CLASSIFICATION="WARN target=\"$TARGET_NAME\" reason=\"invalid_command_rc\" command_rc=\"$COMMAND_RC\""
+    echo "$CLASSIFICATION"
+    [ -x "$POWER_EVENT_LOGGER" ] && "$POWER_EVENT_LOGGER" "SHUTDOWN_CLASSIFICATION $CLASSIFICATION" || true
+    [ -x "$PUBLISH_POWER_EVENTS" ] && "$PUBLISH_POWER_EVENTS" >/dev/null 2>&1 || true
+    exit 3
+    ;;
+esac
+
+if [ ! -x "$LOOKUP_HELPER" ]; then
+  CLASSIFICATION="WARN target=\"$TARGET_NAME\" reason=\"target_lookup_helper_missing\" command_rc=${COMMAND_RC}"
+  echo "$CLASSIFICATION"
+  [ -x "$POWER_EVENT_LOGGER" ] && "$POWER_EVENT_LOGGER" "SHUTDOWN_CLASSIFICATION $CLASSIFICATION" || true
+  [ -x "$PUBLISH_POWER_EVENTS" ] && "$PUBLISH_POWER_EVENTS" >/dev/null 2>&1 || true
+  exit 3
+fi
+
+LOOKUP_OUTPUT="$("$LOOKUP_HELPER" "$TARGET_NAME" 2>/dev/null)"
+LOOKUP_RC="$?"
+
+if [ "$LOOKUP_RC" -ne 0 ]; then
+  CLASSIFICATION="WARN target=\"$TARGET_NAME\" reason=\"target_not_in_verification_map\" command_rc=${COMMAND_RC}"
+  echo "$CLASSIFICATION"
+  [ -x "$POWER_EVENT_LOGGER" ] && "$POWER_EVENT_LOGGER" "SHUTDOWN_CLASSIFICATION $CLASSIFICATION" || true
+  [ -x "$PUBLISH_POWER_EVENTS" ] && "$PUBLISH_POWER_EVENTS" >/dev/null 2>&1 || true
+  exit 3
+fi
+
+eval "$LOOKUP_OUTPUT"
+
+VERIFY_RC=99
+
+VERIFY_TIMEOUT_EFFECTIVE="${VERIFY_TIMEOUT_OVERRIDE:-${VERIFY_TIMEOUT:-300}}"
+
+if [ "${TARGET_IP:-UNKNOWN}" = "UNKNOWN" ] || [ -z "${TARGET_IP:-}" ]; then
+  VERIFY_RC=99
+else
+  if [ -x "$VERIFY_HELPER" ]; then
+    if [ -n "${NETWORK_DEPENDENCY:-}" ]; then
+      "$VERIFY_HELPER" "$TARGET_NAME" "$TARGET_IP" "$VERIFY_TIMEOUT_EFFECTIVE" "$NETWORK_DEPENDENCY"
+      VERIFY_RC="$?"
+    else
+      "$VERIFY_HELPER" "$TARGET_NAME" "$TARGET_IP" "$VERIFY_TIMEOUT_EFFECTIVE"
+      VERIFY_RC="$?"
+    fi
+  else
+    VERIFY_RC=99
+  fi
+fi
+
+if [ -x "$CLASSIFY_HELPER" ]; then
+  CLASSIFICATION="$("$CLASSIFY_HELPER" "$TARGET_NAME" "$COMMAND_RC" "$VERIFY_RC")"
+  CLASSIFY_RC="$?"
+else
+  CLASSIFICATION="WARN target=\"$TARGET_NAME\" reason=\"classification_helper_missing\" command_rc=${COMMAND_RC} verify_rc=${VERIFY_RC}"
+  CLASSIFY_RC=3
+fi
+
+echo "$CLASSIFICATION"
+
+if [ -x "$POWER_EVENT_LOGGER" ]; then
+  "$POWER_EVENT_LOGGER" "SHUTDOWN_CLASSIFICATION $CLASSIFICATION" || true
+fi
+
+if [ -x "$PUBLISH_POWER_EVENTS" ]; then
+  "$PUBLISH_POWER_EVENTS" >/dev/null 2>&1 || true
+fi
+
+exit "$CLASSIFY_RC"

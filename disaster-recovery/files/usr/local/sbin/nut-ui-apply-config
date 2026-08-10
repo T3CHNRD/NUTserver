@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+set -euo pipefail
+
+REGISTRY="/opt/nut-orchestrator-ui/lib/config_registry.json"
+VALIDATORS="/opt/nut-orchestrator-ui/lib/validators.sh"
+BACKUP_DIR="/var/lib/nut-orchestrator-ui/backups"
+LOG_FILE="/var/log/nut-orchestrator-ui/ui-actions.log"
+
+usage() {
+  echo "Usage: $0 <config_id> <staged_file> [dry-run|apply]"
+  exit 1
+}
+
+[ $# -lt 2 ] && usage
+
+CONFIG_ID="$1"
+STAGED_FILE="$2"
+MODE="${3:-dry-run}"
+
+[ -f "$REGISTRY" ] || { echo "Registry not found"; exit 1; }
+[ -f "$VALIDATORS" ] || { echo "Validators not found"; exit 1; }
+[ -f "$STAGED_FILE" ] || { echo "Staged file not found"; exit 1; }
+
+CONFIG_JSON="$(jq -c --arg id "$CONFIG_ID" '.editable_configs[] | select(.id==$id)' "$REGISTRY")"
+[ -n "$CONFIG_JSON" ] || { echo "Unknown config id"; exit 1; }
+
+TARGET_PATH="$(echo "$CONFIG_JSON" | jq -r '.path')"
+VALIDATOR="$(echo "$CONFIG_JSON" | jq -r '.validator')"
+CONFIG_NAME="$(echo "$CONFIG_JSON" | jq -r '.name')"
+OWNER="$(echo "$CONFIG_JSON" | jq -r '.owner // "root"')"
+GROUP_NAME="$(echo "$CONFIG_JSON" | jq -r '.group // "root"')"
+FILE_MODE="$(echo "$CONFIG_JSON" | jq -r '.file_mode // "640"')"
+
+[ -n "$TARGET_PATH" ] && [ "$TARGET_PATH" != "null" ] || { echo "Missing target path"; exit 1; }
+[ -n "$VALIDATOR" ] && [ "$VALIDATOR" != "null" ] || { echo "Missing validator"; exit 1; }
+
+BASENAME="$(basename "$TARGET_PATH")"
+
+for blocked in $(jq -r '.blocked_patterns[]' "$REGISTRY"); do
+  if [[ "$BASENAME" == *"$blocked"* ]]; then
+    echo "Blocked filename pattern detected: $blocked"
+    exit 1
+  fi
+done
+
+EXT_OK=0
+while IFS= read -r ext; do
+  if [[ "$TARGET_PATH" == *"$ext" ]]; then
+    EXT_OK=1
+    break
+  fi
+done < <(echo "$CONFIG_JSON" | jq -r '.allowed_extensions[]')
+
+[ "$EXT_OK" -eq 1 ] || { echo "Target path extension is not approved"; exit 1; }
+
+mkdir -p "$BACKUP_DIR" "$(dirname "$LOG_FILE")"
+source "$VALIDATORS"
+
+TMP_VALIDATE="$(mktemp)"
+cp -f "$STAGED_FILE" "$TMP_VALIDATE"
+
+# EMAIL CONFIG AUTO-REDACT SMTP PASSWORD
+# If the email config is saved with a real SMTP_PASSWORD value, move that value
+# to /etc/nut/nut-email-alerts.secret and keep the visible config masked.
+if [ "$CONFIG_ID" = "nut_email_alerts_conf" ]; then
+  python3 - "$TMP_VALIDATE" <<'PYEMAIL'
+from pathlib import Path
+import shlex
+import sys
+
+staged = Path(sys.argv[1])
+secret = [REDACTED]
+
+lines = staged.read_text(encoding="utf-8").splitlines()
+new_lines = []
+captured_password = ""
+
+for line in lines:
+    if line.startswith("SMTP_PASSWORD="):
+        raw = line.split("=", 1)[1].strip()
+        try:
+            parts = shlex.split(raw)
+            value = parts[0] if parts else ""
+        except Exception:
+            value = raw.strip('"').strip("'")
+
+        if value and value != "********":
+            captured_password = [REDACTED]
+
+        new_lines.append('SMTP_PASSWORD="********"')
+    else:
+        new_lines.append(line)
+
+if captured_password:
+    secret.write_text(captured_password + "\n", encoding="utf-8")
+
+staged.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+PYEMAIL
+
+  chown root:root /etc/nut/nut-email-alerts.secret 2>/dev/null || true
+  chmod 0600 /etc/nut/nut-email-alerts.secret 2>/dev/null || true
+fi
+
+echo "[$(date -Is)] VALIDATE START config_id=$CONFIG_ID name=\"$CONFIG_NAME\" target=\"$TARGET_PATH\" mode=$MODE" | tee -a "$LOG_FILE"
+
+run_validator "$VALIDATOR" "$TMP_VALIDATE"
+
+if [ "$MODE" = "dry-run" ]; then
+  echo "Dry-run successful. Validation passed for $CONFIG_ID"
+  rm -f "$TMP_VALIDATE"
+  exit 0
+fi
+
+TS="$(date +%Y%m%d-%H%M%S)"
+SAFE_ID="$(echo "$CONFIG_ID" | tr -cd 'a-zA-Z0-9_-')"
+DEST_BACKUP_DIR="$BACKUP_DIR/$SAFE_ID"
+mkdir -p "$DEST_BACKUP_DIR"
+
+if [ -f "$TARGET_PATH" ]; then
+  cp -a "$TARGET_PATH" "$DEST_BACKUP_DIR/${TS}.bak"
+fi
+
+# OVERWRITE FILE CONTENT SAFELY (DO NOT REPLACE FILE)
+if ! cat "$STAGED_FILE" | tee "$TARGET_PATH" > /dev/null; then
+  echo "[$(date -Is)] APPLY FAIL config_id=$CONFIG_ID target=\"$TARGET_PATH\" step=\"tee-overwrite\" owner=\"$OWNER\" group=\"$GROUP_NAME\" mode=\"$FILE_MODE\"" | tee -a "$LOG_FILE"
+  exit 1
+fi
+
+if ! chown "$OWNER:$GROUP_NAME" "$TARGET_PATH"; then
+  echo "[$(date -Is)] APPLY FAIL config_id=$CONFIG_ID target=\"$TARGET_PATH\" step=\"chown\" owner=\"$OWNER\" group=\"$GROUP_NAME\" mode=\"$FILE_MODE\"" | tee -a "$LOG_FILE"
+  exit 1
+fi
+
+if ! chmod "$FILE_MODE" "$TARGET_PATH"; then
+  echo "[$(date -Is)] APPLY FAIL config_id=$CONFIG_ID target=\"$TARGET_PATH\" step=\"chmod\" owner=\"$OWNER\" group=\"$GROUP_NAME\" mode=\"$FILE_MODE\"" | tee -a "$LOG_FILE"
+  exit 1
+fi
+
+# EMAIL CONFIG FORCE MSMTP REBUILD AFTER TARGET WRITE
+if [ "$CONFIG_ID" = "nut_email_alerts_conf" ]; then
+  /usr/local/sbin/nut-rebuild-msmtp-from-email-config
+fi
+
+echo "[$(date -Is)] APPLY OK config_id=$CONFIG_ID target=\"$TARGET_PATH\" backup=\"$DEST_BACKUP_DIR/${TS}.bak\" owner=\"$OWNER\" group=\"$GROUP_NAME\" mode=\"$FILE_MODE\"" | tee -a "$LOG_FILE"
+
+rm -f "$TMP_VALIDATE"
+echo "Apply successful for $CONFIG_ID"

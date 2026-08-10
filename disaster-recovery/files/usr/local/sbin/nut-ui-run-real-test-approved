@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+set -Eeuo pipefail
+
+PHASE="${1:-phase1-lansweeper}"
+
+export ALLOW_REAL_TEST=1
+
+case "$PHASE" in
+  phase1-lansweeper)
+    exec /usr/local/sbin/nut-ui-run-test real phase1-lansweeper
+    ;;
+  phase2-power-restore-abort)
+    exec /usr/local/sbin/nut-ui-run-test real phase2-power-restore-abort
+    ;;
+  phase3-full)
+    exec /usr/local/sbin/nut-ui-run-test real phase3-full
+    ;;
+  *)
+    echo "ERROR unknown real test phase: $PHASE" >&2
+    exit 2
+    ;;
+esac

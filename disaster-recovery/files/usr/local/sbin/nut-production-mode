@@ -1,0 +1,237 @@
+#!/bin/bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+set -euo pipefail
+
+MODE_FILE="/etc/nut/production-mode.conf"
+STATUS_CMD="/usr/local/sbin/nut-production-status"
+LOG_FILE="/var/log/nut-production-mode.log"
+POWER_EVENT_LOG="/var/log/nut-orchestrator-ui/power-events.log"
+HYPERVISOR_CONFIG="/etc/nut/hypervisors/hypervisor-ssh-fallback.conf"
+
+set_hypervisor_fallback_enabled() {
+  local enabled="$1"
+
+  if [ ! -f "$HYPERVISOR_CONFIG" ]; then
+    echo "WARN: hypervisor fallback config missing: $HYPERVISOR_CONFIG" >&2
+    return 0
+  fi
+
+  python3 - "$HYPERVISOR_CONFIG" "$enabled" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+enabled = sys.argv[2]
+
+text = path.read_text()
+lines = text.splitlines()
+out = []
+changed = False
+
+for line in lines:
+    if line.startswith("HYPERVISOR_SSH_FALLBACK_ENABLED="):
+        out.append(f"HYPERVISOR_SSH_FALLBACK_ENABLED={enabled}")
+        changed = True
+    else:
+        out.append(line)
+
+if not changed:
+    out.insert(0, f"HYPERVISOR_SSH_FALLBACK_ENABLED={enabled}")
+
+path.write_text("\n".join(out) + "\n")
+PY
+
+  chmod 640 "$HYPERVISOR_CONFIG" 2>/dev/null || true
+}
+
+
+MONITORING_UNITS=(
+  "nut-monitor.service"
+  "nut-apc-idf-event-monitor.timer"
+  "nut-apc-idf-event-monitor.service"
+  "nut-power-events-refresh.timer"
+  "nut-power-events-refresh.service"
+)
+
+unit_exists() {
+  local unit="$1"
+  systemctl list-unit-files "$unit" >/dev/null 2>&1
+}
+
+mode_label() {
+  case "$1" in
+    armed) echo "PROTECTING" ;;
+    disarmed) echo "STANDBY FOR MAINTENANCE" ;;
+    off) echo "OFF" ;;
+    storm_guard) echo "PROTECTING" ;;
+    "") echo "UNKNOWN" ;;
+    *) echo "$1" ;;
+  esac
+}
+
+current_configured_mode() {
+  if [ -f "$MODE_FILE" ]; then
+    awk -F= '/^NUT_PRODUCTION_MODE=/{gsub(/["'\'' ]/, "", $2); print $2; exit}' "$MODE_FILE"
+  else
+    echo "unknown"
+  fi
+}
+
+log_mode_change_event() {
+  local previous_mode="$1"
+  local new_mode="$2"
+  local allow_live="$3"
+  local allow_esxi="$4"
+  local note="$5"
+  local by_user="${SUDO_USER:-${USER:-unknown}}"
+
+  mkdir -p "$(dirname "$POWER_EVENT_LOG")"
+  printf '[%s] MODE_CHANGE previous="%s" new="%s" previous_mode="%s" new_mode="%s" allow_live="%s" allow_esxi="%s" by="%s" note="%s"\n' \
+    "$(date '+%Y-%m-%d %H:%M:%S')" \
+    "$(mode_label "$previous_mode")" \
+    "$(mode_label "$new_mode")" \
+    "$previous_mode" \
+    "$new_mode" \
+    "$allow_live" \
+    "$allow_esxi" \
+    "$by_user" \
+    "$note" >> "$POWER_EVENT_LOG"
+}
+
+ensure_monitoring_active() {
+  local unit=""
+
+  for unit in "${MONITORING_UNITS[@]}"; do
+    if unit_exists "$unit"; then
+      case "$unit" in
+        *.timer)
+          systemctl start "$unit"
+          ;;
+        nut-monitor.service)
+          systemctl start "$unit"
+          ;;
+        *)
+          # One-shot services are started by their timers when needed.
+          :
+          ;;
+      esac
+    fi
+  done
+}
+
+ensure_monitoring_stopped() {
+  local unit=""
+
+  # Stop services first, then timers, so no timer restarts a one-shot while OFF is being set.
+  for unit in nut-apc-idf-event-monitor.service nut-power-events-refresh.service nut-daily-health-email.service nut-monitor.service; do
+    if unit_exists "$unit"; then
+      systemctl stop "$unit" || true
+    fi
+  done
+
+  for unit in nut-apc-idf-event-monitor.timer nut-power-events-refresh.timer nut-daily-health-email.timer; do
+    if unit_exists "$unit"; then
+      systemctl stop "$unit" || true
+    fi
+  done
+}
+
+
+write_mode() {
+  local mode="$1"
+  local allow_live="$2"
+  local allow_esxi="$3"
+  local hypervisor_fallback_enabled="$4"
+  local note="$5"
+  local previous_mode
+
+  previous_mode="$(current_configured_mode)"
+
+  set_hypervisor_fallback_enabled "$hypervisor_fallback_enabled"
+
+  umask 022
+  cat > "$MODE_FILE" <<EOF
+# NUT production mode status/enforcement file.
+# User-facing modes:
+#   armed     = PROTECTING
+#   disarmed  = STANDBY FOR MAINTENANCE
+#   off       = OFF
+#
+# Current enforcement:
+#   armed     = production protection posture is active
+#   disarmed  = live shutdown/orchestration commit actions are blocked
+#   off       = live actions blocked; monitoring/logging timers, daily email reports, and nut-monitor.service are stopped
+#
+# ESXi fallback:
+#   In PROTECTING mode, ESXi fallback readiness is enabled for the approved live test path.
+#   This file alone does not send shutdown, poweroff, reboot, maintenance, or VM power commands.
+
+NUT_PRODUCTION_MODE=${mode}
+NUT_ALLOW_LIVE_ACTIONS=${allow_live}
+NUT_ALLOW_ESXI_SSH_FALLBACK=${allow_esxi}
+NUT_MODE_UPDATED_AT="$(date -Is)"
+NUT_MODE_UPDATED_BY="${SUDO_USER:-${USER:-unknown}}"
+NUT_MODE_NOTE="${note}"
+EOF
+
+  chmod 644 "$MODE_FILE"
+
+  mkdir -p "$(dirname "$LOG_FILE")"
+  echo "[$(date -Is)] mode=${mode} allow_live=${allow_live} allow_esxi=${allow_esxi} hypervisor_fallback_enabled=${hypervisor_fallback_enabled} by=${SUDO_USER:-${USER:-unknown}} note=${note}" >> "$LOG_FILE"
+  log_mode_change_event "$previous_mode" "$mode" "$allow_live" "$allow_esxi" "$note"
+
+  if [ -x "$STATUS_CMD" ]; then
+    "$STATUS_CMD" >/dev/null || true
+  fi
+}
+
+case "${1:-status}" in
+  status)
+    if [ -f "$MODE_FILE" ]; then
+      cat "$MODE_FILE"
+    else
+      echo "NUT_PRODUCTION_MODE=disarmed"
+      echo "NUT_ALLOW_LIVE_ACTIONS=0"
+      echo "NUT_ALLOW_ESXI_SSH_FALLBACK=0"
+    fi
+
+    echo
+    if [ -x "$STATUS_CMD" ]; then
+      "$STATUS_CMD" | grep -E '"mode"|"mode_label"|"nut_monitor"|"ups_total"|"ups_online"|"esxi_ssh_fallback_enabled"|"allow_live_actions"|"allow_esxi_ssh_fallback"' || true
+    fi
+    ;;
+
+  protect|protecting|arm|armed)
+    ensure_monitoring_active
+    write_mode "armed" "1" "1" "1" "PROTECTING: Monitoring active. Live protection actions are allowed for qualifying UPS power events."
+    echo "PASS: NUT production mode set to PROTECTING"
+    echo "PASS: monitoring/logging services are active or were started."
+    echo "NOTE: This did not send any shutdown, poweroff, reboot, maintenance, or VM power command."
+    ;;
+
+  standby|maintenance|standby-for-maintenance|standby_for_maintenance|disarm|disarmed)
+    ensure_monitoring_active
+    write_mode "disarmed" "0" "0" "0" "STANDBY FOR MAINTENANCE: Monitoring active. Live protection actions are blocked for maintenance."
+    echo "PASS: NUT production mode set to STANDBY FOR MAINTENANCE"
+    echo "PASS: monitoring/logging services are active or were started."
+    ;;
+
+  off)
+    write_mode "off" "0" "0" "0" "OFF: Monitoring stopped. Live protection actions are blocked. Systems remain running."
+    ensure_monitoring_stopped
+    echo "PASS: NUT production mode set to OFF"
+    echo "PASS: monitoring/logging services were stopped."
+    echo "NOTE: This did not send any shutdown, poweroff, reboot, maintenance, or VM power command."
+    ;;
+
+  storm-guard|storm_guard)
+    write_mode "armed" "1" "1" "1" "PROTECTING: legacy storm_guard request mapped to armed/protecting. ESXi fallback readiness is enabled for the approved live test path."
+    echo "PASS: legacy storm_guard mapped to PROTECTING"
+    echo "NOTE: Update UI wording to remove Storm Guard."
+    ;;
+
+  *)
+    echo "Usage: $0 {status|protecting|standby|off}"
+    exit 2
+    ;;
+esac

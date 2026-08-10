@@ -1,0 +1,101 @@
+===== DATE =====
+Fri Jun 19 09:46:38 AM EDT 2026
+
+===== SCRIPT INFO =====
+-rwxr-xr-x 1 root root 3438 May  8 10:42 /usr/local/sbin/nut-export-test-logs
+
+===== SCRIPT SHA256 =====
+fa0cd709be9965761225ed50842c76b2ac3c65805b3278833f726f220dc02757  /usr/local/sbin/nut-export-test-logs
+
+===== SCRIPT CONTENT =====
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+EXPORT_TS="$(date +%Y%m%d-%H%M%S)"
+EXPORT_DIR="/tmp/nut-test-export-${EXPORT_TS}"
+ARCHIVE="/tmp/nut-test-export-${EXPORT_TS}.tar.gz"
+
+mkdir -p "$EXPORT_DIR"/logs
+mkdir -p "$EXPORT_DIR"/system
+mkdir -p "$EXPORT_DIR"/configs
+mkdir -p "$EXPORT_DIR"/scripts
+mkdir -p "$EXPORT_DIR"/ui
+
+cp -a /var/log/nut-orchestrator-ui/tests.log "$EXPORT_DIR/logs/" 2>/dev/null || true
+cp -a /var/log/nut-orchestrator-ui/power-events.log "$EXPORT_DIR/logs/" 2>/dev/null || true
+
+cp -a \
+  /var/log/nut-vmware-shutdown.log \
+  /var/log/nut-netapp-halt.log \
+  /var/log/nut-synology-shutdown.log \
+  /var/log/nut-lansweeper-shutdown.log \
+  /var/log/nut-voip-shutdown.log \
+  /var/log/nut-db-shutdown.log \
+  /var/log/nut-blueiris-shutdown.log \
+  "$EXPORT_DIR/logs/" 2>/dev/null || true
+
+journalctl -u nut-server.service --since "7 days ago" --no-pager > "$EXPORT_DIR/system/nut-server.journal.txt" || true
+journalctl -u nut-monitor.service --since "7 days ago" --no-pager > "$EXPORT_DIR/system/nut-monitor.journal.txt" || true
+journalctl -u nut-orchestrator-ui.service --since "7 days ago" --no-pager > "$EXPORT_DIR/system/nut-orchestrator-ui.journal.txt" || true
+
+systemctl status nut-server.service nut-monitor.service nut-orchestrator-ui.service --no-pager -l > "$EXPORT_DIR/system/service-status.txt" || true
+
+{
+  echo "===== upsc -l ====="
+  upsc -l || true
+  echo
+  for ups in $(upsc -l 2>/dev/null); do
+    echo "===== $ups ====="
+    upsc "$ups" 2>/dev/null || true
+    echo
+  done
+} > "$EXPORT_DIR/system/ups-status.txt"
+
+cp -a /etc/nut/ups.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/upsd.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/upsmon.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/upssched.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/nut.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/hosts.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/config.d/approved-targets.yml "$EXPORT_DIR/configs/" 2>/dev/null || true
+cp -a /etc/nut/config.d/dashboard-ui.json "$EXPORT_DIR/configs/" 2>/dev/null || true
+
+cp -a \
+  /usr/local/sbin/nut-ui-run-test \
+  /usr/local/sbin/nut-ui-run-real-test-approved \
+  /usr/local/sbin/nut-vmware-shutdown.sh \
+  /usr/local/sbin/nut-netapp-halt.sh \
+  /usr/local/sbin/nut-synology-shutdown.sh \
+  /usr/local/sbin/nut-lansweeper-shutdown.sh \
+  /usr/local/sbin/nut-voip-shutdown.sh \
+  /usr/local/sbin/nut-db-shutdown.sh \
+  /usr/local/sbin/nut-blueiris-shutdown.sh \
+  "$EXPORT_DIR/scripts/" 2>/dev/null || true
+
+cp -a /usr/local/bin/nut-orchestrator.sh "$EXPORT_DIR/scripts/" 2>/dev/null || true
+
+cp -a /opt/nut-orchestrator-ui/app.py "$EXPORT_DIR/ui/" 2>/dev/null || true
+cp -a /opt/nut-orchestrator-ui/static/app.js "$EXPORT_DIR/ui/" 2>/dev/null || true
+cp -a /opt/nut-orchestrator-ui/templates/index.html "$EXPORT_DIR/ui/" 2>/dev/null || true
+
+cat > "$EXPORT_DIR/README.txt" <<README
+NUT test export created: $EXPORT_TS
+
+Scope:
+VMWARE_SCOPE="vCenter guest shutdown only"
+VMWARE_ESXI_HOST_SHUTDOWN=NOT_IMPLEMENTED
+
+Purpose:
+Offline analysis bundle for NUT test troubleshooting and bug fixes.
+
+Security:
+This archive may contain hostnames, IPs, configs, and operational details.
+Keep internal unless reviewed/redacted.
+README
+
+chown -R root:root "$EXPORT_DIR"
+chmod -R u+rwX,go+rX "$EXPORT_DIR"
+
+tar -czf "$ARCHIVE" -C /tmp "nut-test-export-${EXPORT_TS}"
+
+echo "$ARCHIVE"

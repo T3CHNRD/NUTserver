@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -u
+
+LOG="/var/log/nut-storm-watch.log"
+
+{
+  echo
+  echo "===== NUT STORM WATCH STATUS $(date '+%Y-%m-%d %H:%M:%S %Z') ====="
+
+  echo
+  echo "===== MODE ====="
+  cat /var/www/html/nut-state/production-mode.json 2>/dev/null \
+    | python3 -m json.tool 2>/dev/null \
+    | grep -E '"mode_label"|"ups_total"|"ups_online"|"allow_live_actions"|"allow_esxi_ssh_fallback"' \
+    || echo "MODE STATUS UNAVAILABLE"
+
+  echo
+  echo "===== UPS STATUS ====="
+  for ups in ups1 ups2 ups3 ups4 ups5 ups6 ups7 ups8 ups9; do
+    printf "%s: " "$ups"
+    upsc "$ups@localhost" ups.status 2>/dev/null || echo "UNREADABLE"
+  done
+
+  echo
+  echo "===== LATEST POWER EVENTS ====="
+  grep -Ei 'ONBATT|ONLINE|LOWBATT|APC_IDF|on battery|No longer on battery|distorted input|SHUTDOWN|EMAIL' \
+    /var/www/html/nut-state/events.log 2>/dev/null | tail -n 40 \
+    || echo "NO MATCHING POWER EVENTS FOUND"
+
+  echo "===== END NUT STORM WATCH STATUS ====="
+} | tee -a "$LOG"

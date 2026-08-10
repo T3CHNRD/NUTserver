@@ -1,0 +1,416 @@
+#!/bin/bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+set -euo pipefail
+
+REPO="/opt/nut-admin/repo-template"
+REGISTRY="/opt/nut-orchestrator-ui/lib/config_registry.json"
+
+echo "===== SYNC SAFE LIVE FILES INTO BACKUP REPO ====="
+echo "repo=${REPO}"
+
+if [ ! -d "$REPO/.git" ]; then
+  echo "FAIL: repo is not a git worktree: $REPO"
+  exit 1
+fi
+
+is_secret_path() {
+  local src="$1"
+
+  case "$src" in
+    */.ssh/*|/root/.ssh/*|*.key|*.pem|*.p12|*.pfx|*.pass|*.secret|*.creds|*/vcenter.pass|*/db-telnet.pass|*/db-telnet.user)
+      return 0
+      ;;
+  esac
+
+  case "$(basename "$src")" in
+    *password*|*PASSWORD*|*passwd*|*PASSWD*|*token*|*TOKEN*|*credential*|*Credential*)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+is_temp_artifact() {
+  local src="$1"
+
+  case "$src" in
+    *.pre-*|*.bak*|*.save|*.tmp|*.swp|*.pyc|*/__pycache__/*)
+      return 0
+      ;;
+    *.broken-*|*.disabled-*|*.final-before-*|*final-before-promotion*|*restore-github.html.disabled*)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+repo_relative_path() {
+  local src="$1"
+  printf '%s\n' "${src#/}"
+}
+
+copy_file() {
+  local src="$1"
+  local dst="$2"
+
+  if [ ! -e "$src" ]; then
+    echo "WARN: missing source: $src"
+    return 0
+  fi
+
+  if is_secret_path "$src"; then
+    echo "SKIP secret-like file: $src"
+    return 0
+  fi
+
+  if is_temp_artifact "$src"; then
+    echo "SKIP temp artifact: $src"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$REPO/$dst")"
+  install -m 0644 "$src" "$REPO/$dst"
+  echo "SYNCED file: $src -> $REPO/$dst"
+}
+
+copy_exec() {
+  local src="$1"
+  local dst="$2"
+
+  if [ ! -e "$src" ]; then
+    echo "WARN: missing source: $src"
+    return 0
+  fi
+
+  if is_secret_path "$src"; then
+    echo "SKIP secret-like executable: $src"
+    return 0
+  fi
+
+  if is_temp_artifact "$src"; then
+    echo "SKIP temp executable artifact: $src"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$REPO/$dst")"
+  install -m 0755 "$src" "$REPO/$dst"
+  echo "SYNCED executable: $src -> $REPO/$dst"
+}
+
+sanitize_config_file() {
+  local src="$1"
+  local dst="$2"
+  local mode="${3:-0640}"
+
+  if [ ! -e "$src" ]; then
+    echo "WARN: missing source: $src"
+    return 0
+  fi
+
+  if is_temp_artifact "$src"; then
+    echo "SKIP temp config artifact: $src"
+    return 0
+  fi
+
+  mkdir -p "$(dirname "$REPO/$dst")"
+
+  sed -E \
+    -e 's/^([A-Za-z0-9_]*(PASSWORD|PASS|TOKEN|SECRET|KEY)[A-Za-z0-9_]*=).*/\1"REDACTED"/I' \
+    "$src" > "$REPO/$dst"
+
+  chmod "$mode" "$REPO/$dst"
+  echo "SYNCED sanitized config: $src -> $REPO/$dst"
+}
+
+sync_registry_managed_files() {
+  if [ ! -f "$REGISTRY" ]; then
+    echo "WARN: registry not found: $REGISTRY"
+    return 0
+  fi
+
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "WARN: jq missing; registry-managed sync skipped"
+    return 0
+  fi
+
+  echo
+  echo "===== DYNAMIC REGISTRY-MANAGED SAFE FILE SYNC ====="
+
+  jq -r '
+    .editable_configs[]
+    | [
+        .id,
+        .path,
+        (.file_mode // "644")
+      ]
+    | @tsv
+  ' "$REGISTRY" | while IFS="$(printf '\t')" read -r cfg_id src mode; do
+    if [ -z "${src:-}" ] || [ "$src" = "null" ]; then
+      echo "WARN: registry item has no path: $cfg_id"
+      continue
+    fi
+
+    if is_secret_path "$src"; then
+      echo "SKIP secret-managed file: $cfg_id $src"
+      continue
+    fi
+
+    if is_temp_artifact "$src"; then
+      echo "SKIP temp registry artifact: $cfg_id $src"
+      continue
+    fi
+
+    if [ ! -e "$src" ]; then
+      echo "WARN: missing registry source: $cfg_id $src"
+      continue
+    fi
+
+    dst="$(repo_relative_path "$src")"
+
+    if [ -x "$src" ]; then
+      copy_exec "$src" "$dst"
+    else
+      copy_file "$src" "$dst"
+    fi
+  done
+}
+
+sync_directory_safe_files() {
+  local src_dir="$1"
+  local dst_prefix="$2"
+
+  if [ ! -d "$src_dir" ]; then
+    echo "WARN: missing directory: $src_dir"
+    return 0
+  fi
+
+  find "$src_dir" -type f | sort | while read -r src; do
+    if is_secret_path "$src"; then
+      echo "SKIP secret-like file: $src"
+      continue
+    fi
+
+    if is_temp_artifact "$src"; then
+      echo "SKIP temp artifact: $src"
+      continue
+    fi
+
+    rel="${src#$src_dir/}"
+    dst="${dst_prefix}/${rel}"
+
+    if [ -x "$src" ]; then
+      copy_exec "$src" "$dst"
+    else
+      copy_file "$src" "$dst"
+    fi
+  done
+}
+
+sync_glob_execs() {
+  local pattern="$1"
+  local dst_prefix="$2"
+
+  find "$(dirname "$pattern")" -maxdepth 1 -type f -name "$(basename "$pattern")" | sort | while read -r src; do
+    if is_secret_path "$src" || is_temp_artifact "$src"; then
+      echo "SKIP unsafe executable candidate: $src"
+      continue
+    fi
+
+    copy_exec "$src" "${dst_prefix}/$(basename "$src")"
+  done
+}
+
+sync_glob_files() {
+  local pattern="$1"
+  local dst_prefix="$2"
+
+  find "$(dirname "$pattern")" -maxdepth 1 -type f -name "$(basename "$pattern")" | sort | while read -r src; do
+    if is_secret_path "$src" || is_temp_artifact "$src"; then
+      echo "SKIP unsafe file candidate: $src"
+      continue
+    fi
+
+    copy_file "$src" "${dst_prefix}/$(basename "$src")"
+  done
+}
+
+echo
+echo "===== UI / FLASK SAFE SOURCE SYNC ====="
+sync_directory_safe_files /opt/nut-orchestrator-ui/lib opt/nut-orchestrator-ui/lib
+sync_directory_safe_files /opt/nut-orchestrator-ui/templates opt/nut-orchestrator-ui/templates
+sync_directory_safe_files /opt/nut-orchestrator-ui/static opt/nut-orchestrator-ui/static
+copy_file /opt/nut-orchestrator-ui/app.py opt/nut-orchestrator-ui/app.py
+copy_file /opt/nut-orchestrator-ui/requirements.txt opt/nut-orchestrator-ui/requirements.txt
+copy_file /opt/nut-orchestrator-ui/README.md opt/nut-orchestrator-ui/README.md
+copy_file /opt/nut-orchestrator-ui/Dashboard-README.md opt/nut-orchestrator-ui/Dashboard-README.md
+
+echo
+echo "===== REGISTRY-MANAGED SAFE CONFIG SYNC ====="
+sync_registry_managed_files
+
+echo
+echo "===== NUT SAFE CONFIG SYNC ====="
+sync_glob_files "/etc/nut/*.conf" etc/nut
+sanitize_config_file /etc/nut/apc-idf-web.conf etc/nut/apc-idf-web.conf 0640
+sync_directory_safe_files /etc/nut/config.d etc/nut/config.d
+copy_file /etc/nut/production-mode.conf etc/nut/production-mode.conf
+copy_file /etc/nut/ups.conf etc/nut/ups.conf
+copy_file /etc/nut/upsd.conf etc/nut/upsd.conf
+
+sanitize_upsmon_file() {
+  local src="$1"
+  local dst="$2"
+  local mode="${3:-0640}"
+
+  mkdir -p "$(dirname "$REPO/$dst")"
+
+  awk '
+    /^[[:space:]]*MONITOR[[:space:]]/ {
+      n=split($0,f,/[[:space:]]+/)
+      if (n >= 6) {
+        f[5]="[REDACTED]"
+        out=f[1]
+        for (i=2; i<=n; i++) out=out " " f[i]
+        print out
+        next
+      }
+    }
+    { print }
+  ' "$src" > "$REPO/$dst"
+
+  chmod "$mode" "$REPO/$dst"
+  echo "SYNCED sanitized upsmon config: $src -> $REPO/$dst"
+}
+
+# Do not back up live /etc/nut/upsd.users because it can contain NUT credentials.
+# Keep only a safe fork/runbook template in GitHub.
+mkdir -p "$REPO/etc/nut"
+rm -f "$REPO/etc/nut/upsd.users"
+cat > "$REPO/etc/nut/upsd.users.template" <<'EOF'
+# ------------------------------------------------------------------
+# TEMPLATE ONLY: /etc/nut/upsd.users
+# Do not commit real passwords.
+# Replace [REDACTED] locally on the live server only.
+# ------------------------------------------------------------------
+
+[upsmon]
+  password = [REDACTED]
+  upsmon master
+
+[admin]
+  password = [REDACTED]
+  actions = SET
+  actions = FSD
+  instcmds = ALL
+EOF
+chmod 0640 "$REPO/etc/nut/upsd.users.template"
+echo "WROTE safe template: $REPO/etc/nut/upsd.users.template"
+sanitize_upsmon_file /etc/nut/upsmon.conf etc/nut/upsmon.conf 0644
+copy_file /etc/nut/upssched.conf etc/nut/upssched.conf
+copy_file /etc/nut/upsset.conf etc/nut/upsset.conf
+copy_file /etc/nut/hosts.conf etc/nut/hosts.conf
+copy_file /etc/nut/apache-notes.txt etc/nut/apache-notes.txt
+copy_file /etc/nut/restore-live-test-probe.txt etc/nut/restore-live-test-probe.txt
+sanitize_config_file /etc/nut/nut-email-alerts.conf etc/nut/nut-email-alerts.conf 0640
+
+if [ -f /etc/nut/nut-orchestrator.conf ]; then
+  mkdir -p "$REPO/etc/nut"
+  sed \
+    -e 's/VCENTER_PASSWORD=.*/VCENTER_PASSWORD="REDACTED"/' \
+    -e 's/LANSWEEPER_PASSWORD=.*/LANSWEEPER_PASSWORD="REDACTED"/' \
+    -e 's/PASSWORD=.*/PASSWORD="REDACTED"/' \
+    /etc/nut/nut-orchestrator.conf > "$REPO/etc/nut/nut-orchestrator.conf"
+  chmod 0640 "$REPO/etc/nut/nut-orchestrator.conf"
+  echo "SYNCED sanitized: /etc/nut/nut-orchestrator.conf -> $REPO/etc/nut/nut-orchestrator.conf"
+fi
+
+sanitize_config_file /etc/nut/synology-api.conf etc/nut/synology-api.conf 0640
+
+echo
+
+echo
+echo "===== NUT SUDOERS SAFE SYNC ====="
+
+SUDOERS_SRC="/etc/sudoers.d/nut-event-email"
+SUDOERS_DST="$REPO/etc/sudoers.d/nut-event-email"
+
+if [ -f "$SUDOERS_SRC" ]; then
+    mkdir -p "$(dirname "$SUDOERS_DST")"
+
+    # This file contains command authorization only.
+    # It must never contain passwords, tokens, or SMTP credentials.
+    install -m 0440 "$SUDOERS_SRC" "$SUDOERS_DST"
+
+    echo "SYNCED file: $SUDOERS_SRC -> $SUDOERS_DST"
+else
+    echo "WARN: missing source: $SUDOERS_SRC"
+fi
+
+echo "===== SYSTEMD NUT UNIT SYNC ====="
+sync_glob_files "/etc/systemd/system/nut-*.service" etc/systemd/system
+sync_glob_files "/etc/systemd/system/nut-*.timer" etc/systemd/system
+
+echo
+echo "===== NUT EXECUTABLE SCRIPT SYNC ====="
+sync_glob_execs "/usr/local/sbin/nut-*" usr/local/sbin
+sync_glob_execs "/usr/local/bin/nut-*" usr/local/bin
+
+echo
+echo "===== SELECTED NON-NUT EXECUTABLE SUPPORT SYNC ====="
+copy_exec /usr/local/sbin/rollback-remote-access.sh usr/local/sbin/rollback-remote-access.sh
+copy_exec /usr/local/sbin/start-x11vnc.sh usr/local/sbin/start-x11vnc.sh
+
+echo
+echo "===== REMOVE UNSAFE SECRET-LIKE FILES FROM REPO COPY ONLY ====="
+find "$REPO" -type f \( \
+  -path '*/root/.ssh/*' \
+  -o -path '*/.ssh/*' \
+  -o -name '*.pass' \
+  -o -name '*.secret' \
+  -o -name '*.creds' \
+  -o -name 'vcenter.pass' \
+  -o -name 'db-telnet.pass' \
+  -o -name 'db-telnet.user' \
+  -o -name '*.key' \
+  -o -name '*.pem' \
+  -o -name '*.p12' \
+  -o -name '*.pfx' \
+\) -print -delete
+
+echo
+echo "===== SAFETY CHECK: DO NOT BACK UP SECRETS ====="
+if find "$REPO" -type f \( \
+    -path '*/root/.ssh/*' \
+    -o -path '*/.ssh/*' \
+    -o -name '*.pass' \
+    -o -name '*.secret' \
+    -o -name '*.creds' \
+    -o -name 'vcenter.pass' \
+    -o -name 'db-telnet.pass' \
+    -o -name 'db-telnet.user' \
+    -o -name '*.key' \
+    -o -name '*.pem' \
+    -o -name '*.p12' \
+    -o -name '*.pfx' \
+  \) | grep -q .; then
+  echo "FAIL: secret-like file detected in repo"
+  find "$REPO" -type f \( \
+    -path '*/root/.ssh/*' \
+    -o -path '*/.ssh/*' \
+    -o -name '*.pass' \
+    -o -name '*.secret' \
+    -o -name '*.creds' \
+    -o -name 'vcenter.pass' \
+    -o -name 'db-telnet.pass' \
+    -o -name 'db-telnet.user' \
+    -o -name '*.key' \
+    -o -name '*.pem' \
+    -o -name '*.p12' \
+    -o -name '*.pfx' \
+  \)
+  exit 1
+fi
+
+echo "PASS: safe live-file sync complete"

@@ -1,0 +1,69 @@
+● nut-server.service - Network UPS Tools - power devices information server
+     Loaded: loaded (/usr/lib/systemd/system/nut-server.service; enabled; preset: enabled)
+     Active: active (running) since Wed 2026-04-29 07:34:54 EDT; 1 week 2 days ago
+   Main PID: 2388 (upsd)
+      Tasks: 1 (limit: 9287)
+     Memory: 1.1M (peak: 2.2M)
+        CPU: 5min 7.565s
+     CGroup: /system.slice/nut-server.service
+             └─2388 /lib/nut/upsd -F
+
+Apr 29 07:34:55 nutserver nut-server[2388]: User upsmon@127.0.0.1 logged into UPS [ups2]
+Apr 29 07:34:55 nutserver upsd[2388]: User upsmon@127.0.0.1 logged into UPS [ups2]
+Apr 29 07:34:55 nutserver nut-server[2388]: User upsmon@127.0.0.1 logged into UPS [ups7]
+Apr 29 07:34:55 nutserver upsd[2388]: User upsmon@127.0.0.1 logged into UPS [ups7]
+Apr 29 07:34:55 nutserver nut-server[2388]: User upsmon@127.0.0.1 logged into UPS [ups8]
+Apr 29 07:34:55 nutserver upsd[2388]: User upsmon@127.0.0.1 logged into UPS [ups8]
+Apr 29 07:34:55 nutserver nut-server[2388]: User upsmon@127.0.0.1 logged into UPS [ups6]
+Apr 29 07:34:55 nutserver upsd[2388]: User upsmon@127.0.0.1 logged into UPS [ups6]
+Apr 29 07:34:55 nutserver nut-server[2388]: User upsmon@127.0.0.1 logged into UPS [ups9]
+Apr 29 07:34:55 nutserver upsd[2388]: User upsmon@127.0.0.1 logged into UPS [ups9]
+
+● nut-monitor.service - Network UPS Tools - power device monitor and shutdown controller
+     Loaded: loaded (/usr/lib/systemd/system/nut-monitor.service; enabled; preset: enabled)
+    Drop-In: /etc/systemd/system/nut-monitor.service.d
+             └─override.conf
+     Active: active (running) since Wed 2026-04-29 07:34:55 EDT; 1 week 2 days ago
+   Main PID: 2392 (upsmon)
+      Tasks: 2 (limit: 9287)
+     Memory: 2.2M (peak: 3.6M)
+        CPU: 1min 14.691s
+     CGroup: /system.slice/nut-monitor.service
+             ├─2392 /lib/nut/upsmon -F
+             └─2414 /lib/nut/upsmon -F
+
+Apr 29 07:34:55 nutserver nut-monitor[2392]: UPS: ups8@localhost (primary) (power value 1)
+Apr 29 07:34:55 nutserver nut-monitor[2392]: Using power down flag file /etc/killpower
+Apr 29 07:34:55 nutserver nut-monitor[2392]: UPS: ups6@localhost (primary) (power value 1)
+Apr 29 07:34:55 nutserver nut-monitor[2392]: UPS: ups9@localhost (primary) (power value 1)
+Apr 29 07:34:55 nutserver nut-monitor[2414]: Init SSL without certificate database
+Apr 29 07:34:55 nutserver nut-monitor[2414]: upsnotify: failed to notify about state 2: no notification tech defined, will not spam more about it
+Apr 29 15:00:40 nutserver nut-monitor[2414]: UPS ups7@localhost battery is low
+Apr 29 15:00:40 nutserver nut-monitor[845211]: Network UPS Tools upsmon 2.8.1
+May 06 15:00:25 nutserver nut-monitor[2414]: UPS ups7@localhost battery is low
+May 06 15:00:25 nutserver nut-monitor[2563940]: Network UPS Tools upsmon 2.8.1
+
+● nut-orchestrator-ui.service - NUT Orchestrator UI Flask Service
+     Loaded: loaded (/etc/systemd/system/nut-orchestrator-ui.service; enabled; preset: enabled)
+    Drop-In: /etc/systemd/system/nut-orchestrator-ui.service.d
+             └─override.conf
+     Active: active (running) since Fri 2026-05-08 10:07:57 EDT; 20min ago
+   Main PID: 3115132 (gunicorn)
+      Tasks: 3 (limit: 9287)
+     Memory: 46.5M (peak: 49.6M)
+        CPU: 605ms
+     CGroup: /system.slice/nut-orchestrator-ui.service
+             ├─3115132 /usr/bin/python3 /usr/bin/gunicorn -w 2 -b 127.0.0.1:5080 app:app
+             ├─3115134 /usr/bin/python3 /usr/bin/gunicorn -w 2 -b 127.0.0.1:5080 app:app
+             └─3115135 /usr/bin/python3 /usr/bin/gunicorn -w 2 -b 127.0.0.1:5080 app:app
+
+May 08 10:07:57 nutserver gunicorn[3115132]: [2026-05-08 10:07:57 -0400] [3115132] [INFO] Listening at: http://127.0.0.1:5080 (3115132)
+May 08 10:07:57 nutserver gunicorn[3115132]: [2026-05-08 10:07:57 -0400] [3115132] [INFO] Using worker: sync
+May 08 10:07:57 nutserver gunicorn[3115134]: [2026-05-08 10:07:57 -0400] [3115134] [INFO] Booting worker with pid: 3115134
+May 08 10:07:58 nutserver gunicorn[3115135]: [2026-05-08 10:07:58 -0400] [3115135] [INFO] Booting worker with pid: 3115135
+May 08 10:08:00 nutserver sudo[3115208]: www-data : PWD=/opt/nut-orchestrator-ui ; USER=root ; COMMAND=/usr/local/sbin/nut-get-power-events-json
+May 08 10:08:00 nutserver sudo[3115208]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=33)
+May 08 10:08:00 nutserver sudo[3115208]: pam_unix(sudo:session): session closed for user root
+May 08 10:12:20 nutserver sudo[3123049]: www-data : PWD=/opt/nut-orchestrator-ui ; USER=root ; COMMAND=/usr/local/sbin/nut-get-power-events-json
+May 08 10:12:20 nutserver sudo[3123049]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=33)
+May 08 10:12:20 nutserver sudo[3123049]: pam_unix(sudo:session): session closed for user root

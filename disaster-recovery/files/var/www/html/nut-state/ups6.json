@@ -1,0 +1,11 @@
+{
+  "ups_name": "ups6",
+  "display_name": "ups6",
+  "state": "shutdown_committed",
+  "scope": "targeted shutdown",
+  "countdown_seconds": 0,
+  "commit_seconds": 0,
+  "updated_epoch": 1783118324,
+  "updated_at": "2026-07-03 18:38:44",
+  "note": "Committed; Lansweeper wrapper executed, network gear alert only"
+}

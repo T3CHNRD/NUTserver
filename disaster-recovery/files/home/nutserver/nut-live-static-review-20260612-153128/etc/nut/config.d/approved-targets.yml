@@ -1,0 +1,5 @@
+targets:
+  - name: local
+    mode: local
+    host: localhost
+    user: root

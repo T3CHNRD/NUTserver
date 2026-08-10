@@ -1,0 +1,18 @@
+NUT dashboard rollback completed.
+
+Status:
+MAIN_DASHBOARD=WORKING
+UPS_DATA_DISPLAY=RESTORED
+POWER_BOOT_EVENT_LOG=WORKING_OLD_FORMAT
+
+Decision:
+Do not modify main dashboard JavaScript again before the real test.
+Only use NUT UI and manual log watchers for detailed test output.
+
+Reason:
+A previous Power / Boot Event Log table patch affected dashboard data loading.
+Dashboard stability is higher priority before real test.
+
+Current VMware scope:
+VMWARE_SCOPE="vCenter guest shutdown only"
+VMWARE_ESXI_HOST_SHUTDOWN=NOT_IMPLEMENTED

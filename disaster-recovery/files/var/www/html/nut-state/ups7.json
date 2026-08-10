@@ -1,0 +1,11 @@
+{
+  "ups_name": "ups7",
+  "display_name": "ups7",
+  "state": "shutdown_committed",
+  "scope": "targeted shutdown",
+  "countdown_seconds": 0,
+  "commit_seconds": 0,
+  "updated_epoch": 1783118264,
+  "updated_at": "2026-07-03 18:37:44",
+  "note": "Committed; DB01 and DB02 wrapper calls executed"
+}

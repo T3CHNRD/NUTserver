@@ -1,0 +1,20 @@
+[Desktop Entry]
+Comment=A simple effect that animates the windows when the user switches activities
+Encoding=UTF-8
+Icon=preferences-activities
+Keywords=
+Name=Activity Switching
+Type=Service
+X-KDE-ParentApp=
+X-KDE-PluginInfo-Author=Ivan Čukić
+X-KDE-PluginInfo-Category=Window Management
+X-KDE-PluginInfo-Email=ivan.cukic@kde.org
+X-KDE-PluginInfo-License=GPL
+X-KDE-PluginInfo-Name=kwin4_effect_activityswitching
+X-KDE-PluginInfo-Version=1
+X-KDE-PluginInfo-Website=
+X-KDE-ServiceTypes=KWin/Effect
+X-Plasma-API=javascript
+X-Plasma-DefaultSize=200,100
+X-Plasma-MainScript=code/activityswitching.js
+X-Plasma-RemoteLocation=

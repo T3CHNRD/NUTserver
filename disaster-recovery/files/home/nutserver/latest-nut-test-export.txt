@@ -1,0 +1,15 @@
+Fixed NUT test export archive:
+
+/home/nutserver/nut-test-export-20260508-102814-fixed.tar.gz
+
+Status:
+LOG_EXPORT=PASS
+EXPORT_ARCHIVE_COMPLETE=YES
+
+Scope:
+VMWARE_SCOPE="vCenter guest shutdown only"
+VMWARE_ESXI_HOST_SHUTDOWN=NOT_IMPLEMENTED
+
+Notes:
+Use this archive for post-test analysis and troubleshooting.
+Keep internal unless reviewed/redacted.

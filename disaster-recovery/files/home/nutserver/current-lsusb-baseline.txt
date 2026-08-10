@@ -1,0 +1,10 @@
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 002 Device 002: ID 8087:0024 Intel Corp. Integrated Rate Matching Hub
+Bus 003 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 004 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 004 Device 002: ID 8087:0024 Intel Corp. Integrated Rate Matching Hub
+Bus 004 Device 003: ID 051d:0002 American Power Conversion Uninterruptible Power Supply
+Bus 004 Device 004: ID 413c:2105 Dell Computer Corp. Model L100 Keyboard
+Bus 004 Device 005: ID 093a:2510 Pixart Imaging, Inc. Optical Mouse
+Bus 004 Device 006: ID 051d:0002 American Power Conversion Uninterruptible Power Supply

@@ -1,0 +1,10 @@
+#!/bin/bash
+set -u
+
+EVENT_LOG="/var/log/nut-orchestrator-ui/power-events.log"
+
+mkdir -p "$(dirname "$EVENT_LOG")"
+touch "$EVENT_LOG"
+chmod 644 "$EVENT_LOG"
+
+echo "[$(date '+%Y-%m-%dT%H:%M:%S%z')] $*" >> "$EVENT_LOG"

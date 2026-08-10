@@ -1,0 +1,11 @@
+{
+  "ups_name": "ups3",
+  "display_name": "ups3",
+  "state": "on_battery_pending",
+  "scope": "phase2 validation",
+  "countdown_seconds": 300,
+  "commit_seconds": 300,
+  "updated_epoch": 1786300015,
+  "updated_at": "2026-08-09 14:26:55",
+  "note": "Phase 2 ups3 power-restore-abort validation pending"
+}

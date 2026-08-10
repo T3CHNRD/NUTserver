@@ -1,0 +1,6 @@
+[Desktop Entry]
+Icon=inode-directory
+Name=repo-template
+Type=Link
+URL[$e]=file:///opt/nut-admin/repo-template
+X-KDE-LastOpenedWith=org.kde.dolphin

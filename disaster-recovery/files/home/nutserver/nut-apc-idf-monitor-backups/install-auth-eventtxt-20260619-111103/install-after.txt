@@ -1,0 +1,7 @@
+Install timestamp: 20260619-111103
+
+Live script after install:
+-rwxr-x--- 1 root root 8218 Jun 19 11:11 /usr/local/sbin/nut-apc-idf-event-monitor.sh
+d01b190d6f75bc11f64ad3a29407eb87b551ad6c71c11478bc41feda8d9cfe9e  /usr/local/sbin/nut-apc-idf-event-monitor.sh
+281 /usr/local/sbin/nut-apc-idf-event-monitor.sh
+PASS: [REDACTED]

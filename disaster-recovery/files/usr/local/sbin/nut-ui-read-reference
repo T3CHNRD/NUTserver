@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+set -euo pipefail
+
+REGISTRY="/opt/nut-orchestrator-ui/lib/config_registry.json"
+
+usage() {
+  echo "Usage: $0 <reference_id>"
+  exit 1
+}
+
+[ $# -ne 1 ] && usage
+REF_ID="$1"
+
+REF_JSON="$(jq -c --arg id "$REF_ID" '.reference_configs[] | select(.id==$id)' "$REGISTRY")"
+[ -n "$REF_JSON" ] || { echo "Unknown reference id"; exit 1; }
+
+TARGET_PATH="$(echo "$REF_JSON" | jq -r '.path')"
+[ -n "$TARGET_PATH" ] && [ "$TARGET_PATH" != "null" ] || { echo "Missing target path"; exit 1; }
+
+if [ ! -f "$TARGET_PATH" ]; then
+  exit 0
+fi
+
+cat "$TARGET_PATH"

@@ -1,0 +1,18 @@
+EDITABLE LIVE CONFIG - dashboard-ui.json
+
+Path:
+  /etc/nut/config.d/dashboard-ui.json
+
+Purpose:
+  Controls dashboard/UI behavior.
+
+Controls:
+  - UI-facing dashboard settings.
+  - Display behavior or configurable dashboard options depending on current JSON content.
+
+Risk:
+  Lower than shutdown scripts/configs. This is the preferred file for a future controlled Save test.
+
+Use only when:
+  - Testing Control Center Save safely.
+  - Adjusting dashboard/UI behavior.

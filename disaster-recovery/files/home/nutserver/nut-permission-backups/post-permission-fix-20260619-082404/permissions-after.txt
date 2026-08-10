@@ -1,0 +1,100 @@
+===== DATE =====
+Fri Jun 19 08:24:04 AM EDT 2026
+
+===== DIRECTORIES =====
+drwxrwsr-x 2 root nut 4096 Apr 24 13:43 /var/log/nut-orchestrator-ui
+drwxrwsr-x 2 root nut 4096 Jun 10 15:39 /var/www/html/nut-state
+
+===== /var/www/html/nut-state FILES =====
+total 56
+drwxrwsr-x 2 root nut  4096 Jun 10 15:39 .
+drwxr-xr-x 5 root root 4096 Jun 19 08:23 ..
+-rw-rw-r-- 1 root nut  6784 Jun 11 15:41 events.log
+-rw-rw-r-- 1 root nut  1427 Jun 16 13:38 production-mode.json
+-rw-rw-r-- 1 root nut   501 Apr 14 13:39 ups1.json
+-rw-rw-r-- 1 root nut   857 Apr 14 13:24 ups2.json
+-rw-rw-r-- 1 root nut   305 Jun 11 15:41 ups3.json
+-rw-rw-r-- 1 root nut   501 Apr 14 13:39 ups4.json
+-rw-rw-r-- 1 root nut   501 Apr 14 13:39 ups5.json
+-rw-rw-r-- 1 root nut   501 Apr 14 13:39 ups6.json
+-rw-rw-r-- 1 root nut   936 Apr 14 13:24 ups7.json
+-rw-rw-r-- 1 root nut  1059 Apr 14 13:24 ups8.json
+-rw-rw-r-- 1 root nut   391 May 26 08:57 ups9.json
+
+===== /var/log/nut-orchestrator-ui FILES =====
+total 12576
+drwxrwsr-x  2 root      nut        4096 Apr 24 13:43 .
+drwxrwxr-x 24 root      syslog     4096 Jun 16 00:00 ..
+-rw-rw-r--  1 nutserver nut      746751 Jun 19 07:29 backup.log
+-rw-rw-r--  1 root      nut        2530 Apr 17 13:30 config-inventory-20260417-133040.txt
+-rw-rw-r--  1 root      nut        2708 Apr 17 13:38 config-inventory-20260417-133804.txt
+-rw-rw-r--  1 root      nut    11321245 Jun 16 08:28 power-events.log
+-rw-rw-r--  1 root      nut      642569 May  8 18:10 tests.log
+-rw-rw-r--  1 root      nut      129727 May 28 15:01 ui-actions.log
+
+===== SPECIFIC PROBLEM FILES =====
+  File: /var/www/html/nut-state/events.log
+  Size: 6784      	Blocks: 16         IO Block: 4096   regular file
+Device: 252,0	Inode: 15235951    Links: 1
+Access: (0664/-rw-rw-r--)  Uid: (    0/    root)   Gid: (  124/     nut)
+Access: 2026-06-19 08:23:45.197188245 -0400
+Modify: 2026-06-11 15:41:14.057698580 -0400
+Change: 2026-06-19 08:24:04.897311552 -0400
+ Birth: 2026-03-30 11:04:29.474689469 -0400
+  File: /var/log/nut-orchestrator-ui/power-events.log
+  Size: 11321245  	Blocks: 22120      IO Block: 4096   regular file
+Device: 252,0	Inode: 15729144    Links: 1
+Access: (0664/-rw-rw-r--)  Uid: (    0/    root)   Gid: (  124/     nut)
+Access: 2026-06-18 08:28:52.616575482 -0400
+Modify: 2026-06-16 08:28:20.601223355 -0400
+Change: 2026-06-19 08:24:04.915311669 -0400
+ Birth: 2026-04-24 13:43:04.138459877 -0400
+  File: /var/www/html/nut-state/ups2.json
+  Size: 857       	Blocks: 8          IO Block: 4096   regular file
+Device: 252,0	Inode: 15235953    Links: 1
+Access: (0664/-rw-rw-r--)  Uid: (    0/    root)   Gid: (  124/     nut)
+Access: 2026-06-19 08:23:45.165188047 -0400
+Modify: 2026-04-14 13:24:02.086685745 -0400
+Change: 2026-06-19 08:24:04.897311552 -0400
+ Birth: 2026-03-30 11:05:21.496001445 -0400
+  File: /var/www/html/nut-state/ups3.json
+  Size: 305       	Blocks: 8          IO Block: 4096   regular file
+Device: 252,0	Inode: 15235944    Links: 1
+Access: (0664/-rw-rw-r--)  Uid: (    0/    root)   Gid: (  124/     nut)
+Access: 2026-06-19 08:23:45.159188010 -0400
+Modify: 2026-06-11 15:41:14.066698640 -0400
+Change: 2026-06-19 08:24:04.891311512 -0400
+ Birth: 2026-04-14 13:39:25.014029448 -0400
+  File: /var/www/html/nut-state/ups6.json
+  Size: 501       	Blocks: 8          IO Block: 4096   regular file
+Device: 252,0	Inode: 15240022    Links: 1
+Access: (0664/-rw-rw-r--)  Uid: (    0/    root)   Gid: (  124/     nut)
+Access: 2026-06-19 08:23:45.165188047 -0400
+Modify: 2026-04-14 13:39:25.077029678 -0400
+Change: 2026-06-19 08:24:04.895311539 -0400
+ Birth: 2026-04-14 13:39:25.069029649 -0400
+  File: /var/www/html/nut-state/ups8.json
+  Size: 1059      	Blocks: 8          IO Block: 4096   regular file
+Device: 252,0	Inode: 15235954    Links: 1
+Access: (0664/-rw-rw-r--)  Uid: (    0/    root)   Gid: (  124/     nut)
+Access: 2026-06-19 08:23:45.137187874 -0400
+Modify: 2026-04-14 13:24:02.113685840 -0400
+Change: 2026-06-19 08:24:04.889311499 -0400
+ Birth: 2026-03-30 11:06:09.341288765 -0400
+
+===== ACCESS CHECKS, NO WRITE TEST =====
+www-data access to events.log:
+READ: yes
+WRITE: yes
+
+www-data access to power-events.log:
+READ: yes
+WRITE: yes
+
+nut access to events.log:
+READ: yes
+WRITE: yes
+
+nut access to power-events.log:
+READ: yes
+WRITE: yes

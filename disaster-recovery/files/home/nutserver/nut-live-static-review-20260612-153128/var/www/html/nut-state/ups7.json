@@ -1,0 +1,36 @@
+{
+  "ups_name": "ups7",
+  "display_name": "ups7",
+  "state": "shutdown_committed",
+  "scope": "targeted_shutdown",
+  "countdown_active": false,
+  "countdown_seconds_remaining": 0,
+  "commit_seconds_remaining": 0,
+  "current_phase": "target_shutdown",
+  "last_event": "shutdown_committed",
+  "last_event_time": "2026-03-30 11:04:29",
+  "shutdown_committed": true,
+  "shutdown_canceled": false,
+  "finalized": false,
+  "recent_history": [
+    "UPS_ONBATT_DETECTED",
+    "UPS_COUNTDOWN_STARTED",
+    "UPS_SHUTDOWN_CANCELED_POWER_RESTORED",
+    "UPS_SHUTDOWN_COMMITTED"
+  ],
+  "target_results": [
+    {
+      "target": "DB01",
+      "result": "skipped",
+      "detail": "shutdown method still TBD"
+    },
+    {
+      "target": "DB02",
+      "result": "skipped",
+      "detail": "shutdown method still TBD"
+    }
+  ],
+  "note": "Committed; DB01/DB02 methods still TBD",
+  "updated_epoch": 1774883069,
+  "updated_at": "2026-03-30 11:04:29"
+}

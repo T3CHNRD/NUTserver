@@ -1,0 +1,20 @@
+SCRIPT RUNBOOK - nut-vmware-shutdown.sh
+
+Path:
+  /usr/local/sbin/nut-vmware-shutdown.sh
+
+Purpose:
+  Controls VMware shutdown behavior.
+
+Controls:
+  - VMware/vCenter/ESXi shutdown orchestration.
+  - VM or host handling depending on script content.
+  - Safety checks and sequencing.
+
+Risk:
+  Very high. Live execution can affect VMs or ESXi hosts.
+
+Use only when:
+  - Updating VMware shutdown sequence.
+  - Preparing VMware live testing.
+  - Correcting VMware/vCenter integration behavior.

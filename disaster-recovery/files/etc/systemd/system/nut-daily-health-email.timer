@@ -1,0 +1,12 @@
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+[Unit]
+Description=Send NUT Daily UPS Health Email at 6 AM and 4 PM
+
+[Timer]
+OnCalendar=*-*-* 06:00:00
+OnCalendar=*-*-* 16:00:00
+Persistent=false
+Unit=nut-daily-health-email.service
+
+[Install]
+WantedBy=timers.target

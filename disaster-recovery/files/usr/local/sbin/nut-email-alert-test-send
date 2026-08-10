@@ -1,0 +1,1064 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+set -euo pipefail
+
+CONF="/etc/nut/nut-email-alerts.conf"
+MSMTP_REBUILD="/usr/local/sbin/nut-rebuild-msmtp-from-email-config"
+LOG="/var/log/nut-orchestrator-ui/ui-actions.log"
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  nut-email-alert-test-send --list
+  nut-email-alert-test-send --preview <type>
+  nut-email-alert-test-send --send <type>
+
+Types:
+  onbatt     Power switched to UPS
+  online     Power returned to grid
+  shutdown   Protected systems are shutting down
+  cancelled  Shutdown cancelled because power returned
+  final      NUT server final shutdown warning
+  lowbatt    UPS battery has reached low-battery state
+  commbad    UPS communication has been lost
+  commok     UPS communication has been restored
+  weekly     Daily UPS health report
+  idf_power  APC IDF2/IDF3 power or input-quality event
+
+This tool sends production-format email content manually.
+It does not simulate UPS events.
+It does not trigger shutdowns.
+It does not change NUT mode.
+USAGE
+}
+
+ACTION="${1:-}"
+TYPE="${2:-}"
+
+case "$ACTION" in
+  --list)
+    echo "onbatt"
+    echo "online"
+    echo "shutdown"
+    echo "cancelled"
+    echo "final"
+    echo "lowbatt"
+    echo "commbad"
+    echo "commok"
+    echo "weekly"
+    echo "idf_power"
+    exit 0
+    ;;
+  --preview|--send)
+    [ -n "$TYPE" ] || { usage; exit 1; }
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac
+
+case "$TYPE" in
+  onbatt|online|shutdown|cancelled|final|lowbatt|commbad|commok|weekly|idf_power) ;;
+  *)
+    echo "FAIL: unknown email type: $TYPE"
+    usage
+    exit 1
+    ;;
+esac
+
+[ -f "$CONF" ] || { echo "FAIL: missing $CONF"; exit 1; }
+
+if [ "$ACTION" = "--send" ]; then
+  [ -x "$MSMTP_REBUILD" ] || { echo "FAIL: missing executable $MSMTP_REBUILD"; exit 1; }
+  "$MSMTP_REBUILD"
+fi
+
+python3 - "$ACTION" "$TYPE" <<'PY'
+import os
+from pathlib import Path
+from email.message import EmailMessage
+from email.utils import formatdate
+from datetime import datetime
+import shlex
+import subprocess
+import sys
+import socket
+import re
+
+action = sys.argv[1]
+kind = sys.argv[2]
+
+conf_path = Path("/etc/nut/nut-email-alerts.conf")
+log_path = Path("/var/log/nut-orchestrator-ui/ui-actions.log")
+
+data = {}
+for raw in conf_path.read_text(encoding="utf-8").splitlines():
+    line = raw.strip()
+    if not line or line.startswith("#") or "=" not in line:
+        continue
+    key, value = line.split("=", 1)
+    key = key.strip()
+    value = value.strip()
+    try:
+        value = shlex.split(value)[0] if value else ""
+    except Exception:
+        value = value.strip('"').strip("'")
+    data[key] = value
+
+prefix = data.get("EMAIL_SUBJECT_PREFIX", "[NUT Server]")
+sender = data.get("EMAIL_FROM", "")
+recipients_raw = data.get("EMAIL_RECIPIENTS", "")
+recipients = [x.strip() for x in recipients_raw.split(",") if x.strip()]
+
+if not sender:
+    raise SystemExit("FAIL: EMAIL_FROM is blank")
+if not recipients:
+    raise SystemExit("FAIL: EMAIL_RECIPIENTS is blank")
+
+hostname = socket.gethostname()
+now = datetime.now().astimezone()
+def env_text(name, default):
+    value = os.environ.get(name, "").strip()
+    return value if value else default
+
+def env_list_lines(name, default_line):
+    value = os.environ.get(name, "").strip()
+    if not value:
+        return [default_line]
+    parts = [p.strip() for p in value.replace("\\n", "\n").split("\n") if p.strip()]
+    if not parts:
+        return [default_line]
+    return [p if p.startswith("- ") else f"- {p}" for p in parts]
+
+event_reason_text = env_text("NUT_EMAIL_REASON", "Event source was not supplied")
+outage_duration_text = env_text("NUT_OUTAGE_DURATION", "unavailable from current email context")
+shutdown_attempted_text = env_text("NUT_SHUTDOWN_ATTEMPTED", "No")
+manual_recovery_text = env_text("NUT_MANUAL_RECOVERY_REQUIRED", "No, unless equipment shows issues")
+systems_scheduled_lines = env_list_lines("NUT_SYSTEMS_SCHEDULED", "- unavailable from current email context")
+systems_down_lines = env_list_lines("NUT_SYSTEMS_SHUT_DOWN", "- None reported")
+systems_running_lines = env_list_lines("NUT_SYSTEMS_STILL_RUNNING", "- Protected systems remained online or status is unknown")
+
+idf_source_text = env_text("NUT_IDF_SOURCE", "IDF source unavailable")
+idf_ip_text = env_text("NUT_IDF_IP", "IP unavailable")
+idf_dns_text = env_text("NUT_IDF_DNS", "DNS unavailable")
+idf_severity_text = env_text("NUT_IDF_SEVERITY", "Severity unavailable")
+idf_event_time_text = env_text("NUT_IDF_EVENT_TIME", "event time unavailable")
+idf_message_text = env_text("NUT_IDF_MESSAGE", "IDF power event details unavailable")
+idf_source_path_text = env_text("NUT_IDF_SOURCE_PATH", "source path unavailable")
+
+now_text = now.strftime("%m/%d/%Y %-I:%M:%S %p %Z")
+
+def get_mode_summary():
+    try:
+        proc = subprocess.run(
+            ["/usr/local/sbin/nut-production-status"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=10,
+        )
+        txt = proc.stdout
+        mode = "unknown"
+        label = "unknown"
+        live = "unknown"
+        m = re.search(r'"mode"\s*:\s*"([^"]+)"', txt)
+        if m:
+            mode = m.group(1)
+        m = re.search(r'"mode_label"\s*:\s*"([^"]+)"', txt)
+        if m:
+            label = m.group(1)
+        m = re.search(r'"allow_live_actions"\s*:\s*"([^"]+)"', txt)
+        if m:
+            live = m.group(1)
+        return mode, label, live
+    except Exception:
+        return "unknown", "unknown", "unknown"
+
+mode, mode_label, live_actions = get_mode_summary()
+
+def enforce_email_mode_policy(action, kind, mode, mode_label):
+    """
+    Enforce email behavior by NUT protection mode.
+
+    Protecting / armed:
+      all configured email types allowed
+
+    Standby / disarmed:
+      limited email types only:
+        onbatt, online, weekly, idf_power
+
+    Off:
+      no emails allowed
+    """
+    if action != "--send":
+        return
+
+    allowed_by_mode = {
+        "armed": {
+            "onbatt",
+            "online",
+            "shutdown",
+            "cancelled",
+            "final",
+            "lowbatt",
+            "commbad",
+            "commok",
+            "weekly",
+            "idf_power",
+        },
+        "disarmed": {
+            "onbatt",
+            "online",
+            "lowbatt",
+            "commbad",
+            "commok",
+            "weekly",
+            "idf_power",
+        },
+        "off": set(),
+    }
+
+    allowed = allowed_by_mode.get(mode, set())
+
+    if kind in allowed:
+        return
+
+    if mode == "off":
+        raise SystemExit(
+            f"EMAIL BLOCKED BY MODE: mode={mode} label={mode_label!r} "
+            f"type={kind} reason='Off mode blocks all emails'"
+        )
+
+    if mode == "disarmed":
+        raise SystemExit(
+            f"EMAIL BLOCKED BY MODE: mode={mode} label={mode_label!r} "
+            f"type={kind} reason='Standby allows power, battery, communication, daily health, and IDF power emails'"
+        )
+
+    raise SystemExit(
+        f"EMAIL BLOCKED BY MODE: mode={mode} label={mode_label!r} "
+        f"type={kind} reason='Unknown mode or email type not allowed'"
+    )
+
+enforce_email_mode_policy(action, kind, mode, mode_label)
+
+def run(cmd, timeout=10):
+    try:
+        p = subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=timeout,
+        )
+        return p.returncode, p.stdout.strip(), p.stderr.strip()
+    except Exception as e:
+        return 1, "", str(e)
+
+def get_ups_names():
+    rc, out, err = run(["bash", "-lc", "upsc -l 2>/dev/null"], timeout=10)
+    return [x.strip() for x in out.splitlines() if x.strip()]
+
+def get_ups_value(target, key):
+    rc, out, err = run(["upsc", target, key], timeout=5)
+    if rc == 0 and out:
+        return out
+    return "not available"
+
+
+
+def get_ups_descriptions():
+    descriptions = {}
+    current = None
+
+    try:
+        with open("/etc/nut/ups.conf", "r", encoding="utf-8", errors="replace") as f:
+            for raw in f:
+                line = raw.strip()
+
+                if line.startswith("[") and line.endswith("]"):
+                    current = line.strip("[]").strip()
+                    continue
+
+                if current and line.lower().startswith("desc") and "=" in line:
+                    value = line.split("=", 1)[1].strip().strip("\"'")
+                    descriptions[current] = value
+    except Exception:
+        pass
+
+    return descriptions
+
+
+def get_ups_friendly_names(ups_names):
+    friendly = {}
+
+    for ups in ups_names:
+        try:
+            out = subprocess.check_output(
+                ["upsc", ups, "ups.id"],
+                text=True,
+                stderr=subprocess.DEVNULL,
+                timeout=8,
+            ).strip()
+            if out:
+                friendly[ups] = out
+        except Exception:
+            pass
+
+    return friendly
+
+
+
+def get_ups_rack_locations():
+    rack_map = {}
+    path = "/var/www/html/ups-rack-map.txt"
+
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+
+                ups, value = line.split("=", 1)
+                ups = ups.strip()
+                value = value.strip()
+
+                if ups and value:
+                    rack_map[ups] = value
+    except Exception:
+        pass
+
+    return rack_map
+
+
+
+def friendly_ups_label(ups, descriptions, friendly_names=None):
+    descriptions = descriptions or {}
+    friendly_names = friendly_names or {}
+
+    desc = descriptions.get(ups, "").strip()
+    friendly = friendly_names.get(ups, "").strip()
+
+    if desc and friendly:
+        return f"{ups} - {desc} - Friendly name: {friendly}"
+
+    if desc:
+        return f"{ups} - {desc}"
+
+    if friendly:
+        return f"{ups} - Friendly name: {friendly}"
+
+    return ups
+
+def friendly_ups_status(value):
+    raw = str(value or "").strip()
+    if not raw or raw == "not available":
+        return "Unavailable"
+
+    tokens = [REDACTED]
+    translated = []
+    mapping = {
+        "OL": "Online",
+        "OB": "On battery",
+        "OF": "Offline",
+        "LB": "Low battery",
+        "RB": "Replace battery",
+        "CHRG": "Charging",
+        "DISCHRG": "Discharging",
+        "BYPASS": "[REDACTED]",
+        "CAL": "Calibration",
+        "BOOST": "Boost",
+        "TRIM": "Trim",
+    }
+
+    for token in tokens:
+        translated.append(mapping.get(token, token))
+
+    return ", ".join(translated)
+
+
+
+def runtime_minutes(value):
+    try:
+        seconds = float(value)
+    except Exception:
+        return "Unknown"
+
+    if seconds < 0:
+        return "Unknown"
+
+    minutes = int(round(seconds / 60.0))
+
+    if minutes < 60:
+        return f"{minutes} minute" + ("" if minutes == 1 else "s")
+
+    hours = minutes // 60
+    remaining = minutes % 60
+
+    if remaining == 0:
+        return f"{hours} hour" + ("" if hours == 1 else "s")
+
+    return (
+        f"{hours} hour" + ("" if hours == 1 else "s") +
+        f" {remaining} minute" + ("" if remaining == 1 else "s")
+    )
+
+def ping_target(ip):
+    rc, out, err = run(["ping", "-c", "3", "-W", "2", ip], timeout=10)
+    if rc == 0:
+        summary = ""
+        for line in out.splitlines():
+            if "packets transmitted" in line:
+                summary = line.strip()
+                break
+        return "reachable", summary or "ping successful"
+    summary = err.strip() or out.strip() or "ping failed"
+    return "not reachable", summary
+
+def latest_idf_event(source):
+    log = Path("/var/log/nut-orchestrator-ui/power-events.log")
+    if not log.exists():
+        return "unknown", "not found", "power event log not found"
+
+    try:
+        lines = log.read_bytes().decode("utf-8", errors="replace").replace("\r", "").splitlines()
+    except Exception as e:
+        return "unknown", "not found", f"could not read power event log: {e}"
+
+    source_key = str(source or "").strip().upper()
+
+    aliases = {
+        "IDF2": [
+            'source="IDF2"',
+            'device="IDF2"',
+            'device="APC-IDF2"',
+            'ip="192.168.9.251"',
+            'dns="APC-IDF2"',
+            'dns="APC-IDF2."',
+            'dns="APC-IDF2.albl.com"',
+        ],
+        "IDF3": [
+            'source="IDF3"',
+            'device="IDF3"',
+            'device="APC-IDF3"',
+            'ip="192.168.9.252"',
+            'dns="apc-idf3"',
+            'dns="apc-idf3."',
+            'dns="apc-idf3.albl.com"',
+        ],
+    }.get(source_key, [f'source="{source}"'])
+
+    def is_target_line(line):
+        lower = line.lower()
+        has_target = any(alias.lower() in lower for alias in aliases)
+        has_power_event = (
+            "on battery power" in lower or
+            "no longer on battery power" in lower
+        )
+        has_apc_event = "apc_idf_event" in lower or "apc_idf_target_event" in lower
+        return has_target and has_power_event and has_apc_event
+
+    matches = [line for line in lines if is_target_line(line)]
+
+    if not matches:
+        return "unknown", "not found", "not found"
+
+    last = matches[-1]
+    last_lower = last.lower()
+
+    if "no longer on battery power" in last_lower:
+        power_source = "line/grid"
+    elif "on battery power" in last_lower:
+        power_source = "battery"
+    else:
+        power_source = "unknown"
+
+    event_time = "not found"
+    for token in ('event_time="',):
+        if token in last:
+            event_time = last.split(token, 1)[1].split('"', 1)[0]
+            break
+
+    message = last
+    if 'message="' in last:
+        message = last.split('message="', 1)[1].split('"', 1)[0]
+    elif 'status="' in last:
+        message = last.split('status="', 1)[1].split('"', 1)[0]
+
+    return power_source, event_time, message
+
+def idf_status_lines():
+    targets = [
+        ("IDF 2", "IDF2", "192.168.9.251", "APC-IDF2.albl.com"),
+        ("IDF 3", "IDF3", "192.168.9.252", "apc-idf3.albl.com"),
+    ]
+
+    lines = [
+        "IDF reachability and power status:",
+    ]
+
+    for label, source, ip, dns in targets:
+        reachability, ping_summary = ping_target(ip)
+        power_source, event_time, message = latest_idf_event(source)
+
+        lines.append("")
+        lines.append(f"- {label}")
+        lines.append(f"  IP: {ip}")
+        lines.append(f"  DNS: {dns}")
+        lines.append(f"  Reachability: {reachability}")
+        lines.append(f"  Ping summary: {ping_summary}")
+        lines.append(f"  Last known power source: {power_source}")
+        lines.append(f"  Last known event time: {event_time}")
+        lines.append(f"  Last known event message: {message}")
+
+    return lines
+
+
+def ups_health_lines():
+    ups_names = get_ups_names()
+    descriptions = get_ups_descriptions()
+    friendly_names = get_ups_friendly_names(ups_names)
+    rack_locations = get_ups_rack_locations()
+    lines = []
+    lines.append("UPS health details:")
+    if not ups_names:
+        lines.append("- UPS details unavailable from upsc at the time this email was generated.")
+        return lines
+
+    for ups in ups_names:
+        target = f"{ups}@localhost"
+        status = get_ups_value(target, "ups.status")
+        charge = get_ups_value(target, "battery.charge")
+        runtime = get_ups_value(target, "battery.runtime")
+        load = get_ups_value(target, "ups.load")
+        battv = get_ups_value(target, "battery.voltage")
+        linev = get_ups_value(target, "input.voltage")
+
+        lines.append("")
+        lines.append(f"- {friendly_ups_label(ups, descriptions, friendly_names)}")
+        if rack_locations.get(ups):
+            lines.append(f"  Rack / Location: {rack_locations.get(ups)}")
+        lines.append(f"  Status: {friendly_ups_status(status)}")
+        lines.append(f"  Battery charge: {charge}%")
+        lines.append(f"  Runtime remaining: {runtime_minutes(runtime)}")
+        lines.append(f"  Load: {load}%")
+        lines.append(f"  Battery voltage: {battv}")
+        lines.append(f"  Input voltage: {linev}")
+    return lines
+
+
+def ups_weather_grid_risk_lines():
+    import json
+    import urllib.request
+
+    lines = []
+    blockers = []
+    cautions = []
+    positives = []
+
+    # Pontiac, MI approximate coordinates.
+    url = (
+        "https://api.open-meteo.com/v1/forecast"
+        "?latitude=42.6389"
+        "&longitude=-83.2910"
+        "&current=temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m"
+        "&daily=temperature_2m_max,weather_code,precipitation_probability_max,wind_gusts_10m_max"
+        "&temperature_unit=fahrenheit"
+        "&wind_speed_unit=mph"
+        "&timezone=America%2FDetroit"
+        "&forecast_days=1"
+    )
+
+    severe_codes = {
+        95: "Thunderstorm",
+        96: "Thunderstorm with hail",
+        99: "Severe thunderstorm with hail",
+    }
+    storm_codes = {
+        51: "Light drizzle",
+        53: "Moderate drizzle",
+        55: "Dense drizzle",
+        61: "Slight rain",
+        63: "Moderate rain",
+        65: "Heavy rain",
+        80: "Rain showers",
+        81: "Moderate rain showers",
+        82: "Violent rain showers",
+    }
+    winter_codes = {
+        56: "Freezing drizzle",
+        57: "Dense freezing drizzle",
+        66: "Freezing rain",
+        67: "Heavy freezing rain",
+        71: "Slight snow",
+        73: "Moderate snow",
+        75: "Heavy snow",
+        77: "Snow grains",
+        85: "Snow showers",
+        86: "Heavy snow showers",
+    }
+
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "nutserver-daily-health"})
+        with urllib.request.urlopen(req, timeout=12) as response:
+            data = json.loads(response.read().decode("utf-8"))
+
+        current = data.get("current", {})
+        daily = data.get("daily", {})
+
+        temp = current.get("temperature_2m")
+        code = current.get("weather_code")
+        wind = current.get("wind_speed_10m")
+        gust = current.get("wind_gusts_10m")
+
+        max_temp = None
+        max_gust = None
+        precip_prob = None
+        daily_code = None
+
+        if daily.get("temperature_2m_max"):
+            max_temp = daily["temperature_2m_max"][0]
+        if daily.get("wind_gusts_10m_max"):
+            max_gust = daily["wind_gusts_10m_max"][0]
+        if daily.get("precipitation_probability_max"):
+            precip_prob = daily["precipitation_probability_max"][0]
+        if daily.get("weather_code"):
+            daily_code = daily["weather_code"][0]
+
+        lines.append("Weather / grid-risk advisory:")
+        lines.append(f"- Pontiac current temperature: {temp} F")
+        lines.append(f"- Today's forecast high: {max_temp} F")
+        lines.append(f"- Current wind / gusts: {wind} mph / {gust} mph")
+        lines.append(f"- Forecast max gusts: {max_gust} mph")
+        lines.append(f"- Forecast precipitation probability: {precip_prob}%")
+
+        if code in severe_codes:
+            blockers.append(f"Current weather risk: {severe_codes[code]}.")
+        elif daily_code in severe_codes:
+            blockers.append(f"Forecast weather risk today: {severe_codes[daily_code]}.")
+
+        if code in storm_codes or daily_code in storm_codes:
+            cautions.append("Rain/storm conditions are possible today; check the radar before planned UPS work.")
+
+        if code in winter_codes or daily_code in winter_codes:
+            cautions.append("Snow, ice, or freezing precipitation is possible today; verify conditions before planned UPS work.")
+
+        if max_temp is not None and max_temp >= 90:
+            blockers.append(f"High heat/grid-load risk: forecast high is {max_temp} F.")
+        elif max_temp is not None and max_temp >= 85:
+            cautions.append(f"Elevated heat/grid-load caution: forecast high is {max_temp} F.")
+
+        if max_gust is not None and max_gust >= 40:
+            blockers.append(f"High wind risk: forecast gusts up to {max_gust} mph.")
+        elif max_gust is not None and max_gust >= 30:
+            cautions.append(f"Wind caution: forecast gusts up to {max_gust} mph.")
+
+        if precip_prob is not None and precip_prob >= 70:
+            cautions.append(f"High precipitation probability today: {precip_prob}%.")
+
+        if not blockers and not cautions:
+            positives.append("Weather/grid risk does not appear elevated based on the current forecast.")
+
+    except Exception as exc:
+        lines.append("Weather / grid-risk advisory:")
+        cautions.append(f"Weather/grid-risk check could not be completed automatically: {exc}")
+        cautions.append("Verify local weather, storms, heat, and utility conditions manually before UPS maintenance.")
+
+    return lines, blockers, cautions, positives
+
+
+def ups_maintenance_recommendation_lines():
+    import json
+    import subprocess
+    from pathlib import Path
+
+    lines = []
+    blockers = []
+    cautions = []
+    positives = []
+
+    lines.append("UPS maintenance recommendation:")
+
+    ups_names = get_ups_names()
+    online_count = 0
+    offline = []
+
+    for ups in ups_names:
+        status = get_ups_value(f"{ups}@localhost", "ups.status")
+        if "OL" in (status or ""):
+            online_count += 1
+        else:
+            offline.append(f"{ups} status={status or 'unknown'}")
+
+    if ups_names and online_count == len(ups_names):
+        positives.append(f"All {online_count} monitored UPS units are online.")
+    else:
+        blockers.append(f"Only {online_count} of {len(ups_names)} monitored UPS units are online.")
+        for item in offline:
+            blockers.append(item)
+
+    if str(mode_label).upper() == "OFF":
+        blockers.append("NUT mode is OFF, so monitoring, logging, and email reports may be disabled.")
+    elif str(mode_label).upper() == "PROTECTING":
+        cautions.append("NUT mode is PROTECTING, so live protection behavior is active.")
+    else:
+        positives.append(f"NUT mode is {mode_label}.")
+
+    if str(live_actions) == "0":
+        positives.append("Live protection actions are currently blocked, which is safer for planned maintenance.")
+    else:
+        cautions.append("Live protection actions are allowed; use extra caution before planned maintenance.")
+
+    maint_path = Path("/var/www/html/nut-state/ups-maintenance.json")
+    try:
+        maint = json.loads(maint_path.read_text())
+        active = maint.get("active_sessions", [])
+        unresolved = maint.get("unresolved_items", [])
+        if active or unresolved:
+            blockers.append(f"UPS Maintenance Mode has active/unresolved items: active={len(active)}, unresolved={len(unresolved)}.")
+        else:
+            positives.append("No active or unresolved UPS Maintenance Mode items were found.")
+    except Exception as exc:
+        blockers.append(f"UPS Maintenance state could not be read: {exc}")
+
+    compare_cmd = "/usr/local/sbin/nut-ups-identity-compare"
+    try:
+        result = subprocess.run(
+            [compare_cmd],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=30,
+            check=False,
+        )
+        if result.returncode == 0:
+            positives.append("UPS identity comparison matches the saved baseline.")
+        else:
+            blockers.append("UPS identity comparison found a mismatch or unreadable UPS.")
+            for line in result.stdout.splitlines()[:12]:
+                blockers.append(line)
+    except Exception as exc:
+        blockers.append(f"UPS identity comparison could not run: {exc}")
+
+    for source in ("IDF2", "IDF3"):
+        power_source, event_time, message = latest_idf_event(source)
+        if power_source == "battery":
+            blockers.append(f"{source} last known power source is battery at {event_time}: {message}")
+        elif power_source == "line/grid":
+            positives.append(f"{source} last known power source is line/grid.")
+        else:
+            cautions.append(f"{source} last known power source is unknown; last event time: {event_time}.")
+
+    weather_lines, weather_blockers, weather_cautions, weather_positives = ups_weather_grid_risk_lines()
+    blockers.extend(weather_blockers)
+    cautions.extend(weather_cautions)
+    positives.extend(weather_positives)
+
+    if blockers:
+        lines.append("Status: NOT RECOMMENDED for planned UPS swaps or battery maintenance today.")
+        primary_heading = "Primary reason(s) for NOT RECOMMENDED:"
+        primary_items = blockers
+        primary_prefix = "BLOCKER"
+    elif cautions:
+        lines.append("Status: CAUTION - verify conditions before planned UPS swaps or battery maintenance today.")
+        primary_heading = "Primary reason(s) for CAUTION:"
+        primary_items = cautions
+        primary_prefix = "CAUTION"
+    else:
+        lines.append("Status: OK for planned UPS swaps or battery maintenance today.")
+        primary_heading = "Primary reason:"
+        primary_items = ["No blockers or cautions were found."]
+        primary_prefix = "OK"
+
+    lines.append("")
+    lines.append(primary_heading)
+    for item in primary_items[:3]:
+        lines.append(f"- {primary_prefix}: {item}")
+    if len(primary_items) > 3:
+        lines.append(f"- {primary_prefix}: Additional items are listed below in Reasons / risk checks.")
+
+    lines.append("")
+    lines.append("Weather / grid risk summary:")
+    if weather_blockers:
+        for item in weather_blockers[:3]:
+            lines.append(f"- BLOCKER: {item}")
+    elif weather_cautions:
+        for item in weather_cautions[:3]:
+            lines.append(f"- CAUTION: {item}")
+    elif weather_positives:
+        for item in weather_positives[:3]:
+            lines.append(f"- OK: {item}")
+    else:
+        lines.append("- CAUTION: Weather/grid-risk result was not available in this report.")
+
+    lines.append("")
+    lines.append("Reasons / risk checks:")
+    for item in blockers:
+        lines.append(f"- BLOCKER: {item}")
+    for item in cautions:
+        lines.append(f"- CAUTION: {item}")
+    for item in positives:
+        lines.append(f"- OK: {item}")
+
+    lines.append("")
+    lines.append("Reminder: UPS Maintenance Mode can suppress false NUT-triggered shutdowns, but it does not protect equipment from power loss while a UPS or battery is physically disconnected.")
+    return lines
+
+templates = {
+    "onbatt": {
+        "subject": "Power switched to UPS",
+        "title": "Power switched to UPS battery",
+        "body": [
+            f"Power-loss timestamp: {now_text}",
+            "",
+            "Status:",
+            "A monitored UPS has switched from line power to battery power.",
+            "",
+            "Operator action:",
+            "Monitor UPS runtime, affected equipment, and recovery status.",
+        ],
+    },
+    "online": {
+        "subject": "Power returned to grid",
+        "title": "Power returned to line/grid power",
+        "body": [
+            f"Power-restored timestamp: {now_text}",
+            f"Outage duration: {outage_duration_text}",
+            f"Shutdown attempted: {shutdown_attempted_text}",
+            "Systems already shut down:",
+            *systems_down_lines,
+            "Systems still running / not shut down:",
+            *systems_running_lines,
+            f"Manual recovery required: {manual_recovery_text}",
+            "",
+            "Status:",
+            "A monitored UPS has returned from battery power to line/grid power.",
+            "",
+            "Operator action:",
+            "Confirm equipment remains healthy and verify that no shutdown sequence is still active.",
+        ],
+    },
+    "shutdown": {
+        "subject": "Protected systems shutting down",
+        "title": "Protected systems are shutting down",
+        "body": [
+            f"Shutdown-start timestamp: {now_text}",
+            "",
+            "Status:",
+            "Protected systems are entering the configured shutdown process.",
+            "",
+            "Systems scheduled for shutdown:",
+            *systems_scheduled_lines,
+            "",
+            f"Manual recovery required: {manual_recovery_text}",
+            "",
+            "Operator action:",
+            "Monitor system shutdown status and confirm each protected target powers down cleanly.",
+        ],
+    },
+    "cancelled": {
+        "subject": "Shutdown cancelled, power restored",
+        "title": "Shutdown sequence cancelled because power returned",
+        "body": [
+            f"Power-restored timestamp: {now_text}",
+            "",
+            "Status:",
+            "Power returned before the shutdown sequence needed to continue.",
+            "",
+            "Systems already shut down:",
+            *systems_down_lines,
+            "",
+            "Systems still running / not shut down:",
+            *systems_running_lines,
+            "",
+            f"Outage duration: {outage_duration_text}",
+            f"Manual recovery required: {manual_recovery_text}",
+            "",
+            "Operator action:",
+            "Confirm protected systems are healthy and determine whether any manual recovery is required.",
+        ],
+    },
+    "final": {
+        "subject": "NUT server final shutdown warning",
+        "title": "NUT server final shutdown due to depleted UPS runtime",
+        "body": [
+            f"Final-shutdown timestamp: {now_text}",
+            "",
+            "Status:",
+            "UPS runtime is critically low and the NUT server is preparing for final shutdown.",
+            "",
+            "Operator action:",
+            "Assume remaining automated visibility may end shortly.",
+            "",
+            "Before rebooting or restarting affected equipment, perform a full power drain.",
+            "Power-drain documentation:",
+            "P:\\IT Tracking - Requests_Projects\\IT Governance\\How to and checklist\\How To Troubleshoot Server Power Issues",
+        ],
+    },
+    "lowbatt": {
+        "subject": "CRITICAL: UPS battery is low",
+        "title": "UPS low-battery condition detected",
+        "body": [
+            f"Low-battery timestamp: {now_text}",
+            f"Event details: {event_reason_text}",
+            "",
+            "Status:",
+            "A monitored UPS has entered its low-battery state.",
+            "",
+            "Operator action:",
+            "Immediately review the NUT Control Center, UPS runtime, protected systems, and active shutdown state.",
+            "Confirm that configured shutdown actions are progressing as expected.",
+        ],
+    },
+    "commbad": {
+        "subject": "UPS communication lost",
+        "title": "Communication with a monitored UPS was lost",
+        "body": [
+            f"Communication-loss timestamp: {now_text}",
+            f"Event details: {event_reason_text}",
+            "",
+            "Status:",
+            "The NUT server can no longer communicate with a monitored UPS.",
+            "",
+            "Operator action:",
+            "Check UPS power, USB or network connectivity, NUT driver status, and nearby grid-witness information.",
+            "Review UPS Maintenance Mode before disconnecting or replacing equipment.",
+        ],
+    },
+    "commok": {
+        "subject": "UPS communication restored",
+        "title": "Communication with a monitored UPS was restored",
+        "body": [
+            f"Communication-restored timestamp: {now_text}",
+            f"Event details: {event_reason_text}",
+            "",
+            "Status:",
+            "The NUT server has restored communication with a monitored UPS.",
+            "",
+            "Operator action:",
+            "Confirm the UPS identity, status, charge, runtime, and load readings are valid.",
+        ],
+    },
+    "idf_power": {
+        "subject": "APC IDF power event detected",
+        "title": "APC IDF power event detected",
+        "body": [
+            f"IDF event timestamp: {idf_event_time_text}",
+            "",
+            "Affected IDF device:",
+            f"- Source: {idf_source_text}",
+            f"- IP: {idf_ip_text}",
+            f"- DNS: {idf_dns_text}",
+            f"- Severity: {idf_severity_text}",
+            f"- Source path: {idf_source_path_text}",
+            "",
+            "Event message:",
+            f"- {idf_message_text}",
+            "",
+            "Status:",
+            "An APC IDF UPS reported a power or input-quality event.",
+            "",
+            "Operator action:",
+            "Check the NUT Control Center, APC IDF status, and nearby network equipment if this event repeats or coincides with building power issues.",
+            "",
+            "Note:",
+            "This email is informational only. It does not trigger shutdowns, change NUT mode, or send power commands.",
+        ],
+    },
+    "weekly": {
+        "subject": "Daily UPS health report",
+        "title": "Daily UPS health report",
+        "body": [
+            f"Report timestamp: {now_text}",
+            "",
+            "Summary:",
+            f"UPS total monitored: {len(get_ups_names())}",
+            f"NUT mode: {mode_label}",
+            f"Live actions allowed: {live_actions}",
+            "",
+            *ups_maintenance_recommendation_lines(),
+            "",
+            *ups_health_lines(),
+            "",
+            *idf_status_lines(),
+            "",
+            "Operator action:",
+            "Review UPS charge, runtime, status, load, IDF reachability, and any unavailable readings.",
+        ],
+    },
+}
+
+tpl = templates[kind]
+
+test_mode = os.environ.get("NUT_EMAIL_TEST", "").strip() == "1"
+
+if test_mode:
+    subject = f"{prefix} [TEST - NO ACTION REQUIRED] {tpl['subject']}"
+    display_title = f"TEST ONLY - {tpl['title']}"
+else:
+    subject = f"{prefix} {tpl['subject']}"
+    display_title = tpl["title"]
+
+body_lines = [
+    display_title,
+    "=" * len(display_title),
+    "",
+]
+
+if test_mode:
+    body_lines.extend([
+        "THIS IS A CONTROLLED EMAIL TEST.",
+        "NO REAL UPS, POWER, BATTERY, OR COMMUNICATION EVENT HAS OCCURRED.",
+        "NO ACTION IS REQUIRED.",
+        "",
+    ])
+
+body_lines.extend([
+    f"NUT server: {hostname}",
+    f"NUT mode: {mode_label}",
+    "",
+    *tpl["body"],
+])
+
+body = "\n".join(body_lines)
+
+if action == "--preview":
+    print("===== EMAIL PREVIEW =====")
+    print(f"Type: {kind}")
+    print(f"From: {sender}")
+    print(f"To: {', '.join(recipients)}")
+    print(f"Subject: {subject}")
+    print()
+    print(body)
+    sys.exit(0)
+
+msg = EmailMessage()
+msg["From"] = sender
+msg["To"] = ", ".join(recipients)
+msg["Date"] = formatdate(localtime=True)
+msg["Subject"] = subject
+msg.set_content(body)
+
+proc = subprocess.run(
+    ["/usr/sbin/sendmail", "-t"],
+    input=msg.as_bytes(),
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+)
+
+log_line = f"EMAIL PRODUCTION FORMAT MANUAL SEND type={kind} rc={proc.returncode} subject={subject!r}\n"
+with log_path.open("a", encoding="utf-8") as f:
+    f.write(log_line)
+
+if proc.stdout:
+    print(proc.stdout.decode(errors="replace"))
+if proc.stderr:
+    print(proc.stderr.decode(errors="replace"), file=sys.stderr)
+
+if proc.returncode != 0:
+    raise SystemExit(proc.returncode)
+
+print(f"Sent production-format email type={kind}")
+PY

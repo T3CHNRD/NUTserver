@@ -1,0 +1,18 @@
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+[Unit]
+Description=TigerVNC backup desktop on port 5900
+After=network.target
+
+[Service]
+Type=simple
+User=nutserver
+Group=nutserver
+WorkingDirectory=/home/nutserver
+ExecStartPre=-/usr/bin/tigervncserver -kill :9
+ExecStart=/usr/bin/tigervncserver -fg :9 -rfbport 5900 -localhost no -geometry 1680x1050 -depth 24
+ExecStop=/usr/bin/tigervncserver -kill :9
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

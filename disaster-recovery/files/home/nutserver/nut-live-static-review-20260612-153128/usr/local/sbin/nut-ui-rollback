@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REGISTRY="/opt/nut-orchestrator-ui/lib/config_registry.json"
+LOG_FILE="/var/log/nut-orchestrator-ui/ui-actions.log"
+BACKUP_DIR="/var/lib/nut-orchestrator-ui/backups"
+
+usage() {
+  echo "Usage: $0 <config_id>"
+  exit 1
+}
+
+[ $# -ne 1 ] && usage
+
+CONFIG_ID="$1"
+
+TARGET_PATH="$(jq -r --arg id "$CONFIG_ID" '.editable_configs[] | select(.id==$id) | .path' "$REGISTRY")"
+[ -n "$TARGET_PATH" ] && [ "$TARGET_PATH" != "null" ] || { echo "Unknown config id"; exit 1; }
+
+LATEST_BACKUP="$(ls -1t "$BACKUP_DIR/$CONFIG_ID"/*.bak 2>/dev/null | head -n 1 || true)"
+[ -n "$LATEST_BACKUP" ] || { echo "No backup found for $CONFIG_ID"; exit 1; }
+
+cp -a "$LATEST_BACKUP" "$TARGET_PATH"
+chown root:root "$TARGET_PATH"
+chmod 640 "$TARGET_PATH"
+
+echo "[$(date -Is)] ROLLBACK OK config_id=$CONFIG_ID target=\"$TARGET_PATH\" from=\"$LATEST_BACKUP\"" | tee -a "$LOG_FILE"
+echo "Rollback successful for $CONFIG_ID"

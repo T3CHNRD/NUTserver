@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+set -euo pipefail
+
+REGISTRY="/opt/nut-orchestrator-ui/lib/config_registry.json"
+
+usage() {
+  echo "Usage: $0 <config_id>"
+  exit 1
+}
+
+[ $# -ne 1 ] && usage
+CONFIG_ID="$1"
+
+CONFIG_JSON="$(jq -c --arg id "$CONFIG_ID" '.editable_configs[] | select(.id==$id)' "$REGISTRY")"
+[ -n "$CONFIG_JSON" ] || { echo "Unknown config id"; exit 1; }
+
+TARGET_PATH="$(echo "$CONFIG_JSON" | jq -r '.path')"
+[ -n "$TARGET_PATH" ] && [ "$TARGET_PATH" != "null" ] || { echo "Missing target path"; exit 1; }
+
+if [ ! -f "$TARGET_PATH" ]; then
+  exit 0
+fi
+
+cat "$TARGET_PATH"
+
+
+# NUT_UI_SECRET_LINE_REDACTION_V1
+redact_secret_lines() {
+  sed -E 's/^([[:space:]]*[A-Za-z0-9_]*(PASS|PASSWORD|SECRET|TOKEN)[A-Za-z0-9_]*[[:space:]]*=).*/\1"[REDACTED]"/I'
+}

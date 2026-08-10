@@ -1,0 +1,65 @@
+===== CURRENT MODE =====
+    "mode": "disarmed",
+    "mode_label": "STANDBY FOR MAINTENANCE",
+    "nut_monitor": "active",
+    "ups_total": 9,
+    "ups_online": 9,
+    "allow_live_actions": "0",
+
+===== GIT STATUS =====
+ M etc/nut/apc-idf-web.conf
+ M etc/nut/nut-email-alerts.conf
+ M etc/nut/nut-orchestrator.conf
+ M etc/nut/synology-api.conf
+ M etc/nut/upsmon.conf
+ M usr/local/sbin/nut-sync-live-to-repo-for-backup
+
+===== LATEST COMMITS =====
+1f57246 Full sanitized system backup Mon Jun 29 03:17:55 PM EDT 2026
+984ea84 Full sanitized system backup Fri Jun 26 02:27:51 PM EDT 2026
+515162a Full sanitized system backup Fri Jun 26 11:04:27 AM EDT 2026
+eb36c4d Pre-pull saved backup state Fri Jun 26 11:04:23 AM EDT 2026
+f4df774 Full sanitized system backup Wed Jun 24 02:49:13 PM EDT 2026
+8449a03 Full sanitized system backup Wed Jun 24 01:59:08 PM EDT 2026
+a7dd7a3 Add T3CHNRD copyright headers
+00a0619 Full sanitized system backup Wed Jun 24 11:24:46 AM EDT 2026
+c54e67c Full sanitized system backup Wed Jun 24 11:18:10 AM EDT 2026
+252b8df Full sanitized system backup Wed Jun 24 10:59:04 AM EDT 2026
+
+===== EXPORT LOGS RELATED LIVE FILE STATUS =====
+
+----- /opt/nut-orchestrator-ui/app.py -----
+path=/opt/nut-orchestrator-ui/app.py owner=root group=root mode=-rw-r--r-- numeric=644 size=26404 modified=2026-06-26 14:21:49.541384478 -0400
+syntax=REVIEW_or_not_shell
+
+----- /opt/nut-orchestrator-ui/templates/control-center.html -----
+path=/opt/nut-orchestrator-ui/templates/control-center.html owner=root group=root mode=-rw-r--r-- numeric=644 size=175356 modified=2026-06-29 10:38:06.502117709 -0400
+syntax=REVIEW_or_not_shell
+
+----- /opt/nut-orchestrator-ui/static/app.js -----
+path=/opt/nut-orchestrator-ui/static/app.js owner=nutserver group=nutserver mode=-rw-rw-r-- numeric=664 size=27979 modified=2026-06-24 13:04:28.354003187 -0400
+syntax=REVIEW_or_not_shell
+
+----- /usr/local/sbin/nut-export-test-logs -----
+path=/usr/local/sbin/nut-export-test-logs owner=root group=root mode=-rwxr-xr-x numeric=755 size=5652 modified=2026-06-24 14:48:24.228906379 -0400
+syntax=PASS_or_not_shell
+
+----- /etc/systemd/system/nut-orchestrator-ui.service -----
+path=/etc/systemd/system/nut-orchestrator-ui.service owner=root group=root mode=-rw-r--r-- numeric=644 size=573 modified=2026-06-24 14:48:24.133605166 -0400
+syntax=PASS_or_not_shell
+
+===== EXPORT LOGS REFERENCES IN LIVE UI/BACKEND =====
+/opt/nut-orchestrator-ui/app.py:702:@app.route("/api/export-logs", methods=["GET"])
+/opt/nut-orchestrator-ui/app.py:703:def export_logs():
+/opt/nut-orchestrator-ui/app.py:706:            ["/usr/bin/sudo", "/usr/local/sbin/nut-export-test-logs"],
+/opt/nut-orchestrator-ui/templates/control-center.html:3330:        Safe tests, log export, action output, and live-test controls are grouped here at the bottom.
+/opt/nut-orchestrator-ui/templates/control-center.html:3342:          <h3>Export Logs</h3>
+/opt/nut-orchestrator-ui/templates/control-center.html:3343:          <p>Downloads the existing NUT UI log export package for review or attachment.</p>
+/opt/nut-orchestrator-ui/templates/control-center.html:3344:          <a class="cc-btn" id="cc-export-logs" href="/nut-ui/api/export-logs">Export Logs</a>
+/opt/nut-orchestrator-ui/static/app.js:798:  if (document.getElementById("btn-download-all-logs")) return;
+/opt/nut-orchestrator-ui/static/app.js:801:  btn.id = "btn-download-all-logs";
+/opt/nut-orchestrator-ui/static/app.js:805:    window.location.href = `${BASE}/api/export-logs`;
+/usr/local/sbin/nut-export-test-logs:6:EXPORT_ROOT="/var/log/nut-orchestrator-ui/exports"
+/usr/local/sbin/nut-export-test-logs:7:EXPORT_NAME="nut-full-log-export-${EXPORT_TS}"
+/usr/local/sbin/nut-export-test-logs:25:  echo "NUT full log export created: $EXPORT_TS"
+/usr/local/sbin/nut-export-test-logs:114:  /usr/local/sbin/nut-export-test-logs \

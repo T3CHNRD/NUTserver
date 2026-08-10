@@ -1,0 +1,9 @@
+The following types of files should not be committed to GitHub until reviewed and sanitized:
+
+- Credential files
+- .creds files
+- Any file containing usernames, passwords, IP-sensitive secrets, or private environment-specific data
+- Any backup or working files not intended as final configuration
+
+Known example to review before publishing:
+- /etc/nut/win2003-192.168.1.24.creds

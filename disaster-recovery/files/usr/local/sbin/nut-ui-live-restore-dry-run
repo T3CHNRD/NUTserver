@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+set -euo pipefail
+
+REPO_DIR="/opt/nut-admin/repo-template"
+MODE="${1:-menu}"
+CATEGORY="${2:-all}"
+
+echo "===== NUT LIVE RESTORE DRY-RUN PLANNER ====="
+echo "mode=${MODE}"
+echo "category=${CATEGORY}"
+echo "repo=${REPO_DIR}"
+echo "safety=dry_run_only_no_files_copied_no_live_changes"
+echo
+
+fail() {
+  echo "FAIL: $*" >&2
+  exit 1
+}
+
+[ -d "$REPO_DIR/.git" ] || fail "$REPO_DIR is not a Git repo"
+
+print_menu() {
+  cat <<'MENU'
+Restore from GitHub - planned menu
+
+1. sync-repo
+   Existing behavior: fetch GitHub and reset /opt/nut-admin/repo-template only.
+
+2. dry-run all
+   Preview all live files that could be restored.
+
+3. dry-run ui
+   Preview Control Center / NUT UI files.
+
+4. dry-run nut-configs
+   Preview NUT configuration files.
+
+5. dry-run scripts
+   Preview shutdown/orchestration scripts.
+
+6. dry-run vmware-hypervisor
+   Preview VMware / ESXi / Proxmox helper files.
+
+7. dry-run systemd
+   Preview systemd service/timer files.
+
+8. future selected-file restore
+   Not enabled yet.
+
+9. future category restore
+   Not enabled yet.
+
+10. future full restore
+    Not enabled yet and will require strong confirmation.
+
+Current status:
+  DRY-RUN ONLY.
+  No live restore actions are enabled by this script.
+MENU
+}
+
+emit_item() {
+  local category="$1"
+  local repo_rel="$2"
+  local live_abs="$3"
+  local kind="${4:-file}"
+
+  local repo_path="${REPO_DIR}/${repo_rel}"
+
+  echo
+  echo "----- RESTORE ITEM -----"
+  echo "category=${category}"
+  echo "kind=${kind}"
+  echo "repo_source=${repo_path}"
+  echo "live_destination=${live_abs}"
+
+  if [ -e "$repo_path" ]; then
+    echo "repo_source_exists=yes"
+  else
+    echo "repo_source_exists=no"
+  fi
+
+  if [ -e "$live_abs" ]; then
+    echo "live_destination_exists=yes"
+  else
+    echo "live_destination_exists=no"
+  fi
+
+  echo "action=dry_run_only_no_copy"
+}
+
+emit_all_items() {
+  local filter="${1:-all}"
+
+  # UI / Control Center
+  if [ "$filter" = "all" ] || [ "$filter" = "ui" ]; then
+    emit_item "ui" "opt/nut-orchestrator-ui/app.py" "/opt/nut-orchestrator-ui/app.py"
+    emit_item "ui" "opt/nut-orchestrator-ui/requirements.txt" "/opt/nut-orchestrator-ui/requirements.txt"
+    emit_item "ui" "opt/nut-orchestrator-ui/lib/config_registry.json" "/opt/nut-orchestrator-ui/lib/config_registry.json"
+    emit_item "ui" "opt/nut-orchestrator-ui/lib/validators.sh" "/opt/nut-orchestrator-ui/lib/validators.sh"
+    emit_item "ui" "opt/nut-orchestrator-ui/templates/index.html" "/opt/nut-orchestrator-ui/templates/index.html"
+    emit_item "ui" "opt/nut-orchestrator-ui/templates/control-center.html" "/opt/nut-orchestrator-ui/templates/control-center.html"
+    emit_item "ui" "opt/nut-orchestrator-ui/static/app.js" "/opt/nut-orchestrator-ui/static/app.js"
+    emit_item "ui" "opt/nut-orchestrator-ui/static/nut-ui-theme.css" "/opt/nut-orchestrator-ui/static/nut-ui-theme.css"
+    emit_item "ui" "var/www/html/nutserver-dashboard.priority1.html" "/var/www/html/nutserver-dashboard.priority1.html"
+  fi
+
+  # NUT configs
+  if [ "$filter" = "all" ] || [ "$filter" = "nut-configs" ]; then
+    emit_item "nut-configs" "etc/nut/config.d/nut-orchestrator.conf" "/etc/nut/config.d/nut-orchestrator.conf"
+    emit_item "nut-configs" "etc/nut/config.d/dashboard-ui.json" "/etc/nut/config.d/dashboard-ui.json"
+    emit_item "nut-configs" "etc/nut/config.d/approved-targets.yml" "/etc/nut/config.d/approved-targets.yml"
+    emit_item "nut-configs" "etc/nut/config.d/shutdown-verification-targets.conf" "/etc/nut/config.d/shutdown-verification-targets.conf"
+    emit_item "nut-configs" "etc/nut/hypervisors/hypervisor-ssh-fallback.conf" "/etc/nut/hypervisors/hypervisor-ssh-fallback.conf"
+  fi
+
+  # Scripts
+  if [ "$filter" = "all" ] || [ "$filter" = "scripts" ]; then
+    emit_item "scripts" "usr/local/sbin/nut-ui-apply-config" "/usr/local/sbin/nut-ui-apply-config"
+    emit_item "scripts" "usr/local/sbin/nut-ui-run-test" "/usr/local/sbin/nut-ui-run-test"
+    emit_item "scripts" "usr/local/sbin/nut-ui-run-real-test-approved" "/usr/local/sbin/nut-ui-run-real-test-approved"
+    emit_item "scripts" "usr/local/sbin/nut-ui-backup-now" "/usr/local/sbin/nut-ui-backup-now"
+    emit_item "scripts" "usr/local/sbin/nut-run-backup-and-push.sh" "/usr/local/sbin/nut-run-backup-and-push.sh"
+    emit_item "scripts" "usr/local/sbin/nut-ui-rollback" "/usr/local/sbin/nut-ui-rollback"
+    emit_item "scripts" "usr/local/sbin/nut-inventory-configs.sh" "/usr/local/sbin/nut-inventory-configs.sh"
+    emit_item "scripts" "usr/local/bin/nut-orchestrator.sh" "/usr/local/bin/nut-orchestrator.sh"
+    emit_item "scripts" "usr/local/sbin/nut-local-final-shutdown.sh" "/usr/local/sbin/nut-local-final-shutdown.sh"
+  fi
+
+  # VMware / ESXi / Proxmox helpers
+  if [ "$filter" = "all" ] || [ "$filter" = "vmware-hypervisor" ]; then
+    emit_item "vmware-hypervisor" "usr/local/sbin/nut-vmware-export-inventory.sh" "/usr/local/sbin/nut-vmware-export-inventory.sh"
+    emit_item "vmware-hypervisor" "usr/local/sbin/nut-vmware-shutdown.sh" "/usr/local/sbin/nut-vmware-shutdown.sh"
+    emit_item "vmware-hypervisor" "usr/local/sbin/nut-vmware-readonly-placement.py" "/usr/local/sbin/nut-vmware-readonly-placement.py"
+    emit_item "vmware-hypervisor" "usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh" "/usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh"
+    emit_item "vmware-hypervisor" "usr/local/sbin/nut-vcenter-host-action-dry-run.sh" "/usr/local/sbin/nut-vcenter-host-action-dry-run.sh"
+    emit_item "vmware-hypervisor" "etc/nut/hypervisors/hypervisor-ssh-fallback.conf" "/etc/nut/hypervisors/hypervisor-ssh-fallback.conf"
+  fi
+
+  # Systemd units
+  if [ "$filter" = "all" ] || [ "$filter" = "systemd" ]; then
+    emit_item "systemd" "etc/systemd/system/nut-orchestrator-ui.service" "/etc/systemd/system/nut-orchestrator-ui.service"
+    emit_item "systemd" "etc/systemd/system/nut-power-events-refresh.service" "/etc/systemd/system/nut-power-events-refresh.service"
+    emit_item "systemd" "etc/systemd/system/nut-power-events-refresh.timer" "/etc/systemd/system/nut-power-events-refresh.timer"
+    emit_item "systemd" "etc/systemd/system/nut-apc-idf-event-monitor.service" "/etc/systemd/system/nut-apc-idf-event-monitor.service"
+    emit_item "systemd" "etc/systemd/system/nut-apc-idf-event-monitor.timer" "/etc/systemd/system/nut-apc-idf-event-monitor.timer"
+  fi
+}
+
+case "$MODE" in
+  menu)
+    print_menu
+    ;;
+  dry-run)
+    case "$CATEGORY" in
+      all|ui|nut-configs|scripts|vmware-hypervisor|systemd)
+        emit_all_items "$CATEGORY"
+        ;;
+      *)
+        fail "unknown category: $CATEGORY. Valid: all, ui, nut-configs, scripts, vmware-hypervisor, systemd"
+        ;;
+    esac
+    ;;
+  *)
+    fail "unknown mode: $MODE. Valid: menu, dry-run"
+    ;;
+esac
+
+echo
+echo "===== COMPLETE ====="
+echo "result=PASS"
+echo "safety=dry_run_only_no_files_copied_no_live_changes"

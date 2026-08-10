@@ -1,0 +1,11 @@
+[Unit]
+Description=Record NUT dashboard boot/outage event
+After=network-online.target apache2.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/nut-boot-event-log.sh
+
+[Install]
+WantedBy=multi-user.target

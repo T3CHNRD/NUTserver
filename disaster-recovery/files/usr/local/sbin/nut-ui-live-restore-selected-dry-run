@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+set -euo pipefail
+
+REPO_DIR="/opt/nut-admin/repo-template"
+REQUESTED_ID="${1:-}"
+
+fail() {
+  echo "FAIL: $*" >&2
+  exit 1
+}
+
+[ -d "$REPO_DIR/.git" ] || fail "$REPO_DIR is not a Git repo"
+[ -n "$REQUESTED_ID" ] || fail "restore item id is required"
+
+case "$REQUESTED_ID" in
+  restore_test_probe)
+    CATEGORY="restore-test"
+    REPO_REL="etc/nut/restore-live-test-probe.txt"
+    LIVE_PATH="/etc/nut/restore-live-test-probe.txt"
+    MODE="644"
+    ;;
+
+  ui_app_py)
+    CATEGORY="ui"
+    REPO_REL="opt/nut-orchestrator-ui/app.py"
+    LIVE_PATH="/opt/nut-orchestrator-ui/app.py"
+    MODE="644"
+    ;;
+  ui_control_center_html)
+    CATEGORY="ui"
+    REPO_REL="opt/nut-orchestrator-ui/templates/control-center.html"
+    LIVE_PATH="/opt/nut-orchestrator-ui/templates/control-center.html"
+    MODE="644"
+    ;;
+  ui_index_html)
+    CATEGORY="ui"
+    REPO_REL="opt/nut-orchestrator-ui/templates/index.html"
+    LIVE_PATH="/opt/nut-orchestrator-ui/templates/index.html"
+    MODE="644"
+    ;;
+  ui_static_app_js)
+    CATEGORY="ui"
+    REPO_REL="opt/nut-orchestrator-ui/static/app.js"
+    LIVE_PATH="/opt/nut-orchestrator-ui/static/app.js"
+    MODE="644"
+    ;;
+  ui_theme_css)
+    CATEGORY="ui"
+    REPO_REL="opt/nut-orchestrator-ui/static/nut-ui-theme.css"
+    LIVE_PATH="/opt/nut-orchestrator-ui/static/nut-ui-theme.css"
+    MODE="644"
+    ;;
+  config_registry_json)
+    CATEGORY="ui"
+    REPO_REL="opt/nut-orchestrator-ui/lib/config_registry.json"
+    LIVE_PATH="/opt/nut-orchestrator-ui/lib/config_registry.json"
+    MODE="644"
+    ;;
+  dashboard_ui_json)
+    CATEGORY="nut-configs"
+    REPO_REL="etc/nut/config.d/dashboard-ui.json"
+    LIVE_PATH="/etc/nut/config.d/dashboard-ui.json"
+    MODE="640"
+    ;;
+  approved_targets_yml)
+    CATEGORY="nut-configs"
+    REPO_REL="etc/nut/config.d/approved-targets.yml"
+    LIVE_PATH="/etc/nut/config.d/approved-targets.yml"
+    MODE="640"
+    ;;
+  shutdown_verification_targets_conf)
+    CATEGORY="nut-configs"
+    REPO_REL="etc/nut/config.d/shutdown-verification-targets.conf"
+    LIVE_PATH="/etc/nut/config.d/shutdown-verification-targets.conf"
+    MODE="644"
+    ;;
+  hypervisor_ssh_fallback_conf)
+    CATEGORY="vmware-hypervisor"
+    REPO_REL="etc/nut/hypervisors/hypervisor-ssh-fallback.conf"
+    LIVE_PATH="/etc/nut/hypervisors/hypervisor-ssh-fallback.conf"
+    MODE="640"
+    ;;
+  nut_ui_live_restore_dry_run)
+    CATEGORY="scripts"
+    REPO_REL="usr/local/sbin/nut-ui-live-restore-dry-run"
+    LIVE_PATH="/usr/local/sbin/nut-ui-live-restore-dry-run"
+    MODE="750"
+    ;;
+  nut_hypervisor_ssh_readonly_preflight)
+    CATEGORY="vmware-hypervisor"
+    REPO_REL="usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh"
+    LIVE_PATH="/usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh"
+    MODE="750"
+    ;;
+  nut_vmware_export_inventory)
+    CATEGORY="vmware-hypervisor"
+    REPO_REL="usr/local/sbin/nut-vmware-export-inventory.sh"
+    LIVE_PATH="/usr/local/sbin/nut-vmware-export-inventory.sh"
+    MODE="750"
+    ;;
+  nut_vmware_shutdown)
+    CATEGORY="vmware-hypervisor"
+    REPO_REL="usr/local/sbin/nut-vmware-shutdown.sh"
+    LIVE_PATH="/usr/local/sbin/nut-vmware-shutdown.sh"
+    MODE="750"
+    ;;
+  *)
+    fail "unknown restore item id: $REQUESTED_ID"
+    ;;
+esac
+
+REPO_SOURCE="${REPO_DIR}/${REPO_REL}"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+PRE_RESTORE_BACKUP="/var/backups/nut-admin/live-restore/${STAMP}${LIVE_PATH}.pre-restore"
+
+BLOCKED="false"
+BLOCK_REASON=""
+
+case "$LIVE_PATH" in
+  /root/.ssh/*|*.key|*.pem|*.pass|*.creds|*.env|*/upsd.users)
+    BLOCKED="true"
+    BLOCK_REASON="Sensitive path pattern blocked"
+    ;;
+esac
+
+echo "===== SELECTED-FILE LIVE RESTORE DRY-RUN ====="
+echo "restore_item_id=${REQUESTED_ID}"
+echo "category=${CATEGORY}"
+echo "repo_source=${REPO_SOURCE}"
+echo "live_destination=${LIVE_PATH}"
+echo "planned_mode=${MODE}"
+echo "pre_restore_backup=${PRE_RESTORE_BACKUP}"
+echo "safety=dry_run_only_no_files_copied_no_live_changes"
+echo
+
+if [ -e "$REPO_SOURCE" ]; then
+  echo "repo_source_exists=yes"
+else
+  echo "repo_source_exists=no"
+fi
+
+if [ -e "$LIVE_PATH" ]; then
+  echo "live_destination_exists=yes"
+else
+  echo "live_destination_exists=no"
+fi
+
+echo "blocked=${BLOCKED}"
+echo "block_reason=${BLOCK_REASON}"
+
+echo
+echo "----- PLANNED ACTIONS - NOT EXECUTED -----"
+echo "1. Verify repo source exists"
+echo "2. Verify destination path is approved"
+echo "3. Create pre-restore backup of current live file if it exists"
+echo "4. Copy repo source to live destination"
+echo "5. Set mode ${MODE}"
+echo "6. Report completion"
+
+echo
+echo "actual_copy_executed=false"
+echo "actual_backup_created=false"
+echo "actual_chmod_executed=false"
+echo "actual_service_restart_executed=false"
+echo "result=PASS"
+echo "action=dry_run_only_no_copy"
