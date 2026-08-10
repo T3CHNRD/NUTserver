@@ -10,9 +10,11 @@ MANIFEST="$DR/MANIFEST.txt"
 echo "===== NUT DISASTER RECOVERY SNAPSHOT V2 ====="
 echo "repo=$REPO"
 
-# Rebuild only the DR snapshot tree.
-# This does NOT touch live NUT files or the existing restore feature.
-rm -rf "$DR"
+# Rebuild generated snapshot content only.
+# Preserve the permanent disaster-recovery framework at the DR root:
+# RESTORE.md, restore-nut-server.sh, verify-restored-server.sh, etc.
+# This does NOT touch live NUT files or the Configuration restore feature.
+rm -rf "$FILES" "$META"
 mkdir -p "$FILES" "$META"
 : > "$MANIFEST"
 
@@ -319,9 +321,14 @@ def copy_sanitized(source):
 
     try:
         mode = stat.S_IMODE(source.stat().st_mode)
-        destination.chmod(mode)
+
+        # Repository copies must remain readable by the Git user.
+        # Preserve only whether the source is executable.
+        repo_mode = 0o755 if (mode & 0o111) else 0o644
+        destination.chmod(repo_mode)
     except Exception:
         mode = 0
+        destination.chmod(0o644)
 
     manifest(
         f"FILE {source} -> "
