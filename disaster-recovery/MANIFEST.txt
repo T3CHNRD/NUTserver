@@ -397,6 +397,7 @@ FILE /usr/local/sbin/nut-email-alert-test-send.pre-raw-bytes-cr-normalize-202606
 FILE /usr/local/sbin/nut-email-alert-test-send -> files/usr/local/sbin/nut-email-alert-test-send mode=0755
 FILE /usr/local/sbin/nut-synology-shutdown.sh.bak.2026-05-12-090606 -> files/usr/local/sbin/nut-synology-shutdown.sh.bak.2026-05-12-090606 mode=0755
 FILE /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-141355 -> files/usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-141355 mode=0755
+FILE /usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-permanent-dr-fix-20260810-094255 -> files/usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-permanent-dr-fix-20260810-094255 mode=0755
 FILE /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-141447 -> files/usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-141447 mode=0755
 FILE /usr/local/sbin/nut-voip-shutdown.sh.bak.2026-05-12-093710 -> files/usr/local/sbin/nut-voip-shutdown.sh.bak.2026-05-12-093710 mode=0750
 FILE /usr/local/sbin/nut-vmware-shutdown.sh.bak.2026-05-12-100936 -> files/usr/local/sbin/nut-vmware-shutdown.sh.bak.2026-05-12-100936 mode=0750

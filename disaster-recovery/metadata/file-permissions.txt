@@ -418,6 +418,7 @@
 /usr/local/sbin/nut-email-alert-test-send|755|root|root
 /usr/local/sbin/nut-synology-shutdown.sh.bak.2026-05-12-090606|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-141355|755|root|root
+/usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-permanent-dr-fix-20260810-094255|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-141447|755|root|root
 /usr/local/sbin/nut-voip-shutdown.sh.bak.2026-05-12-093710|750|root|root
 /usr/local/sbin/nut-vmware-shutdown.sh.bak.2026-05-12-100936|750|root|root
