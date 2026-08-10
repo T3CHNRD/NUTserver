@@ -1,0 +1,722 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO="/opt/nut-admin/repo-template"
+DR="$REPO/disaster-recovery"
+FILES="$DR/files"
+META="$DR/metadata"
+MANIFEST="$DR/MANIFEST.txt"
+
+echo "===== NUT DISASTER RECOVERY SNAPSHOT V2 ====="
+echo "repo=$REPO"
+
+# Rebuild only the DR snapshot tree.
+# This does NOT touch live NUT files or the existing restore feature.
+rm -rf "$DR"
+mkdir -p "$FILES" "$META"
+: > "$MANIFEST"
+
+python3 - "$FILES" "$MANIFEST" <<'PY'
+from pathlib import Path
+import os
+import re
+import stat
+import sys
+
+DEST = Path(sys.argv[1])
+MANIFEST = Path(sys.argv[2])
+
+CORE_ROOTS = [
+    Path("/etc/nut"),
+    Path("/opt/nut-orchestrator-ui"),
+    Path("/usr/local/bin"),
+    Path("/usr/local/sbin"),
+    Path("/etc/systemd/system"),
+    Path("/etc/sudoers.d"),
+    Path("/var/www/html"),
+    Path("/home/nutserver"),
+]
+
+PROJECT_WORDS = (
+    "nut",
+    "ups",
+    "orchestrator",
+    "power-event",
+    "power_event",
+    "idf",
+    "apc",
+    "vmware",
+    "esxi",
+    "vcenter",
+    "blueiris",
+    "lansweeper",
+    "synology",
+    "netapp",
+    "shutdown",
+    "restore",
+    "backup",
+)
+
+TEXT_EXTENSIONS = {
+    ".sh", ".py", ".js", ".html", ".css",
+    ".md", ".txt",
+    ".json", ".yml", ".yaml",
+    ".conf", ".cfg", ".ini",
+    ".service", ".timer", ".socket", ".target",
+    ".desktop", ".rules", ".csv", ".xml",
+}
+
+EXCLUDED_DIR_NAMES = {
+    ".git",
+    "__pycache__",
+    "node_modules",
+    ".cache",
+    "cache",
+    "Trash",
+    "adblock",
+    "profiles",
+}
+
+# Files whose contents should never be in GitHub.
+SECRET_FILE_PATTERNS = [
+    re.compile(r'(^|/)\.ssh/id_[^/]+$', re.I),
+    re.compile(r'private[_-]?key', re.I),
+    re.compile(r'\.(?:pem|p12|pfx|key)$', re.I),
+    re.compile(r'vcenter\.pass$', re.I),
+    re.compile(r'nut-email-alerts\.secret$', re.I),
+    re.compile(r'upsd\.users$', re.I),
+    re.compile(r'credentials?(?:\.[^/]+)?$', re.I),
+    re.compile(r'/shadow$', re.I),
+]
+
+SECRET_KEY = (
+    r'(?:PASSWORD|PASSWD|PASS|SECRET|TOKEN|'
+    r'API_KEY|APIKEY|PRIVATE_KEY|CREDENTIAL)'
+)
+
+PLACEHOLDER_WORDS = (
+    "REDACTED",
+    "********",
+    "REQUIRED_SECRET",
+    "CHANGE_ME",
+    "CHANGE_IN_CONTROL_CENTER",
+    "<SECRET>",
+    "<PASSWORD>",
+)
+
+def manifest(line):
+    with MANIFEST.open("a") as fh:
+        fh.write(line.rstrip() + "\n")
+
+def definitely_secret_file(path):
+    s = str(path)
+    return any(rx.search(s) for rx in SECRET_FILE_PATTERNS)
+
+def project_relevant(path):
+    s = str(path).lower()
+
+    if s.startswith("/etc/nut/"):
+        return True
+    if s.startswith("/opt/nut-orchestrator-ui/"):
+        return True
+
+    name = path.name.lower()
+
+    if any(word in s for word in PROJECT_WORDS):
+        return True
+
+    # Keep project documentation.
+    if path.suffix.lower() in {".md", ".txt"}:
+        if "nutserver" in s or "nut-server" in s:
+            return True
+
+    return False
+
+def should_include(path):
+    if not path.is_file():
+        return False
+
+    if definitely_secret_file(path):
+        manifest(f"SKIP secret-file {path}")
+        return False
+
+    if not project_relevant(path):
+        return False
+
+    # Giant log dumps are not source-code/DR material.
+    # Their existence is recorded, but they are not copied to GitHub.
+    try:
+        size = path.stat().st_size
+    except Exception:
+        return False
+
+    if size > 5 * 1024 * 1024:
+        manifest(f"SKIP oversized-non-source {path} bytes={size}")
+        return False
+
+    if path.suffix.lower() in TEXT_EXTENSIONS:
+        return True
+
+    if path.name.lower().startswith("readme"):
+        return True
+
+    # Preserve scripts without extensions.
+    try:
+        with path.open("rb") as fh:
+            head = fh.read(128)
+        if head.startswith(b"#!"):
+            return True
+    except Exception:
+        return False
+
+    # Preserve historical project source copies.
+    if any(tag in path.name for tag in (
+        ".pre-", ".bak", ".backup", ".before-", ".candidate"
+    )):
+        return True
+
+    return False
+
+def placeholder(value):
+    upper = value.upper()
+
+    if any(word in upper for word in PLACEHOLDER_WORDS):
+        return True
+
+    stripped = value.strip().strip('"').strip("'")
+
+    if stripped == "":
+        return True
+
+    # Runtime variable references are code, not exposed credentials.
+    if "$" in value or "${" in value:
+        return True
+
+    if stripped.lower() in {
+        "none", "null", "false", "true",
+        "password", "token", "secret"
+    }:
+        return True
+
+    return False
+
+def redact_secret_value(value):
+    if placeholder(value):
+        return value
+
+    value = value.strip()
+
+    if value.startswith('"') and value.endswith('"'):
+        return '"[REDACTED]"'
+
+    if value.startswith("'") and value.endswith("'"):
+        return "'[REDACTED]'"
+
+    return "[REDACTED]"
+
+def sanitize_line(line, source):
+    ending = "\n" if line.endswith("\n") else ""
+    body = line[:-1] if ending else line
+
+    # NUT upsmon MONITOR format:
+    # MONITOR ups@host power user password role
+    if source.name == "upsmon.conf":
+        stripped = body.strip()
+        if stripped.startswith("MONITOR "):
+            parts = body.split()
+            if len(parts) >= 6:
+                parts[4] = "********"
+                return " ".join(parts) + ending
+
+    # Shell / ENV / config assignment.
+    assign = re.match(
+        rf'^(\s*(?:export\s+)?[A-Za-z0-9_.-]*{SECRET_KEY}[A-Za-z0-9_.-]*'
+        rf'\s*[=:]\s*)(.*)$',
+        body,
+        re.I
+    )
+
+    if assign:
+        prefix, value = assign.groups()
+        return prefix + redact_secret_value(value) + ending
+
+    # JSON / YAML style assignment.
+    jsonish = re.match(
+        rf'^(\s*["\']?[^"\']*{SECRET_KEY}[^"\']*["\']?\s*:\s*)(.+?)(,?\s*)$',
+        body,
+        re.I
+    )
+
+    if jsonish:
+        prefix, value, suffix = jsonish.groups()
+        return prefix + redact_secret_value(value) + suffix + ending
+
+    # Redact literal values embedded inside historical generated code, e.g.
+    # password = SomeLiteral
+    inline = re.compile(
+        rf'(?i)\b({SECRET_KEY})\b(\s*=\s*)'
+        r'(".*?"|\'.*?\'|[^\s;,)\]}]+)'
+    )
+
+    def inline_replace(match):
+        key, sep, value = match.groups()
+
+        if placeholder(value):
+            return match.group(0)
+
+        return f'{key}{sep}{redact_secret_value(value)}'
+
+    body = inline.sub(inline_replace, body)
+
+    # Literal command-line credentials. Variable references remain untouched.
+    option = re.compile(
+        r'(?i)(--(?:password|passwd|token|secret|api-key|apikey)\s+)'
+        r'(".*?"|\'.*?\'|[^\s]+)'
+    )
+
+    def option_replace(match):
+        prefix, value = match.groups()
+
+        if placeholder(value):
+            return match.group(0)
+
+        return prefix + redact_secret_value(value)
+
+    body = option.sub(option_replace, body)
+
+    return body + ending
+
+def copy_sanitized(source):
+    relative = Path(str(source).lstrip("/"))
+    destination = DEST / relative
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        raw = source.read_bytes()
+    except Exception as exc:
+        manifest(f"SKIP unreadable {source}: {exc}")
+        return
+
+    if b"\x00" in raw:
+        manifest(f"SKIP binary {source}")
+        return
+
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        try:
+            text = raw.decode("latin-1")
+        except Exception:
+            manifest(f"SKIP undecodable {source}")
+            return
+
+    sanitized = "".join(
+        sanitize_line(line, source)
+        for line in text.splitlines(keepends=True)
+    )
+
+    destination.write_text(sanitized)
+
+    try:
+        mode = stat.S_IMODE(source.stat().st_mode)
+        destination.chmod(mode)
+    except Exception:
+        mode = 0
+
+    manifest(
+        f"FILE {source} -> "
+        f"{destination.relative_to(DEST.parent)} "
+        f"mode={mode:04o}"
+    )
+
+for root in CORE_ROOTS:
+    if not root.exists():
+        continue
+
+    for current, dirs, files in os.walk(root):
+        current_path = Path(current)
+
+        dirs[:] = [
+            d for d in dirs
+            if d not in EXCLUDED_DIR_NAMES
+            and not (
+                current_path == Path("/opt/nut-admin")
+                and d == "repo-template"
+            )
+        ]
+
+        for name in files:
+            path = current_path / name
+
+            try:
+                if should_include(path):
+                    copy_sanitized(path)
+            except Exception as exc:
+                manifest(f"ERROR {path}: {exc}")
+
+print("PASS: sanitized project files collected")
+PY
+
+echo
+echo "===== CREATE REBUILD METADATA ====="
+
+dpkg-query -W -f='${binary:Package}\t${Version}\n' \
+  > "$META/packages.tsv"
+
+systemctl list-unit-files --no-pager \
+  > "$META/systemd-unit-files.txt"
+
+systemctl list-units --type=service --all --no-pager \
+  > "$META/systemd-services.txt"
+
+systemctl list-timers --all --no-pager \
+  > "$META/systemd-timers.txt"
+
+python3 --version \
+  > "$META/python-version.txt" 2>&1 || true
+
+uname -a \
+  > "$META/kernel.txt"
+
+lsb_release -a \
+  > "$META/os-release.txt" 2>&1 || true
+
+find \
+  /etc/nut \
+  /opt/nut-orchestrator-ui \
+  /usr/local/bin \
+  /usr/local/sbin \
+  /etc/systemd/system \
+  /etc/sudoers.d \
+  -maxdepth 6 \
+  -type f \
+  -printf '%p|%m|%u|%g\n' \
+  > "$META/file-permissions.txt" 2>/dev/null || true
+
+echo
+echo "===== WRITE SECRET REQUIREMENTS ====="
+
+cat > "$DR/SECRETS-NOT-IN-GITHUB.md" <<'DOC'
+# Secrets intentionally excluded from GitHub
+
+Production credentials are never stored in this repository.
+
+The restored server may require manual entry of credentials including:
+
+- NUT monitoring authentication
+- SMTP / Exchange authentication
+- vCenter authentication
+- Synology authentication
+- Lansweeper authentication
+- NetApp authentication
+- Blue Iris / RPC authentication
+- APC / IDF authentication
+- SSH private keys
+- API tokens
+- TLS/private certificate keys
+
+Sanitized configuration uses:
+
+    ********
+    [REDACTED]
+
+Never commit real credentials to GitHub.
+DOC
+
+echo
+echo "===== STRICT SECRET SAFETY AUDIT ====="
+
+python3 - "$FILES" <<'PY_AUDIT'
+from pathlib import Path
+import re
+import sys
+
+root = Path(sys.argv[1])
+problems = []
+
+PLACEHOLDERS = (
+    "REDACTED",
+    "********",
+    "REQUIRED_SECRET",
+    "CHANGE_ME",
+    "CHANGE_IN_CONTROL_CENTER",
+    "<SECRET>",
+    "<PASSWORD>",
+)
+
+SAFE_SCALAR_VALUES = {
+    "",
+    "none",
+    "null",
+    "true",
+    "false",
+    "password",
+    "passwd",
+    "token",
+    "secret",
+}
+
+# Keys ending in these values describe where credentials live,
+# rather than containing the credential itself.
+SAFE_KEY_SUFFIXES = (
+    "_FILE",
+    "_PATH",
+    "_CMD",
+    "_COMMAND",
+    "_PROGRAM",
+)
+
+SECRET_KEY_RE = re.compile(
+    r'(?i)(PASSWORD|PASSWD|PASS|SECRET|TOKEN|API_KEY|APIKEY|PRIVATE_KEY|CREDENTIAL)'
+)
+
+ASSIGNMENT_RE = re.compile(
+    r'^\s*(?:export\s+)?'
+    r'([A-Za-z_][A-Za-z0-9_.-]*)'
+    r'\s*[=:]\s*(.*?)\s*$'
+)
+
+def unquote(value):
+    value = value.strip()
+
+    if len(value) >= 2:
+        if (
+            (value[0] == '"' and value[-1] == '"')
+            or
+            (value[0] == "'" and value[-1] == "'")
+        ):
+            return value[1:-1]
+
+    return value
+
+def safe_key(key):
+    upper = key.upper()
+
+    if upper.endswith(SAFE_KEY_SUFFIXES):
+        return True
+
+    # Common counters/status names that happen to contain PASS.
+    if upper in {
+        "PASS_COUNT",
+        "PASS_TOTAL",
+        "PASSWORD_FILE",
+        "PASSWORD_PATH",
+        "SECRET_FILE",
+        "SECRET_PATH",
+        "TOKEN_FILE",
+        "TOKEN_PATH",
+        "PRIVATE_KEY_FILE",
+        "PRIVATE_KEY_PATH",
+        "SSH_KEY_FILE",
+        "SSH_KEY_PATH",
+        "VCENTER_PASS_FILE",
+    }:
+        return True
+
+    return False
+
+def looks_like_runtime_expression(value):
+    value = value.strip()
+
+    # Shell variables / parameter expansion.
+    if "$" in value or "${" in value:
+        return True
+
+    # Python/code expressions instead of stored literals.
+    runtime_tokens = (
+        "Path(",
+        ".get(",
+        "getenv(",
+        "os.environ",
+        "read_text(",
+        "read_bytes(",
+        "open(",
+        "input(",
+        "prompt(",
+    )
+
+    if any(token in value for token in runtime_tokens):
+        return True
+
+    return False
+
+def looks_like_safe_path(value):
+    v = unquote(value).strip()
+
+    # Plain filesystem locations are not credentials.
+    if v.startswith((
+        "/etc/",
+        "/usr/",
+        "/opt/",
+        "/var/",
+        "/home/",
+        "./",
+        "../",
+    )):
+        return True
+
+    # Credential filename/reference, not the credential contents.
+    lower = v.lower()
+
+    if lower.endswith((
+        ".pass",
+        ".secret",
+        ".keyfile",
+        ".credential",
+        ".credentials",
+    )):
+        return True
+
+    return False
+
+def safe_value(value):
+    raw = value.strip()
+    plain = unquote(raw).strip()
+
+    upper = plain.upper()
+
+    if any(marker in upper for marker in PLACEHOLDERS):
+        return True
+
+    if plain.lower() in SAFE_SCALAR_VALUES:
+        return True
+
+    if looks_like_runtime_expression(raw):
+        return True
+
+    if looks_like_safe_path(raw):
+        return True
+
+    # Numeric values are not secrets.
+    try:
+        float(plain)
+        return True
+    except Exception:
+        pass
+
+    return False
+
+def literal_candidate(value):
+    value = value.strip()
+
+    # Quoted string means it is a literal candidate.
+    if (
+        len(value) >= 2
+        and value[0] in "\"'"
+        and value[-1] == value[0]
+    ):
+        return True
+
+    # Bare simple token may also be a literal credential.
+    if re.fullmatch(r'[A-Za-z0-9_@%+.,:/=-]+', value):
+        return True
+
+    # More complicated expressions are source code, not stored secrets.
+    return False
+
+for path in root.rglob("*"):
+    if not path.is_file():
+        continue
+
+    try:
+        text = path.read_text(errors="replace")
+    except Exception:
+        continue
+
+    lines = text.splitlines()
+
+    # Detect actual PEM blocks only when the header exists as the entire line.
+    # This avoids flagging source code which merely contains the detector text.
+    stripped_lines = [line.strip() for line in lines]
+
+    private_headers = {
+        "-----BEGIN PRIVATE KEY-----":
+            "-----END PRIVATE KEY-----",
+        "-----BEGIN OPENSSH PRIVATE KEY-----":
+            "-----END OPENSSH PRIVATE KEY-----",
+        "-----BEGIN RSA PRIVATE KEY-----":
+            "-----END RSA PRIVATE KEY-----",
+        "-----BEGIN EC PRIVATE KEY-----":
+            "-----END EC PRIVATE KEY-----",
+    }
+
+    for header, footer in private_headers.items():
+        if header in stripped_lines and footer in stripped_lines:
+            problems.append(
+                f"{path}: actual private-key block detected"
+            )
+
+    for lineno, line in enumerate(lines, 1):
+
+        # NUT MONITOR syntax:
+        # MONITOR ups@host power username password role
+        if path.name == "upsmon.conf":
+            stripped = line.strip()
+
+            if stripped.startswith("MONITOR "):
+                parts = stripped.split()
+
+                if len(parts) >= 6 and parts[4] != "********":
+                    problems.append(
+                        f"{path}:{lineno}: unredacted MONITOR credential"
+                    )
+
+        match = ASSIGNMENT_RE.match(line)
+
+        if not match:
+            continue
+
+        key, value = match.groups()
+
+        if not SECRET_KEY_RE.search(key):
+            continue
+
+        if safe_key(key):
+            continue
+
+        if safe_value(value):
+            continue
+
+        if not literal_candidate(value):
+            continue
+
+        problems.append(
+            f"{path}:{lineno}: possible literal secret assignment"
+        )
+
+if problems:
+    print("FAIL: possible real secret material remains")
+
+    for problem in problems[:100]:
+        print(problem)
+
+    print(f"Total findings: {len(problems)}")
+    sys.exit(1)
+
+print("PASS: strict secret audit found no unredacted credentials")
+PY_AUDIT
+
+echo
+echo "===== DR SNAPSHOT SUMMARY ====="
+
+TOTAL="$(find "$FILES" -type f | wc -l)"
+MD="$(find "$FILES" -type f -iname '*.md' | wc -l)"
+TXT="$(find "$FILES" -type f -iname '*.txt' | wc -l)"
+CODE="$(find "$FILES" -type f \( \
+    -name '*.sh' -o \
+    -name '*.py' -o \
+    -name '*.js' -o \
+    -name '*.html' -o \
+    -name '*.css' \
+  \) | wc -l)"
+
+echo "Project files backed up: $TOTAL"
+echo "Markdown files: $MD"
+echo "Text files: $TXT"
+echo "Code files: $CODE"
+
+echo
+echo "===== FINAL DR BUILD RESULT ====="
+echo "PASS: disaster-recovery snapshot built safely"
+echo "Location: $DR"
+echo "NO Git commit or push performed yet."
