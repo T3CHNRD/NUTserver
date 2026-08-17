@@ -1,9 +1,11 @@
 [Unit]
-Description=Watch for NUT Telegram final-shutdown alert
+Description=Watch for NUT Telegram final shutdown alert
+PartOf=nut-monitor.service
+After=nut-monitor.service
 
 [Path]
 PathExistsGlob=/var/lib/nut-telegram-alerts/queue/*-final.json
 Unit=nut-telegram-final.service
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=nut-monitor.service

@@ -1,5 +1,7 @@
 [Unit]
 Description=NUT Telegram Daily Heartbeat
+PartOf=nut-monitor.service
+After=nut-monitor.service
 
 [Timer]
 OnCalendar=*-*-* 08:00:00
@@ -7,4 +9,4 @@ Persistent=false
 Unit=nut-telegram-heartbeat.service
 
 [Install]
-WantedBy=timers.target
+WantedBy=nut-monitor.service

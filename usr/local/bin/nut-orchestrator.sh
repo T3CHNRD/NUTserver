@@ -448,6 +448,22 @@ send_outage_email() {
   fi
 
   email_context_for_type "$kind" "$reason"
+
+  # TELEGRAM EVENT MIRROR
+  # Queue only the approved Telegram production alert types.
+  # Telegram failures must never interrupt existing NUT or email behavior.
+  case "$kind" in
+    onbatt|online|shutdown|cancelled|final)
+      if [ -x /usr/local/sbin/nut-telegram-alert ]; then
+        if ! env NUT_EMAIL_REASON="$reason" /usr/local/sbin/nut-telegram-alert enqueue "$kind" >> "$LOG_FILE" 2>&1; then
+          if declare -F log_line >/dev/null 2>&1; then
+            log_line "TELEGRAM_ENQUEUE_FAILED type=${kind}"
+          fi
+        fi
+      fi
+      ;;
+  esac
+
   sudo -n "$email_cmd" --send "$kind" >> "$LOG_FILE" 2>&1
   rc=$?
 
