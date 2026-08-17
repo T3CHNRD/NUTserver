@@ -295,6 +295,14 @@ main() {
   copy_text_file /etc/systemd/system/nut-telegram-heartbeat.service ./etc/systemd/system/nut-telegram-heartbeat.service 644
   copy_text_file /etc/systemd/system/nut-telegram-heartbeat.timer ./etc/systemd/system/nut-telegram-heartbeat.timer 644
 
+  # TELEGRAM COMPLETE COMMAND BOT BACKUP FILES
+  # Access IDs remain local and are intentionally NOT copied to GitHub.
+  copy_executable_file /usr/local/sbin/nut-telegram-command-bot ./usr/local/sbin/nut-telegram-command-bot
+  copy_text_file /etc/systemd/system/nut-telegram-command-bot.service ./etc/systemd/system/nut-telegram-command-bot.service 644
+  copy_text_file /etc/nut/config.d/telegram-notification-schedule.conf ./etc/nut/config.d/telegram-notification-schedule.conf 644
+  copy_text_file /etc/systemd/system/nut-daily-health-email.timer.d/telegram-schedule.conf ./etc/systemd/system/nut-daily-health-email.timer.d/telegram-schedule.conf 644
+  copy_text_file /etc/systemd/system/nut-telegram-heartbeat.timer.d/telegram-schedule.conf ./etc/systemd/system/nut-telegram-heartbeat.timer.d/telegram-schedule.conf 644
+
   chown -R "$HOST_USER:$HOST_GROUP" "$REPO_DIR"
 
   fail_if_repo_has_secrets

@@ -1,0 +1,2802 @@
+#!/usr/bin/env python3
+
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+import urllib.parse
+import urllib.request
+
+from datetime import datetime
+from pathlib import Path
+
+
+SECRET = Path("/etc/nut/secrets/telegram-alerts.env")
+
+ACCESS = Path(
+    "/var/lib/nut-telegram-alerts/access.json"
+)
+
+OFFSET = Path(
+    "/var/lib/nut-telegram-alerts/command-offset"
+)
+
+LOG = Path(
+    "/var/log/nut-telegram-commands.log"
+)
+
+SCHEDULE = Path(
+    "/etc/nut/config.d/"
+    "telegram-notification-schedule.conf"
+)
+
+HEALTH_DROPIN = Path(
+    "/etc/systemd/system/"
+    "nut-daily-health-email.timer.d/"
+    "telegram-schedule.conf"
+)
+
+HEARTBEAT_DROPIN = Path(
+    "/etc/systemd/system/"
+    "nut-telegram-heartbeat.timer.d/"
+    "telegram-schedule.conf"
+)
+
+BACKUP_ALL = (
+    "/usr/local/sbin/"
+    "nut-run-backup-and-push.sh"
+)
+
+
+def now_iso():
+    return datetime.now().astimezone().isoformat()
+
+
+def log(message):
+    try:
+        with LOG.open("a") as handle:
+            handle.write(
+                f"[{now_iso()}] {message}\n"
+            )
+    except Exception:
+        pass
+
+
+def kv_file(path):
+    values = {}
+
+    for raw in path.read_text(
+        errors="replace"
+    ).splitlines():
+
+        line = raw.strip()
+
+        if not line:
+            continue
+
+        if line.startswith("#"):
+            continue
+
+        if "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+
+        values[key.strip()] = value.strip()
+
+    return values
+
+
+def credentials():
+    values = kv_file(SECRET)
+
+    token = values.get(
+        "TELEGRAM_BOT_TOKEN",
+        ""
+    )
+
+    primary = values.get(
+        "TELEGRAM_CHAT_ID",
+        ""
+    )
+
+    if not token or not primary:
+        raise RuntimeError(
+            "required Telegram settings missing"
+        )
+
+    return token, primary
+
+
+def api(method, payload=None, timeout=55):
+    token, _ = credentials()
+
+    encoded = {}
+
+    for key, value in (
+        payload or {}
+    ).items():
+
+        if isinstance(
+            value,
+            (dict, list)
+        ):
+            encoded[key] = json.dumps(
+                value,
+                separators=(",", ":")
+            )
+
+        else:
+            encoded[key] = str(value)
+
+    data = urllib.parse.urlencode(
+        encoded
+    ).encode()
+
+    request = urllib.request.Request(
+        (
+            "https://api.telegram.org/bot"
+            + token
+            + "/"
+            + method
+        ),
+        data=data,
+        method="POST",
+        headers={
+            "Content-Type":
+                "application/x-www-form-urlencoded",
+            "User-Agent":
+                "albl-nut-private-bot",
+        },
+    )
+
+    with urllib.request.urlopen(
+        request,
+        timeout=timeout
+    ) as response:
+
+        result = json.loads(
+            response.read().decode(
+                "utf-8"
+            )
+        )
+
+    if result.get("ok") is not True:
+        raise RuntimeError(
+            "Telegram API request failed"
+        )
+
+    return result.get("result")
+
+
+def send(chat_id, text):
+    remaining = str(text)
+
+    while remaining:
+
+        if len(remaining) <= 3900:
+            chunk = remaining
+            remaining = ""
+
+        else:
+            cut = remaining.rfind(
+                "\n",
+                0,
+                3900
+            )
+
+            if cut < 1000:
+                cut = 3900
+
+            chunk = remaining[:cut]
+
+            remaining = (
+                remaining[cut:]
+                .lstrip("\n")
+            )
+
+        api(
+            "sendMessage",
+            {
+                "chat_id": chat_id,
+                "text": chunk,
+            },
+            timeout=20,
+        )
+
+
+def run(command, timeout=30):
+    try:
+        proc = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+
+        return (
+            proc.returncode,
+            proc.stdout.strip(),
+            proc.stderr.strip(),
+        )
+
+    except Exception as exc:
+        return (
+            99,
+            "",
+            type(exc).__name__,
+        )
+
+
+def write_json(path, data):
+    path.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    tmp = path.with_name(
+        "." + path.name + ".tmp"
+    )
+
+    tmp.write_text(
+        json.dumps(
+            data,
+            indent=2,
+            sort_keys=True
+        )
+        + "\n"
+    )
+
+    os.chmod(
+        tmp,
+        0o600
+    )
+
+    os.replace(
+        tmp,
+        path
+    )
+
+
+def load_access():
+    _, initial_primary = credentials()
+
+    if ACCESS.exists():
+        try:
+            data = json.loads(
+                ACCESS.read_text()
+            )
+        except Exception:
+            data = {}
+
+    else:
+        data = {}
+
+    data.setdefault(
+        "version",
+        1
+    )
+
+    data.setdefault(
+        "primary_admin_id",
+        initial_primary
+    )
+
+    data.setdefault(
+        "users",
+        {}
+    )
+
+    data.setdefault(
+        "pending",
+        {}
+    )
+
+    primary = str(
+        data.get(
+            "primary_admin_id"
+        )
+        or initial_primary
+    )
+
+    data[
+        "primary_admin_id"
+    ] = primary
+
+    data["users"].setdefault(
+        primary,
+        {
+            "role": "admin",
+            "first_name": "",
+            "last_name": "",
+            "username": "",
+            "approved_at": now_iso(),
+        },
+    )
+
+    data["users"][
+        primary
+    ]["role"] = "admin"
+
+    write_json(
+        ACCESS,
+        data
+    )
+
+    return data
+
+
+def save_access(data):
+    write_json(
+        ACCESS,
+        data
+    )
+
+
+def update_person(
+    record,
+    telegram_user
+):
+
+    record[
+        "first_name"
+    ] = str(
+        telegram_user.get(
+            "first_name",
+            ""
+        )
+        or ""
+    )
+
+    record[
+        "last_name"
+    ] = str(
+        telegram_user.get(
+            "last_name",
+            ""
+        )
+        or ""
+    )
+
+    record[
+        "username"
+    ] = str(
+        telegram_user.get(
+            "username",
+            ""
+        )
+        or ""
+    )
+
+    record[
+        "last_seen"
+    ] = now_iso()
+
+
+def person_label(
+    record,
+    chat_id
+):
+
+    name = " ".join(
+        value
+        for value in [
+            record.get(
+                "first_name",
+                ""
+            ),
+            record.get(
+                "last_name",
+                ""
+            ),
+        ]
+        if value
+    ).strip()
+
+    username = record.get(
+        "username",
+        ""
+    )
+
+    fields = [
+        name or "Unknown user"
+    ]
+
+    if username:
+        fields.append(
+            "@"
+            + username.lstrip("@")
+        )
+
+    fields.append(
+        "ID "
+        + str(chat_id)
+    )
+
+    return " | ".join(fields)
+
+
+def base_commands():
+    return [
+        {
+            "command": "start",
+            "description":
+                "Welcome and bot purpose",
+        },
+        {
+            "command": "status",
+            "description":
+                "Overall NUT and UPS status",
+        },
+        {
+            "command": "schedule",
+            "description":
+                "View notification schedule",
+        },
+        {
+            "command": "health",
+            "description":
+                "Current NUT and UPS health",
+        },
+        {
+            "command": "ups",
+            "description":
+                "UPS status; use /ups 3",
+        },
+        {
+            "command": "maintenance",
+            "description":
+                "Maintenance recommendation",
+        },
+        {
+            "command": "heartbeat",
+            "description":
+                "Test Telegram command path",
+        },
+        {
+            "command": "help",
+            "description":
+                "Commands and bot purpose",
+        },
+    ]
+
+
+def admin_commands():
+    commands = base_commands()
+
+    commands.insert(
+        -1,
+        {
+            "command": "access",
+            "description":
+                "Manage authorized users",
+        },
+    )
+
+    return commands
+
+
+def clear_global_commands():
+    scopes = [
+        {
+            "type": "default"
+        },
+        {
+            "type":
+                "all_private_chats"
+        },
+        {
+            "type":
+                "all_group_chats"
+        },
+    ]
+
+    for scope in scopes:
+        try:
+            api(
+                "deleteMyCommands",
+                {
+                    "scope": scope
+                },
+                timeout=20,
+            )
+
+        except Exception as exc:
+            log(
+                "COMMAND_SCOPE_CLEAR_FAILED "
+                + type(exc).__name__
+            )
+
+
+def set_chat_commands(
+    chat_id,
+    is_admin
+):
+
+    api(
+        "setMyCommands",
+        {
+            "scope": {
+                "type": "chat",
+                "chat_id":
+                    int(chat_id),
+            },
+            "commands":
+                admin_commands()
+                if is_admin
+                else base_commands(),
+        },
+        timeout=20,
+    )
+
+
+def delete_chat_commands(
+    chat_id
+):
+
+    try:
+        api(
+            "deleteMyCommands",
+            {
+                "scope": {
+                    "type": "chat",
+                    "chat_id":
+                        int(chat_id),
+                }
+            },
+            timeout=20,
+        )
+
+    except Exception as exc:
+        log(
+            "COMMAND_SCOPE_DELETE_FAILED "
+            + type(exc).__name__
+        )
+
+
+def sync_profile():
+    access = load_access()
+
+    api(
+        "setMyDescription",
+        {
+            "description":
+                "Private ALBL NUT/UPS "
+                "monitoring bot for "
+                "authorized personnel. "
+                "Provides read-only "
+                "status, health, "
+                "maintenance guidance, "
+                "scheduling and "
+                "power-event notifications."
+        },
+        timeout=20,
+    )
+
+    api(
+        "setMyShortDescription",
+        {
+            "short_description":
+                "Private ALBL NUT/UPS "
+                "monitoring for "
+                "authorized personnel."
+        },
+        timeout=20,
+    )
+
+    clear_global_commands()
+
+    for chat_id, record in (
+        access["users"].items()
+    ):
+        set_chat_commands(
+            chat_id,
+            record.get("role")
+            == "admin"
+        )
+
+    return len(
+        access["users"]
+    )
+
+
+def mode_data():
+    rc, output, _ = run(
+        [
+            "/usr/local/sbin/"
+            "nut-production-status"
+        ],
+        10,
+    )
+
+    if rc != 0:
+        return {}
+
+    try:
+        return json.loads(
+            output
+        )
+
+    except Exception:
+        return {}
+
+
+def ups_names():
+    rc, output, _ = run(
+        [
+            "upsc",
+            "-l",
+            "localhost",
+        ],
+        10,
+    )
+
+    if rc != 0:
+        return []
+
+    return sorted(
+        line.strip()
+        for line
+        in output.splitlines()
+        if line.strip()
+    )
+
+
+def ups_value(
+    ups,
+    key
+):
+
+    rc, output, _ = run(
+        [
+            "upsc",
+            ups + "@localhost",
+            key,
+        ],
+        8,
+    )
+
+    if rc == 0:
+        return output
+
+    return ""
+
+
+def friendly_status(raw):
+    states = set(
+        str(raw).split()
+    )
+
+    if (
+        "OB" in states
+        and "LB" in states
+    ):
+        return (
+            "ON BATTERY / "
+            "LOW BATTERY"
+        )
+
+    if "OB" in states:
+        return "ON BATTERY"
+
+    if "LB" in states:
+        return "LOW BATTERY"
+
+    if "OL" in states:
+        return "ONLINE"
+
+    return raw or "UNKNOWN"
+
+
+def runtime_text(raw):
+    try:
+        seconds = int(
+            float(raw)
+        )
+
+    except Exception:
+        return "Unavailable"
+
+    minutes = max(
+        0,
+        round(seconds / 60)
+    )
+
+    if minutes < 60:
+        return (
+            str(minutes)
+            + " min"
+        )
+
+    hours, minutes = divmod(
+        minutes,
+        60
+    )
+
+    if minutes:
+        return (
+            str(hours)
+            + "h "
+            + str(minutes)
+            + "m"
+        )
+
+    return (
+        str(hours)
+        + "h"
+    )
+
+
+def ups_snapshot():
+    result = {}
+
+    for ups in ups_names():
+        result[ups] = {
+            "status":
+                ups_value(
+                    ups,
+                    "ups.status"
+                ),
+            "charge":
+                ups_value(
+                    ups,
+                    "battery.charge"
+                ),
+            "runtime":
+                ups_value(
+                    ups,
+                    "battery.runtime"
+                ),
+        }
+
+    return result
+
+
+def health_preview():
+    rc, output, _ = run(
+        [
+            "/usr/local/sbin/"
+            "nut-email-alert-test-send",
+            "--preview",
+            "weekly",
+        ],
+        50,
+    )
+
+    if rc == 0:
+        return output
+
+    return ""
+
+
+def maintenance_info():
+    preview = health_preview()
+
+    status = "REVIEW"
+
+    reasons = []
+
+    for raw in (
+        preview.splitlines()
+    ):
+
+        line = raw.strip()
+
+        upper = line.upper()
+
+        if line.startswith(
+            "Status:"
+        ):
+            value = (
+                line.split(
+                    ":",
+                    1
+                )[1]
+                .strip()
+                .upper()
+            )
+
+            if (
+                "NOT RECOMMENDED"
+                in value
+            ):
+                status = "BLOCK"
+
+            elif (
+                "CAUTION"
+                in value
+            ):
+                status = "CAUTION"
+
+            elif (
+                "OK"
+                in value
+                or
+                "RECOMMENDED"
+                in value
+            ):
+                status = "CLEAR"
+
+        if (
+            upper.startswith(
+                "- BLOCKER:"
+            )
+            or
+            upper.startswith(
+                "- CAUTION:"
+            )
+        ):
+            reason = (
+                line.split(
+                    ":",
+                    1
+                )[1]
+                .strip()
+            )
+
+            if (
+                reason
+                and
+                reason not in reasons
+            ):
+                reasons.append(
+                    reason
+                )
+
+    return status, reasons
+
+
+def status_text():
+    data = mode_data()
+
+    snapshot = ups_snapshot()
+
+    total = len(snapshot)
+
+    online = 0
+    on_battery = 0
+
+    for item in (
+        snapshot.values()
+    ):
+
+        states = set(
+            item[
+                "status"
+            ].split()
+        )
+
+        if (
+            "OL" in states
+            and
+            "OB" not in states
+        ):
+            online += 1
+
+        if "OB" in states:
+            on_battery += 1
+
+    return "\n".join(
+        [
+            "ALBL NUT STATUS",
+            "",
+            "Mode: "
+            + str(
+                data.get(
+                    "mode_label",
+                    "UNKNOWN"
+                )
+            ),
+            "NUT monitoring: "
+            + str(
+                data.get(
+                    "nut_monitor",
+                    "UNKNOWN"
+                )
+            ).upper(),
+            "UPS online: "
+            + str(online)
+            + " / "
+            + str(total),
+            "UPS on battery: "
+            + str(on_battery),
+            "",
+            "Updated: "
+            + datetime.now()
+            .astimezone()
+            .strftime(
+                "%m/%d/%Y "
+                "%-I:%M:%S %p %Z"
+            ),
+        ]
+    )
+
+
+def health_text():
+    data = mode_data()
+
+    snapshot = ups_snapshot()
+
+    total = len(snapshot)
+
+    online = 0
+    on_battery = 0
+
+    for item in (
+        snapshot.values()
+    ):
+
+        states = set(
+            item[
+                "status"
+            ].split()
+        )
+
+        if (
+            "OL" in states
+            and
+            "OB" not in states
+        ):
+            online += 1
+
+        if "OB" in states:
+            on_battery += 1
+
+    maintenance, _ = (
+        maintenance_info()
+    )
+
+    overall = "REVIEW"
+
+    if (
+        total > 0
+        and online == total
+        and on_battery == 0
+        and str(
+            data.get(
+                "nut_monitor",
+                ""
+            )
+        ).lower()
+        == "active"
+    ):
+        overall = "HEALTHY"
+
+    return "\n".join(
+        [
+            "ALBL NUT HEALTH",
+            "",
+            "Overall: "
+            + overall,
+            "UPS: "
+            + str(online)
+            + " / "
+            + str(total)
+            + " online",
+            "UPS on battery: "
+            + str(on_battery),
+            "NUT monitoring: "
+            + str(
+                data.get(
+                    "nut_monitor",
+                    "UNKNOWN"
+                )
+            ).upper(),
+            "Mode: "
+            + str(
+                data.get(
+                    "mode_label",
+                    "UNKNOWN"
+                )
+            ),
+            "Maintenance: "
+            + maintenance,
+            "",
+            "Use /maintenance "
+            "for the current reason.",
+        ]
+    )
+
+
+def maintenance_text():
+    status, reasons = (
+        maintenance_info()
+    )
+
+    lines = [
+        "ALBL NUT MAINTENANCE",
+        "",
+        "Maintenance: "
+        + status,
+    ]
+
+    if reasons:
+        lines += [
+            "",
+            "Reason:",
+        ]
+
+        for reason in reasons[:8]:
+            lines.append(
+                "- " + reason
+            )
+
+    elif status == "CLEAR":
+        lines += [
+            "",
+            "No current maintenance "
+            "blocker or caution "
+            "was reported.",
+        ]
+
+    else:
+        lines += [
+            "",
+            "The maintenance reason "
+            "could not be determined.",
+        ]
+
+    if status in {
+        "CAUTION",
+        "BLOCK",
+    }:
+        lines += [
+            "",
+            "See the health email "
+            "for more details.",
+        ]
+
+    return "\n".join(lines)
+
+
+def ups_text(argument=None):
+    names = ups_names()
+
+    if argument:
+        value = str(
+            argument
+        ).lower().strip()
+
+        if value.isdigit():
+            value = (
+                "ups"
+                + str(
+                    int(value)
+                )
+            )
+
+        if value not in names:
+            return (
+                "UPS not found.\n\n"
+                "Use /ups for all UPS "
+                "units or /ups 3 "
+                "for UPS3."
+            )
+
+        status = friendly_status(
+            ups_value(
+                value,
+                "ups.status"
+            )
+        )
+
+        charge = (
+            ups_value(
+                value,
+                "battery.charge"
+            )
+            or
+            "Unavailable"
+        )
+
+        runtime = runtime_text(
+            ups_value(
+                value,
+                "battery.runtime"
+            )
+        )
+
+        load = (
+            ups_value(
+                value,
+                "ups.load"
+            )
+            or
+            "Unavailable"
+        )
+
+        input_v = (
+            ups_value(
+                value,
+                "input.voltage"
+            )
+            or
+            "Unavailable"
+        )
+
+        output_v = (
+            ups_value(
+                value,
+                "output.voltage"
+            )
+            or
+            "Unavailable"
+        )
+
+        return "\n".join(
+            [
+                value.upper()
+                + " STATUS",
+                "",
+                "Power state: "
+                + status,
+                "Battery: "
+                + charge
+                + "%",
+                "Runtime: "
+                + runtime,
+                "Load: "
+                + load
+                + "%",
+                "Input voltage: "
+                + input_v,
+                "Output voltage: "
+                + output_v,
+            ]
+        )
+
+    lines = [
+        "ALBL UPS STATUS",
+        "",
+    ]
+
+    for ups in names:
+
+        status = friendly_status(
+            ups_value(
+                ups,
+                "ups.status"
+            )
+        )
+
+        charge = (
+            ups_value(
+                ups,
+                "battery.charge"
+            )
+            or
+            "?"
+        )
+
+        runtime = runtime_text(
+            ups_value(
+                ups,
+                "battery.runtime"
+            )
+        )
+
+        lines.append(
+            ups.upper()
+            + ": "
+            + status
+            + " | Battery "
+            + charge
+            + "% | Runtime "
+            + runtime
+        )
+
+    lines += [
+        "",
+        "For details use /ups 3, "
+        "replacing 3 with the "
+        "UPS number.",
+    ]
+
+    return "\n".join(lines)
+
+
+def parse_time(value):
+    raw = (
+        str(value)
+        .strip()
+        .lower()
+        .replace(
+            " ",
+            ""
+        )
+    )
+
+    match = re.fullmatch(
+        (
+            r"(\d{1,2})"
+            r"(?::(\d{2}))?"
+            r"(am|pm)?"
+        ),
+        raw,
+    )
+
+    if not match:
+        raise ValueError(
+            "Invalid time: "
+            + str(value)
+        )
+
+    hour = int(
+        match.group(1)
+    )
+
+    minute = int(
+        match.group(2)
+        or "0"
+    )
+
+    ampm = match.group(3)
+
+    if minute > 59:
+        raise ValueError(
+            "Invalid time: "
+            + str(value)
+        )
+
+    if ampm:
+
+        if hour < 1 or hour > 12:
+            raise ValueError(
+                "Invalid time: "
+                + str(value)
+            )
+
+        if hour == 12:
+            hour = 0
+
+        if ampm == "pm":
+            hour += 12
+
+    elif hour > 23:
+        raise ValueError(
+            "Invalid time: "
+            + str(value)
+        )
+
+    return (
+        f"{hour:02d}:"
+        f"{minute:02d}"
+    )
+
+
+def read_schedule():
+    if SCHEDULE.exists():
+        values = kv_file(
+            SCHEDULE
+        )
+    else:
+        values = {}
+
+    health_raw = values.get(
+        "HEALTH_TIMES",
+        "06:00,16:00"
+    )
+
+    health = []
+
+    for value in (
+        health_raw.split(",")
+    ):
+        if value.strip():
+            health.append(
+                parse_time(value)
+            )
+
+    heartbeat = parse_time(
+        values.get(
+            "HEARTBEAT_TIME",
+            "08:00"
+        )
+    )
+
+    return (
+        sorted(
+            set(health)
+        ),
+        heartbeat,
+    )
+
+
+def human_time(value):
+    return datetime.strptime(
+        value,
+        "%H:%M"
+    ).strftime(
+        "%-I:%M %p"
+    )
+
+
+def schedule_text():
+    health, heartbeat = (
+        read_schedule()
+    )
+
+    return "\n".join(
+        [
+            "ALBL NUT "
+            "NOTIFICATION SCHEDULE",
+            "",
+            "Health email + Telegram:",
+            "  "
+            + ", ".join(
+                human_time(value)
+                for value
+                in health
+            ),
+            "",
+            "Telegram heartbeat: "
+            + human_time(
+                heartbeat
+            ),
+            "",
+            "Critical power/shutdown "
+            "alerts:",
+            "  Immediate / event-driven",
+            "",
+            "Admin examples:",
+            "/schedule health "
+            "6:00am 4:00pm",
+            "/schedule heartbeat "
+            "8:00am",
+            "/schedule reset",
+        ]
+    )
+
+
+def write_schedule(
+    health,
+    heartbeat
+):
+
+    normalized_health = sorted(
+        set(
+            parse_time(value)
+            for value
+            in health
+        )
+    )
+
+    normalized_heartbeat = (
+        parse_time(
+            heartbeat
+        )
+    )
+
+    SCHEDULE.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    tmp = SCHEDULE.with_name(
+        ".telegram-notification-"
+        "schedule.tmp"
+    )
+
+    tmp.write_text(
+        "# ALBL NUT Telegram "
+        "scheduled notifications\n"
+        "# Critical power/shutdown "
+        "alerts remain event-driven.\n"
+        "HEALTH_TIMES="
+        + ",".join(
+            normalized_health
+        )
+        + "\n"
+        "HEARTBEAT_TIME="
+        + normalized_heartbeat
+        + "\n"
+    )
+
+    os.chmod(
+        tmp,
+        0o644
+    )
+
+    os.replace(
+        tmp,
+        SCHEDULE
+    )
+
+
+def timer_dropin(times):
+    lines = [
+        "[Timer]",
+        "OnCalendar=",
+    ]
+
+    for value in sorted(
+        set(times)
+    ):
+        lines.append(
+            "OnCalendar=*-*-* "
+            + value
+            + ":00"
+        )
+
+    return (
+        "\n".join(lines)
+        + "\n"
+    )
+
+
+def write_dropin(
+    path,
+    content
+):
+
+    path.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    tmp = path.with_name(
+        ".telegram-schedule.tmp"
+    )
+
+    tmp.write_text(
+        content
+    )
+
+    os.chmod(
+        tmp,
+        0o644
+    )
+
+    os.replace(
+        tmp,
+        path
+    )
+
+
+def apply_schedule():
+    health, heartbeat = (
+        read_schedule()
+    )
+
+    write_dropin(
+        HEALTH_DROPIN,
+        timer_dropin(
+            health
+        ),
+    )
+
+    write_dropin(
+        HEARTBEAT_DROPIN,
+        timer_dropin(
+            [heartbeat]
+        ),
+    )
+
+    subprocess.run(
+        [
+            "systemctl",
+            "daemon-reload",
+        ],
+        check=True,
+        timeout=20,
+    )
+
+    for timer in [
+        "nut-daily-health-email.timer",
+        "nut-telegram-heartbeat.timer",
+    ]:
+
+        subprocess.run(
+            [
+                "systemctl",
+                "try-restart",
+                timer,
+            ],
+            check=False,
+            timeout=20,
+        )
+
+
+def backup_schedule():
+    try:
+        proc = subprocess.run(
+            [
+                BACKUP_ALL
+            ],
+            stdout=
+                subprocess.DEVNULL,
+            stderr=
+                subprocess.DEVNULL,
+            timeout=180,
+        )
+
+        return (
+            proc.returncode == 0
+        )
+
+    except Exception:
+        return False
+
+
+def heartbeat_text():
+    data = mode_data()
+
+    return "\n".join(
+        [
+            "NUT TELEGRAM HEARTBEAT",
+            "",
+            "Telegram command path: "
+            "WORKING",
+            "NUT monitoring: "
+            + str(
+                data.get(
+                    "nut_monitor",
+                    "UNKNOWN"
+                )
+            ).upper(),
+            "Current mode: "
+            + str(
+                data.get(
+                    "mode_label",
+                    "UNKNOWN"
+                )
+            ),
+            "Heartbeat time: "
+            + datetime.now()
+            .astimezone()
+            .strftime(
+                "%m/%d/%Y "
+                "%-I:%M:%S %p %Z"
+            ),
+            "",
+            "No action required.",
+        ]
+    )
+
+
+def help_text(
+    is_admin=False,
+    is_primary=False
+):
+
+    lines = [
+        "ALBL NUT BOT COMMANDS",
+        "",
+        "/start - Welcome and "
+        "bot purpose",
+        "/status - Overall NUT "
+        "and UPS status",
+        "/schedule - View "
+        "notification schedule",
+        "/health - Current NUT "
+        "and UPS health summary",
+        "/ups - Status of all "
+        "UPS units",
+        "/ups 3 - Detailed "
+        "status for UPS3",
+        "/maintenance - Current "
+        "maintenance recommendation",
+        "/heartbeat - Test "
+        "Telegram command path",
+        "/help - Show commands "
+        "and bot purpose",
+    ]
+
+    if is_admin:
+        lines += [
+            "/access - Manage "
+            "authorized users",
+            "",
+            "Admin schedule changes:",
+            "/schedule health "
+            "6:00am 4:00pm",
+            "/schedule heartbeat "
+            "8:00am",
+            "/schedule reset",
+            "",
+            "Access management:",
+            "/access",
+            "/access pending",
+            "/access approve ID",
+            "/access remove ID",
+        ]
+
+    if is_primary:
+        lines += [
+            "",
+            "Primary-admin management:",
+            "/access promote ID",
+            "/access demote ID",
+            "/access transfer ID CONFIRM",
+        ]
+
+    lines += [
+        "",
+        "ALBL NUT Alerts is a "
+        "private monitoring bot "
+        "for authorized personnel.",
+        "",
+        "It provides read-only "
+        "NUT/UPS information and "
+        "remote power alerts.",
+        "",
+        "It does not provide "
+        "shutdown, mode-change, "
+        "VMware, backup or restore "
+        "controls.",
+    ]
+
+    return "\n".join(lines)
+
+
+def intro_text(
+    is_admin,
+    is_primary
+):
+
+    return "\n".join(
+        [
+            "Welcome to ALBL NUT Alerts.",
+            "",
+            "This private bot provides "
+            "authorized ALBL personnel "
+            "with read-only NUT/UPS "
+            "status, health, maintenance "
+            "guidance, notification "
+            "scheduling and power-event "
+            "notifications.",
+            "",
+            "Critical power alerts "
+            "remain automatic and "
+            "event-driven.",
+            "",
+            "Use /help to see all "
+            "available commands.",
+            "",
+            help_text(
+                is_admin,
+                is_primary
+            ),
+        ]
+    )
+
+
+def access_list_text(
+    access
+):
+
+    lines = [
+        "ALBL NUT BOT ACCESS",
+        "",
+        "Approved users: "
+        + str(
+            len(
+                access["users"]
+            )
+        ),
+    ]
+
+    primary = str(
+        access[
+            "primary_admin_id"
+        ]
+    )
+
+    for chat_id, record in (
+        access[
+            "users"
+        ].items()
+    ):
+
+        if chat_id == primary:
+            role = "PRIMARY ADMIN"
+
+        elif (
+            record.get(
+                "role"
+            )
+            == "admin"
+        ):
+            role = "ADMIN"
+
+        else:
+            role = "USER"
+
+        lines += [
+            "",
+            role,
+            person_label(
+                record,
+                chat_id
+            ),
+        ]
+
+    lines += [
+        "",
+        "Pending requests: "
+        + str(
+            len(
+                access["pending"]
+            )
+        ),
+        "",
+        "Use /access pending "
+        "to view pending requests.",
+    ]
+
+    return "\n".join(lines)
+
+
+def pending_text(access):
+    if not access["pending"]:
+        return (
+            "PENDING ACCESS\n\n"
+            "No pending access requests."
+        )
+
+    lines = [
+        "PENDING ACCESS",
+        "",
+    ]
+
+    for chat_id, record in (
+        access[
+            "pending"
+        ].items()
+    ):
+
+        lines += [
+            person_label(
+                record,
+                chat_id
+            ),
+            "Requested: "
+            + str(
+                record.get(
+                    "requested_at",
+                    "unknown"
+                )
+            ),
+            "",
+        ]
+
+    lines.append(
+        "Approve with: "
+        "/access approve ID"
+    )
+
+    return "\n".join(lines)
+
+
+def access_help(
+    is_primary
+):
+
+    lines = [
+        "ACCESS COMMANDS",
+        "",
+        "/access - List approved "
+        "users and roles",
+        "/access pending - Show "
+        "pending requests",
+        "/access approve ID - "
+        "Approve a pending user",
+        "/access remove ID - "
+        "Remove an approved user",
+    ]
+
+    if is_primary:
+        lines += [
+            "/access promote ID - "
+            "Promote user to admin",
+            "/access demote ID - "
+            "Demote admin to user",
+            "/access transfer ID "
+            "CONFIRM - Transfer "
+            "primary app-admin role",
+        ]
+
+    lines += [
+        "",
+        "Only the primary bot admin "
+        "can promote or demote admins "
+        "or transfer primary admin.",
+        "",
+        "This does NOT transfer "
+        "Telegram BotFather ownership.",
+    ]
+
+    return "\n".join(lines)
+
+
+def handle_access(
+    chat_id,
+    args,
+    access
+):
+
+    caller = access[
+        "users"
+    ][chat_id]
+
+    is_admin = (
+        caller.get("role")
+        == "admin"
+    )
+
+    is_primary = (
+        chat_id
+        == str(
+            access[
+                "primary_admin_id"
+            ]
+        )
+    )
+
+    if not is_admin:
+        return (
+            "Access management is "
+            "restricted to "
+            "bot administrators."
+        )
+
+    if not args:
+        return access_list_text(
+            access
+        )
+
+    action = (
+        args[0]
+        .lower()
+    )
+
+    if action in {
+        "list",
+        "show",
+    }:
+        return access_list_text(
+            access
+        )
+
+    if action == "help":
+        return access_help(
+            is_primary
+        )
+
+    if action == "pending":
+        return pending_text(
+            access
+        )
+
+    if len(args) < 2:
+        return access_help(
+            is_primary
+        )
+
+    target = str(
+        args[1]
+    ).strip()
+
+    if action in {
+        "approve",
+        "add",
+    }:
+
+        if target in (
+            access["users"]
+        ):
+            return (
+                "That user already "
+                "has access."
+            )
+
+        pending = (
+            access["pending"]
+            .pop(
+                target,
+                None
+            )
+        )
+
+        if pending is None:
+            return (
+                "That ID is not in "
+                "the pending list. "
+                "Have the user send "
+                "/start first."
+            )
+
+        pending[
+            "role"
+        ] = "user"
+
+        pending[
+            "approved_at"
+        ] = now_iso()
+
+        access[
+            "users"
+        ][target] = pending
+
+        save_access(
+            access
+        )
+
+        set_chat_commands(
+            target,
+            False
+        )
+
+        try:
+            send(
+                target,
+                "Your ALBL NUT Alerts "
+                "access has been approved."
+                "\n\nSend /start to begin."
+            )
+        except Exception:
+            pass
+
+        return (
+            "Access approved.\n\n"
+            + person_label(
+                pending,
+                target
+            )
+        )
+
+    if action == "remove":
+
+        if target not in (
+            access["users"]
+        ):
+            return (
+                "That ID does not "
+                "currently have access."
+            )
+
+        if target == str(
+            access[
+                "primary_admin_id"
+            ]
+        ):
+            return (
+                "The primary administrator "
+                "cannot be removed. "
+                "Transfer primary admin first."
+            )
+
+        target_role = (
+            access[
+                "users"
+            ][target]
+            .get("role")
+        )
+
+        if (
+            target_role == "admin"
+            and not is_primary
+        ):
+            return (
+                "Only the primary "
+                "administrator can remove "
+                "another administrator."
+            )
+
+        removed = (
+            access["users"]
+            .pop(target)
+        )
+
+        save_access(
+            access
+        )
+
+        delete_chat_commands(
+            target
+        )
+
+        try:
+            send(
+                target,
+                "Your ALBL NUT Alerts "
+                "access has been removed."
+            )
+        except Exception:
+            pass
+
+        return (
+            "Access removed.\n\n"
+            + person_label(
+                removed,
+                target
+            )
+        )
+
+    if action == "promote":
+
+        if not is_primary:
+            return (
+                "Only the primary "
+                "administrator can "
+                "promote administrators."
+            )
+
+        if target not in (
+            access["users"]
+        ):
+            return (
+                "That user is "
+                "not approved."
+            )
+
+        access[
+            "users"
+        ][target][
+            "role"
+        ] = "admin"
+
+        save_access(
+            access
+        )
+
+        set_chat_commands(
+            target,
+            True
+        )
+
+        try:
+            send(
+                target,
+                "You are now an "
+                "ALBL NUT Bot "
+                "administrator."
+            )
+        except Exception:
+            pass
+
+        return (
+            "Administrator promoted."
+            "\n\n"
+            + person_label(
+                access[
+                    "users"
+                ][target],
+                target
+            )
+        )
+
+    if action == "demote":
+
+        if not is_primary:
+            return (
+                "Only the primary "
+                "administrator can "
+                "demote administrators."
+            )
+
+        if target == str(
+            access[
+                "primary_admin_id"
+            ]
+        ):
+            return (
+                "Transfer primary admin "
+                "before demoting the "
+                "primary administrator."
+            )
+
+        if target not in (
+            access["users"]
+        ):
+            return (
+                "That user is "
+                "not approved."
+            )
+
+        access[
+            "users"
+        ][target][
+            "role"
+        ] = "user"
+
+        save_access(
+            access
+        )
+
+        set_chat_commands(
+            target,
+            False
+        )
+
+        try:
+            send(
+                target,
+                "Your ALBL NUT Bot "
+                "role is now "
+                "read-only user."
+            )
+        except Exception:
+            pass
+
+        return (
+            "Administrator demoted."
+            "\n\n"
+            + person_label(
+                access[
+                    "users"
+                ][target],
+                target
+            )
+        )
+
+    if action == "transfer":
+
+        if not is_primary:
+            return (
+                "Only the current primary "
+                "administrator can transfer "
+                "primary admin."
+            )
+
+        if target not in (
+            access["users"]
+        ):
+            return (
+                "That user is "
+                "not approved."
+            )
+
+        if (
+            len(args) < 3
+            or
+            args[2].upper()
+            != "CONFIRM"
+        ):
+            return (
+                "Primary-admin transfer "
+                "requires confirmation."
+                "\n\nRun:\n"
+                "/access transfer "
+                + target
+                + " CONFIRM"
+                "\n\nThis transfers only "
+                "ALBL NUT Bot application "
+                "administration. It does "
+                "not transfer BotFather "
+                "ownership."
+            )
+
+        access[
+            "users"
+        ][target][
+            "role"
+        ] = "admin"
+
+        access[
+            "primary_admin_id"
+        ] = target
+
+        save_access(
+            access
+        )
+
+        set_chat_commands(
+            target,
+            True
+        )
+
+        set_chat_commands(
+            chat_id,
+            True
+        )
+
+        try:
+            send(
+                target,
+                "You are now the primary "
+                "administrator for "
+                "ALBL NUT Alerts."
+            )
+        except Exception:
+            pass
+
+        return (
+            "Primary ALBL NUT Bot "
+            "administration transferred."
+            "\n\nYour account remains "
+            "an administrator until the "
+            "new primary administrator "
+            "demotes or removes it."
+        )
+
+    return access_help(
+        is_primary
+    )
+
+
+def handle_schedule(
+    chat_id,
+    args,
+    access
+):
+
+    is_admin = (
+        access[
+            "users"
+        ][chat_id]
+        .get("role")
+        == "admin"
+    )
+
+    if not args:
+        return schedule_text()
+
+    if not is_admin:
+        return (
+            schedule_text()
+            + "\n\nSchedule changes "
+            "are restricted to "
+            "bot administrators."
+        )
+
+    action = (
+        args[0]
+        .lower()
+    )
+
+    health, heartbeat = (
+        read_schedule()
+    )
+
+    try:
+        if action == "reset":
+            health = [
+                "06:00",
+                "16:00",
+            ]
+
+            heartbeat = "08:00"
+
+        elif action == "health":
+
+            if (
+                len(args) < 2
+                or
+                len(args) > 5
+            ):
+                raise ValueError(
+                    "Use /schedule health "
+                    "6:00am 4:00pm"
+                )
+
+            health = [
+                parse_time(value)
+                for value
+                in args[1:]
+            ]
+
+        elif action == "heartbeat":
+
+            if len(args) != 2:
+                raise ValueError(
+                    "Use /schedule "
+                    "heartbeat 8:00am"
+                )
+
+            heartbeat = parse_time(
+                args[1]
+            )
+
+        else:
+            raise ValueError(
+                "Use health, heartbeat, "
+                "or reset."
+            )
+
+        write_schedule(
+            health,
+            heartbeat
+        )
+
+        apply_schedule()
+
+        backed_up = (
+            backup_schedule()
+        )
+
+        backup_result = (
+            "PASS"
+            if backed_up
+            else
+            "FAILED - schedule is "
+            "active but GitHub backup "
+            "needs review"
+        )
+
+        return (
+            "Schedule updated."
+            "\n\n"
+            + schedule_text()
+            + "\n\nGitHub backup: "
+            + backup_result
+        )
+
+    except Exception as exc:
+        return (
+            "Schedule change failed: "
+            + str(exc)
+        )
+
+
+def record_pending(
+    access,
+    chat_id,
+    telegram_user
+):
+
+    record = (
+        access[
+            "pending"
+        ].setdefault(
+            chat_id,
+            {
+                "requested_at":
+                    now_iso()
+            },
+        )
+    )
+
+    update_person(
+        record,
+        telegram_user
+    )
+
+    record.setdefault(
+        "requested_at",
+        now_iso()
+    )
+
+    save_access(
+        access
+    )
+
+
+def process_update(update):
+    message = update.get(
+        "message"
+    )
+
+    if not isinstance(
+        message,
+        dict
+    ):
+        return
+
+    chat = message.get(
+        "chat",
+        {}
+    )
+
+    if chat.get(
+        "type"
+    ) != "private":
+        return
+
+    chat_id = str(
+        chat.get(
+            "id",
+            ""
+        )
+    )
+
+    if not chat_id:
+        return
+
+    text = str(
+        message.get(
+            "text",
+            ""
+        )
+        or ""
+    ).strip()
+
+    telegram_user = (
+        message.get(
+            "from",
+            {}
+        )
+        or {}
+    )
+
+    access = load_access()
+
+    if chat_id not in (
+        access["users"]
+    ):
+
+        command = ""
+
+        if text.startswith("/"):
+            command = (
+                text.split()[0]
+                .split(
+                    "@",
+                    1
+                )[0]
+                .lower()
+            )
+
+        if command == "/start":
+            record_pending(
+                access,
+                chat_id,
+                telegram_user
+            )
+
+            log(
+                "ACCESS_REQUEST_RECORDED"
+            )
+
+        return
+
+    update_person(
+        access[
+            "users"
+        ][chat_id],
+        telegram_user
+    )
+
+    access[
+        "pending"
+    ].pop(
+        chat_id,
+        None
+    )
+
+    save_access(
+        access
+    )
+
+    if not text.startswith("/"):
+        return
+
+    parts = text.split()
+
+    command = (
+        parts[0]
+        .split(
+            "@",
+            1
+        )[0]
+        .lower()
+    )
+
+    args = parts[1:]
+
+    match = re.fullmatch(
+        r"/ups([1-9])",
+        command
+    )
+
+    if match:
+        command = "/ups"
+
+        args = [
+            match.group(1)
+        ]
+
+    is_admin = (
+        access[
+            "users"
+        ][chat_id]
+        .get("role")
+        == "admin"
+    )
+
+    is_primary = (
+        chat_id
+        == str(
+            access[
+                "primary_admin_id"
+            ]
+        )
+    )
+
+    if command == "/start":
+        reply = intro_text(
+            is_admin,
+            is_primary
+        )
+
+    elif command == "/help":
+        reply = help_text(
+            is_admin,
+            is_primary
+        )
+
+    elif command == "/status":
+        reply = status_text()
+
+    elif command == "/health":
+        reply = health_text()
+
+    elif command == "/ups":
+        reply = ups_text(
+            args[0]
+            if args
+            else None
+        )
+
+    elif command == "/maintenance":
+        reply = maintenance_text()
+
+    elif command == "/schedule":
+        reply = handle_schedule(
+            chat_id,
+            args,
+            access
+        )
+
+    elif command == "/heartbeat":
+        reply = heartbeat_text()
+
+    elif command == "/access":
+        reply = handle_access(
+            chat_id,
+            args,
+            access
+        )
+
+    else:
+        reply = (
+            "Unknown command."
+            "\n\n"
+            + help_text(
+                is_admin,
+                is_primary
+            )
+        )
+
+    send(
+        chat_id,
+        reply
+    )
+
+
+def save_offset(value):
+    OFFSET.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    tmp = OFFSET.with_name(
+        ".command-offset.tmp"
+    )
+
+    tmp.write_text(
+        str(value)
+        + "\n"
+    )
+
+    os.chmod(
+        tmp,
+        0o600
+    )
+
+    os.replace(
+        tmp,
+        OFFSET
+    )
+
+
+def initial_offset():
+    if OFFSET.exists():
+        try:
+            return int(
+                OFFSET.read_text()
+                .strip()
+            )
+        except Exception:
+            pass
+
+    updates = api(
+        "getUpdates",
+        {
+            "offset": -1,
+            "limit": 1,
+            "timeout": 0,
+            "allowed_updates":
+                ["message"],
+        },
+        timeout=15,
+    )
+
+    if updates:
+        value = int(
+            updates[-1][
+                "update_id"
+            ]
+        ) + 1
+
+    else:
+        value = 0
+
+    save_offset(
+        value
+    )
+
+    return value
+
+
+def preflight():
+    api(
+        "getMe",
+        {},
+        timeout=20
+    )
+
+    webhook = api(
+        "getWebhookInfo",
+        {},
+        timeout=20
+    )
+
+    if (
+        isinstance(
+            webhook,
+            dict
+        )
+        and
+        webhook.get("url")
+    ):
+        raise RuntimeError(
+            "Webhook is configured"
+        )
+
+    load_access()
+
+    if not SCHEDULE.exists():
+        write_schedule(
+            [
+                "06:00",
+                "16:00",
+            ],
+            "08:00"
+        )
+
+    apply_schedule()
+
+    count = sync_profile()
+
+    print(
+        "BOT_API=PASS"
+    )
+
+    print(
+        "WEBHOOK_CONFIGURED=NO"
+    )
+
+    print(
+        "AUTHORIZED_USER_COUNT="
+        + str(count)
+    )
+
+    print(
+        "PRIMARY_ADMIN_CONFIGURED=YES"
+    )
+
+    print(
+        "TOKEN_VALUE_NOT_DISPLAYED=YES"
+    )
+
+
+def polling_loop():
+    sync_profile()
+
+    offset = initial_offset()
+
+    log(
+        "COMMAND_BOT_STARTED"
+    )
+
+    while True:
+
+        try:
+            updates = api(
+                "getUpdates",
+                {
+                    "offset":
+                        offset,
+                    "limit":
+                        50,
+                    "timeout":
+                        45,
+                    "allowed_updates":
+                        ["message"],
+                },
+                timeout=55,
+            )
+
+            for update in updates:
+
+                update_id = int(
+                    update.get(
+                        "update_id",
+                        offset
+                    )
+                )
+
+                offset = max(
+                    offset,
+                    update_id + 1
+                )
+
+                try:
+                    process_update(
+                        update
+                    )
+
+                except Exception as exc:
+                    log(
+                        "UPDATE_PROCESS_FAILED "
+                        + type(
+                            exc
+                        ).__name__
+                    )
+
+                save_offset(
+                    offset
+                )
+
+        except Exception as exc:
+            log(
+                "POLL_FAILED "
+                + type(
+                    exc
+                ).__name__
+            )
+
+            time.sleep(5)
+
+
+def main():
+    if len(sys.argv) > 1:
+
+        if sys.argv[1] == "--check":
+            preflight()
+            return 0
+
+        if sys.argv[1] == "--sync":
+            count = sync_profile()
+
+            print(
+                "AUTHORIZED_COMMAND_SCOPES="
+                + str(count)
+            )
+
+            return 0
+
+        if (
+            sys.argv[1]
+            == "--apply-schedule"
+        ):
+            apply_schedule()
+
+            print(
+                schedule_text()
+            )
+
+            return 0
+
+    polling_loop()
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(
+        main()
+    )
