@@ -1341,7 +1341,7 @@ def schedule_text():
             "  Immediate / event-driven",
             "",
             "Admin examples:",
-            "/schedule health "
+            "/schedule "
             "6:00am 4:00pm",
             "/schedule heartbeat "
             "8:00am",
@@ -1590,7 +1590,7 @@ def help_text(
             "authorized users",
             "",
             "Admin schedule changes:",
-            "/schedule health "
+            "/schedule "
             "6:00am 4:00pm",
             "/schedule heartbeat "
             "8:00am",
@@ -2247,12 +2247,39 @@ def handle_schedule(
         .lower()
     )
 
+    # User-friendly shorthand:
+    #
+    #   /schedule 6:00am 2:00pm
+    #
+    # If the first argument is a valid time, treat every argument
+    # as a health-report time.
+    shorthand_health = False
+
+    try:
+        parse_time(args[0])
+        shorthand_health = True
+    except ValueError:
+        pass
+
     health, heartbeat = (
         read_schedule()
     )
 
     try:
-        if action == "reset":
+        if shorthand_health:
+
+            if len(args) > 4:
+                raise ValueError(
+                    "Use up to four health-report times."
+                )
+
+            health = [
+                parse_time(value)
+                for value
+                in args
+            ]
+
+        elif action == "reset":
             health = [
                 "06:00",
                 "16:00",
@@ -2292,8 +2319,9 @@ def handle_schedule(
 
         else:
             raise ValueError(
-                "Use health, heartbeat, "
-                "or reset."
+                "Use /schedule 6:00am 4:00pm, "
+                "/schedule heartbeat 8:00am, "
+                "or /schedule reset."
             )
 
         write_schedule(
@@ -2475,18 +2503,6 @@ def process_update(update):
     )
 
     args = parts[1:]
-
-    match = re.fullmatch(
-        r"/ups([1-9])",
-        command
-    )
-
-    if match:
-        command = "/ups"
-
-        args = [
-            match.group(1)
-        ]
 
     is_admin = (
         access[
