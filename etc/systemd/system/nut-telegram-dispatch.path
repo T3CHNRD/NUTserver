@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch NUT Telegram notification queue
+
+[Path]
+PathExistsGlob=/var/lib/nut-telegram-alerts/queue/*.json
+Unit=nut-telegram-dispatch.service
+
+[Install]
+WantedBy=multi-user.target

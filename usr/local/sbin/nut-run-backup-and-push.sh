@@ -283,6 +283,18 @@ main() {
     copy_executable_file /usr/local/sbin/nut-ui-live-restore-selected ./usr/local/sbin/nut-ui-live-restore-selected
   fi
 
+  # TELEGRAM BACKUP FILES
+  # Safe code/unit files only. Live credentials under /etc/nut/secrets
+  # are intentionally excluded from GitHub and DR.
+  mkdir -p ./etc/systemd/system
+  copy_executable_file /usr/local/sbin/nut-telegram-alert ./usr/local/sbin/nut-telegram-alert
+  copy_text_file /etc/systemd/system/nut-telegram-dispatch.service ./etc/systemd/system/nut-telegram-dispatch.service 644
+  copy_text_file /etc/systemd/system/nut-telegram-dispatch.path ./etc/systemd/system/nut-telegram-dispatch.path 644
+  copy_text_file /etc/systemd/system/nut-telegram-final.service ./etc/systemd/system/nut-telegram-final.service 644
+  copy_text_file /etc/systemd/system/nut-telegram-final.path ./etc/systemd/system/nut-telegram-final.path 644
+  copy_text_file /etc/systemd/system/nut-telegram-heartbeat.service ./etc/systemd/system/nut-telegram-heartbeat.service 644
+  copy_text_file /etc/systemd/system/nut-telegram-heartbeat.timer ./etc/systemd/system/nut-telegram-heartbeat.timer 644
+
   chown -R "$HOST_USER:$HOST_GROUP" "$REPO_DIR"
 
   fail_if_repo_has_secrets
