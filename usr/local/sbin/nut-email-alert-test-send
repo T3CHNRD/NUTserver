@@ -658,16 +658,6 @@ def ups_weather_grid_risk_lines():
             f"Weather code {daily_code}" if daily_code is not None else "Unavailable"
         )
 
-        lines.append("Weather / grid-risk advisory:")
-        lines.append(f"- Pontiac current temperature: {temp} F")
-        lines.append(f"- Today's forecast high: {max_temp} F")
-        lines.append(f"- Today's forecast low: {min_temp} F")
-        lines.append(f"- Current conditions: {current_condition}")
-        lines.append(f"- Today's forecast conditions: {forecast_condition}")
-        lines.append(f"- Current wind / gusts: {wind} mph / {gust} mph")
-        lines.append(f"- Forecast max gusts: {max_gust} mph")
-        lines.append(f"- Forecast precipitation probability: {precip_prob}%")
-
         if code in severe_codes:
             blockers.append(f"Current weather risk: {severe_codes[code]}.")
         elif daily_code in severe_codes:
@@ -689,11 +679,6 @@ def ups_weather_grid_risk_lines():
         elif daily_code in winter_caution_codes:
             cautions.append(
                 f"Forecast winter-weather caution today: {winter_caution_codes[daily_code]}."
-            )
-
-        if code in storm_codes or daily_code in storm_codes:
-            cautions.append(
-                "Rain/storm conditions are possible today; check the radar before planned UPS work."
             )
 
         if temp is not None and temp < 0:
@@ -720,11 +705,10 @@ def ups_weather_grid_risk_lines():
         elif max_gust is not None and max_gust >= 30:
             cautions.append(f"Wind caution: forecast gusts up to {max_gust} mph.")
 
-        if precip_prob is not None and precip_prob >= 70:
-            cautions.append(f"High precipitation probability today: {precip_prob}%.")
-
         if not blockers and not cautions:
-            positives.append("Weather/grid risk does not appear elevated based on the current forecast.")
+            positives.append(
+                "No weather/grid-risk condition is affecting today's maintenance recommendation."
+            )
 
     except Exception as exc:
         lines.append("Weather / grid-risk advisory:")
@@ -819,7 +803,6 @@ def ups_maintenance_recommendation_lines():
     weather_lines, weather_blockers, weather_cautions, weather_positives = ups_weather_grid_risk_lines()
     blockers.extend(weather_blockers)
     cautions.extend(weather_cautions)
-    positives.extend(weather_positives)
 
     if blockers:
         lines.append("Status: NOT RECOMMENDED for planned UPS swaps or battery maintenance today.")
@@ -847,11 +830,9 @@ def ups_maintenance_recommendation_lines():
     lines.append("")
     lines.append("Weather / grid risk summary:")
 
-    # Always display the weather values first.
-    for item in weather_lines:
-        if item != "Weather / grid-risk advisory:":
-            lines.append(item)
-
+    # Show only weather conditions that actually affect the
+    # maintenance recommendation. Normal forecast measurements
+    # are intentionally omitted.
     if weather_blockers:
         for item in weather_blockers[:5]:
             lines.append(f"- BLOCKER: {item}")
@@ -861,11 +842,13 @@ def ups_maintenance_recommendation_lines():
             lines.append(f"- CAUTION: {item}")
 
     if not weather_blockers and not weather_cautions and weather_positives:
-        for item in weather_positives[:3]:
-            lines.append(f"- OK: {item}")
+        lines.append(f"- OK: {weather_positives[0]}")
 
     if not weather_blockers and not weather_cautions and not weather_positives:
-        lines.append("- CAUTION: Weather/grid-risk result was not available in this report.")
+        lines.append(
+            "- CAUTION: Weather/grid-risk result was not available; "
+            "verify local conditions before planned UPS maintenance."
+        )
 
     lines.append("")
     lines.append("Reasons / risk checks:")
