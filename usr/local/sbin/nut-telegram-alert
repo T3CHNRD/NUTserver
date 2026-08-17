@@ -1,0 +1,1347 @@
+#!/usr/bin/env python3
+import json, os, re, subprocess, sys, time, urllib.parse, urllib.request
+from datetime import datetime
+from pathlib import Path
+
+SECRET=Path("/etc/nut/secrets/telegram-alerts.env")
+BASE=Path("/var/lib/nut-telegram-alerts")
+QUEUE=BASE/"queue"
+STATE=BASE/"state.json"
+LOG=Path("/var/log/nut-telegram-alerts.log")
+
+TYPES={"onbatt","online","shutdown","cancelled","final","weekly"}
+
+UPS_RE=re.compile(r"\b(ups\d+)\b",re.I)
+TOKEN_RE=re.compile(r"\b\d{6,}:[A-Za-z0-9_-]{20,}\b")
+IP_RE=re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+
+
+def run(cmd,t=15):
+    try:
+        p=subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=t
+        )
+        return p.returncode,p.stdout.strip(),p.stderr.strip()
+    except Exception as e:
+        return 99,"",type(e).__name__
+
+
+def mode():
+    rc,out,_=run(
+        ["/usr/local/sbin/nut-production-status"],
+        10
+    )
+
+    try:
+        d=json.loads(out) if rc==0 else {}
+    except Exception:
+        d={}
+
+    return (
+        str(d.get("mode","unknown")).lower(),
+        str(d.get("mode_label","UNKNOWN")),
+        str(d.get("nut_monitor","UNKNOWN")).upper()
+    )
+
+
+def ok_mode(kind):
+    m,_,_=mode()
+
+    if m=="off":
+        return False
+
+    if m=="disarmed" and kind in {
+        "shutdown",
+        "cancelled",
+        "final"
+    }:
+        return False
+
+    return m in {"armed","disarmed"}
+
+
+def safe(s):
+    s=TOKEN_RE.sub(
+        "[REDACTED]",
+        str(s or "")
+    )
+
+    return IP_RE.sub(
+        "[internal address omitted]",
+        s
+    )
+
+
+def log(s):
+    try:
+        with LOG.open("a") as f:
+            f.write(
+                f"[{datetime.now().astimezone().isoformat()}] "
+                f"{safe(s)}\n"
+            )
+    except Exception:
+        pass
+
+
+def secret():
+    d={}
+
+    for line in SECRET.read_text(
+        errors="replace"
+    ).splitlines():
+
+        if "=" in line:
+            k,v=line.split("=",1)
+            d[k.strip()]=v.strip()
+
+    token=d.get(
+        "TELEGRAM_BOT_TOKEN",
+        ""
+    )
+
+    chat=d.get(
+        "TELEGRAM_CHAT_ID",
+        ""
+    )
+
+    if not token or not chat:
+        raise RuntimeError(
+            "Telegram credentials missing"
+        )
+
+    return token,chat
+
+
+def send(kind,text):
+    if not ok_mode(kind):
+        log(
+            f"TELEGRAM_NOTIFY_BLOCKED "
+            f"type={kind}"
+        )
+
+        print(
+            f"TELEGRAM_SEND_BLOCKED "
+            f"type={kind}"
+        )
+
+        return False
+
+    try:
+        token,chat=secret()
+
+        data=urllib.parse.urlencode({
+            "chat_id":chat,
+            "text":safe(text)
+        }).encode()
+
+        req=urllib.request.Request(
+            f"https://api.telegram.org/bot"
+            f"{token}/sendMessage",
+            data=data,
+            method="POST",
+            headers={
+                "User-Agent":
+                    "nutserver-telegram-alerts"
+            }
+        )
+
+        with urllib.request.urlopen(
+            req,
+            timeout=15
+        ) as r:
+            ans=json.loads(
+                r.read().decode()
+            )
+
+        if not ans.get("ok"):
+            raise RuntimeError(
+                "Telegram returned ok=false"
+            )
+
+        mid=ans.get(
+            "result",
+            {}
+        ).get(
+            "message_id",
+            "unknown"
+        )
+
+        log(
+            f"TELEGRAM_NOTIFY_SENT "
+            f"type={kind} "
+            f"message_id={mid}"
+        )
+
+        print(
+            f"TELEGRAM_SEND_PASS "
+            f"type={kind} "
+            f"message_id={mid}"
+        )
+
+        return True
+
+    except Exception as e:
+        log(
+            f"TELEGRAM_NOTIFY_FAILED "
+            f"type={kind} "
+            f"error={type(e).__name__}"
+        )
+
+        print(
+            f"TELEGRAM_SEND_FAIL "
+            f"type={kind} "
+            f"error={type(e).__name__}"
+        )
+
+        return False
+
+
+def stamp(ts=None):
+    tz=datetime.now().astimezone().tzinfo
+
+    dt=(
+        datetime.fromtimestamp(ts,tz)
+        if ts
+        else datetime.now().astimezone()
+    )
+
+    return dt.strftime(
+        "%m/%d/%Y %-I:%M:%S %p %Z"
+    )
+
+
+def duration(start):
+    if not start:
+        return "Unavailable"
+
+    mins=max(
+        0,
+        int(
+            (
+                time.time()
+                -
+                float(start)
+            )
+            /
+            60
+        )
+    )
+
+    if mins<1:
+        return "Less than 1 minute"
+
+    if mins<60:
+        return (
+            f"{mins} minute"
+            +
+            (
+                ""
+                if mins==1
+                else "s"
+            )
+        )
+
+    h,m=divmod(mins,60)
+
+    return (
+        f"{h}h {m}m"
+        if m
+        else f"{h}h"
+    )
+
+
+def load_state():
+    try:
+        d=json.loads(
+            STATE.read_text()
+        )
+    except Exception:
+        d={}
+
+    d.setdefault(
+        "sitewide",
+        False
+    )
+
+    d.setdefault(
+        "outage_start",
+        None
+    )
+
+    d.setdefault(
+        "individual",
+        {}
+    )
+
+    d.setdefault(
+        "shutdown_activity",
+        False
+    )
+
+    d.setdefault(
+        "systems_down",
+        []
+    )
+
+    return d
+
+
+def save_state(d):
+    BASE.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    tmp=BASE/".state.tmp"
+
+    tmp.write_text(
+        json.dumps(
+            d,
+            indent=2
+        )
+        +
+        "\n"
+    )
+
+    os.chmod(
+        tmp,
+        0o600
+    )
+
+    os.replace(
+        tmp,
+        STATE
+    )
+
+    os.chmod(
+        STATE,
+        0o600
+    )
+
+
+def confirmed_down(raw):
+    x=str(
+        raw or ""
+    ).strip()
+
+    if not x:
+        return []
+
+    low=x.lower()
+
+    if any(
+        v in low
+        for v in [
+            "none reported",
+            "unavailable from current email context",
+            "protected systems remained online",
+            "status pending"
+        ]
+    ):
+        return []
+
+    return [
+        safe(
+            p.strip(
+                " -\t"
+            )
+        )
+        for p in re.split(
+            r"[\n;,]+",
+            x
+        )
+        if p.strip()
+    ]
+
+
+def enqueue(kind):
+    if kind not in TYPES:
+        print(
+            f"TELEGRAM_ENQUEUE_SKIPPED "
+            f"type={kind}"
+        )
+        return 0
+
+    if not ok_mode(kind):
+        print(
+            f"TELEGRAM_ENQUEUE_BLOCKED "
+            f"type={kind}"
+        )
+        return 0
+
+    reason=os.environ.get(
+        "NUT_EMAIL_REASON",
+        ""
+    )
+
+    m=UPS_RE.search(
+        reason
+    )
+
+    e={
+        "type":kind,
+        "ts":time.time(),
+        "ups":
+            m.group(1).lower()
+            if m
+            else "",
+        "systems_down":
+            confirmed_down(
+                os.environ.get(
+                    "NUT_SYSTEMS_SHUT_DOWN",
+                    ""
+                )
+            )
+    }
+
+    QUEUE.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    p=QUEUE/(
+        f"{time.time_ns()}-"
+        f"{os.getpid()}-"
+        f"{kind}.json"
+    )
+
+    p.write_text(
+        json.dumps(e)
+        +
+        "\n"
+    )
+
+    os.chmod(
+        p,
+        0o660
+    )
+
+    print(
+        f"TELEGRAM_ENQUEUED "
+        f"type={kind} "
+        f"ups={e['ups'] or 'unknown'}"
+    )
+
+    return 0
+
+
+def readq():
+    out=[]
+
+    QUEUE.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    for p in sorted(
+        QUEUE.glob("*.json")
+    ):
+        try:
+            e=json.loads(
+                p.read_text()
+            )
+
+            e["_p"]=p
+            out.append(e)
+
+        except Exception:
+            try:
+                p.unlink()
+            except Exception:
+                pass
+
+    return out
+
+
+def rm(es):
+    for e in es:
+        try:
+            e["_p"].unlink()
+        except Exception:
+            pass
+
+
+def upsc(ups,key):
+    rc,out,_=run(
+        [
+            "upsc",
+            f"{ups}@localhost",
+            key
+        ],
+        8
+    )
+
+    return (
+        out
+        if rc==0
+        else ""
+    )
+
+
+def snap():
+    rc,out,_=run(
+        [
+            "upsc",
+            "-l",
+            "localhost"
+        ],
+        8
+    )
+
+    names=(
+        [
+            x.strip()
+            for x in out.splitlines()
+            if x.strip()
+        ]
+        if rc==0
+        else []
+    )
+
+    return {
+        u.lower():{
+            "status":
+                upsc(
+                    u,
+                    "ups.status"
+                ),
+            "charge":
+                upsc(
+                    u,
+                    "battery.charge"
+                ),
+            "runtime":
+                upsc(
+                    u,
+                    "battery.runtime"
+                )
+        }
+        for u in names
+    }
+
+
+def ob(status):
+    return (
+        "OB"
+        in
+        str(status).split()
+    )
+
+
+def ol(status):
+    return (
+        "OL"
+        in
+        str(status).split()
+        and
+        not ob(status)
+    )
+
+
+def runtime(v):
+    try:
+        mins=round(
+            float(v)
+            /
+            60
+        )
+    except Exception:
+        return "Unavailable"
+
+    if mins<60:
+        return (
+            f"{mins} minutes"
+        )
+
+    h,m=divmod(
+        mins,
+        60
+    )
+
+    return (
+        f"{h}h {m}m"
+        if m
+        else f"{h}h"
+    )
+
+
+def upsset(es):
+    return sorted({
+        e.get(
+            "ups",
+            ""
+        )
+        for e in es
+        if e.get("ups")
+    })
+
+
+def onbatt(es,st):
+    s=snap()
+
+    current=[
+        u
+        for u,d in s.items()
+        if ob(
+            d["status"]
+        )
+    ]
+
+    affected=sorted(
+        set(current)
+        |
+        set(
+            upsset(es)
+        )
+    )
+
+    start=min(
+        float(
+            e["ts"]
+        )
+        for e in es
+    )
+
+    if len(affected)>=2:
+
+        if st["sitewide"]:
+            log(
+                "TELEGRAM_SITEWIDE_ONBATT_SUPPRESSED "
+                "already_active"
+            )
+
+            return
+
+        st["sitewide"]=True
+        st["outage_start"]=start
+        st["shutdown_activity"]=False
+        st["systems_down"]=[]
+
+        charges=[]
+        runtimes=[]
+
+        for u in affected:
+            try:
+                charges.append(
+                    float(
+                        s.get(
+                            u,
+                            {}
+                        ).get(
+                            "charge",
+                            ""
+                        )
+                    )
+                )
+            except Exception:
+                pass
+
+            try:
+                runtimes.append(
+                    float(
+                        s.get(
+                            u,
+                            {}
+                        ).get(
+                            "runtime",
+                            ""
+                        )
+                    )
+                )
+            except Exception:
+                pass
+
+        lines=[
+            "NUT POWER OUTAGE",
+            "",
+            "Utility power loss detected across multiple UPS systems.",
+            "",
+            f"UPS on battery: "
+            f"{len(affected)} of "
+            f"{len(s) or len(affected)}"
+        ]
+
+        if charges:
+            lines.append(
+                f"Lowest battery: "
+                f"{int(min(charges))}%"
+            )
+
+        if runtimes:
+            lines.append(
+                f"Lowest runtime: "
+                f"{runtime(min(runtimes))}"
+            )
+
+        lines += [
+            f"Outage started: "
+            f"{stamp(start)}",
+            "",
+            "Monitor NUT status. "
+            "Check email for full details."
+        ]
+
+        send(
+            "onbatt",
+            "\n".join(lines)
+        )
+
+        return
+
+    if not affected:
+        return
+
+    u=affected[0]
+
+    st["individual"][u]=start
+
+    d=s.get(
+        u,
+        {}
+    )
+
+    charge=(
+        d.get("charge")
+        or
+        "Unavailable"
+    )
+
+    send(
+        "onbatt",
+        "\n".join([
+            "NUT POWER ALERT",
+            "",
+            f"{u.upper()} - ON BATTERY",
+            "",
+            (
+                f"Battery: {charge}%"
+                if charge!="Unavailable"
+                else "Battery: Unavailable"
+            ),
+            f"Runtime: "
+            f"{runtime(d.get('runtime'))}",
+            f"Time: {stamp(start)}"
+        ])
+    )
+
+
+def shutdown(es,st):
+    st["shutdown_activity"]=True
+
+    for e in es:
+        st["systems_down"]+=(
+            e.get(
+                "systems_down",
+                []
+            )
+        )
+
+    st["systems_down"]=sorted(
+        set(
+            st["systems_down"]
+        )
+    )
+
+    send(
+        "shutdown",
+        "\n".join([
+            "NUT SHUTDOWN ALERT",
+            "",
+            "Protected-system shutdown sequence has started.",
+            "",
+            f"Time: "
+            f"{stamp(min(float(e['ts']) for e in es))}",
+            "",
+            "Check your email for full shutdown details."
+        ])
+    )
+
+
+def cancelled(es,st):
+    start=st.get(
+        "outage_start"
+    )
+
+    if not start:
+        vals=[
+            st["individual"].get(u)
+            for u in upsset(es)
+            if st["individual"].get(u)
+        ]
+
+        start=(
+            min(vals)
+            if vals
+            else None
+        )
+
+    send(
+        "cancelled",
+        "\n".join([
+            "NUT SHUTDOWN CANCELLED",
+            "",
+            "Power returned before the pending shutdown sequence completed.",
+            f"Outage duration: "
+            f"{duration(start)}",
+            "",
+            "Check your email for full details."
+        ])
+    )
+
+
+def online_event(es,st):
+    s=snap()
+
+    for e in es:
+        st["systems_down"]+=(
+            e.get(
+                "systems_down",
+                []
+            )
+        )
+
+    st["systems_down"]=sorted(
+        set(
+            st["systems_down"]
+        )
+    )
+
+    if st["sitewide"]:
+
+        if any(
+            ob(
+                d["status"]
+            )
+            for d in s.values()
+        ):
+            print(
+                "TELEGRAM_RESTORE_WAITING=YES"
+            )
+            return False
+
+        if st["systems_down"]:
+            title=(
+                "Site-Wide Power Restored "
+                "- Servers Shut Down"
+            )
+
+            tail=[
+                "Servers shut down during outage: YES",
+                "Check your email for the complete "
+                "shutdown/recovery list."
+            ]
+
+        elif st["shutdown_activity"]:
+
+            title=(
+                "Site-Wide Power Restored "
+                "- Shutdown Activity Detected"
+            )
+
+            tail=[
+                "A shutdown sequence was started "
+                "during this outage.",
+                "Check your email to confirm which "
+                "systems shut down."
+            ]
+
+        else:
+            title=(
+                "Site-Wide Power Restored "
+                "- No Servers Shut Down"
+            )
+
+            tail=[
+                "Servers shut down during outage: NO"
+            ]
+
+        restored=sum(
+            1
+            for d in s.values()
+            if ol(
+                d["status"]
+            )
+        )
+
+        start=st["outage_start"]
+
+        success=send(
+            "online",
+            "\n".join([
+                title,
+                "",
+                "NUT POWER RESTORED",
+                "",
+                "Utility power has been restored.",
+                "",
+                f"UPS restored: "
+                f"{restored} of {len(s)}",
+                "Power state: ONLINE",
+                "",
+                f"Outage started: "
+                f"{stamp(start) if start else 'Unavailable'}",
+                f"Power restored: "
+                f"{stamp()}",
+                f"Outage duration: "
+                f"{duration(start)}",
+                "",
+                *tail
+            ])
+        )
+
+        if success:
+            st.update({
+                "sitewide":False,
+                "outage_start":None,
+                "individual":{},
+                "shutdown_activity":False,
+                "systems_down":[]
+            })
+
+        return success
+
+    for u in upsset(es):
+
+        start=st[
+            "individual"
+        ].pop(
+            u,
+            None
+        )
+
+        send(
+            "online",
+            "\n".join([
+                "NUT POWER RESTORED",
+                "",
+                f"{u.upper()} - ONLINE",
+                "",
+                "Utility power has been restored.",
+                f"Outage duration: "
+                f"{duration(start)}",
+                f"Time: {stamp()}"
+            ])
+        )
+
+    return True
+
+
+def final_event(e):
+    send(
+        "final",
+        "\n".join([
+            "NUT FINAL SHUTDOWN ALERT",
+            "",
+            "UPS runtime is critically low.",
+            "The NUT server is preparing "
+            "for final shutdown.",
+            "",
+            f"Time: "
+            f"{stamp(float(e['ts']))}",
+            "",
+            "Automated visibility may end shortly.",
+            "Check your email for full shutdown details."
+        ])
+    )
+
+
+def preview():
+    rc,out,_=run(
+        [
+            "/usr/local/sbin/"
+            "nut-email-alert-test-send",
+            "--preview",
+            "weekly"
+        ],
+        35
+    )
+
+    return (
+        out
+        if rc==0
+        else ""
+    )
+
+
+def first(pre,prefix):
+    for line in pre.splitlines():
+
+        if line.strip().startswith(
+            prefix
+        ):
+            return safe(
+                line.split(
+                    ":",
+                    1
+                )[1].strip()
+            )
+
+    return ""
+
+
+def health():
+    pre=preview()
+    s=snap()
+
+    _,label,monitor=mode()
+
+    total=len(s)
+
+    online_n=sum(
+        ol(
+            d["status"]
+        )
+        for d in s.values()
+    )
+
+    ob_n=sum(
+        ob(
+            d["status"]
+        )
+        for d in s.values()
+    )
+
+    warn=max(
+        0,
+        total-online_n
+    )
+
+    if "Status: NOT RECOMMENDED" in pre:
+
+        maint="BLOCK"
+
+        desc=(
+            "Do not begin planned "
+            "maintenance at this time."
+        )
+
+        why=first(
+            pre,
+            "- BLOCKER:"
+        )
+
+    elif "Status: CAUTION" in pre:
+
+        maint="CAUTION"
+
+        desc=(
+            "Maintenance may be possible, "
+            "but current conditions should "
+            "be reviewed before taking "
+            "systems offline."
+        )
+
+        why=first(
+            pre,
+            "- CAUTION:"
+        )
+
+    else:
+
+        maint="CLEAR"
+
+        desc=(
+            "Conditions currently look "
+            "acceptable for planned maintenance."
+        )
+
+        why=""
+
+    idf=(
+        "IDF2 last known power source "
+        "is line/grid."
+        in pre
+        and
+        "IDF3 last known power source "
+        "is line/grid."
+        in pre
+        and
+        "not reachable"
+        not in pre.lower()
+    )
+
+    overall=(
+        "HEALTHY"
+        if
+        total
+        and online_n==total
+        and ob_n==0
+        and monitor=="ACTIVE"
+        and idf
+        else
+        "REVIEW"
+    )
+
+    lines=[
+        "NUT DAILY HEALTH REPORT",
+        "",
+        f"Overall status: {overall}",
+        "",
+        f"UPS systems: "
+        f"{online_n} / {total} online",
+        f"UPS on battery: {ob_n}",
+        f"UPS with warnings: {warn}",
+        "",
+        f"NUT monitoring: {monitor}",
+        f"Current mode: {label}",
+        "",
+        f"IDF monitoring: "
+        f"{'HEALTHY' if idf else 'REVIEW'}",
+        "",
+        "Maintenance Status",
+        "",
+        f"Maintenance: {maint}",
+        "",
+        desc
+    ]
+
+    if maint in {
+        "CAUTION",
+        "BLOCK"
+    }:
+
+        if why:
+            lines += [
+                "",
+                f"Reason: {why}"
+            ]
+
+        lines += [
+            "",
+            "See your email for more details."
+        ]
+
+    else:
+        lines += [
+            "",
+            "No action required."
+        ]
+
+    lines += [
+        "",
+        f"Report time: {stamp()}"
+    ]
+
+    return "\n".join(lines)
+
+
+def heartbeat():
+    _,label,monitor=mode()
+
+    return "\n".join([
+        "NUT TELEGRAM HEARTBEAT",
+        "",
+        "Telegram alert path: WORKING",
+        f"NUT monitoring: {monitor}",
+        f"Current mode: {label}",
+        "",
+        f"Heartbeat time: {stamp()}",
+        "",
+        "No action required."
+    ])
+
+
+def dispatch(only=None):
+    es=readq()
+    st=load_state()
+
+    if only:
+        es=[
+            e
+            for e in es
+            if e.get("type")==only
+        ]
+
+    if not es:
+        print(
+            "TELEGRAM_QUEUE_EMPTY=YES"
+        )
+        return 0
+
+    groups={
+        k:[
+            e
+            for e in es
+            if e.get("type")==k
+        ]
+        for k in TYPES
+    }
+
+    if groups["final"]:
+
+        for e in groups["final"]:
+            if ok_mode(
+                "final"
+            ):
+                final_event(e)
+
+        rm(
+            groups["final"]
+        )
+
+    if groups["weekly"]:
+
+        if ok_mode(
+            "weekly"
+        ):
+            send(
+                "weekly",
+                health()
+            )
+
+        rm(
+            groups["weekly"]
+        )
+
+    for kind,func in [
+        ("onbatt",onbatt),
+        ("shutdown",shutdown),
+        ("cancelled",cancelled)
+    ]:
+
+        if groups[kind]:
+
+            if ok_mode(
+                kind
+            ):
+                func(
+                    groups[kind],
+                    st
+                )
+
+            rm(
+                groups[kind]
+            )
+
+    if groups["online"]:
+
+        if (
+            not ok_mode("online")
+            or
+            online_event(
+                groups["online"],
+                st
+            )
+        ):
+            rm(
+                groups["online"]
+            )
+
+    save_state(st)
+
+    return 0
+
+
+def main():
+    BASE.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    QUEUE.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    if len(sys.argv)<2:
+        return 2
+
+    cmd=sys.argv[1]
+
+    if (
+        cmd=="enqueue"
+        and
+        len(sys.argv)==3
+    ):
+        return enqueue(
+            sys.argv[2].lower()
+        )
+
+    if cmd=="dispatch":
+        return dispatch(
+            sys.argv[2].lower()
+            if len(sys.argv)==3
+            else None
+        )
+
+    if cmd=="heartbeat":
+        return (
+            0
+            if send(
+                "heartbeat",
+                heartbeat()
+            )
+            else 1
+        )
+
+    if cmd=="health":
+
+        if not ok_mode(
+            "weekly"
+        ):
+            print(
+                "TELEGRAM_HEALTH_BLOCKED=YES"
+            )
+            return 0
+
+        return (
+            0
+            if send(
+                "weekly",
+                health()
+            )
+            else 1
+        )
+
+    if cmd=="status":
+        m,l,n=mode()
+
+        print(
+            f"MODE={m}"
+        )
+
+        print(
+            f"MODE_LABEL={l}"
+        )
+
+        print(
+            f"NUT_MONITOR={n}"
+        )
+
+        print(
+            f"QUEUE_COUNT="
+            f"{len(list(QUEUE.glob('*.json')))}"
+        )
+
+        print(
+            "SECRET_FILE_PRESENT="
+            +
+            (
+                "YES"
+                if SECRET.exists()
+                else "NO"
+            )
+        )
+
+        print(
+            "SECRET_VALUE_NOT_DISPLAYED=YES"
+        )
+
+        return 0
+
+    print(
+        "Usage: nut-telegram-alert "
+        "enqueue TYPE | dispatch [TYPE] | "
+        "heartbeat | health | status"
+    )
+
+    return 2
+
+
+if __name__=="__main__":
+    raise SystemExit(
+        main()
+    )

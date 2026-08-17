@@ -1,0 +1,10 @@
+# TEMPLATE ONLY
+#
+# Live location:
+# /etc/nut/secrets/telegram-alerts.env
+#
+# Do not place real Telegram credentials in GitHub.
+# Re-enter these locally after a disaster-recovery rebuild.
+
+TELEGRAM_BOT_TOKEN=REQUIRED_SECRET
+TELEGRAM_CHAT_ID=REQUIRED_SECRET
