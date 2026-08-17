@@ -2729,6 +2729,51 @@
     color: rgba(203,213,225,.68);
   }
 
+
+  /* Maintenance status two-line header */
+  #nut-production-top-banner .nut-prod-right {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    gap: .20rem !important;
+  }
+
+  #nut-production-top-banner .nut-prod-right-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: .48rem !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+  }
+
+  #nut-production-top-banner #cc-maintenance-wrap {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: .24rem !important;
+    font-size: .72rem !important;
+    color: rgba(203,213,225,.88) !important;
+  }
+
+  #nut-production-top-banner #cc-maintenance-status {
+    font-weight: 900 !important;
+    letter-spacing: .03em !important;
+  }
+
+  #nut-production-top-banner #cc-maintenance-status.maintenance-clear {
+    color: #4ade80 !important;
+  }
+
+  #nut-production-top-banner #cc-maintenance-status.maintenance-caution {
+    color: #facc15 !important;
+  }
+
+  #nut-production-top-banner #cc-maintenance-status.maintenance-blocker {
+    color: #f87171 !important;
+  }
+
   /* Keep the hero title cleaner now that actions live in the sticky header. */
   .cc-top {
     align-items: flex-start;
@@ -2840,12 +2885,20 @@
       </span>
     </div>
     <div class="nut-prod-right">
-      <span class="nut-prod-clock">
-        <strong id="cc-clock-time">--:--:--</strong>
-      </span>
-      <span id="cc-clock-date">Loading date...</span>
-      <span id="cc-pontiac-weather">Pontiac: loading temp...</span>
-      <span id="cc-refresh-countdown">Refresh countdown: 35s</span>
+      <div class="nut-prod-right-row">
+        <span class="nut-prod-clock">
+          <strong id="cc-clock-time">--:--:--</strong>
+        </span>
+        <span id="cc-clock-date">Loading date...</span>
+        <span id="cc-pontiac-weather">Pontiac: loading temp...</span>
+      </div>
+      <div class="nut-prod-right-row">
+        <span id="cc-maintenance-wrap">
+          Maintenance:
+          <strong id="cc-maintenance-status" class="maintenance-caution">Loading...</strong>
+        </span>
+        <span id="cc-refresh-countdown">Refresh countdown: 35s</span>
+      </div>
       <span class="nut-prod-muted" id="nut-prod-updated" title="Last protection status update">Updated</span>
     </div>
   </div>
@@ -5095,6 +5148,76 @@ function closeLabSelectedRestoreScreen() {
         el.title = String(err);
       }
     }
+
+
+
+    async function refreshMaintenanceStatus() {
+      const el = document.getElementById("cc-maintenance-status");
+      if (!el) return;
+
+      try {
+        const response = await fetch("/api/maintenance-status", {
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+
+        const data = await response.json();
+
+        let status = String(
+          data.status || "caution"
+        ).toLowerCase();
+
+        if (!["clear", "caution", "blocker"].includes(status)) {
+          status = "caution";
+        }
+
+        const label = status.toUpperCase();
+
+        el.textContent = label;
+
+        el.classList.remove(
+          "maintenance-clear",
+          "maintenance-caution",
+          "maintenance-blocker"
+        );
+
+        el.classList.add("maintenance-" + status);
+
+        const reasons = Array.isArray(data.reasons)
+          ? data.reasons
+          : [];
+
+        if (reasons.length) {
+          el.title = reasons.join("\n");
+        } else {
+          el.title = "Current UPS maintenance risk status";
+        }
+
+      } catch (err) {
+        // Fail safely. If the health-risk evaluation cannot be obtained,
+        // never show CLEAR.
+        el.textContent = "CAUTION";
+
+        el.classList.remove(
+          "maintenance-clear",
+          "maintenance-caution",
+          "maintenance-blocker"
+        );
+
+        el.classList.add("maintenance-caution");
+        el.title = "Maintenance risk status unavailable: " + String(err);
+      }
+    }
+
+    // Evaluate maintenance risk when the dashboard loads.
+    refreshMaintenanceStatus();
+
+    // Weather/risk evaluation does not need to run every 35-second UI refresh.
+    // Refresh it every five minutes instead.
+    setInterval(refreshMaintenanceStatus, 300000);
 
 
     async function refreshControlCenterAll() {

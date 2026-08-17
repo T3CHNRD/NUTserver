@@ -564,7 +564,7 @@ def ups_weather_grid_risk_lines():
         "?latitude=42.6389"
         "&longitude=-83.2910"
         "&current=temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m"
-        "&daily=temperature_2m_max,weather_code,precipitation_probability_max,wind_gusts_10m_max"
+        "&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,wind_gusts_10m_max"
         "&temperature_unit=fahrenheit"
         "&wind_speed_unit=mph"
         "&timezone=America%2FDetroit"
@@ -576,6 +576,7 @@ def ups_weather_grid_risk_lines():
         96: "Thunderstorm with hail",
         99: "Severe thunderstorm with hail",
     }
+
     storm_codes = {
         51: "Light drizzle",
         53: "Moderate drizzle",
@@ -587,17 +588,34 @@ def ups_weather_grid_risk_lines():
         81: "Moderate rain showers",
         82: "Violent rain showers",
     }
-    winter_codes = {
-        56: "Freezing drizzle",
+
+    winter_blocker_codes = {
         57: "Dense freezing drizzle",
         66: "Freezing rain",
         67: "Heavy freezing rain",
+        75: "Heavy snow",
+        86: "Heavy snow showers",
+    }
+
+    winter_caution_codes = {
+        56: "Freezing drizzle",
         71: "Slight snow",
         73: "Moderate snow",
-        75: "Heavy snow",
         77: "Snow grains",
         85: "Snow showers",
-        86: "Heavy snow showers",
+    }
+
+    condition_names = {
+        0: "Clear sky",
+        1: "Mainly clear",
+        2: "Partly cloudy",
+        3: "Overcast",
+        45: "Fog",
+        48: "Depositing rime fog",
+        **storm_codes,
+        **winter_blocker_codes,
+        **winter_caution_codes,
+        **severe_codes,
     }
 
     try:
@@ -614,12 +632,15 @@ def ups_weather_grid_risk_lines():
         gust = current.get("wind_gusts_10m")
 
         max_temp = None
+        min_temp = None
         max_gust = None
         precip_prob = None
         daily_code = None
 
         if daily.get("temperature_2m_max"):
             max_temp = daily["temperature_2m_max"][0]
+        if daily.get("temperature_2m_min"):
+            min_temp = daily["temperature_2m_min"][0]
         if daily.get("wind_gusts_10m_max"):
             max_gust = daily["wind_gusts_10m_max"][0]
         if daily.get("precipitation_probability_max"):
@@ -627,9 +648,22 @@ def ups_weather_grid_risk_lines():
         if daily.get("weather_code"):
             daily_code = daily["weather_code"][0]
 
+        current_condition = condition_names.get(
+            code,
+            f"Weather code {code}" if code is not None else "Unavailable"
+        )
+
+        forecast_condition = condition_names.get(
+            daily_code,
+            f"Weather code {daily_code}" if daily_code is not None else "Unavailable"
+        )
+
         lines.append("Weather / grid-risk advisory:")
         lines.append(f"- Pontiac current temperature: {temp} F")
         lines.append(f"- Today's forecast high: {max_temp} F")
+        lines.append(f"- Today's forecast low: {min_temp} F")
+        lines.append(f"- Current conditions: {current_condition}")
+        lines.append(f"- Today's forecast conditions: {forecast_condition}")
         lines.append(f"- Current wind / gusts: {wind} mph / {gust} mph")
         lines.append(f"- Forecast max gusts: {max_gust} mph")
         lines.append(f"- Forecast precipitation probability: {precip_prob}%")
@@ -639,16 +673,47 @@ def ups_weather_grid_risk_lines():
         elif daily_code in severe_codes:
             blockers.append(f"Forecast weather risk today: {severe_codes[daily_code]}.")
 
-        if code in storm_codes or daily_code in storm_codes:
-            cautions.append("Rain/storm conditions are possible today; check the radar before planned UPS work.")
+        if code in winter_blocker_codes:
+            blockers.append(
+                f"Current winter-weather risk: {winter_blocker_codes[code]}."
+            )
+        elif daily_code in winter_blocker_codes:
+            blockers.append(
+                f"Forecast winter-weather risk today: {winter_blocker_codes[daily_code]}."
+            )
 
-        if code in winter_codes or daily_code in winter_codes:
-            cautions.append("Snow, ice, or freezing precipitation is possible today; verify conditions before planned UPS work.")
+        if code in winter_caution_codes:
+            cautions.append(
+                f"Current winter-weather caution: {winter_caution_codes[code]}."
+            )
+        elif daily_code in winter_caution_codes:
+            cautions.append(
+                f"Forecast winter-weather caution today: {winter_caution_codes[daily_code]}."
+            )
+
+        if code in storm_codes or daily_code in storm_codes:
+            cautions.append(
+                "Rain/storm conditions are possible today; check the radar before planned UPS work."
+            )
+
+        if temp is not None and temp < 0:
+            blockers.append(
+                f"Extreme cold risk: current temperature is {temp} F."
+            )
+
+        if min_temp is not None and min_temp < 0:
+            blockers.append(
+                f"Extreme cold risk: forecast low is {min_temp} F."
+            )
 
         if max_temp is not None and max_temp >= 90:
-            blockers.append(f"High heat/grid-load risk: forecast high is {max_temp} F.")
+            blockers.append(
+                f"High heat/grid-load risk: forecast high is {max_temp} F."
+            )
         elif max_temp is not None and max_temp >= 85:
-            cautions.append(f"Elevated heat/grid-load caution: forecast high is {max_temp} F.")
+            cautions.append(
+                f"Elevated heat/grid-load caution: forecast high is {max_temp} F."
+            )
 
         if max_gust is not None and max_gust >= 40:
             blockers.append(f"High wind risk: forecast gusts up to {max_gust} mph.")
@@ -781,16 +846,25 @@ def ups_maintenance_recommendation_lines():
 
     lines.append("")
     lines.append("Weather / grid risk summary:")
+
+    # Always display the weather values first.
+    for item in weather_lines:
+        if item != "Weather / grid-risk advisory:":
+            lines.append(item)
+
     if weather_blockers:
-        for item in weather_blockers[:3]:
+        for item in weather_blockers[:5]:
             lines.append(f"- BLOCKER: {item}")
-    elif weather_cautions:
-        for item in weather_cautions[:3]:
+
+    if weather_cautions:
+        for item in weather_cautions[:5]:
             lines.append(f"- CAUTION: {item}")
-    elif weather_positives:
+
+    if not weather_blockers and not weather_cautions and weather_positives:
         for item in weather_positives[:3]:
             lines.append(f"- OK: {item}")
-    else:
+
+    if not weather_blockers and not weather_cautions and not weather_positives:
         lines.append("- CAUTION: Weather/grid-risk result was not available in this report.")
 
     lines.append("")
