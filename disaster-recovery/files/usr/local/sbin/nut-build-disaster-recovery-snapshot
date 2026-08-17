@@ -77,6 +77,9 @@ EXCLUDED_DIR_NAMES = {
     "Trash",
     "adblock",
     "profiles",
+
+    # Credential directories must never be collected into DR/GitHub.
+    "secrets",
 }
 
 # Files whose contents should never be in GitHub.
@@ -85,6 +88,12 @@ SECRET_FILE_PATTERNS = [REDACTED]
     re.compile(r'private[_-]?key', re.I),
     re.compile(r'\.(?:pem|p12|pfx|key)$', re.I),
     re.compile(r'vcenter\.pass$', re.I),
+
+    # Credential files and historical credential copies must never enter DR.
+    re.compile(r'(^|/)secrets?/[^/]+$', re.I),
+    re.compile(r'\.(?:secret|token)(?:[._-].*)?$', re.I),
+    re.compile(r'(^|/)telegram-alerts\.env(?:[._-].*)?$', re.I),
+
     re.compile(r'nut-email-alerts\.secret$', re.I),
     re.compile(r'upsd\.users$', re.I),
     re.compile(r'credentials?(?:\.[^/]+)?$', re.I),

@@ -19,7 +19,7 @@ SKIP secret-file /etc/nut/upsd.users
 FILE /etc/nut/upssched.conf.pre-ups-maint-comm-20260721-083908 -> files/etc/nut/upssched.conf.pre-ups-maint-comm-20260721-083908 mode=0644
 FILE /etc/nut/upsstats-single.html -> files/etc/nut/upsstats-single.html mode=0644
 FILE /etc/nut/nut-orchestrator.conf.pre-proxmox-placeholder-20260416-150741 -> files/etc/nut/nut-orchestrator.conf.pre-proxmox-placeholder-20260416-150741 mode=0600
-FILE /etc/nut/nut-email-alerts.secret.pre-reports-relay-health-format-20260623-153201 -> files/etc/nut/nut-email-alerts.secret.pre-reports-relay-health-format-20260623-153201 mode=0600
+SKIP secret-file /etc/nut/nut-email-alerts.secret.pre-reports-relay-health-format-20260623-153201
 FILE /etc/nut/db-shutdown.conf -> files/etc/nut/db-shutdown.conf mode=0640
 FILE /etc/nut/upssched.conf.pre-lowbatt-routes-20260805-090910 -> files/etc/nut/upssched.conf.pre-lowbatt-routes-20260805-090910 mode=0640
 FILE /etc/nut/upssched.conf.bak.2026-05-08-170930 -> files/etc/nut/upssched.conf.bak.2026-05-08-170930 mode=0644
@@ -85,6 +85,7 @@ FILE /opt/nut-orchestrator-ui/requirements.txt -> files/opt/nut-orchestrator-ui/
 FILE /opt/nut-orchestrator-ui/app.py.pre-control-center-route-20260528-125857 -> files/opt/nut-orchestrator-ui/app.py.pre-control-center-route-20260528-125857 mode=0644
 FILE /opt/nut-orchestrator-ui/app.py.pre-power-events-normalized-20260508-111035 -> files/opt/nut-orchestrator-ui/app.py.pre-power-events-normalized-20260508-111035 mode=0644
 FILE /opt/nut-orchestrator-ui/app.py.pre-subpath-fix-20260417-150524 -> files/opt/nut-orchestrator-ui/app.py.pre-subpath-fix-20260417-150524 mode=0644
+FILE /opt/nut-orchestrator-ui/app.py.pre-maintenance-header-20260817-072311 -> files/opt/nut-orchestrator-ui/app.py.pre-maintenance-header-20260817-072311 mode=0644
 FILE /opt/nut-orchestrator-ui/app.py.bak.2026-05-11-150756 -> files/opt/nut-orchestrator-ui/app.py.bak.2026-05-11-150756 mode=0644
 FILE /opt/nut-orchestrator-ui/app.py.pre-restore-test-probe-20260604-094257 -> files/opt/nut-orchestrator-ui/app.py.pre-restore-test-probe-20260604-094257 mode=0644
 FILE /opt/nut-orchestrator-ui/app.py.pre-power-events-table-helper-20260508-111607 -> files/opt/nut-orchestrator-ui/app.py.pre-power-events-table-helper-20260508-111607 mode=0644
@@ -143,6 +144,7 @@ FILE /opt/nut-orchestrator-ui/templates/control-center.html.pre-premium-design-s
 FILE /opt/nut-orchestrator-ui/templates/index.html.pre-restore-label-20260417-152948 -> files/opt/nut-orchestrator-ui/templates/index.html.pre-restore-label-20260417-152948 mode=0644
 FILE /opt/nut-orchestrator-ui/templates/control-center-restore-lab.html -> files/opt/nut-orchestrator-ui/templates/control-center-restore-lab.html mode=0644
 FILE /opt/nut-orchestrator-ui/templates/control-center.html.pre-rack-load-debug-20260612-130721 -> files/opt/nut-orchestrator-ui/templates/control-center.html.pre-rack-load-debug-20260612-130721 mode=0644
+FILE /opt/nut-orchestrator-ui/templates/control-center.html.pre-maintenance-header-20260817-072311 -> files/opt/nut-orchestrator-ui/templates/control-center.html.pre-maintenance-header-20260817-072311 mode=0644
 FILE /opt/nut-orchestrator-ui/templates/control-center.html.pre-align-restore-cards-20260604-152526 -> files/opt/nut-orchestrator-ui/templates/control-center.html.pre-align-restore-cards-20260604-152526 mode=0644
 FILE /opt/nut-orchestrator-ui/templates/control-center-restore-lab.html.pre-in-modal-live-restore-panel-20260604-125733 -> files/opt/nut-orchestrator-ui/templates/control-center-restore-lab.html.pre-in-modal-live-restore-panel-20260604-125733 mode=0644
 FILE /opt/nut-orchestrator-ui/templates/control-center.html.pre-header-ups-monitor-only-fix-20260612-143452 -> files/opt/nut-orchestrator-ui/templates/control-center.html.pre-header-ups-monitor-only-fix-20260612-143452 mode=0644
@@ -422,6 +424,7 @@ FILE /usr/local/sbin/nut-email-alert-test-send.pre-test-label-20260805-091817 ->
 FILE /usr/local/sbin/nut-run-backup-and-push.sh.pre-synology-api-config-backup-20260526-123424 -> files/usr/local/sbin/nut-run-backup-and-push.sh.pre-synology-api-config-backup-20260526-123424 mode=0755
 FILE /usr/local/sbin/nut-ui-apply-config.pre-auto-redact-save-20260622-092121 -> files/usr/local/sbin/nut-ui-apply-config.pre-auto-redact-save-20260622-092121 mode=0750
 FILE /usr/local/sbin/nut-email-alert-test-send.pre-cr-normalize-20260623-123903 -> files/usr/local/sbin/nut-email-alert-test-send.pre-cr-normalize-20260623-123903 mode=0750
+FILE /usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-telegram-secret-hardening-20260817-095421 -> files/usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-telegram-secret-hardening-20260817-095421 mode=0755
 FILE /usr/local/sbin/nut-synology-shutdown.sh.bak.2026-05-12-091234 -> files/usr/local/sbin/nut-synology-shutdown.sh.bak.2026-05-12-091234 mode=0750
 FILE /usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-audit-v3-20260810-092247 -> files/usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-audit-v3-20260810-092247 mode=0755
 FILE /usr/local/sbin/nut-run-backup-and-push.sh.pre-etc-ssh-path-20260421-101749 -> files/usr/local/sbin/nut-run-backup-and-push.sh.pre-etc-ssh-path-20260421-101749 mode=0750
@@ -465,6 +468,7 @@ FILE /usr/local/sbin/nut-netapp-halt.sh.pre-sim-20260416-145445 -> files/usr/loc
 FILE /usr/local/sbin/nut-ui-live-restore-selected -> files/usr/local/sbin/nut-ui-live-restore-selected mode=0750
 FILE /usr/local/sbin/nut-ui-backup-now -> files/usr/local/sbin/nut-ui-backup-now mode=0750
 FILE /usr/local/sbin/nut-run-backup-and-push.sh.pre-git-as-nutserver-20260421-091514 -> files/usr/local/sbin/nut-run-backup-and-push.sh.pre-git-as-nutserver-20260421-091514 mode=0750
+FILE /usr/local/sbin/nut-run-backup-and-push.sh.pre-auto-dr-20260810-094902 -> files/usr/local/sbin/nut-run-backup-and-push.sh.pre-auto-dr-20260810-094902 mode=0755
 FILE /usr/local/sbin/nut-storm-watch-snapshot -> files/usr/local/sbin/nut-storm-watch-snapshot mode=0755
 FILE /usr/local/sbin/nut-lansweeper-shutdown.sh.bak.2026-04-27-132731 -> files/usr/local/sbin/nut-lansweeper-shutdown.sh.bak.2026-04-27-132731 mode=0755
 FILE /usr/local/sbin/nut-apc-idf-event-monitor.sh.pre-current-state-logging-20260629-143230 -> files/usr/local/sbin/nut-apc-idf-event-monitor.sh.pre-current-state-logging-20260629-143230 mode=0755
@@ -555,6 +559,7 @@ FILE /usr/local/sbin/nut-run-backup-and-push.sh.pre-include-dashboard-powerlog-f
 FILE /usr/local/sbin/nut-netapp-halt.sh.bak.2026-05-12-080836 -> files/usr/local/sbin/nut-netapp-halt.sh.bak.2026-05-12-080836 mode=0755
 FILE /usr/local/sbin/nut-run-backup-and-push.sh.pre-root-key-20260421-100259 -> files/usr/local/sbin/nut-run-backup-and-push.sh.pre-root-key-20260421-100259 mode=0750
 FILE /usr/local/sbin/nut-run-backup-and-push.sh.pre-readme-20260421-103931 -> files/usr/local/sbin/nut-run-backup-and-push.sh.pre-readme-20260421-103931 mode=0750
+FILE /usr/local/sbin/nut-email-alert-test-send.pre-weather-cold-display-20260817-071307 -> files/usr/local/sbin/nut-email-alert-test-send.pre-weather-cold-display-20260817-071307 mode=0755
 FILE /usr/local/sbin/nut-export-test-logs -> files/usr/local/sbin/nut-export-test-logs mode=0755
 FILE /usr/local/sbin/nut-vmware-shutdown.sh.pre-sim-20260416-145839 -> files/usr/local/sbin/nut-vmware-shutdown.sh.pre-sim-20260416-145839 mode=0755
 FILE /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-141319 -> files/usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-141319 mode=0755

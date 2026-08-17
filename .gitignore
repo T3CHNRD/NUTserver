@@ -59,3 +59,10 @@ etc/nut/ups.conf
 etc/nut/nut-email-alerts.conf
 etc/nut/hypervisors/hypervisor-ssh-fallback.conf
 etc/nut/config.d/nut-orchestrator.conf
+
+# Telegram / outbound notification credentials - NEVER COMMIT
+etc/nut/secrets/
+telegram-alerts.env
+telegram-alerts.env.*
+*.token.*
+*.secret.*

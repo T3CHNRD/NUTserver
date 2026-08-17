@@ -125,6 +125,7 @@
 /opt/nut-orchestrator-ui/templates/index.html.pre-restore-label-20260417-152948|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center-restore-lab.html|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-rack-load-debug-20260612-130721|644|root|root
+/opt/nut-orchestrator-ui/templates/control-center.html.pre-maintenance-header-20260817-072311|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-align-restore-cards-20260604-152526|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.broken-after-selected-restore-hard-fix-20260604-104700|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center-restore-lab.html.pre-in-modal-live-restore-panel-20260604-125733|644|root|root
@@ -247,6 +248,7 @@
 /opt/nut-orchestrator-ui/app.py.pre-control-center-route-20260528-125857|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-power-events-normalized-20260508-111035|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-subpath-fix-20260417-150524|644|root|root
+/opt/nut-orchestrator-ui/app.py.pre-maintenance-header-20260817-072311|644|root|root
 /opt/nut-orchestrator-ui/app.py.bak.2026-05-11-150756|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-restore-test-probe-20260604-094257|644|root|root
 /opt/nut-orchestrator-ui/lib/validators.sh|755|root|root
@@ -443,6 +445,7 @@
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-synology-api-config-backup-20260526-123424|755|root|root
 /usr/local/sbin/nut-ui-apply-config.pre-auto-redact-save-20260622-092121|750|root|root
 /usr/local/sbin/nut-email-alert-test-send.pre-cr-normalize-20260623-123903|750|root|root
+/usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-telegram-secret-hardening-20260817-095421|755|root|root
 /usr/local/sbin/nut-synology-shutdown.sh.bak.2026-05-12-091234|750|root|root
 /usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-audit-v3-20260810-092247|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-etc-ssh-path-20260421-101749|750|root|root
@@ -487,6 +490,7 @@
 /usr/local/sbin/nut-ui-live-restore-selected|750|root|root
 /usr/local/sbin/nut-ui-backup-now|750|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-git-as-nutserver-20260421-091514|750|root|root
+/usr/local/sbin/nut-run-backup-and-push.sh.pre-auto-dr-20260810-094902|755|root|root
 /usr/local/sbin/nut-storm-watch-snapshot|755|root|root
 /usr/local/sbin/nut-lansweeper-shutdown.sh.bak.2026-04-27-132731|755|root|root
 /usr/local/sbin/nut-apc-idf-event-monitor.sh.pre-current-state-logging-20260629-143230|755|root|root
@@ -578,6 +582,7 @@
 /usr/local/sbin/nut-netapp-halt.sh.bak.2026-05-12-080836|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-root-key-20260421-100259|750|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-readme-20260421-103931|750|root|root
+/usr/local/sbin/nut-email-alert-test-send.pre-weather-cold-display-20260817-071307|755|root|root
 /usr/local/sbin/nut-export-test-logs|755|root|root
 /usr/local/sbin/nut-vmware-shutdown.sh.pre-sim-20260416-145839|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-141319|755|root|root
@@ -666,7 +671,6 @@
 /etc/systemd/system/nut-driver@ups5.service.d/nut-driver-enumerator-generated.conf|644|root|root
 /etc/systemd/system/nut-driver@ups8.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups8.service.d/nut-driver-enumerator-generated.conf|644|root|root
-/etc/systemd/system/snap-snapd-27406.mount|644|root|root
 /etc/systemd/system/nut-boot-event-log.service|644|root|root
 /etc/systemd/system/snap-cups-1229.mount|644|root|root
 /etc/systemd/system/snap-core24-1643.mount|644|root|root
@@ -675,7 +679,6 @@
 /etc/systemd/system/nut-monitor.service.d/override.conf|644|root|root
 /etc/systemd/system/nut-power-events-refresh.service|644|root|root
 /etc/systemd/system/nut-power-events-refresh.timer|644|root|root
-/etc/systemd/system/snap-chromium-3491.mount|644|root|root
 /etc/systemd/system/nut-driver@ups4.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups4.service.d/nut-driver-enumerator-generated.conf|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service|644|root|root
@@ -700,10 +703,12 @@
 /etc/systemd/system/snap.chromium.daemon.service|644|root|root
 /etc/systemd/system/snap-gtk\x2dcommon\x2dthemes-1535.mount|644|root|root
 /etc/systemd/system/snap-firefox-8736.mount|644|root|root
+/etc/systemd/system/snap-chromium-3507.mount|644|root|root
 /etc/systemd/system/snap-mesa\x2d2404-1839.mount|644|root|root
 /etc/systemd/system/sshd-keygen@.service.d/disable-sshd-keygen-if-cloud-init-active.conf|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service.pre-nnp-fix-20260417-154813|644|root|root
 /etc/systemd/system/snap-firefox-8702.mount|644|root|root
+/etc/systemd/system/snap-snapd-27710.mount|644|root|root
 /etc/systemd/system/snap-gnome\x2d42\x2d2204-247.mount|644|root|root
 /etc/systemd/system/nut-driver@ups2.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups2.service.d/nut-driver-enumerator-generated.conf|644|root|root

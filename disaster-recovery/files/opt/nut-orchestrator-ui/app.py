@@ -74,6 +74,123 @@ def healthz():
     return jsonify({"ok": True})
 
 
+@app.route("/api/maintenance-status", methods=["GET"])
+def maintenance_status_api():
+    """
+    Return the current UPS-maintenance risk classification using the
+    existing Daily UPS Health Report logic.
+
+    Only these report sections are evaluated:
+      - Weather / grid risk summary
+      - Reasons / risk checks
+
+    Priority:
+      BLOCKER > CAUTION > CLEAR
+
+    This endpoint performs a report preview only. It does not send email,
+    change NUT mode, or execute protection actions.
+    """
+    try:
+        result = subprocess.run(
+            [
+                "/usr/local/sbin/nut-email-alert-test-send",
+                "--preview",
+                "weekly",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=False,
+        )
+
+        if result.returncode != 0:
+            return jsonify({
+                "ok": False,
+                "status": "caution",
+                "status_label": "CAUTION",
+                "reasons": [
+                    "Health-report risk evaluation could not be completed."
+                ],
+            }), 200
+
+        target_sections = {
+            "Weather / grid risk summary:",
+            "Reasons / risk checks:",
+        }
+
+        blockers = []
+        cautions = []
+        current_section = None
+
+        for raw_line in result.stdout.splitlines():
+            line = raw_line.strip()
+
+            if line in target_sections:
+                current_section = line
+                continue
+
+            # A new report heading ends the currently captured section.
+            if (
+                current_section is not None
+                and line
+                and line.endswith(":")
+                and line not in target_sections
+            ):
+                current_section = None
+                continue
+
+            if current_section is None:
+                continue
+
+            if line.startswith("- BLOCKER:"):
+                reason = line[len("- BLOCKER:"):].strip()
+                if reason and reason not in blockers:
+                    blockers.append(reason)
+
+            elif line.startswith("- CAUTION:"):
+                reason = line[len("- CAUTION:"):].strip()
+                if reason and reason not in cautions:
+                    cautions.append(reason)
+
+        if blockers:
+            status = "blocker"
+            label = "BLOCKER"
+            reasons = blockers + cautions
+
+        elif cautions:
+            status = "caution"
+            label = "CAUTION"
+            reasons = cautions
+
+        else:
+            status = "clear"
+            label = "CLEAR"
+            reasons = [
+                "No maintenance blockers or cautions were reported."
+            ]
+
+        return jsonify({
+            "ok": True,
+            "status": status,
+            "status_label": label,
+            "blockers": blockers,
+            "cautions": cautions,
+            "reasons": reasons,
+        })
+
+    except Exception as exc:
+        return jsonify({
+            "ok": False,
+            "status": "caution",
+            "status_label": "CAUTION",
+            "reasons": [
+                "Maintenance risk status could not be evaluated."
+            ],
+            "error": str(exc),
+        }), 200
+
+
+
 # =========================
 # CONFIG READ (REFERENCE)
 # =========================
