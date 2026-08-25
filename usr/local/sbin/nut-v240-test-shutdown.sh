@@ -159,7 +159,7 @@ set shutdown_cmd $env(V240_TEST_SHUTDOWN_COMMAND)
 spawn telnet $host
 
 expect {
-    -re "(?i)(login|username).*: *$" {
+    -nocase -re {login:[[:space:]]*$} {
         send -- "$username\r"
     }
     timeout {
@@ -173,8 +173,10 @@ expect {
 }
 
 expect {
-    -re "(?i)password.*: *$" {
+    -nocase -re {password:[[:space:]]*$} {
+        log_user 0
         send -- "$password\r"
+        log_user 1
     }
     timeout {
         puts "ERROR: password prompt timeout"
