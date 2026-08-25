@@ -193,29 +193,78 @@ commit_placeholder() {
 
   case "$ups_name" in
     ups7)
+      local db01_rc=0
+      local db02_rc=0
+      local db01_classify_rc=0
+      local db02_classify_rc=0
+      local db01_classification=""
+      local db02_classification=""
+
       log_line "UPS_SHUTDOWN_COMMITTED ups7 targeted shutdown started"
 
+      #
+      # Send BOTH Solaris shutdown commands before beginning the
+      # potentially slow post-shutdown verification phase.
+      #
+
       log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB01 method='telnet solaris wrapper'"
-    send_outage_email "shutdown" "shutdown sequence started / DB target action attempted"
-      SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full DB_LIVE_APPROVED=1 /usr/local/sbin/nut-db-shutdown.sh DB01 >> "$LOG_FILE" 2>&1
-      rc=$?
-      if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups7 DB01"
+      send_outage_email "shutdown" "shutdown sequence started / DB target action attempted"
+
+      if SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full DB_LIVE_APPROVED=1 /usr/local/sbin/nut-db-shutdown.sh DB01 >> "$LOG_FILE" 2>&1; then
+        db01_rc=0
+        log_line "UPS_TARGET_COMMAND_ACCEPTED ups7 DB01"
       else
-        log_line "UPS_TARGET_ACTION_FAILED ups7 DB01 rc=$rc"
+        db01_rc=$?
+        log_line "UPS_TARGET_ACTION_FAILED ups7 DB01 rc=$db01_rc"
       fi
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB02 method='telnet solaris wrapper'"
-    send_outage_email "shutdown" "shutdown sequence started / DB target action attempted"
-      SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full DB_LIVE_APPROVED=1 /usr/local/sbin/nut-db-shutdown.sh DB02 >> "$LOG_FILE" 2>&1
-      rc=$?
-      if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups7 DB02"
+      send_outage_email "shutdown" "shutdown sequence started / DB target action attempted"
+
+      if SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full DB_LIVE_APPROVED=1 /usr/local/sbin/nut-db-shutdown.sh DB02 >> "$LOG_FILE" 2>&1; then
+        db02_rc=0
+        log_line "UPS_TARGET_COMMAND_ACCEPTED ups7 DB02"
       else
-        log_line "UPS_TARGET_ACTION_FAILED ups7 DB02 rc=$rc"
+        db02_rc=$?
+        log_line "UPS_TARGET_ACTION_FAILED ups7 DB02 rc=$db02_rc"
       fi
 
-      write_state "ups7" "ups7" "shutdown_committed" "targeted shutdown" 0 0 "Committed; DB01 and DB02 wrapper calls executed"
+      #
+      # Both shutdown commands have now been attempted.
+      # Use the existing shutdown-verification framework to determine
+      # whether each server actually became unreachable.
+      #
+
+      log_line "UPS_TARGET_VERIFICATION_STARTED ups7 DB01"
+
+      if db01_classification="$(/usr/local/sbin/nut-classify-target-shutdown DB01 "$db01_rc" 2>&1)"; then
+        db01_classify_rc=0
+      else
+        db01_classify_rc=$?
+      fi
+
+      log_line "UPS_TARGET_VERIFICATION_RESULT ups7 DB01 rc=$db01_classify_rc result='$db01_classification'"
+
+      log_line "UPS_TARGET_VERIFICATION_STARTED ups7 DB02"
+
+      if db02_classification="$(/usr/local/sbin/nut-classify-target-shutdown DB02 "$db02_rc" 2>&1)"; then
+        db02_classify_rc=0
+      else
+        db02_classify_rc=$?
+      fi
+
+      log_line "UPS_TARGET_VERIFICATION_RESULT ups7 DB02 rc=$db02_classify_rc result='$db02_classification'"
+
+      if [ "$db01_classify_rc" -eq 0 ] && [ "$db02_classify_rc" -eq 0 ]; then
+        log_line "UPS_TARGET_ACTION_SUCCESS ups7 DB01 verified_shutdown=yes"
+        log_line "UPS_TARGET_ACTION_SUCCESS ups7 DB02 verified_shutdown=yes"
+
+        write_state           "ups7"           "ups7"           "shutdown_committed"           "targeted shutdown"           0           0           "DB01 and DB02 shutdown confirmed"
+      else
+        log_line "UPS_TARGET_VERIFICATION_INCOMPLETE ups7 DB01_rc=$db01_classify_rc DB02_rc=$db02_classify_rc"
+
+        write_state           "ups7"           "ups7"           "shutdown_committed"           "targeted shutdown"           0           0           "DB shutdown attempted; verification requires review"
+      fi
       ;;
 
     ups2)
