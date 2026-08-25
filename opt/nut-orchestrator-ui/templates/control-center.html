@@ -3673,10 +3673,43 @@ function updateNutProductionButtons(mode) {
         const rows = events.slice(0, 100).map(item => parseEventLine(item.line || String(item)));
         const latest = rows[0];
 
+        // The event feed intentionally keeps five days of history.
+        // Do not present an old historical event as though it is a
+        // current dashboard condition.
+        const latestRaw = String((events[0] && events[0].line) || "");
+
+        // Event history is intentionally retained for five days.
+        // The top card should describe current/recent conditions,
+        // not make an old historical event look active.
+        let latestIsRecent = false;
+
+        if (
+          latestRaw.length >= 21 &&
+          latestRaw.startsWith("[") &&
+          latestRaw.charAt(20) === "]"
+        ) {
+          const rawTimestamp = latestRaw.slice(1, 20);
+          const latestDate = new Date(rawTimestamp.replace(" ", "T"));
+
+          if (!Number.isNaN(latestDate.getTime())) {
+            const ageMs = Date.now() - latestDate.getTime();
+            latestIsRecent =
+              ageMs >= 0 &&
+              ageMs <= (24 * 60 * 60 * 1000);
+          }
+        }
+
         health.textContent = "Online";
-        latestType.textContent = latest.type || "Event";
-        latestTime.textContent = latest.time || "Latest event loaded.";
-        summary.textContent = "Latest event shown below. Total loaded: " + events.length;
+
+        if (latestIsRecent) {
+          latestType.textContent = latest.type || "Event";
+          latestTime.textContent = latest.time || "Latest event loaded.";
+          summary.textContent = "Latest event shown below. Total loaded: " + events.length;
+        } else {
+          latestType.textContent = "No Current Errors";
+          latestTime.textContent = "No recent power/UPS issues detected.";
+          summary.textContent = "Historical events shown below. Total loaded: " + events.length;
+        }
 
         box.innerHTML = `
           <table class="cc-event-table">
