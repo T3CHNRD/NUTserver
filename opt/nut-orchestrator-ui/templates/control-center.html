@@ -3673,31 +3673,12 @@ function updateNutProductionButtons(mode) {
         const rows = events.slice(0, 100).map(item => parseEventLine(item.line || String(item)));
         const latest = rows[0];
 
-        // The event feed intentionally keeps five days of history.
-        // Do not present an old historical event as though it is a
-        // current dashboard condition.
-        const latestRaw = String((events[0] && events[0].line) || "");
-
-        // Event history is intentionally retained for five days.
-        // The top card should describe current/recent conditions,
-        // not make an old historical event look active.
-        let latestIsRecent = false;
-
-        if (
-          latestRaw.length >= 21 &&
-          latestRaw.startsWith("[") &&
-          latestRaw.charAt(20) === "]"
-        ) {
-          const rawTimestamp = latestRaw.slice(1, 20);
-          const latestDate = new Date(rawTimestamp.replace(" ", "T"));
-
-          if (!Number.isNaN(latestDate.getTime())) {
-            const ageMs = Date.now() - latestDate.getTime();
-            latestIsRecent =
-              ageMs >= 0 &&
-              ageMs <= (24 * 60 * 60 * 1000);
-          }
-        }
+        // The backend retains five days of history and marks whether
+        // the newest event occurred within the last 24 hours.
+        // Keep historical events visible without presenting them as
+        // a current dashboard condition.
+        const latestIsRecent =
+          Boolean(events[0] && events[0].recent === true);
 
         health.textContent = "Online";
 
