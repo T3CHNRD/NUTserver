@@ -3,7 +3,8 @@
 set -euo pipefail
 
 CONF="/etc/nut/nut-email-alerts.conf"
-MSMTP_REBUILD="/usr/local/sbin/nut-rebuild-msmtp-from-email-config"
+MSMTP_CONF="/etc/msmtprc"
+SMTP_SECRET="/etc/nut/nut-email-alerts.secret"
 LOG="/var/log/nut-orchestrator-ui/ui-actions.log"
 
 usage() {
@@ -70,8 +71,45 @@ esac
 [ -f "$CONF" ] || { echo "FAIL: missing $CONF"; exit 1; }
 
 if [ "$ACTION" = "--send" ]; then
-  [ -x "$MSMTP_REBUILD" ] || { echo "FAIL: missing executable $MSMTP_REBUILD"; exit 1; }
-  "$MSMTP_REBUILD"
+  # /etc/msmtprc is generated when email configuration is applied.
+  #
+  # Do NOT rebuild it for every message. UPS event emails run from
+  # nut-monitor.service, where ProtectSystem=full intentionally makes
+  # /etc read-only except approved NUT paths.
+  #
+  # Rebuilding /etc/msmtprc here caused event email delivery to fail
+  # with EROFS even though the generated SMTP configuration was valid.
+
+  [ -f "$MSMTP_CONF" ] || {
+    echo "FAIL: missing generated SMTP configuration: $MSMTP_CONF"
+    echo "Run nut-rebuild-msmtp-from-email-config outside the NUT monitor service."
+    exit 1
+  }
+
+  [ -r "$MSMTP_CONF" ] || {
+    echo "FAIL: generated SMTP configuration is not readable: $MSMTP_CONF"
+    exit 1
+  }
+
+  msm_owner="$(stat -c '%U:%G' "$MSMTP_CONF")"
+  msm_mode="$(stat -c '%a' "$MSMTP_CONF")"
+
+  if [ "$msm_owner" != "root:root" ] || [ "$msm_mode" != "600" ]; then
+    echo "FAIL: unsafe SMTP configuration ownership or permissions"
+    exit 1
+  fi
+
+  if [ "$CONF" -nt "$MSMTP_CONF" ]; then
+    echo "FAIL: generated SMTP configuration is older than the email configuration"
+    echo "Run nut-rebuild-msmtp-from-email-config outside the NUT monitor service."
+    exit 1
+  fi
+
+  if [ -e "$SMTP_SECRET" ] && [ "$SMTP_SECRET" -nt "$MSMTP_CONF" ]; then
+    echo "FAIL: generated SMTP configuration is older than the SMTP secret"
+    echo "Run nut-rebuild-msmtp-from-email-config outside the NUT monitor service."
+    exit 1
+  fi
 fi
 
 python3 - "$ACTION" "$TYPE" <<'PY'
