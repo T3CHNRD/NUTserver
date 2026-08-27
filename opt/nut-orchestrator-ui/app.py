@@ -523,6 +523,484 @@ def update_config(config_id):
 # =========================
 # TEST RUNNER
 # =========================
+
+# =========================
+# NOTIFICATION RECIPIENT MANAGEMENT
+# =========================
+
+EMAIL_ALERTS_CONF = Path(
+    "/etc/nut/nut-email-alerts.conf"
+)
+
+TELEGRAM_ACCESS_DB = Path(
+    "/var/lib/nut-telegram-alerts/access.json"
+)
+
+
+def _parse_shell_config(path):
+    import shlex
+
+    data = {}
+
+    for raw in path.read_text(
+        encoding="utf-8"
+    ).splitlines():
+
+        line = raw.strip()
+
+        if (
+            not line
+            or line.startswith("#")
+            or "=" not in line
+        ):
+            continue
+
+        key, value = line.split(
+            "=",
+            1
+        )
+
+        key = key.strip()
+        value = value.strip()
+
+        try:
+            parsed = shlex.split(
+                value
+            )
+
+            value = (
+                parsed[0]
+                if parsed
+                else ""
+            )
+
+        except Exception:
+            value = value.strip(
+                '"'
+            ).strip(
+                "'"
+            )
+
+        data[key] = value
+
+    return data
+
+
+def _email_recipients():
+    if not EMAIL_ALERTS_CONF.exists():
+        return []
+
+    data = _parse_shell_config(
+        EMAIL_ALERTS_CONF
+    )
+
+    raw = data.get(
+        "EMAIL_RECIPIENTS",
+        ""
+    )
+
+    seen = set()
+    result = []
+
+    for item in raw.split(","):
+        address = item.strip()
+
+        if not address:
+            continue
+
+        lowered = address.lower()
+
+        if lowered in seen:
+            continue
+
+        seen.add(lowered)
+        result.append(address)
+
+    return result
+
+
+def _valid_email(address):
+    import re
+
+    return bool(
+        re.fullmatch(
+            r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+"
+            r"@"
+            r"[A-Za-z0-9-]+"
+            r"(?:\.[A-Za-z0-9-]+)+",
+            address
+        )
+    )
+
+
+def _write_email_recipients(recipients):
+    import os
+    import tempfile
+
+    source = EMAIL_ALERTS_CONF.read_text(
+        encoding="utf-8"
+    )
+
+    replacement = (
+        'EMAIL_RECIPIENTS="'
+        + ",".join(recipients)
+        + '"'
+    )
+
+    lines = source.splitlines()
+    output = []
+    replaced = False
+
+    for line in lines:
+        if line.strip().startswith(
+            "EMAIL_RECIPIENTS="
+        ):
+            output.append(
+                replacement
+            )
+            replaced = True
+        else:
+            output.append(line)
+
+    if not replaced:
+        output.append(
+            replacement
+        )
+
+    new_text = (
+        "\n".join(output)
+        + "\n"
+    )
+
+    stat = os.stat(
+        EMAIL_ALERTS_CONF
+    )
+
+    fd, tmp = tempfile.mkstemp(
+        prefix=".nut-email-alerts-",
+        dir=str(
+            EMAIL_ALERTS_CONF.parent
+        ),
+        text=True,
+    )
+
+    try:
+        with os.fdopen(
+            fd,
+            "w",
+            encoding="utf-8"
+        ) as handle:
+            handle.write(
+                new_text
+            )
+
+        os.chmod(
+            tmp,
+            stat.st_mode & 0o777
+        )
+
+        try:
+            os.chown(
+                tmp,
+                stat.st_uid,
+                stat.st_gid
+            )
+        except PermissionError:
+            pass
+
+        os.replace(
+            tmp,
+            EMAIL_ALERTS_CONF
+        )
+
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
+def _telegram_recipient_view():
+    """
+    Return dashboard-safe Telegram recipient data.
+
+    Raw chat IDs are intentionally not exposed by this API.
+    """
+
+    import json
+
+    result = {
+        "approved": [],
+        "pending": [],
+        "primary_admin_configured": False,
+    }
+
+    if not TELEGRAM_ACCESS_DB.exists():
+        return result
+
+    try:
+        data = json.loads(
+            TELEGRAM_ACCESS_DB.read_text(
+                encoding="utf-8"
+            )
+        )
+
+    except Exception:
+        return result
+
+    def safe_name(record):
+        if not isinstance(
+            record,
+            dict
+        ):
+            return "Telegram User"
+
+        for key in (
+            "display_name",
+            "name",
+            "username",
+            "first_name"
+        ):
+            value = record.get(
+                key
+            )
+
+            if value:
+                return str(value)
+
+        return "Telegram User"
+
+    # Support the existing access database without exposing
+    # its private numeric identifiers. We intentionally make
+    # this view tolerant of dict- or list-shaped stores.
+
+    approved_candidates = []
+
+    for key in (
+        "approved",
+        "users",
+        "authorized"
+    ):
+        value = data.get(
+            key
+        ) if isinstance(data, dict) else None
+
+        if isinstance(
+            value,
+            dict
+        ):
+            approved_candidates.extend(
+                value.values()
+            )
+
+        elif isinstance(
+            value,
+            list
+        ):
+            approved_candidates.extend(
+                value
+            )
+
+    pending_candidates = []
+
+    if isinstance(
+        data,
+        dict
+    ):
+        value = data.get(
+            "pending"
+        )
+
+        if isinstance(
+            value,
+            dict
+        ):
+            pending_candidates.extend(
+                value.values()
+            )
+
+        elif isinstance(
+            value,
+            list
+        ):
+            pending_candidates.extend(
+                value
+            )
+
+        primary = (
+            data.get("primary_admin")
+            or data.get("primary")
+            or data.get("owner")
+        )
+
+        result[
+            "primary_admin_configured"
+        ] = bool(primary)
+
+    for item in approved_candidates:
+        if not isinstance(
+            item,
+            dict
+        ):
+            continue
+
+        role = str(
+            item.get(
+                "role",
+                "USER"
+            )
+        ).upper()
+
+        result[
+            "approved"
+        ].append({
+            "name":
+                safe_name(item),
+            "role":
+                role,
+            "primary":
+                role in {
+                    "PRIMARY",
+                    "PRIMARY ADMIN",
+                    "PRIMARY_ADMIN"
+                }
+        })
+
+    for item in pending_candidates:
+        if not isinstance(
+            item,
+            dict
+        ):
+            continue
+
+        result[
+            "pending"
+        ].append({
+            "name":
+                safe_name(item)
+        })
+
+    return result
+
+
+@app.route(
+    "/api/notification-recipients",
+    methods=["GET"]
+)
+def notification_recipients():
+
+    return jsonify({
+        "ok": True,
+        "email": {
+            "recipients":
+                _email_recipients()
+        },
+        "telegram":
+            _telegram_recipient_view()
+    })
+
+
+@app.route(
+    "/api/notification-recipients/email",
+    methods=["POST"]
+)
+def notification_email_recipient_change():
+
+    payload = request.get_json(
+        silent=True
+    ) or {}
+
+    action = str(
+        payload.get(
+            "action",
+            ""
+        )
+    ).strip().lower()
+
+    address = str(
+        payload.get(
+            "email",
+            ""
+        )
+    ).strip()
+
+    recipients = (
+        _email_recipients()
+    )
+
+    if action not in {
+        "add",
+        "remove"
+    }:
+        return jsonify({
+            "ok": False,
+            "error":
+                "action must be add or remove"
+        }), 400
+
+    if not _valid_email(
+        address
+    ):
+        return jsonify({
+            "ok": False,
+            "error":
+                "Invalid email address"
+        }), 400
+
+    if action == "add":
+
+        if address.lower() not in {
+            item.lower()
+            for item in recipients
+        }:
+            recipients.append(
+                address
+            )
+
+    elif action == "remove":
+
+        remaining = [
+            item
+            for item in recipients
+            if item.lower()
+            != address.lower()
+        ]
+
+        if len(remaining) == len(
+            recipients
+        ):
+            return jsonify({
+                "ok": False,
+                "error":
+                    "Recipient was not found"
+            }), 404
+
+        if not remaining:
+            return jsonify({
+                "ok": False,
+                "error":
+                    "Cannot remove the last email recipient"
+            }), 409
+
+        recipients = remaining
+
+    try:
+        _write_email_recipients(
+            recipients
+        )
+
+    except Exception as exc:
+        return jsonify({
+            "ok": False,
+            "error": str(exc)
+        }), 500
+
+    return jsonify({
+        "ok": True,
+        "recipients":
+            _email_recipients()
+    })
+
+
+
 @app.route("/api/test/<mode>", methods=["POST"])
 def run_test(mode):
     blocked = block_if_protecting("test run")
