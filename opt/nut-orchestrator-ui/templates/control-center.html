@@ -3297,6 +3297,7 @@ function updateNutProductionButtons(mode) {
       </div>
 
       <div class="cc-card cc-wide cc-config-launch-card cc-tab-panel" id="cc-config-section">
+
         <div class="cc-section-tag">Configuration</div>
         <div class="cc-config-launch-layout">
           <div>
@@ -3324,7 +3325,24 @@ function updateNutProductionButtons(mode) {
 
     <section class="cc-grid">
       <div class="cc-card cc-wide cc-tab-panel" id="cc-config-section">
-        <div class="cc-section-tag">Configuration</div>
+
+
+      <div
+        class="cc-card cc-wide"
+        id="nut-notifications-configuration-card"
+        style="margin-bottom:18px;"
+      >
+        <div class="nut-settings-section-heading">
+          Notification Settings
+        </div>
+
+        <div id="nut-notifications-panel-host"></div>
+      </div>
+
+
+        <div class="nut-settings-section-heading nut-configuration-heading">
+          Configuration
+        </div>
         
         <div class="cc-section-subtitle">
           Uses the same approved live-config and read-only reference registry as the current NUT Orchestrator UI.
@@ -6019,10 +6037,10 @@ function closeLabSelectedRestoreScreen() {
 <script id="nut-email-recipient-manager">
 (function () {
   const RECIPIENT_API =
-    "/api/notification-recipients";
+    "/nut-ui/api/notification-recipients";
 
   const EMAIL_API =
-    "/api/notification-recipients/email";
+    "/nut-ui/api/notification-recipients/email";
 
   function findNotificationPanel() {
     return document.getElementById(
@@ -6064,7 +6082,7 @@ function closeLabSelectedRestoreScreen() {
 
     const dailyToggle =
       panel.querySelector(
-        '[data-control="daily_health_email"]'
+        '[data-key="daily_health_email"]'
       );
 
     if (!dailyToggle) {
@@ -6119,7 +6137,19 @@ function closeLabSelectedRestoreScreen() {
       </div>
     `;
 
-    row.insertAdjacentElement(
+    const closingToggle =
+      panel.querySelector(
+        '[data-key="weather_based_closing_thoughts"]'
+      );
+
+    const closingRow =
+      closingToggle
+        ? closingToggle.closest(
+            ".nut-notification-control-row"
+          )
+        : row;
+
+    closingRow.insertAdjacentElement(
       "afterend",
       box
     );
@@ -6463,10 +6493,10 @@ function closeLabSelectedRestoreScreen() {
 <script id="nut-telegram-recipient-manager">
 (function () {
   const LIST_API =
-    "/api/notification-recipients";
+    "/nut-ui/api/notification-recipients";
 
   const CHANGE_API =
-    "/api/notification-recipients/telegram";
+    "/nut-ui/api/notification-recipients/telegram";
 
   function findNotificationPanel() {
     return document.getElementById(
@@ -6507,7 +6537,7 @@ function closeLabSelectedRestoreScreen() {
 
     const master =
       panel.querySelector(
-        '[data-control="telegram_push_notifications"]'
+        '[data-key="telegram_push_notifications"]'
       );
 
     if (!master) {
@@ -6556,7 +6586,19 @@ function closeLabSelectedRestoreScreen() {
       </div>
     `;
 
-    row.insertAdjacentElement(
+    const heartbeatToggle =
+      panel.querySelector(
+        '[data-key="telegram_heartbeat"]'
+      );
+
+    const heartbeatRow =
+      heartbeatToggle
+        ? heartbeatToggle.closest(
+            ".nut-notification-control-row"
+          )
+        : row;
+
+    heartbeatRow.insertAdjacentElement(
       "afterend",
       box
     );
@@ -6982,7 +7024,7 @@ function closeLabSelectedRestoreScreen() {
 <script id="nut-notification-control-ui">
 (function () {
   const API =
-    "/api/notification-controls";
+    "/nut-ui/api/notification-controls";
 
   function makeRow(
     key,
@@ -7023,21 +7065,42 @@ function closeLabSelectedRestoreScreen() {
     copy.appendChild(name);
     copy.appendChild(helpEl);
 
+    const switchWrap =
+      document.createElement("label");
+
+    switchWrap.className =
+      "nut-switch";
+
     const input =
       document.createElement("input");
 
     input.type = "checkbox";
-    input.className =
-      "nut-notification-switch";
-
     input.dataset.key = key;
     input.setAttribute(
       "aria-label",
       title
     );
 
+    const slider =
+      document.createElement("span");
+
+    slider.className =
+      "nut-switch-slider";
+
+    const state =
+      document.createElement("span");
+
+    state.className =
+      "nut-switch-state";
+
+    state.textContent = "OFF";
+
+    switchWrap.appendChild(input);
+    switchWrap.appendChild(slider);
+    switchWrap.appendChild(state);
+
     row.appendChild(copy);
-    row.appendChild(input);
+    row.appendChild(switchWrap);
 
     return row;
   }
@@ -7051,17 +7114,10 @@ function closeLabSelectedRestoreScreen() {
       return;
     }
 
-    const configSections =
-      document.querySelectorAll(
-        "#cc-config-section"
-      );
-
     const host =
-      configSections.length > 1
-        ? configSections[
-            configSections.length - 1
-          ]
-        : configSections[0];
+      document.getElementById(
+        "nut-notifications-panel-host"
+      );
 
     if (!host) {
       setTimeout(build, 250);
@@ -7231,21 +7287,73 @@ function closeLabSelectedRestoreScreen() {
         "telegram_heartbeat"
       );
 
-    if (email && closing) {
-      closing.disabled =
-        !email.checked;
+    inputs().forEach(function (input) {
+      const state =
+        input.closest(".nut-switch")
+          ?.querySelector(".nut-switch-state");
+
+      if (state) {
+        state.textContent =
+          input.checked ? "ON" : "OFF";
+      }
+    });
+
+    const closingRow =
+      closing
+        ? closing.closest(
+            ".nut-notification-control-row"
+          )
+        : null;
+
+    if (closingRow) {
+      closingRow.classList.toggle(
+        "nut-notification-hidden",
+        !email || !email.checked
+      );
+    }
+
+    const emailRecipients =
+      document.getElementById(
+        "nut-email-recipient-manager-box"
+      );
+
+    if (emailRecipients) {
+      emailRecipients.classList.toggle(
+        "nut-notification-hidden",
+        !email || !email.checked
+      );
     }
 
     [health, critical, heartbeat]
       .forEach(function (item) {
-        if (
-          item &&
-          telegram
-        ) {
-          item.disabled =
-            !telegram.checked;
+        if (!item) {
+          return;
+        }
+
+        const row =
+          item.closest(
+            ".nut-notification-control-row"
+          );
+
+        if (row) {
+          row.classList.toggle(
+            "nut-notification-hidden",
+            !telegram || !telegram.checked
+          );
         }
       });
+
+    const telegramRecipients =
+      document.getElementById(
+        "nut-telegram-recipient-manager-box"
+      );
+
+    if (telegramRecipients) {
+      telegramRecipients.classList.toggle(
+        "nut-notification-hidden",
+        !telegram || !telegram.checked
+      );
+    }
 
     const warning =
       document.getElementById(
@@ -7387,6 +7495,87 @@ function closeLabSelectedRestoreScreen() {
   }
 })();
 </script>
+
+
+<style id="nut-final-switch-style">
+  .nut-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .nut-switch input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .nut-switch-slider {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+    border-radius: 999px;
+    background: rgba(148,163,184,.4);
+    transition: background .18s ease;
+  }
+
+  .nut-switch-slider::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: transform .18s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,.35);
+  }
+
+  .nut-switch input:checked + .nut-switch-slider {
+    background: #2563eb;
+  }
+
+  .nut-switch input:checked + .nut-switch-slider::after {
+    transform: translateX(24px);
+  }
+
+  .nut-switch-state {
+    min-width: 28px;
+    font-weight: 700;
+    font-size: .82rem;
+  }
+
+  .nut-notification-hidden {
+    display: none !important;
+  }
+</style>
+
+
+<style id="nut-settings-heading-style">
+
+  .nut-settings-section-heading {
+    margin: 2px 0 18px 0;
+    font-size: 1.18rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+    color: inherit;
+  }
+
+  #nut-notifications-configuration-card {
+    margin-bottom: 34px !important;
+  }
+
+  .nut-configuration-heading {
+    margin-top: 8px;
+    margin-bottom: 18px;
+    padding-top: 4px;
+  }
+
+</style>
 
 </body>
 </html>

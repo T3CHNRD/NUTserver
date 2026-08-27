@@ -70,6 +70,44 @@ esac
 
 [ -f "$CONF" ] || { echo "FAIL: missing $CONF"; exit 1; }
 
+# EARLY DAILY HEALTH EMAIL DELIVERY GATE
+#
+# This must run before SMTP validation. When the scheduled Daily Health
+# Email is intentionally disabled, no SMTP configuration is needed because
+# no message will be sent.
+if [ "$ACTION" = "--send" ] && [ "$TYPE" = "weekly" ]; then
+  if python3 - <<'PYCFG'
+import json
+from pathlib import Path
+
+path = Path("/etc/nut/config.d/notification-controls.json")
+
+enabled = True
+
+try:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    value = data.get("daily_health_email", True)
+
+    if isinstance(value, bool):
+        enabled = value
+    elif isinstance(value, str):
+        enabled = value.strip().lower() in {
+            "1", "true", "yes", "on"
+        }
+    else:
+        enabled = bool(value)
+
+except Exception:
+    enabled = True
+
+raise SystemExit(0 if not enabled else 1)
+PYCFG
+  then
+    echo "Daily Health Email is disabled by notification-controls.json; no email sent."
+    exit 0
+  fi
+fi
+
 if [ "$ACTION" = "--send" ]; then
   # /etc/msmtprc is generated when email configuration is applied.
   #
