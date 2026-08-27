@@ -7636,23 +7636,501 @@ function closeLabSelectedRestoreScreen() {
 
 <script id="cc-help-ui-script">
 (function(){
-function e(v){return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
-function t(f){return String(f).replace(/\.md$/i,"").replace(/^\d+_/,"").replace(/_/g," ")}
-function x(u,ok,bad){var r=new XMLHttpRequest();r.open("GET",u,true);r.onreadystatechange=function(){if(r.readyState!==4)return;if(r.status>=200&&r.status<300){try{ok(JSON.parse(r.responseText))}catch(z){bad("Invalid JSON response")}}else bad("HTTP "+r.status)};r.onerror=function(){bad("Network error")};r.send(null)}
-function init(){
-var s=document.getElementById("cc-help-search"),c=document.getElementById("cc-help-category-list");if(!s||!c)return;
-s.style.width="100%";s.style.minHeight="62px";s.style.fontSize="20px";s.style.padding="14px 18px";s.style.boxSizing="border-box";
-var r=document.getElementById("cc-help-results");if(!r){r=document.createElement("div");r.id="cc-help-results";r.className="cc-mini";r.style.marginTop="20px";c.parentNode.insertBefore(r,c.nextSibling)}
-var p=document.getElementById("cc-help-article-pane");if(!p){p=document.createElement("div");p.id="cc-help-article-pane";p.className="cc-mini";p.style.marginTop="20px";r.parentNode.insertBefore(p,r.nextSibling)}
-var a=[];
-function open(f){p.innerHTML="<strong>Loading Help article...</strong>";x("/nut-ui/api/help/article/"+encodeURIComponent(f),function(d){if(!d.ok){p.innerHTML="<strong>Unable to load Help article.</strong><br><br>"+e(d.error||"Unknown error");return}p.innerHTML="<div style='font-size:24px;font-weight:700;margin-bottom:16px;'>"+e(t(f))+"</div><pre style='white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:15px;line-height:1.6;margin:0;'>"+e(d.content||"")+"</pre>";if(p.scrollIntoView)p.scrollIntoView(true)},function(m){p.innerHTML="<strong>Unable to load Help article.</strong><br><br>"+e(m)})}
-function render(q){q=String(q||"").toLowerCase();var m=[],i,h;r.innerHTML="<div style='font-size:18px;font-weight:700;margin-bottom:12px;'>Available Help Articles</div>";for(i=0;i<a.length;i++){h=String(a[i].file+" "+(a[i].title||"")).toLowerCase();if(!q||h.indexOf(q)!==-1)m.push(a[i])}if(!m.length){r.innerHTML+="<div>No Help article matched that search.</div>";return m}for(i=0;i<m.length;i++){(function(o){var b=document.createElement("button");b.type="button";b.className="cc-btn";b.style.margin="4px 8px 4px 0";b.style.minHeight="44px";b.appendChild(document.createTextNode(t(o.file)));b.onclick=function(){open(o.file)};r.appendChild(b)})(m[i])}return m}
-function preferred(q){var z={"getting started":"01_GETTING_STARTED.md","system overview":"REF_01_CONTROL_CENTER_OVERVIEW.md","monitoring":"REF_02_MONITORING_TAB.md","events":"REF_03_EVENTS_TAB.md","notification settings":"05_NOTIFICATION_SETTINGS.md","telegram":"05_NOTIFICATION_SETTINGS.md","email":"05_NOTIFICATION_SETTINGS.md","maintenance and weather":"05_NOTIFICATION_SETTINGS.md","configuration":"09_CONFIGURATION_HOWTOS.md","tests and logs":"10_TESTS_AND_LOGS_HOWTOS.md","security":"18_CREDENTIAL_AND_PASSWORD_CHANGES.md"};return z[String(q||"").toLowerCase()]||null}
-var cards=c.getElementsByClassName("cc-mini"),i;for(i=0;i<cards.length;i++){(function(card){card.style.cursor="pointer";card.setAttribute("tabindex","0");function choose(){var l=String(card.textContent||card.innerText||"").replace(/^\s+|\s+$/g,""),q=l.replace(/^\d+\s*-\s*/,""),m=render(q),best=preferred(q),j;if(best){for(j=0;j<a.length;j++){if(a[j].file===best){open(best);return}}}for(j=0;j<m.length;j++){if(String(m[j].file).indexOf("REF_")!==0){open(m[j].file);return}}if(m.length){open(m[0].file);return}p.innerHTML="<div style='font-size:22px;font-weight:700;margin-bottom:12px;'>"+e(l)+"</div><div>No detailed Help article has been written for this category yet.</div>"}card.onclick=choose;card.onkeydown=function(k){k=k||window.event;var v=k.key||k.keyCode;if(v==="Enter"||v===13||v===" "||v===32)choose()}})(cards[i])}
-s.onkeyup=function(){render(s.value)};s.oninput=function(){render(s.value)};r.innerHTML="<strong>Loading Help library...</strong>";
-x("/nut-ui/api/help/articles",function(d){if(!d.ok||!d.articles){r.innerHTML="<strong>Unable to load Help library.</strong>";return}a=d.articles;render(s.value)},function(m){r.innerHTML="<strong>Unable to load Help library.</strong><br><br>"+e(m)})
+
+function esc(v){
+  return String(v)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
 }
-if(document.readyState==="loading"){if(document.addEventListener)document.addEventListener("DOMContentLoaded",init,false);else window.attachEvent("onload",init)}else init()
+
+function title(f){
+  return String(f)
+    .replace(/\.md$/i,"")
+    .replace(/^REF_/i,"")
+    .replace(/^\d+_/,"")
+    .replace(/_/g," ");
+}
+
+function getjson(url,ok,bad){
+  var r=new XMLHttpRequest();
+  r.open("GET",url,true);
+  r.onreadystatechange=function(){
+    if(r.readyState!==4)return;
+    if(r.status>=200&&r.status<300){
+      try{ok(JSON.parse(r.responseText))}
+      catch(e){bad("Invalid JSON response")}
+    }else{
+      bad("HTTP "+r.status);
+    }
+  };
+  r.onerror=function(){bad("Network error")};
+  r.send(null);
+}
+
+function init(){
+
+  var search=document.getElementById("cc-help-search");
+  var list=document.getElementById("cc-help-category-list");
+
+  if(!search||!list)return;
+
+  search.style.width="100%";
+  search.style.minHeight="62px";
+  search.style.fontSize="20px";
+  search.style.padding="14px 18px";
+  search.style.boxSizing="border-box";
+
+  var oldResults=document.getElementById("cc-help-results");
+
+  if(oldResults){
+    oldResults.innerHTML="";
+    oldResults.style.display="none";
+  }
+
+  var pane=document.getElementById("cc-help-article-pane");
+
+  if(!pane){
+    pane=document.createElement("div");
+    pane.id="cc-help-article-pane";
+    pane.className="cc-mini";
+    pane.style.marginTop="20px";
+    list.parentNode.insertBefore(pane,list.nextSibling);
+  }
+
+  pane.style.display="none";
+
+  var articles=[];
+
+  var categoryMap={
+    "getting started":[
+      "00_HELP_INDEX.md",
+      "01_GETTING_STARTED.md",
+      "REF_00_INDEX.md"
+    ],
+
+    "system overview":[
+      "02_PROTECTION_MODES.md",
+      "REF_01_CONTROL_CENTER_OVERVIEW.md"
+    ],
+
+    "monitoring":[
+      "REF_02_MONITORING_TAB.md"
+    ],
+
+    "events":[
+      "REF_03_EVENTS_TAB.md"
+    ],
+
+    "notification settings":[
+      "05_NOTIFICATION_SETTINGS.md"
+    ],
+
+    "telegram":[
+      "05_NOTIFICATION_SETTINGS.md"
+    ],
+
+    "email":[
+      "05_NOTIFICATION_SETTINGS.md"
+    ],
+
+    "maintenance and weather":[
+      "05_NOTIFICATION_SETTINGS.md"
+    ],
+
+    "configuration":[
+      "09_CONFIGURATION_HOWTOS.md",
+      "REF_05_CONFIGURATION_TAB.md",
+      "REF_07_SAFE_EDITING_RULES.md",
+      "REF_10_ups_conf.md",
+      "REF_11_upsd_conf.md",
+      "REF_12_upsmon_conf.md",
+      "REF_13_upssched_conf.md",
+      "REF_14_nut_conf.md",
+      "REF_15_hosts_conf.md",
+      "REF_16_nut_orchestrator_conf.md",
+      "REF_17_config_d_nut_orchestrator_conf.md",
+      "REF_18_approved_targets_yml.md",
+      "REF_19_dashboard_ui_json.md",
+      "REF_20_shutdown_verification_targets_conf.md"
+    ],
+
+    "tests and logs":[
+      "10_TESTS_AND_LOGS_HOWTOS.md",
+      "REF_04_TESTS_AND_LOGS_TAB.md",
+      "REF_06_PHASE1_LANSWEEPER_LIVE_TEST.md",
+      "REF_37_nut_ui_run_test.md",
+      "REF_38_nut_ui_run_real_test_approved.md"
+    ],
+
+    "backup":[
+      "11_BACKUP_HOWTOS.md"
+    ],
+
+    "restore and disaster recovery":[
+      "12_RESTORE_AND_DR_HOWTOS.md"
+    ],
+
+    "shutdown orchestration":[
+      "13_SHUTDOWN_ORCHESTRATION_HOWTOS.md",
+      "REF_39_nut_orchestrator_sh.md",
+      "REF_40_nut_local_final_shutdown.md"
+    ],
+
+    "protected systems":[
+      "14_PROTECTED_SYSTEMS_HOWTOS.md",
+      "REF_30_nut_lansweeper_shutdown.md",
+      "REF_31_nut_synology_shutdown.md",
+      "REF_32_nut_voip_shutdown.md",
+      "REF_33_nut_db_shutdown.md",
+      "REF_34_nut_blueiris_shutdown.md",
+      "REF_35_nut_vmware_shutdown.md",
+      "REF_36_nut_netapp_halt.md"
+    ],
+
+    "services and timers":[
+      "REF_12_upsmon_conf.md",
+      "REF_13_upssched_conf.md",
+      "REF_39_nut_orchestrator_sh.md"
+    ],
+
+    "logs":[
+      "10_TESTS_AND_LOGS_HOWTOS.md"
+    ],
+
+    "troubleshooting":[
+      "10_TESTS_AND_LOGS_HOWTOS.md"
+    ],
+
+    "security":[
+      "18_CREDENTIAL_AND_PASSWORD_CHANGES.md",
+      "REF_07_SAFE_EDITING_RULES.md",
+      "REF_50_db_telnet_user.md",
+      "REF_51_db_telnet_pass.md",
+      "REF_52_vcenter_pass.md"
+    ],
+
+    "technical reference":[
+      "REF_10_ups_conf.md",
+      "REF_11_upsd_conf.md",
+      "REF_12_upsmon_conf.md",
+      "REF_13_upssched_conf.md",
+      "REF_14_nut_conf.md",
+      "REF_15_hosts_conf.md",
+      "REF_16_nut_orchestrator_conf.md",
+      "REF_17_config_d_nut_orchestrator_conf.md",
+      "REF_18_approved_targets_yml.md",
+      "REF_19_dashboard_ui_json.md",
+      "REF_20_shutdown_verification_targets_conf.md"
+    ]
+  };
+
+  function findArticle(file){
+    var i;
+    for(i=0;i<articles.length;i++){
+      if(articles[i].file===file)return articles[i];
+    }
+    return null;
+  }
+
+  function openArticle(file){
+
+    pane.style.display="block";
+    pane.innerHTML="<strong>Loading Help article...</strong>";
+
+    getjson(
+      "/nut-ui/api/help/article/"+encodeURIComponent(file),
+
+      function(d){
+
+        if(!d.ok){
+          pane.innerHTML=
+            "<strong>Unable to load Help article.</strong><br><br>"+
+            esc(d.error||"Unknown error");
+          return;
+        }
+
+        var ref=String(file).indexOf("REF_")===0;
+
+        var badge=ref
+          ? "<div style=\"margin-bottom:14px;font-weight:700;\">REFERENCE RUNBOOK</div>"
+          : "<div style=\"margin-bottom:14px;font-weight:700;\">CURRENT HELP / HOW-TO</div>";
+
+        pane.innerHTML=
+          badge+
+          "<div style=\"font-size:24px;font-weight:700;margin-bottom:16px;\">"+
+          esc(title(file))+
+          "</div>"+
+          "<pre style=\"white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:15px;line-height:1.6;margin:0;\">"+
+          esc(d.content||"")+
+          "</pre>";
+
+        if(pane.scrollIntoView){
+          pane.scrollIntoView(true);
+        }
+      },
+
+      function(m){
+        pane.innerHTML=
+          "<strong>Unable to load Help article.</strong><br><br>"+
+          esc(m);
+      }
+    );
+  }
+
+  function clearExpanded(){
+    var x=list.getElementsByClassName("cc-help-category-articles");
+    var i;
+    for(i=0;i<x.length;i++){
+      x[i].style.display="none";
+      x[i].innerHTML="";
+    }
+  }
+
+  function showCategory(card){
+
+    var label=String(
+      card.getAttribute("data-help-label")||
+      card.textContent||
+      card.innerText||
+      ""
+    ).replace(/^\s+|\s+$/g,"");
+
+    var key=label
+      .replace(/^\d+\s*-\s*/,"")
+      .toLowerCase();
+
+    search.value="";
+
+    var holder=card.getElementsByClassName("cc-help-category-articles")[0];
+
+    clearExpanded();
+
+    if(!holder)return;
+
+    holder.style.display="block";
+
+    var files=categoryMap[key]||[];
+    var shown=0;
+    var firstCurrent=null;
+    var firstAny=null;
+    var i;
+
+    for(i=0;i<files.length;i++){
+
+      var a=findArticle(files[i]);
+
+      if(!a)continue;
+
+      if(!firstAny)firstAny=a;
+
+      if(!firstCurrent && String(a.file).indexOf("REF_")!==0){
+        firstCurrent=a;
+      }
+
+      var b=document.createElement("button");
+
+      b.type="button";
+      b.className="cc-btn";
+      b.style.margin="8px 8px 4px 0";
+      b.style.minHeight="42px";
+
+      var prefix=String(a.file).indexOf("REF_")===0
+        ? "Reference: "
+        : "How-To: ";
+
+      b.appendChild(
+        document.createTextNode(prefix+title(a.file))
+      );
+
+      (function(file){
+        b.onclick=function(ev){
+          if(ev&&ev.stopPropagation)ev.stopPropagation();
+          openArticle(file);
+          return false;
+        };
+      })(a.file);
+
+      holder.appendChild(b);
+      shown++;
+    }
+
+    if(!shown){
+      holder.innerHTML=
+        "<div style=\"padding:10px 4px;\">"+
+        "No Help article has been written for this category yet."+
+        "</div>";
+
+      pane.style.display="none";
+      return;
+    }
+
+    /*
+     * Category clicks only expand the available articles.
+     * The operator must explicitly click an article before it opens.
+     */
+    pane.style.display="none";
+    pane.innerHTML="";
+  }
+
+  function searchArticles(q){
+
+    q=String(q||"").toLowerCase();
+
+    clearExpanded();
+
+    if(!q){
+      if(oldResults){
+        oldResults.style.display="none";
+        oldResults.innerHTML="";
+      }
+      return;
+    }
+
+    if(!oldResults)return;
+
+    oldResults.style.display="block";
+
+    oldResults.innerHTML=
+      "<div style=\"font-size:18px;font-weight:700;margin-bottom:12px;\">"+
+      "Search Results"+
+      "</div>";
+
+    var found=0;
+    var i;
+
+    for(i=0;i<articles.length;i++){
+
+      var hay=String(
+        articles[i].file+" "+(articles[i].title||"")
+      ).toLowerCase();
+
+      if(hay.indexOf(q)===-1)continue;
+
+      var b=document.createElement("button");
+      b.type="button";
+      b.className="cc-btn";
+      b.style.margin="4px 8px 4px 0";
+      b.style.minHeight="42px";
+
+      var prefix=String(articles[i].file).indexOf("REF_")===0
+        ? "Reference: "
+        : "How-To: ";
+
+      b.appendChild(
+        document.createTextNode(prefix+title(articles[i].file))
+      );
+
+      (function(file){
+        b.onclick=function(){
+          openArticle(file);
+        };
+      })(articles[i].file);
+
+      oldResults.appendChild(b);
+      found++;
+    }
+
+    if(!found){
+      oldResults.innerHTML+=
+        "<div>No Help article matched that search.</div>";
+    }
+  }
+
+  var cards=list.getElementsByClassName("cc-mini");
+  var i;
+
+  for(i=0;i<cards.length;i++){
+
+    (function(card){
+
+      var original=String(
+        card.textContent||
+        card.innerText||
+        ""
+      ).replace(/^\s+|\s+$/g,"");
+
+      card.setAttribute("data-help-label",original);
+      card.style.cursor="pointer";
+      card.setAttribute("tabindex","0");
+
+      var holder=document.createElement("div");
+      holder.className="cc-help-category-articles";
+      holder.style.display="none";
+      holder.style.marginTop="8px";
+      holder.style.paddingTop="6px";
+      holder.style.borderTop="1px solid rgba(255,255,255,.12)";
+
+      card.appendChild(holder);
+
+      card.onclick=function(){
+        showCategory(card);
+      };
+
+      card.onkeydown=function(k){
+        k=k||window.event;
+        var v=k.key||k.keyCode;
+
+        if(v==="Enter"||v===13||v===" "||v===32){
+          showCategory(card);
+        }
+      };
+
+    })(cards[i]);
+  }
+
+  search.onkeyup=function(){
+    searchArticles(search.value);
+  };
+
+  search.oninput=function(){
+    searchArticles(search.value);
+  };
+
+  getjson(
+    "/nut-ui/api/help/articles",
+
+    function(d){
+
+      if(!d.ok||!d.articles){
+        if(oldResults){
+          oldResults.style.display="block";
+          oldResults.innerHTML=
+            "<strong>Unable to load Help library.</strong>";
+        }
+        return;
+      }
+
+      articles=d.articles;
+
+      if(oldResults){
+        oldResults.style.display="none";
+        oldResults.innerHTML="";
+      }
+    },
+
+    function(m){
+
+      if(oldResults){
+        oldResults.style.display="block";
+        oldResults.innerHTML=
+          "<strong>Unable to load Help library.</strong><br><br>"+
+          esc(m);
+      }
+    }
+  );
+}
+
+if(document.readyState==="loading"){
+  if(document.addEventListener){
+    document.addEventListener("DOMContentLoaded",init,false);
+  }else{
+    window.attachEvent("onload",init);
+  }
+}else{
+  init();
+}
+
 })();
 </script>
 
