@@ -886,16 +886,41 @@ def _telegram_recipient_view():
     methods=["GET"]
 )
 def notification_recipients():
+    import json
+    import subprocess
 
-    return jsonify({
-        "ok": True,
-        "email": {
-            "recipients":
-                _email_recipients()
-        },
-        "telegram":
-            _telegram_recipient_view()
-    })
+    cmd = [
+        "sudo",
+        "-n",
+        "/usr/local/sbin/nut-notification-recipients",
+        "list",
+    ]
+
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+
+    if proc.returncode != 0:
+        return jsonify({
+            "ok": False,
+            "error":
+                "Unable to read notification recipients"
+        }), 500
+
+    try:
+        data = json.loads(proc.stdout)
+
+    except Exception:
+        return jsonify({
+            "ok": False,
+            "error":
+                "Recipient helper returned invalid data"
+        }), 500
+
+    return jsonify(data)
 
 
 @app.route(
@@ -903,6 +928,8 @@ def notification_recipients():
     methods=["POST"]
 )
 def notification_email_recipient_change():
+    import json
+    import subprocess
 
     payload = request.get_json(
         silent=True
@@ -922,83 +949,253 @@ def notification_email_recipient_change():
         )
     ).strip()
 
-    recipients = (
-        _email_recipients()
-    )
+    if action == "add":
+        helper_action = "email-add"
 
-    if action not in {
-        "add",
-        "remove"
-    }:
+    elif action == "remove":
+        helper_action = "email-remove"
+
+    else:
         return jsonify({
             "ok": False,
             "error":
                 "action must be add or remove"
         }), 400
 
-    if not _valid_email(
-        address
-    ):
+    if not address:
         return jsonify({
             "ok": False,
             "error":
-                "Invalid email address"
+                "email address is required"
         }), 400
 
-    if action == "add":
+    cmd = [
+        "sudo",
+        "-n",
+        "/usr/local/sbin/nut-notification-recipients",
+        helper_action,
+        address,
+    ]
 
-        if address.lower() not in {
-            item.lower()
-            for item in recipients
-        }:
-            recipients.append(
-                address
-            )
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+
+    try:
+        data = json.loads(
+            proc.stdout
+        )
+
+    except Exception:
+        return jsonify({
+            "ok": False,
+            "error":
+                "Recipient helper returned invalid data"
+        }), 500
+
+    if proc.returncode != 0:
+        status = 400
+
+        if proc.returncode == 4:
+            status = 409
+
+        elif proc.returncode == 3:
+            status = 404
+
+        return jsonify(data), status
+
+    return jsonify(data)
+
+
+
+@app.route(
+    "/api/notification-recipients/telegram",
+    methods=["POST"]
+)
+def notification_telegram_recipient_change():
+    import json
+    import subprocess
+
+    payload = request.get_json(
+        silent=True
+    ) or {}
+
+    action = str(
+        payload.get(
+            "action",
+            ""
+        )
+    ).strip().lower()
+
+    name = str(
+        payload.get(
+            "name",
+            ""
+        )
+    ).strip()
+
+    if action == "approve":
+        helper_action = (
+            "telegram-approve"
+        )
 
     elif action == "remove":
+        helper_action = (
+            "telegram-remove"
+        )
 
-        remaining = [
-            item
-            for item in recipients
-            if item.lower()
-            != address.lower()
+    else:
+        return jsonify({
+            "ok": False,
+            "error":
+                "action must be approve or remove"
+        }), 400
+
+    if not name:
+        return jsonify({
+            "ok": False,
+            "error":
+                "Telegram recipient name is required"
+        }), 400
+
+    cmd = [
+        "sudo",
+        "-n",
+        "/usr/local/sbin/nut-notification-recipients",
+        helper_action,
+        name,
+    ]
+
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+
+    try:
+        data = json.loads(
+            proc.stdout
+        )
+
+    except Exception:
+        return jsonify({
+            "ok": False,
+            "error":
+                "Recipient helper returned invalid data"
+        }), 500
+
+    if proc.returncode != 0:
+        status = 400
+
+        if proc.returncode == 4:
+            status = 404
+
+        elif proc.returncode == 5:
+            status = 409
+
+        elif proc.returncode == 6:
+            status = 409
+
+        return jsonify(data), status
+
+    return jsonify(data)
+
+
+
+@app.route(
+    "/api/notification-controls",
+    methods=["GET", "POST"]
+)
+def notification_controls_api():
+    import json
+    import subprocess
+
+    helper = (
+        "/usr/local/sbin/"
+        "nut-notification-controls"
+    )
+
+    if request.method == "GET":
+        cmd = [
+            "sudo",
+            "-n",
+            helper,
+            "list",
         ]
 
-        if len(remaining) == len(
-            recipients
+    else:
+        payload = request.get_json(
+            silent=True
+        ) or {}
+
+        key = str(
+            payload.get(
+                "key",
+                ""
+            )
+        ).strip()
+
+        value = payload.get(
+            "value"
+        )
+
+        if not key:
+            return jsonify({
+                "ok": False,
+                "error":
+                    "control key is required"
+            }), 400
+
+        if not isinstance(
+            value,
+            bool
         ):
             return jsonify({
                 "ok": False,
                 "error":
-                    "Recipient was not found"
-            }), 404
+                    "control value must be true or false"
+            }), 400
 
-        if not remaining:
-            return jsonify({
-                "ok": False,
-                "error":
-                    "Cannot remove the last email recipient"
-            }), 409
+        cmd = [
+            "sudo",
+            "-n",
+            helper,
+            "set",
+            key,
+            (
+                "true"
+                if value
+                else "false"
+            ),
+        ]
 
-        recipients = remaining
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
 
     try:
-        _write_email_recipients(
-            recipients
+        data = json.loads(
+            proc.stdout
         )
 
-    except Exception as exc:
+    except Exception:
         return jsonify({
             "ok": False,
-            "error": str(exc)
+            "error":
+                "Notification helper returned invalid data"
         }), 500
 
-    return jsonify({
-        "ok": True,
-        "recipients":
-            _email_recipients()
-    })
+    if proc.returncode != 0:
+        return jsonify(data), 400
 
+    return jsonify(data)
 
 
 @app.route("/api/test/<mode>", methods=["POST"])

@@ -5960,5 +5960,1433 @@ function closeLabSelectedRestoreScreen() {
 
 
 
+
+<style id="nut-email-recipient-manager-style">
+  .nut-recipient-manager {
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid rgba(148,163,184,.22);
+    border-radius: 12px;
+    background: rgba(15,23,42,.22);
+  }
+
+  .nut-recipient-manager h4 {
+    margin: 0 0 10px 0;
+  }
+
+  .nut-recipient-list {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .nut-recipient-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 10px;
+    border: 1px solid rgba(148,163,184,.16);
+    border-radius: 9px;
+  }
+
+  .nut-recipient-address {
+    overflow-wrap: anywhere;
+  }
+
+  .nut-recipient-remove {
+    flex: 0 0 auto;
+  }
+
+  .nut-recipient-add-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .nut-recipient-add-row input {
+    min-width: 260px;
+    flex: 1 1 260px;
+  }
+
+  .nut-recipient-message {
+    margin-top: 9px;
+    font-size: .9rem;
+    opacity: .85;
+  }
+</style>
+
+<script id="nut-email-recipient-manager">
+(function () {
+  const RECIPIENT_API =
+    "/api/notification-recipients";
+
+  const EMAIL_API =
+    "/api/notification-recipients/email";
+
+  function findNotificationPanel() {
+    return document.getElementById(
+      "nut-notification-control-panel"
+    );
+  }
+
+  function makeButton(label, className) {
+    const button =
+      document.createElement("button");
+
+    button.type = "button";
+    button.textContent = label;
+    button.className =
+      className || "cc-btn";
+
+    return button;
+  }
+
+  function buildEmailManager() {
+    if (
+      document.getElementById(
+        "nut-email-recipient-manager-box"
+      )
+    ) {
+      return;
+    }
+
+    const panel =
+      findNotificationPanel();
+
+    if (!panel) {
+      setTimeout(
+        buildEmailManager,
+        250
+      );
+      return;
+    }
+
+    const dailyToggle =
+      panel.querySelector(
+        '[data-control="daily_health_email"]'
+      );
+
+    if (!dailyToggle) {
+      setTimeout(
+        buildEmailManager,
+        250
+      );
+      return;
+    }
+
+    const row =
+      dailyToggle.closest(
+        ".nut-notification-row"
+      );
+
+    const box =
+      document.createElement("div");
+
+    box.id =
+      "nut-email-recipient-manager-box";
+
+    box.className =
+      "nut-recipient-manager";
+
+    box.innerHTML = `
+      <h4>Email Recipients</h4>
+
+      <div
+        id="nut-email-recipient-list"
+        class="nut-recipient-list">
+      </div>
+
+      <div class="nut-recipient-add-row">
+        <input
+          id="nut-email-recipient-input"
+          type="email"
+          placeholder="name@example.com"
+          autocomplete="off">
+
+        <button
+          type="button"
+          class="cc-btn cc-btn-primary"
+          id="nut-email-recipient-add">
+          Add Email Recipient
+        </button>
+      </div>
+
+      <div
+        id="nut-email-recipient-message"
+        class="nut-recipient-message">
+        Loading recipients...
+      </div>
+    `;
+
+    row.insertAdjacentElement(
+      "afterend",
+      box
+    );
+
+    document
+      .getElementById(
+        "nut-email-recipient-add"
+      )
+      .addEventListener(
+        "click",
+        addRecipient
+      );
+
+    document
+      .getElementById(
+        "nut-email-recipient-input"
+      )
+      .addEventListener(
+        "keydown",
+        function (event) {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            addRecipient();
+          }
+        }
+      );
+
+    loadRecipients();
+  }
+
+  function setMessage(text) {
+    const el =
+      document.getElementById(
+        "nut-email-recipient-message"
+      );
+
+    if (el) {
+      el.textContent = text;
+    }
+  }
+
+  async function loadRecipients() {
+    setMessage(
+      "Loading recipients..."
+    );
+
+    try {
+      const response =
+        await fetch(
+          RECIPIENT_API,
+          {
+            cache: "no-store"
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+        throw new Error(
+          data.error ||
+          "Unable to load recipients"
+        );
+      }
+
+      renderRecipients(
+        data.email.recipients || []
+      );
+
+      setMessage(
+        "Email recipients loaded."
+      );
+
+    } catch (error) {
+      setMessage(
+        "Unable to load recipients: " +
+        error.message
+      );
+    }
+  }
+
+  function renderRecipients(recipients) {
+    const list =
+      document.getElementById(
+        "nut-email-recipient-list"
+      );
+
+    if (!list) {
+      return;
+    }
+
+    list.innerHTML = "";
+
+    recipients.forEach(
+      function (address) {
+        const item =
+          document.createElement("div");
+
+        item.className =
+          "nut-recipient-item";
+
+        const text =
+          document.createElement("div");
+
+        text.className =
+          "nut-recipient-address";
+
+        text.textContent =
+          address;
+
+        const remove =
+          makeButton(
+            "Remove",
+            "cc-btn nut-recipient-remove"
+          );
+
+        remove.addEventListener(
+          "click",
+          function () {
+            removeRecipient(
+              address,
+              recipients.length
+            );
+          }
+        );
+
+        item.appendChild(text);
+        item.appendChild(remove);
+        list.appendChild(item);
+      }
+    );
+  }
+
+  async function changeRecipient(
+    action,
+    address
+  ) {
+    const response =
+      await fetch(
+        EMAIL_API,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body: JSON.stringify({
+            action: action,
+            email: address
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (
+      !response.ok ||
+      !data.ok
+    ) {
+      throw new Error(
+        data.error ||
+        "Recipient change failed"
+      );
+    }
+
+    return data.recipients || [];
+  }
+
+  async function addRecipient() {
+    const input =
+      document.getElementById(
+        "nut-email-recipient-input"
+      );
+
+    if (!input) {
+      return;
+    }
+
+    const address =
+      input.value.trim();
+
+    if (!address) {
+      setMessage(
+        "Enter an email address first."
+      );
+      return;
+    }
+
+    setMessage(
+      "Adding recipient..."
+    );
+
+    try {
+      const recipients =
+        await changeRecipient(
+          "add",
+          address
+        );
+
+      input.value = "";
+
+      renderRecipients(
+        recipients
+      );
+
+      setMessage(
+        "Email recipient added."
+      );
+
+    } catch (error) {
+      setMessage(
+        "Add failed: " +
+        error.message
+      );
+    }
+  }
+
+  async function removeRecipient(
+    address,
+    count
+  ) {
+    if (count <= 1) {
+      setMessage(
+        "The last email recipient cannot be removed."
+      );
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        "Remove this Daily Health email recipient?\n\n" +
+        address
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setMessage(
+      "Removing recipient..."
+    );
+
+    try {
+      const recipients =
+        await changeRecipient(
+          "remove",
+          address
+        );
+
+      renderRecipients(
+        recipients
+      );
+
+      setMessage(
+        "Email recipient removed."
+      );
+
+    } catch (error) {
+      setMessage(
+        "Remove failed: " +
+        error.message
+      );
+    }
+  }
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      buildEmailManager
+    );
+  } else {
+    buildEmailManager();
+  }
+})();
+</script>
+
+
+<style id="nut-telegram-recipient-manager-style">
+  .nut-telegram-manager {
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid rgba(148,163,184,.22);
+    border-radius: 12px;
+    background: rgba(15,23,42,.22);
+  }
+
+  .nut-telegram-manager h4 {
+    margin: 0 0 10px 0;
+  }
+
+  .nut-telegram-subtitle {
+    margin-top: 16px;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+
+  .nut-telegram-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .nut-telegram-user {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 10px;
+    border: 1px solid rgba(148,163,184,.16);
+    border-radius: 9px;
+  }
+
+  .nut-telegram-user-main {
+    min-width: 0;
+  }
+
+  .nut-telegram-user-name {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .nut-telegram-user-role {
+    margin-top: 2px;
+    font-size: .84rem;
+    opacity: .72;
+  }
+
+  .nut-telegram-status {
+    margin-top: 10px;
+    font-size: .9rem;
+    opacity: .85;
+  }
+</style>
+
+<script id="nut-telegram-recipient-manager">
+(function () {
+  const LIST_API =
+    "/api/notification-recipients";
+
+  const CHANGE_API =
+    "/api/notification-recipients/telegram";
+
+  function findNotificationPanel() {
+    return document.getElementById(
+      "nut-notification-control-panel"
+    );
+  }
+
+  function button(label) {
+    const el =
+      document.createElement("button");
+
+    el.type = "button";
+    el.className = "cc-btn";
+    el.textContent = label;
+
+    return el;
+  }
+
+  function buildTelegramManager() {
+    if (
+      document.getElementById(
+        "nut-telegram-recipient-manager-box"
+      )
+    ) {
+      return;
+    }
+
+    const panel =
+      findNotificationPanel();
+
+    if (!panel) {
+      setTimeout(
+        buildTelegramManager,
+        250
+      );
+      return;
+    }
+
+    const master =
+      panel.querySelector(
+        '[data-control="telegram_push_notifications"]'
+      );
+
+    if (!master) {
+      setTimeout(
+        buildTelegramManager,
+        250
+      );
+      return;
+    }
+
+    const row =
+      master.closest(
+        ".nut-notification-row"
+      );
+
+    const box =
+      document.createElement("div");
+
+    box.id =
+      "nut-telegram-recipient-manager-box";
+
+    box.className =
+      "nut-telegram-manager";
+
+    box.innerHTML = `
+      <h4>Telegram Recipients</h4>
+
+      <div
+        id="nut-telegram-approved"
+        class="nut-telegram-list">
+      </div>
+
+      <div class="nut-telegram-subtitle">
+        Pending Telegram Access
+      </div>
+
+      <div
+        id="nut-telegram-pending"
+        class="nut-telegram-list">
+      </div>
+
+      <div
+        id="nut-telegram-recipient-status"
+        class="nut-telegram-status">
+        Loading Telegram recipients...
+      </div>
+    `;
+
+    row.insertAdjacentElement(
+      "afterend",
+      box
+    );
+
+    loadTelegramRecipients();
+  }
+
+  function setStatus(text) {
+    const el =
+      document.getElementById(
+        "nut-telegram-recipient-status"
+      );
+
+    if (el) {
+      el.textContent = text;
+    }
+  }
+
+  function makeUserRow(
+    name,
+    role,
+    action
+  ) {
+    const item =
+      document.createElement("div");
+
+    item.className =
+      "nut-telegram-user";
+
+    const main =
+      document.createElement("div");
+
+    main.className =
+      "nut-telegram-user-main";
+
+    const nameEl =
+      document.createElement("div");
+
+    nameEl.className =
+      "nut-telegram-user-name";
+
+    nameEl.textContent =
+      name;
+
+    main.appendChild(nameEl);
+
+    if (role) {
+      const roleEl =
+        document.createElement("div");
+
+      roleEl.className =
+        "nut-telegram-user-role";
+
+      roleEl.textContent =
+        role;
+
+      main.appendChild(roleEl);
+    }
+
+    item.appendChild(main);
+
+    if (action) {
+      item.appendChild(action);
+    }
+
+    return item;
+  }
+
+  async function loadTelegramRecipients() {
+    setStatus(
+      "Loading Telegram recipients..."
+    );
+
+    try {
+      const response =
+        await fetch(
+          LIST_API,
+          {
+            cache: "no-store"
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+        throw new Error(
+          data.error ||
+          "Unable to load Telegram recipients"
+        );
+      }
+
+      renderApproved(
+        data.telegram.approved || []
+      );
+
+      renderPending(
+        data.telegram.pending || []
+      );
+
+      setStatus(
+        "Telegram recipients loaded."
+      );
+
+    } catch (error) {
+      setStatus(
+        "Unable to load Telegram recipients: " +
+        error.message
+      );
+    }
+  }
+
+  function renderApproved(users) {
+    const list =
+      document.getElementById(
+        "nut-telegram-approved"
+      );
+
+    if (!list) {
+      return;
+    }
+
+    list.innerHTML = "";
+
+    if (!users.length) {
+      list.appendChild(
+        makeUserRow(
+          "No approved Telegram recipients",
+          "",
+          null
+        )
+      );
+      return;
+    }
+
+    users.forEach(
+      function (user) {
+        let action = null;
+
+        if (!user.primary) {
+          action =
+            button("Remove");
+
+          action.addEventListener(
+            "click",
+            function () {
+              removeTelegramRecipient(
+                user.name
+              );
+            }
+          );
+        }
+
+        list.appendChild(
+          makeUserRow(
+            user.name,
+            user.role || "USER",
+            action
+          )
+        );
+      }
+    );
+  }
+
+  function renderPending(users) {
+    const list =
+      document.getElementById(
+        "nut-telegram-pending"
+      );
+
+    if (!list) {
+      return;
+    }
+
+    list.innerHTML = "";
+
+    if (!users.length) {
+      list.appendChild(
+        makeUserRow(
+          "No pending requests",
+          "",
+          null
+        )
+      );
+      return;
+    }
+
+    users.forEach(
+      function (user) {
+        const approve =
+          button("Approve");
+
+        approve.addEventListener(
+          "click",
+          function () {
+            approveTelegramRecipient(
+              user.name
+            );
+          }
+        );
+
+        list.appendChild(
+          makeUserRow(
+            user.name,
+            "PENDING",
+            approve
+          )
+        );
+      }
+    );
+  }
+
+  async function changeTelegramRecipient(
+    action,
+    name
+  ) {
+    const response =
+      await fetch(
+        CHANGE_API,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body: JSON.stringify({
+            action: action,
+            name: name
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (
+      !response.ok ||
+      !data.ok
+    ) {
+      throw new Error(
+        data.error ||
+        "Telegram recipient change failed"
+      );
+    }
+
+    return data.telegram;
+  }
+
+  async function approveTelegramRecipient(
+    name
+  ) {
+    const confirmed =
+      window.confirm(
+        "Approve Telegram access for:\n\n" +
+        name
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setStatus(
+      "Approving Telegram recipient..."
+    );
+
+    try {
+      const telegram =
+        await changeTelegramRecipient(
+          "approve",
+          name
+        );
+
+      renderApproved(
+        telegram.approved || []
+      );
+
+      renderPending(
+        telegram.pending || []
+      );
+
+      setStatus(
+        "Telegram recipient approved."
+      );
+
+    } catch (error) {
+      setStatus(
+        "Approval failed: " +
+        error.message
+      );
+    }
+  }
+
+  async function removeTelegramRecipient(
+    name
+  ) {
+    const confirmed =
+      window.confirm(
+        "Remove Telegram access for:\n\n" +
+        name
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setStatus(
+      "Removing Telegram recipient..."
+    );
+
+    try {
+      const telegram =
+        await changeTelegramRecipient(
+          "remove",
+          name
+        );
+
+      renderApproved(
+        telegram.approved || []
+      );
+
+      renderPending(
+        telegram.pending || []
+      );
+
+      setStatus(
+        "Telegram recipient removed."
+      );
+
+    } catch (error) {
+      setStatus(
+        "Remove failed: " +
+        error.message
+      );
+    }
+  }
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      buildTelegramManager
+    );
+  } else {
+    buildTelegramManager();
+  }
+})();
+</script>
+
+
+<style id="nut-notification-control-ui-style">
+  .nut-notification-control-panel {
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid rgba(148,163,184,.22);
+    border-radius: 12px;
+    background: rgba(15,23,42,.22);
+  }
+
+  .nut-notification-control-panel h3 {
+    margin: 0 0 6px 0;
+  }
+
+  .nut-notification-control-copy {
+    margin-bottom: 14px;
+    opacity: .8;
+  }
+
+  .nut-notification-control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 0;
+    border-top: 1px solid rgba(148,163,184,.14);
+  }
+
+  .nut-notification-control-row:first-of-type {
+    border-top: 0;
+  }
+
+  .nut-notification-control-child {
+    margin-left: 24px;
+  }
+
+  .nut-notification-control-name {
+    font-weight: 700;
+  }
+
+  .nut-notification-control-help {
+    margin-top: 3px;
+    font-size: .88rem;
+    opacity: .72;
+  }
+
+  .nut-notification-switch {
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+  }
+
+  .nut-notification-control-status {
+    margin-top: 12px;
+    font-size: .9rem;
+    opacity: .85;
+  }
+
+  .nut-notification-control-warning {
+    display: none;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(248,113,113,.45);
+    border-radius: 10px;
+    background: rgba(127,29,29,.22);
+    font-weight: 700;
+  }
+</style>
+
+<script id="nut-notification-control-ui">
+(function () {
+  const API =
+    "/api/notification-controls";
+
+  function makeRow(
+    key,
+    title,
+    help,
+    child
+  ) {
+    const row =
+      document.createElement("div");
+
+    row.className =
+      "nut-notification-control-row" +
+      (
+        child
+          ? " nut-notification-control-child"
+          : ""
+      );
+
+    const copy =
+      document.createElement("div");
+
+    const name =
+      document.createElement("div");
+
+    name.className =
+      "nut-notification-control-name";
+
+    name.textContent = title;
+
+    const helpEl =
+      document.createElement("div");
+
+    helpEl.className =
+      "nut-notification-control-help";
+
+    helpEl.textContent = help;
+
+    copy.appendChild(name);
+    copy.appendChild(helpEl);
+
+    const input =
+      document.createElement("input");
+
+    input.type = "checkbox";
+    input.className =
+      "nut-notification-switch";
+
+    input.dataset.key = key;
+    input.setAttribute(
+      "aria-label",
+      title
+    );
+
+    row.appendChild(copy);
+    row.appendChild(input);
+
+    return row;
+  }
+
+  function build() {
+    if (
+      document.getElementById(
+        "nut-notification-control-panel"
+      )
+    ) {
+      return;
+    }
+
+    const configSections =
+      document.querySelectorAll(
+        "#cc-config-section"
+      );
+
+    const host =
+      configSections.length > 1
+        ? configSections[
+            configSections.length - 1
+          ]
+        : configSections[0];
+
+    if (!host) {
+      setTimeout(build, 250);
+      return;
+    }
+
+    const panel =
+      document.createElement("div");
+
+    panel.id =
+      "nut-notification-control-panel";
+
+    panel.className =
+      "nut-notification-control-panel";
+
+    panel.innerHTML = `
+      <h3>Notification Controls</h3>
+      <div class="nut-notification-control-copy">
+        Control email and Telegram delivery only.
+        These switches do not change NUT monitoring,
+        logging, timers, or shutdown behavior.
+      </div>
+    `;
+
+    panel.appendChild(
+      makeRow(
+        "daily_health_email",
+        "Daily Health Email",
+        "Send the scheduled Daily UPS health report by email.",
+        false
+      )
+    );
+
+    panel.appendChild(
+      makeRow(
+        "weather_based_closing_thoughts",
+        "Weather-Based Closing Thoughts",
+        "Adds Today's closing thought to the Daily UPS health email.",
+        true
+      )
+    );
+
+    panel.appendChild(
+      makeRow(
+        "telegram_push_notifications",
+        "Telegram Push Notifications",
+        "Master switch for automated Telegram notifications.",
+        false
+      )
+    );
+
+    panel.appendChild(
+      makeRow(
+        "telegram_daily_health_push",
+        "Daily Health Push",
+        "Send the scheduled Daily UPS health summary through Telegram.",
+        true
+      )
+    );
+
+    panel.appendChild(
+      makeRow(
+        "telegram_critical_power_alerts",
+        "Critical Power Alerts",
+        "ONBATT, ONLINE, shutdown, cancelled, and final Telegram alerts.",
+        true
+      )
+    );
+
+    panel.appendChild(
+      makeRow(
+        "telegram_heartbeat",
+        "Heartbeat",
+        "Send the scheduled Telegram heartbeat.",
+        true
+      )
+    );
+
+    const warning =
+      document.createElement("div");
+
+    warning.id =
+      "nut-notification-control-warning";
+
+    warning.className =
+      "nut-notification-control-warning";
+
+    warning.textContent =
+      "Warning: Critical UPS power-event notifications will not be delivered through Telegram while this setting is disabled.";
+
+    panel.appendChild(warning);
+
+    const status =
+      document.createElement("div");
+
+    status.id =
+      "nut-notification-control-status";
+
+    status.className =
+      "nut-notification-control-status";
+
+    status.textContent =
+      "Loading notification settings...";
+
+    panel.appendChild(status);
+
+    host.prepend(panel);
+
+    load();
+  }
+
+  function inputs() {
+    return Array.from(
+      document.querySelectorAll(
+        "#nut-notification-control-panel [data-key]"
+      )
+    );
+  }
+
+  function getInput(key) {
+    return document.querySelector(
+      '#nut-notification-control-panel [data-key="' +
+      key +
+      '"]'
+    );
+  }
+
+  function status(text) {
+    const el =
+      document.getElementById(
+        "nut-notification-control-status"
+      );
+
+    if (el) {
+      el.textContent = text;
+    }
+  }
+
+  function updateDependencies() {
+    const email =
+      getInput(
+        "daily_health_email"
+      );
+
+    const closing =
+      getInput(
+        "weather_based_closing_thoughts"
+      );
+
+    const telegram =
+      getInput(
+        "telegram_push_notifications"
+      );
+
+    const health =
+      getInput(
+        "telegram_daily_health_push"
+      );
+
+    const critical =
+      getInput(
+        "telegram_critical_power_alerts"
+      );
+
+    const heartbeat =
+      getInput(
+        "telegram_heartbeat"
+      );
+
+    if (email && closing) {
+      closing.disabled =
+        !email.checked;
+    }
+
+    [health, critical, heartbeat]
+      .forEach(function (item) {
+        if (
+          item &&
+          telegram
+        ) {
+          item.disabled =
+            !telegram.checked;
+        }
+      });
+
+    const warning =
+      document.getElementById(
+        "nut-notification-control-warning"
+      );
+
+    if (
+      warning &&
+      telegram &&
+      critical
+    ) {
+      warning.style.display =
+        (
+          !telegram.checked ||
+          !critical.checked
+        )
+          ? "block"
+          : "none";
+    }
+  }
+
+  async function load() {
+    try {
+      const response =
+        await fetch(
+          API,
+          {
+            cache: "no-store"
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+        throw new Error(
+          data.error ||
+          "Unable to load settings"
+        );
+      }
+
+      inputs().forEach(
+        function (input) {
+          input.checked =
+            !!data.controls[
+              input.dataset.key
+            ];
+
+          input.addEventListener(
+            "change",
+            function () {
+              save(input);
+            }
+          );
+        }
+      );
+
+      updateDependencies();
+
+      status(
+        "Notification settings loaded."
+      );
+
+    } catch (error) {
+      status(
+        "Unable to load notification settings: " +
+        error.message
+      );
+    }
+  }
+
+  async function save(input) {
+    updateDependencies();
+
+    status(
+      "Saving notification setting..."
+    );
+
+    try {
+      const response =
+        await fetch(
+          API,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+            body: JSON.stringify({
+              key:
+                input.dataset.key,
+              value:
+                input.checked
+            })
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+        throw new Error(
+          data.error ||
+          "Unable to save setting"
+        );
+      }
+
+      status("Saved.");
+
+    } catch (error) {
+      input.checked =
+        !input.checked;
+
+      updateDependencies();
+
+      status(
+        "Save failed: " +
+        error.message
+      );
+    }
+  }
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      build
+    );
+  } else {
+    build();
+  }
+})();
+</script>
+
 </body>
 </html>

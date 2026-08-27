@@ -11,6 +11,73 @@ LOG=Path("/var/log/nut-telegram-alerts.log")
 
 TYPES={"onbatt","online","shutdown","cancelled","final","weekly"}
 
+CONTROLS=Path(
+    "/etc/nut/config.d/notification-controls.json"
+)
+
+
+def notification_control(name,default=True):
+    try:
+        data=json.loads(
+            CONTROLS.read_text()
+        )
+
+        value=data.get(
+            name,
+            default
+        )
+
+        if isinstance(value,bool):
+            return value
+
+        if isinstance(value,str):
+            return value.strip().lower() in {
+                "1",
+                "true",
+                "yes",
+                "on"
+            }
+
+        return bool(value)
+
+    except Exception:
+        return default
+
+
+def telegram_allowed(kind):
+    if not notification_control(
+        "telegram_push_notifications",
+        True
+    ):
+        return False
+
+    if kind=="weekly":
+        return notification_control(
+            "telegram_daily_health_push",
+            True
+        )
+
+    if kind=="heartbeat":
+        return notification_control(
+            "telegram_heartbeat",
+            True
+        )
+
+    if kind in {
+        "onbatt",
+        "online",
+        "shutdown",
+        "cancelled",
+        "final"
+    }:
+        return notification_control(
+            "telegram_critical_power_alerts",
+            True
+        )
+
+    return True
+
+
 UPS_RE=re.compile(r"\b(ups\d+)\b",re.I)
 TOKEN_RE=re.compile(r"\b\d{6,}:[A-Za-z0-9_-]{20,}\b")
 IP_RE=re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
@@ -116,6 +183,12 @@ def secret():
 
 
 def send(kind,text):
+    if not telegram_allowed(kind):
+        log(
+            f"TELEGRAM DELIVERY DISABLED type={kind} "
+            f"reason=notification_control"
+        )
+        return True
     if not ok_mode(kind):
         log(
             f"TELEGRAM_NOTIFY_BLOCKED "
@@ -358,6 +431,12 @@ def confirmed_down(raw):
 
 
 def enqueue(kind):
+    if not telegram_allowed(kind):
+        log(
+            f"TELEGRAM ENQUEUE SKIPPED type={kind} "
+            f"reason=notification_control"
+        )
+        return 0
     if kind not in TYPES:
         print(
             f"TELEGRAM_ENQUEUE_SKIPPED "
@@ -1121,6 +1200,8 @@ def health():
         ]
 
     lines += [
+        "",
+        "See Daily UPS health report email for more info.",
         "",
         f"Report time: {stamp()}"
     ]

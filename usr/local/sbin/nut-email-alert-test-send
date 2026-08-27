@@ -993,6 +993,162 @@ def ups_maintenance_recommendation_lines():
     lines.append("Reminder: UPS Maintenance Mode can suppress false NUT-triggered shutdowns, but it does not protect equipment from power loss while a UPS or battery is physically disconnected.")
     return lines
 
+
+def notification_control(name, default=True):
+    import json
+    from pathlib import Path
+
+    path = Path(
+        "/etc/nut/config.d/notification-controls.json"
+    )
+
+    try:
+        data = json.loads(
+            path.read_text()
+        )
+
+        value = data.get(
+            name,
+            default
+        )
+
+        if isinstance(value, bool):
+            return value
+
+        if isinstance(value, str):
+            return value.strip().lower() in {
+                "1",
+                "true",
+                "yes",
+                "on",
+            }
+
+        return bool(value)
+
+    except Exception:
+        return default
+
+
+def daily_health_closing_thought():
+    """
+    Routine Daily UPS health email personality only.
+
+    Use the user-facing Weather summary plus actual BLOCK/CAUTION
+    reasons so negative phrases such as "no cold-weather risk"
+    cannot accidentally select the wrong closing thought.
+    """
+
+    try:
+        weather_lines, blockers, cautions, positives = (
+            ups_weather_grid_risk_lines()
+        )
+
+        weather_summary = ""
+
+        for line in weather_lines:
+            stripped = str(line).strip()
+
+            if stripped.lower().startswith("weather:"):
+                weather_summary = stripped.lower()
+                break
+
+        actual_risks = " ".join(
+            str(x)
+            for x in (blockers + cautions)
+        ).lower()
+
+        combined = (
+            weather_summary
+            + " "
+            + actual_risks
+        )
+
+        if any(
+            phrase in combined
+            for phrase in (
+                "thunderstorm",
+                "stormy",
+                "hail",
+                "severe storm",
+            )
+        ):
+            return (
+                "Storms are expected. Perhaps let nature "
+                "handle the bad decisions for today."
+            )
+
+        if any(
+            phrase in combined
+            for phrase in (
+                "snow",
+                "freezing rain",
+                "freezing drizzle",
+                "ice",
+                "icy",
+                "cold today",
+                "cold weather",
+            )
+        ):
+            return (
+                "It's going to be cold. Dress warmly; "
+                "questionable judgment provides surprisingly "
+                "little insulation."
+            )
+
+        if any(
+            phrase in combined
+            for phrase in (
+                "hot today",
+                "high heat",
+                "heat/grid-load",
+                "elevated heat",
+            )
+        ):
+            return (
+                "It's going to be hot. Stay hydrated; "
+                "clear thinking already has enough obstacles."
+            )
+
+        if any(
+            phrase in combined
+            for phrase in (
+                "windy",
+                "high wind",
+                "wind caution",
+                "strong wind",
+            )
+        ):
+            return (
+                "It's going to be windy. Secure anything "
+                "outdoors with more stability than your "
+                "decision-making."
+            )
+
+        if any(
+            phrase in weather_summary
+            for phrase in (
+                "rainy",
+                "rain today",
+                "drizzle",
+            )
+        ):
+            return (
+                "Enjoy the rain. Nature has reviewed your "
+                "outdoor plans and declined them."
+            )
+
+        return (
+            "Have a nice day. Even the weather managed "
+            "to meet expectations."
+        )
+
+    except Exception:
+        return (
+            "Have a nice day. The weather declined to "
+            "provide enough material for commentary."
+        )
+
+
 templates = {
     "onbatt": {
         "subject": "Power switched to UPS",
@@ -1173,11 +1329,37 @@ templates = {
             "",
             "Operator action:",
             "Review UPS charge, runtime, status, load, IDF reachability, and any unavailable readings.",
+            *(
+                [
+                    "",
+                    "Today's closing thought:",
+                    daily_health_closing_thought(),
+                ]
+                if notification_control(
+                    "weather_based_closing_thoughts",
+                    True
+                )
+                else []
+            ),
         ],
     },
 }
 
 tpl = templates[kind]
+
+if (
+    action == "--send"
+    and kind == "weekly"
+    and not notification_control(
+        "daily_health_email",
+        True
+    )
+):
+    print(
+        "Daily Health Email is disabled by "
+        "notification-controls.json; no email sent."
+    )
+    sys.exit(0)
 
 test_mode = os.environ.get("NUT_EMAIL_TEST", "").strip() == "1"
 
