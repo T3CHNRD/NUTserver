@@ -3162,6 +3162,7 @@ function updateNutProductionButtons(mode) {
       <a href="#cc-events-section" data-cc-tab="cc-events-section">Events</a>
       <a href="#cc-tests-logs-live-section" data-cc-tab="cc-tests-logs-live-section">Tests & Logs</a>
       <a href="#cc-config-section" data-cc-tab="cc-config-section">Configuration</a>
+      <a href="#cc-help-section" data-cc-tab="cc-help-section">Help</a>
     </nav>
 
     <section class="cc-hero-grid">
@@ -3431,7 +3432,62 @@ function updateNutProductionButtons(mode) {
 
     </section>
 
-    <section class="cc-card cc-danger-zone cc-tab-panel" id="cc-tests-logs-live-section">
+    
+    <section class="cc-card cc-wide cc-tab-panel" id="cc-help-section">
+      <div class="cc-section-tag">Help &amp; Runbook</div>
+
+      <div class="cc-section-title">
+        <h2>NUT Control Center Help &amp; Runbook</h2>
+      </div>
+
+      <p class="cc-section-subtitle">
+        Step-by-step operator and administrator documentation for every
+        NUT Control Center feature, setting, workflow, test, service,
+        notification, backup, restore, and protected-system function.
+      </p>
+
+      <div style="margin:18px 0;">
+        <input
+          id="cc-help-search" style="width:100%;min-height:56px;font-size:18px;padding:12px 16px;box-sizing:border-box;"
+          class="cc-input"
+          type="search"
+          placeholder="Search Help: example Telegram, UPS, email, restore..."
+          style="width:100%;"
+        >
+      </div>
+
+      <div id="cc-help-category-list" class="cc-grid" data-help-ready="1">
+        <div class="cc-mini"><strong>01 - Getting Started</strong></div>
+        <div class="cc-mini"><strong>02 - System Overview</strong></div>
+        <div class="cc-mini"><strong>03 - Monitoring</strong></div>
+        <div class="cc-mini"><strong>04 - Events</strong></div>
+        <div class="cc-mini"><strong>05 - Notification Settings</strong></div>
+        <div class="cc-mini"><strong>06 - Telegram</strong></div>
+        <div class="cc-mini"><strong>07 - Email</strong></div>
+        <div class="cc-mini"><strong>08 - Maintenance and Weather</strong></div>
+        <div class="cc-mini"><strong>09 - Configuration</strong></div>
+        <div class="cc-mini"><strong>10 - Tests and Logs</strong></div>
+        <div class="cc-mini"><strong>11 - Backup</strong></div>
+        <div class="cc-mini"><strong>12 - Restore and Disaster Recovery</strong></div>
+        <div class="cc-mini"><strong>13 - Shutdown Orchestration</strong></div>
+        <div class="cc-mini"><strong>14 - Protected Systems</strong></div>
+        <div class="cc-mini"><strong>15 - Services and Timers</strong></div>
+        <div class="cc-mini"><strong>16 - Logs</strong></div>
+        <div class="cc-mini"><strong>17 - Troubleshooting</strong></div>
+        <div class="cc-mini"><strong>18 - Security</strong></div>
+        <div class="cc-mini"><strong>19 - Technical Reference</strong></div>
+      </div>
+
+      <div class="cc-mini" style="margin-top:20px;">
+        <strong>Documentation standard:</strong>
+        Every feature will include what it does, where to find it,
+        step-by-step instructions, expected results, verification,
+        rollback/revert information, production-hours safety,
+        troubleshooting, logs, and technical references.
+      </div>
+    </section>
+
+<section class="cc-card cc-danger-zone cc-tab-panel" id="cc-tests-logs-live-section">
       <div class="cc-section-tag">Operations</div>
       
       <div class="cc-section-subtitle">
@@ -7576,6 +7632,29 @@ function closeLabSelectedRestoreScreen() {
   }
 
 </style>
+
+
+<script id="cc-help-ui-script">
+(function(){
+function e(v){return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function t(f){return String(f).replace(/\.md$/i,"").replace(/^\d+_/,"").replace(/_/g," ")}
+function x(u,ok,bad){var r=new XMLHttpRequest();r.open("GET",u,true);r.onreadystatechange=function(){if(r.readyState!==4)return;if(r.status>=200&&r.status<300){try{ok(JSON.parse(r.responseText))}catch(z){bad("Invalid JSON response")}}else bad("HTTP "+r.status)};r.onerror=function(){bad("Network error")};r.send(null)}
+function init(){
+var s=document.getElementById("cc-help-search"),c=document.getElementById("cc-help-category-list");if(!s||!c)return;
+s.style.width="100%";s.style.minHeight="62px";s.style.fontSize="20px";s.style.padding="14px 18px";s.style.boxSizing="border-box";
+var r=document.getElementById("cc-help-results");if(!r){r=document.createElement("div");r.id="cc-help-results";r.className="cc-mini";r.style.marginTop="20px";c.parentNode.insertBefore(r,c.nextSibling)}
+var p=document.getElementById("cc-help-article-pane");if(!p){p=document.createElement("div");p.id="cc-help-article-pane";p.className="cc-mini";p.style.marginTop="20px";r.parentNode.insertBefore(p,r.nextSibling)}
+var a=[];
+function open(f){p.innerHTML="<strong>Loading Help article...</strong>";x("/nut-ui/api/help/article/"+encodeURIComponent(f),function(d){if(!d.ok){p.innerHTML="<strong>Unable to load Help article.</strong><br><br>"+e(d.error||"Unknown error");return}p.innerHTML="<div style='font-size:24px;font-weight:700;margin-bottom:16px;'>"+e(t(f))+"</div><pre style='white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:15px;line-height:1.6;margin:0;'>"+e(d.content||"")+"</pre>";if(p.scrollIntoView)p.scrollIntoView(true)},function(m){p.innerHTML="<strong>Unable to load Help article.</strong><br><br>"+e(m)})}
+function render(q){q=String(q||"").toLowerCase();var m=[],i,h;r.innerHTML="<div style='font-size:18px;font-weight:700;margin-bottom:12px;'>Available Help Articles</div>";for(i=0;i<a.length;i++){h=String(a[i].file+" "+(a[i].title||"")).toLowerCase();if(!q||h.indexOf(q)!==-1)m.push(a[i])}if(!m.length){r.innerHTML+="<div>No Help article matched that search.</div>";return m}for(i=0;i<m.length;i++){(function(o){var b=document.createElement("button");b.type="button";b.className="cc-btn";b.style.margin="4px 8px 4px 0";b.style.minHeight="44px";b.appendChild(document.createTextNode(t(o.file)));b.onclick=function(){open(o.file)};r.appendChild(b)})(m[i])}return m}
+function preferred(q){var z={"getting started":"01_GETTING_STARTED.md","system overview":"REF_01_CONTROL_CENTER_OVERVIEW.md","monitoring":"REF_02_MONITORING_TAB.md","events":"REF_03_EVENTS_TAB.md","notification settings":"05_NOTIFICATION_SETTINGS.md","telegram":"05_NOTIFICATION_SETTINGS.md","email":"05_NOTIFICATION_SETTINGS.md","maintenance and weather":"05_NOTIFICATION_SETTINGS.md","configuration":"09_CONFIGURATION_HOWTOS.md","tests and logs":"10_TESTS_AND_LOGS_HOWTOS.md","security":"18_CREDENTIAL_AND_PASSWORD_CHANGES.md"};return z[String(q||"").toLowerCase()]||null}
+var cards=c.getElementsByClassName("cc-mini"),i;for(i=0;i<cards.length;i++){(function(card){card.style.cursor="pointer";card.setAttribute("tabindex","0");function choose(){var l=String(card.textContent||card.innerText||"").replace(/^\s+|\s+$/g,""),q=l.replace(/^\d+\s*-\s*/,""),m=render(q),best=preferred(q),j;if(best){for(j=0;j<a.length;j++){if(a[j].file===best){open(best);return}}}for(j=0;j<m.length;j++){if(String(m[j].file).indexOf("REF_")!==0){open(m[j].file);return}}if(m.length){open(m[0].file);return}p.innerHTML="<div style='font-size:22px;font-weight:700;margin-bottom:12px;'>"+e(l)+"</div><div>No detailed Help article has been written for this category yet.</div>"}card.onclick=choose;card.onkeydown=function(k){k=k||window.event;var v=k.key||k.keyCode;if(v==="Enter"||v===13||v===" "||v===32)choose()}})(cards[i])}
+s.onkeyup=function(){render(s.value)};s.oninput=function(){render(s.value)};r.innerHTML="<strong>Loading Help library...</strong>";
+x("/nut-ui/api/help/articles",function(d){if(!d.ok||!d.articles){r.innerHTML="<strong>Unable to load Help library.</strong>";return}a=d.articles;render(s.value)},function(m){r.innerHTML="<strong>Unable to load Help library.</strong><br><br>"+e(m)})
+}
+if(document.readyState==="loading"){if(document.addEventListener)document.addEventListener("DOMContentLoaded",init,false);else window.attachEvent("onload",init)}else init()
+})();
+</script>
 
 </body>
 </html>

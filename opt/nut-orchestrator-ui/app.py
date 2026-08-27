@@ -1514,6 +1514,52 @@ def restore_selected_file_live():
 # =========================
 # POWER EVENTS (NEW)
 # =========================
+
+HELP_DIR = Path("/opt/nut-orchestrator-ui/docs/help")
+
+@app.route("/api/help/articles", methods=["GET"])
+def help_articles():
+    articles = []
+    if HELP_DIR.is_dir():
+        for path in sorted(HELP_DIR.glob("*.md")):
+            articles.append({
+                "file": path.name,
+                "title": path.stem.replace("_", " ").title()
+            })
+    return jsonify({"ok": True, "articles": articles})
+
+
+@app.route("/api/help/article/<filename>", methods=["GET"])
+def help_article(filename):
+    if "/" in filename or "\\" in filename or not filename.endswith(".md"):
+        return jsonify({"ok": False, "error": "Invalid help article name"}), 400
+
+    path = HELP_DIR / filename
+
+    try:
+        resolved = path.resolve()
+        help_root = HELP_DIR.resolve()
+    except OSError:
+        return jsonify({"ok": False, "error": "Unable to resolve help article"}), 500
+
+    if resolved.parent != help_root:
+        return jsonify({"ok": False, "error": "Invalid help article path"}), 400
+
+    if not resolved.is_file():
+        return jsonify({"ok": False, "error": "Help article not found"}), 404
+
+    try:
+        content = resolved.read_text(encoding="utf-8")
+    except OSError:
+        return jsonify({"ok": False, "error": "Unable to read help article"}), 500
+
+    return jsonify({
+        "ok": True,
+        "file": resolved.name,
+        "content": content
+    })
+
+
 @app.route("/api/power-events", methods=["GET"])
 def power_events():
     result = subprocess.run(
