@@ -7715,10 +7715,12 @@ function init(){
     ],
 
     "monitoring":[
+      "03_MONITORING_HOWTOS.md",
       "REF_02_MONITORING_TAB.md"
     ],
 
     "events":[
+      "04_EVENTS_HOWTOS.md",
       "REF_03_EVENTS_TAB.md"
     ],
 
@@ -7727,14 +7729,17 @@ function init(){
     ],
 
     "telegram":[
+      "06_TELEGRAM_HOWTOS.md",
       "05_NOTIFICATION_SETTINGS.md"
     ],
 
     "email":[
+      "07_EMAIL_HOWTOS.md",
       "05_NOTIFICATION_SETTINGS.md"
     ],
 
     "maintenance and weather":[
+      "08_MAINTENANCE_AND_WEATHER_HOWTOS.md",
       "05_NOTIFICATION_SETTINGS.md"
     ],
 
@@ -7789,20 +7794,24 @@ function init(){
     ],
 
     "services and timers":[
+      "15_SERVICES_AND_TIMERS_HOWTOS.md",
       "REF_12_upsmon_conf.md",
       "REF_13_upssched_conf.md",
       "REF_39_nut_orchestrator_sh.md"
     ],
 
     "logs":[
+      "16_LOGS_HOWTOS.md",
       "10_TESTS_AND_LOGS_HOWTOS.md"
     ],
 
     "troubleshooting":[
+      "17_TROUBLESHOOTING_HOWTOS.md",
       "10_TESTS_AND_LOGS_HOWTOS.md"
     ],
 
     "security":[
+      "18_SECURITY_HOWTOS.md",
       "18_CREDENTIAL_AND_PASSWORD_CHANGES.md",
       "REF_07_SAFE_EDITING_RULES.md",
       "REF_50_db_telnet_user.md",
@@ -7811,6 +7820,7 @@ function init(){
     ],
 
     "technical reference":[
+      "19_TECHNICAL_REFERENCE_HOWTOS.md",
       "REF_10_ups_conf.md",
       "REF_11_upsd_conf.md",
       "REF_12_upsmon_conf.md",
@@ -7974,67 +7984,24 @@ function init(){
   }
 
   function searchArticles(q){
-
-    q=String(q||"").toLowerCase();
-
+    q=String(q||"").trim();
     clearExpanded();
-
-    if(!q){
-      if(oldResults){
-        oldResults.style.display="none";
-        oldResults.innerHTML="";
-      }
-      return;
-    }
-
     if(!oldResults)return;
-
+    if(!q){oldResults.style.display="none";oldResults.innerHTML="";return;}
     oldResults.style.display="block";
-
-    oldResults.innerHTML=
-      "<div style=\"font-size:18px;font-weight:700;margin-bottom:12px;\">"+
-      "Search Results"+
-      "</div>";
-
-    var found=0;
-    var i;
-
-    for(i=0;i<articles.length;i++){
-
-      var hay=String(
-        articles[i].file+" "+(articles[i].title||"")
-      ).toLowerCase();
-
-      if(hay.indexOf(q)===-1)continue;
-
-      var b=document.createElement("button");
-      b.type="button";
-      b.className="cc-btn";
-      b.style.margin="4px 8px 4px 0";
-      b.style.minHeight="42px";
-
-      var prefix=String(articles[i].file).indexOf("REF_")===0
-        ? "Reference: "
-        : "How-To: ";
-
-      b.appendChild(
-        document.createTextNode(prefix+title(articles[i].file))
-      );
-
-      (function(file){
-        b.onclick=function(){
-          openArticle(file);
-        };
-      })(articles[i].file);
-
-      oldResults.appendChild(b);
-      found++;
-    }
-
-    if(!found){
-      oldResults.innerHTML+=
-        "<div>No Help article matched that search.</div>";
-    }
+    oldResults.innerHTML="<b>Search Results</b><div>Searching...</div>";
+    getjson("/nut-ui/api/help/search?q="+encodeURIComponent(q),function(d){
+      oldResults.innerHTML="<b>Search Results</b>";
+      if(!d.results||!d.results.length){oldResults.innerHTML+="<div>No matching Help article found.</div>";return;}
+      d.results.forEach(function(x){
+        var b=document.createElement("button");
+        b.type="button";b.className="cc-btn";
+        b.style.margin="6px 6px 0 0";
+        b.appendChild(document.createTextNode(x.type+": "+x.title));
+        b.onclick=function(){openArticle(x.file);};
+        oldResults.appendChild(b);
+      });
+    },function(m){oldResults.innerHTML="<b>Search Results</b><div>Search failed: "+esc(m)+"</div>";});
   }
 
   var cards=list.getElementsByClassName("cc-mini");
