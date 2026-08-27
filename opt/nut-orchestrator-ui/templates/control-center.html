@@ -3456,6 +3456,7 @@ function updateNutProductionButtons(mode) {
         >
       </div>
 
+      <div id="cc-help-results" style="display:none;margin:14px 0 18px 0;"></div>
       <div id="cc-help-category-list" class="cc-grid" data-help-ready="1">
         <div class="cc-mini"><strong>01 - Getting Started</strong></div>
         <div class="cc-mini"><strong>02 - System Overview</strong></div>
@@ -7682,6 +7683,7 @@ function init(){
   search.style.boxSizing="border-box";
 
   var oldResults=document.getElementById("cc-help-results");
+  if(!oldResults){oldResults=document.createElement("div");oldResults.id="cc-help-results";oldResults.style.display="none";if(list&&list.parentNode){list.parentNode.insertBefore(oldResults,list);}}
 
   if(oldResults){
     oldResults.innerHTML="";
@@ -7987,7 +7989,8 @@ function init(){
     q=String(q||"").trim();
     clearExpanded();
     if(!oldResults)return;
-    if(!q){oldResults.style.display="none";oldResults.innerHTML="";return;}
+    if(!q){oldResults.style.display="none";oldResults.innerHTML="";if(list)list.style.display="";return;}
+    if(list)list.style.display="none";
     oldResults.style.display="block";
     oldResults.innerHTML="<b>Search Results</b><div>Searching...</div>";
     getjson("/nut-ui/api/help/search?q="+encodeURIComponent(q),function(d){
