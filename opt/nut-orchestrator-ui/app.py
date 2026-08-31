@@ -1533,18 +1533,31 @@ def help_articles():
 def api_help_search():
     from flask import request
     import re
-    q=(request.args.get("q") or "").lower().replace("dbo1","db01").replace("dbo2","db02")
-    words=[x for x in re.findall(r"[a-z0-9]+",q) if x not in {"how","to","i","the","a","an","do","does","my","is","are","in","on","for","of","can","what","where"}]
+    norm=lambda s:(s or "").lower().replace("dbo1","db01").replace("dbo2","db02")
+    q=norm(request.args.get("q") or "")
+    stop={"how","to","i","the","a","an","do","does","my","is","are","in","on","for","of","can","what","where","button","buttons"}
+    words=[x for x in re.findall(r"[a-z0-9]+",q) if x not in stop]
     out=[]
     for f in sorted(HELP_DIR.glob("*.md")):
         body=f.read_text(errors="replace")
-        hay=(f.name+" "+body).lower().replace("dbo1","db01").replace("dbo2","db02")
-        hits=sum(1 for w in words if w in hay)
-        if words and hits==len(words):
-            title=next((x[2:].strip() for x in body.splitlines() if x.startswith("# ")),f.name)
-            out.append({"file":f.name,"title":title,"type":"Reference Runbook" if f.name.startswith("REF_") else "Current How-To","score":hits+(0 if f.name.startswith("REF_") else 10)})
+        hay=norm(f.name+" "+body)
+        if not words or not all(w in hay for w in words):
+            continue
+        title=next((x[2:].strip() for x in body.splitlines() if x.startswith("# ")),f.name)
+        sections=re.split(r"(?m)(?=^#{2,6}\\s+)",body)
+        def secscore(sec):
+            sn=norm(sec)
+            head=next((x for x in sec.splitlines() if re.match(r"^#{2,6}\\s+",x)),"")
+            hn=norm(head)
+            return sum(min(sn.count(w),8)*4 for w in words)+sum(100 for w in words if w in hn)+sum(20 for w in words if w in norm(title+" "+f.name))
+        best=max(sections,key=secscore)
+        anchor=next((x.strip() for x in best.splitlines() if re.match(r"^#{2,6}\\s+",x)),"")
+        section=re.sub(r"^#{2,6}\\s+","",anchor).strip() or title
+        ref=f.name.startswith("REF_")
+        score=secscore(best)+(35 if not ref else -30)-(140 if f.name=="00_HELP_INDEX.md" else 0)
+        out.append({"file":f.name,"title":title,"type":"Reference Runbook" if ref else "Current How-To","section":section,"anchor":anchor,"score":score})
     out.sort(key=lambda x:-x["score"])
-    return jsonify({"ok":True,"query":q,"results":out[:20]})
+    return jsonify({"ok":True,"query":q,"results":out[:8]})
 
 @app.route("/api/help/article/<filename>", methods=["GET"])
 def help_article(filename):
