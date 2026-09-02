@@ -7845,7 +7845,23 @@ function init(){
     return null;
   }
 
+  var openHelpFile="";
+  var openHelpAnchor="";
+
   function openArticle(file,anchor){
+
+    anchor=String(anchor||"");
+
+    if(openHelpFile===file&&openHelpAnchor===anchor&&pane.style.display!=="none"){
+      pane.style.display="none";
+      pane.innerHTML="";
+      openHelpFile="";
+      openHelpAnchor="";
+      return;
+    }
+
+    openHelpFile=file;
+    openHelpAnchor=anchor;
 
     pane.style.display="block";
     pane.innerHTML="<strong>Loading Help article...</strong>";
@@ -8014,6 +8030,8 @@ function init(){
      */
     pane.style.display="none";
     pane.innerHTML="";
+    openHelpFile="";
+    openHelpAnchor="";
   }
 
   function searchArticles(q){
@@ -8023,6 +8041,8 @@ function init(){
     if(!q){oldResults.style.display="none";oldResults.innerHTML="";if(list)list.style.display="";return;}
     pane.style.display="none";
     pane.innerHTML="";
+    openHelpFile="";
+    openHelpAnchor="";
     if(list)list.style.display="none";
     oldResults.style.display="block";
     oldResults.innerHTML="<b>Search Results</b><div>Searching...</div>";
