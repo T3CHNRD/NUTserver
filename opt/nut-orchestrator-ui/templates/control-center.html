@@ -7968,6 +7968,20 @@ function init(){
     s=esc(String(s||""));
     s=s.replace(/`([^`]+)`/g,"<code>$1</code>");
     s=s.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+
+    // Internal Help article links:
+    // [Monitoring](03_MONITORING_HOWTOS.md)
+    s=s.replace(
+      /\[([^\]]+)\]\(([A-Za-z0-9_.-]+\.md)\)/g,
+      function(match,label,file){
+        return "<a href=\"#\" class=\"cc-help-internal-link\" data-help-file=\""+
+          file+
+          "\">"+
+          label+
+          "</a>";
+      }
+    );
+
     return s;
   }
 
@@ -8174,6 +8188,18 @@ function init(){
         var closeBtn=document.getElementById("cc-help-close-article");
         if(closeBtn){
           closeBtn.onclick=closeHelpArticle;
+        }
+
+        var helpLinks=pane.querySelectorAll(".cc-help-internal-link");
+        for(var hl=0;hl<helpLinks.length;hl++){
+          helpLinks[hl].onclick=function(ev){
+            if(ev)ev.preventDefault();
+            var target=this.getAttribute("data-help-file")||"";
+            if(target){
+              openArticle(target,"");
+            }
+            return false;
+          };
         }
 
         var oldTopBtn=document.getElementById("cc-help-back-top");
