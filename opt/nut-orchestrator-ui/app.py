@@ -1533,31 +1533,113 @@ def help_articles():
 def api_help_search():
     from flask import request
     import re
-    norm=lambda s:(s or "").lower().replace("dbo1","db01").replace("dbo2","db02")
+
+    def norm(s):
+        s=(s or "").lower()
+        s=s.replace("dbo1","db01").replace("dbo2","db02")
+        s=re.sub(r"\bup\s+date\b","update",s)
+        s=re.sub(r"\bcome\s+from\b","source",s)
+        return s
+
     q=norm(request.args.get("q") or "")
-    stop={"how","to","i","the","a","an","do","does","my","is","are","in","on","for","of","can","what","where","button","buttons"}
+
+    stop={
+        "how","to","i","the","a","an","do","does","my",
+        "is","are","in","on","for","of","can","what","where",
+        "button","buttons","please"
+    }
+
+    aliases={
+        "update":{"update","change","edit","modify","manage","add","remove"},
+        "change":{"update","change","edit","modify","manage"},
+        "edit":{"update","change","edit","modify","manage"},
+        "recipient":{"recipient","recipients","address","addresses"},
+        "recipients":{"recipient","recipients","address","addresses"},
+        "email":{"email","emails"},
+        "password":{"password","passwords","credential","credentials"},
+        "source":{"source","provider","origin"},
+        "backup":{"backup","backups"},
+        "restore":{"restore","recovery"},
+    }
+
     words=[x for x in re.findall(r"[a-z0-9]+",q) if x not in stop]
+
+    def terms(word):
+        return aliases.get(word,{word})
+
+    def concept_match(text,word):
+        return any(t in text for t in terms(word))
+
     out=[]
+
     for f in sorted(HELP_DIR.glob("*.md")):
         body=f.read_text(errors="replace")
         hay=norm(f.name+" "+body)
-        if not words or not all(w in hay for w in words):
+
+        if not words or not all(concept_match(hay,w) for w in words):
             continue
-        title=next((x[2:].strip() for x in body.splitlines() if x.startswith("# ")),f.name)
+
+        title=next(
+            (x[2:].strip() for x in body.splitlines() if x.startswith("# ")),
+            f.name
+        )
+
         sections=re.split(r"(?m)(?=^#{2,6}\s+)",body)
+
         def secscore(sec):
             sn=norm(sec)
-            head=next((x for x in sec.splitlines() if re.match(r"^#{2,6}\s+",x)),"")
+            head=next(
+                (x for x in sec.splitlines() if re.match(r"^#{2,6}\s+",x)),
+                ""
+            )
             hn=norm(head)
-            return sum(min(sn.count(w),8)*4 for w in words)+sum(100 for w in words if w in hn)+sum(20 for w in words if w in norm(title+" "+f.name))
+
+            score=0
+
+            for w in words:
+                ts=terms(w)
+
+                if any(t in hn for t in ts):
+                    score+=120
+
+                hits=sum(sn.count(t) for t in ts)
+                score+=min(hits,8)*4
+
+                if any(t in norm(title+" "+f.name) for t in ts):
+                    score+=20
+
+            return score
+
         best=max(sections,key=secscore)
-        anchor=next((x.strip() for x in best.splitlines() if re.match(r"^#{2,6}\s+",x)),"")
+
+        anchor=next(
+            (x.strip() for x in best.splitlines()
+             if re.match(r"^#{2,6}\s+",x)),
+            ""
+        )
+
         section=re.sub(r"^#{2,6}\s+","",anchor).strip() or title
+
         ref=f.name.startswith("REF_")
-        score=secscore(best)+(35 if not ref else -30)-(140 if f.name=="00_HELP_INDEX.md" else 0)
-        out.append({"file":f.name,"title":title,"type":"Reference Runbook" if ref else "Current How-To","section":section,"anchor":anchor,"score":score})
+
+        score=secscore(best)
+        score+=(35 if not ref else -30)
+
+        if f.name=="00_HELP_INDEX.md":
+            score-=140
+
+        out.append({
+            "file":f.name,
+            "title":title,
+            "type":"Reference Runbook" if ref else "Current How-To",
+            "section":section,
+            "anchor":anchor,
+            "score":score
+        })
+
     out.sort(key=lambda x:-x["score"])
     return jsonify({"ok":True,"query":q,"results":out[:8]})
+
 
 @app.route("/api/help/article/<filename>", methods=["GET"])
 def help_article(filename):

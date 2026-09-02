@@ -7845,7 +7845,7 @@ function init(){
     return null;
   }
 
-  function openArticle(file){
+  function openArticle(file,anchor){
 
     pane.style.display="block";
     pane.innerHTML="<strong>Loading Help article...</strong>";
@@ -7868,17 +7868,48 @@ function init(){
           ? "<div style=\"margin-bottom:14px;font-weight:700;\">REFERENCE RUNBOOK</div>"
           : "<div style=\"margin-bottom:14px;font-weight:700;\">CURRENT HELP / HOW-TO</div>";
 
+        var content=String(d.content||"");
+        var rendered=esc(content);
+        var markerId="cc-help-match-anchor";
+
+        if(anchor){
+          var pos=content.indexOf(anchor);
+          if(pos>=0){
+            rendered=
+              esc(content.substring(0,pos))+
+              "<span id=\""+markerId+"\">"+esc(anchor)+"</span>"+
+              esc(content.substring(pos+anchor.length));
+          }
+        }
+
         pane.innerHTML=
           badge+
           "<div style=\"font-size:24px;font-weight:700;margin-bottom:16px;\">"+
           esc(title(file))+
           "</div>"+
           "<pre style=\"white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:15px;line-height:1.6;margin:0;\">"+
-          esc(d.content||"")+
+          rendered+
           "</pre>";
 
-        if(pane.scrollIntoView){
+        var marker=document.getElementById(markerId);
+
+        if(marker&&marker.scrollIntoView){
+          marker.scrollIntoView(true);
+
+          /*
+           * The Control Center has a fixed status/header bar.
+           * scrollIntoView(true) places the matched heading behind it,
+           * so move the viewport upward enough to keep the complete
+           * matched section heading visible.
+           */
+          if(window.scrollBy){
+            window.scrollBy(0,-135);
+          }
+        }else if(pane.scrollIntoView){
           pane.scrollIntoView(true);
+          if(window.scrollBy){
+            window.scrollBy(0,-135);
+          }
         }
       },
 
@@ -8002,8 +8033,12 @@ function init(){
         var b=document.createElement("button");
         b.type="button";b.className="cc-btn";
         b.style.margin="6px 6px 0 0";
-        b.appendChild(document.createTextNode(x.type+": "+x.title));
-        b.onclick=function(){openArticle(x.file);};
+        var label=x.type+": "+x.title;
+        if(x.section&&x.section!==x.title){
+          label+=" -> "+x.section;
+        }
+        b.appendChild(document.createTextNode(label));
+        b.onclick=function(){openArticle(x.file,x.anchor||"");};
         oldResults.appendChild(b);
       });
     },function(m){oldResults.innerHTML="<b>Search Results</b><div>Search failed: "+esc(m)+"</div>";});
