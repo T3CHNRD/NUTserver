@@ -915,90 +915,35 @@ def status_text():
 
 
 def health_text():
-    data = mode_data()
+    import subprocess
 
-    snapshot = ups_snapshot()
-
-    total = len(snapshot)
-
-    online = 0
-    on_battery = 0
-
-    for item in (
-        snapshot.values()
-    ):
-
-        states = set(
-            item[
-                "status"
-            ].split()
+    try:
+        result = subprocess.run(
+            [
+                "/usr/local/sbin/nut-telegram-alert",
+                "health-text",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=45,
+            check=False,
+        )
+    except Exception:
+        return (
+            "ALBL NUT HEALTH\n\n"
+            "Unable to build the full health report."
         )
 
-        if (
-            "OL" in states
-            and
-            "OB" not in states
-        ):
-            online += 1
+    report = (result.stdout or "").strip()
 
-        if "OB" in states:
-            on_battery += 1
+    if result.returncode == 0 and report:
+        return report
 
-    maintenance, _ = (
-        maintenance_info()
+    return (
+        "ALBL NUT HEALTH\n\n"
+        "Unable to build the full health report."
     )
-
-    overall = "REVIEW"
-
-    if (
-        total > 0
-        and online == total
-        and on_battery == 0
-        and str(
-            data.get(
-                "nut_monitor",
-                ""
-            )
-        ).lower()
-        == "active"
-    ):
-        overall = "HEALTHY"
-
-    return "\n".join(
-        [
-            "ALBL NUT HEALTH",
-            "",
-            "Overall: "
-            + overall,
-            "UPS: "
-            + str(online)
-            + " / "
-            + str(total)
-            + " online",
-            "UPS on battery: "
-            + str(on_battery),
-            "NUT monitoring: "
-            + str(
-                data.get(
-                    "nut_monitor",
-                    "UNKNOWN"
-                )
-            ).upper(),
-            "Mode: "
-            + str(
-                data.get(
-                    "mode_label",
-                    "UNKNOWN"
-                )
-            ),
-            "Maintenance: "
-            + maintenance,
-            "",
-            "Use /maintenance "
-            "for the current reason.",
-        ]
-    )
-
 
 def maintenance_text():
     status, reasons = (

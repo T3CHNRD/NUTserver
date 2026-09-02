@@ -1,0 +1,6 @@
+[Unit]
+Description=NUT Weather Cache Refresh
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/nut-weather-cache-refresh

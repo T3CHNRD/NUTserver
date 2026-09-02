@@ -1358,6 +1358,10 @@ def main():
             else 1
         )
 
+    if cmd=="health-text":
+        print(health())
+        return 0
+
     if cmd=="health":
 
         if not ok_mode(
