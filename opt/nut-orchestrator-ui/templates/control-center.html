@@ -8100,6 +8100,21 @@ function init(){
     return html.join("");
   }
 
+  window.addEventListener("popstate",function(ev){
+    var state=ev.state||null;
+
+    if(state&&state.ccHelp){
+      var file=String(state.file||"");
+      var anchor=String(state.anchor||"");
+
+      if(file){
+        openArticle(file,anchor);
+      }else{
+        closeHelpArticle();
+      }
+    }
+  });
+
   function closeHelpArticle(){
     pane.style.display="none";
     pane.innerHTML="";
@@ -8194,10 +8209,36 @@ function init(){
         for(var hl=0;hl<helpLinks.length;hl++){
           helpLinks[hl].onclick=function(ev){
             if(ev)ev.preventDefault();
+
             var target=this.getAttribute("data-help-file")||"";
+
             if(target){
+              // Preserve the currently open Help article as the
+              // current browser-history state.
+              history.replaceState(
+                {
+                  ccHelp:true,
+                  file:openHelpFile||"",
+                  anchor:openHelpAnchor||""
+                },
+                "",
+                "#cc-help-section"
+              );
+
+              // Create a same-page history entry for the target article.
+              history.pushState(
+                {
+                  ccHelp:true,
+                  file:target,
+                  anchor:""
+                },
+                "",
+                "#cc-help-section"
+              );
+
               openArticle(target,"");
             }
+
             return false;
           };
         }
