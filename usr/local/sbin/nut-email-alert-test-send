@@ -702,13 +702,27 @@ def ups_weather_grid_risk_lines():
         return None
 
     try:
-        req = urllib.request.Request(
-            url,
-            headers={"User-Agent": "nutserver-daily-health"}
+        cache_path = Path("/var/cache/nut/weather-cache.json")
+
+        cached = json.loads(
+            cache_path.read_text(encoding="utf-8")
         )
 
-        with urllib.request.urlopen(req, timeout=12) as response:
-            data = json.loads(response.read().decode("utf-8"))
+        if not cached.get("ok"):
+            raise RuntimeError("weather cache is not marked OK")
+
+        data = cached.get("data")
+
+        if not isinstance(data, dict):
+            raise RuntimeError("weather cache contains no usable data")
+
+        weather_source = str(
+            cached.get("source") or "Open-Meteo"
+        )
+
+        weather_fetched_at = str(
+            cached.get("fetched_at") or "unknown"
+        )
 
         current = data.get("current", {})
         daily = data.get("daily", {})
@@ -868,6 +882,12 @@ def ups_weather_grid_risk_lines():
 
         # These two lines are ALWAYS returned to both health outputs.
         lines.append("Weather / grid-risk advisory:")
+        lines.append(
+            f"- Source: {weather_source} cached forecast"
+        )
+        lines.append(
+            f"- Forecast cache updated: {weather_fetched_at}"
+        )
         lines.append(f"- Current temperature: {temp_text(temp)}")
         lines.append(f"- Weather: {summary}")
 
