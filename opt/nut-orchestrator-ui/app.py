@@ -1596,6 +1596,38 @@ def api_help_search():
 
             score=0
 
+            # Natural-language intent boosts.
+            # These only affect ranking; normal matching still returns
+            # other relevant Help results.
+            qn=q.strip()
+            hn=norm(head)
+
+            if qn in {
+                "turn protection on",
+                "enable protection",
+                "enable shutdown protection",
+                "arm nut"
+            }:
+                if "protecting mode" in hn and "put the nut server" in hn:
+                    score+=500
+
+            if qn in {
+                "turn nut back on",
+                "resume nut",
+                "leave off mode",
+                "restore monitoring"
+            }:
+                if "return from off to normal operation" in hn:
+                    score+=500
+
+            if qn in {
+                "what should i check first",
+                "start using dashboard",
+                "how do i use nut"
+            }:
+                if "begin a normal nut control center operator session" in hn:
+                    score+=500
+
             for w in words:
                 ts=terms(w)
 
@@ -1624,6 +1656,11 @@ def api_help_search():
 
         score=secscore(best)
         score+=(35 if not ref else -30)
+
+        # Prefer the substantive Getting Started article over the index
+        # for a direct getting-started search.
+        if q.strip()=="getting started" and f.name=="01_GETTING_STARTED.md":
+            score+=100
 
         if f.name=="00_HELP_INDEX.md":
             score-=140

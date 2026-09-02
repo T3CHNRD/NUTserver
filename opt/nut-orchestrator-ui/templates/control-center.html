@@ -7635,6 +7635,122 @@ function closeLabSelectedRestoreScreen() {
 </style>
 
 
+<style id="cc-help-readability-style">
+#cc-help-article-pane{
+  padding:12px 16px !important;
+}
+
+.cc-help-article-title{
+  font-size:22px;
+  font-weight:700;
+  margin:2px 0 10px 0;
+  line-height:1.25;
+}
+
+.cc-help-article{
+  font-size:14px;
+  line-height:1.42;
+  max-width:none;
+}
+
+.cc-help-article h1{
+  font-size:22px;
+  margin:10px 0 8px 0;
+  line-height:1.2;
+}
+
+.cc-help-article h2{
+  font-size:18px;
+  margin:14px 0 7px 0;
+  padding-top:3px;
+  line-height:1.25;
+  border-top:1px solid rgba(255,255,255,.20);
+}
+
+.cc-help-article h3{
+  font-size:16px;
+  margin:10px 0 5px 0;
+  line-height:1.25;
+}
+
+.cc-help-article h4,
+.cc-help-article h5,
+.cc-help-article h6{
+  font-size:14px;
+  margin:8px 0 4px 0;
+  line-height:1.25;
+}
+
+.cc-help-article p{
+  margin:4px 0 7px 0;
+}
+
+.cc-help-article ul,
+.cc-help-article ol{
+  margin:4px 0 8px 22px;
+  padding-left:10px;
+}
+
+.cc-help-article li{
+  margin:1px 0;
+  line-height:1.35;
+}
+
+.cc-help-article hr{
+  margin:10px 0;
+  border:0;
+  border-top:1px solid rgba(255,255,255,.22);
+}
+
+.cc-help-article code{
+  font-family:monospace;
+  font-size:13px;
+  padding:1px 4px;
+  border-radius:4px;
+  background:rgba(0,0,0,.18);
+}
+
+.cc-help-code{
+  margin:6px 0 9px 0;
+  padding:8px 10px;
+  border-radius:6px;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  overflow-x:auto;
+  font-family:monospace;
+  font-size:13px;
+  line-height:1.35;
+  background:rgba(0,0,0,.22);
+}
+
+#cc-help-results .cc-btn{
+  margin-top:4px !important;
+}
+
+.cc-help-code{
+  border-left:3px solid rgba(255,255,255,.35);
+}
+
+.cc-help-heading-safety{
+  border-left:4px solid rgba(255,255,255,.55);
+  padding-left:8px;
+}
+
+.cc-help-heading-verify{
+  border-left:4px solid rgba(255,255,255,.35);
+  padding-left:8px;
+}
+
+.cc-help-heading-troubleshoot{
+  border-left:4px solid rgba(255,255,255,.25);
+  padding-left:8px;
+}
+
+.cc-help-heading{
+  scroll-margin-top:135px;
+}
+</style>
+
 <script id="cc-help-ui-script">
 (function(){
 
@@ -7872,8 +7988,30 @@ function init(){
 
     function headingTag(level,text,raw){
       closeList();
+
       var id=(anchor&&raw===anchor) ? " id=\""+markerId+"\"" : "";
-      html.push("<h"+level+id+">"+helpInline(text)+"</h"+level+">");
+      var t=String(text||"").toLowerCase();
+      var cls="";
+
+      if(t.indexOf("safety")>=0||t.indexOf("warning")>=0){
+        cls=" cc-help-heading-safety";
+      }else if(
+        t.indexOf("verify")>=0||
+        t.indexOf("verification")>=0||
+        t.indexOf("expected result")>=0
+      ){
+        cls=" cc-help-heading-verify";
+      }else if(t.indexOf("troubleshoot")>=0){
+        cls=" cc-help-heading-troubleshoot";
+      }
+
+      html.push(
+        "<h"+level+
+        id+
+        " class=\"cc-help-heading"+cls+"\">"+
+        helpInline(text)+
+        "</h"+level+">"
+      );
     }
 
     for(var i=0;i<lines.length;i++){
