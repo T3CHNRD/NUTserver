@@ -7848,6 +7848,126 @@ function init(){
   var openHelpFile="";
   var openHelpAnchor="";
 
+  function helpInline(s){
+    s=esc(String(s||""));
+    s=s.replace(/`([^`]+)`/g,"<code>$1</code>");
+    s=s.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+    return s;
+  }
+
+  function helpRenderMarkdown(md,anchor){
+    var lines=String(md||"").replace(/\r/g,"").split("\n");
+    var html=[];
+    var inCode=false;
+    var code=[];
+    var listType="";
+    var markerId="cc-help-match-anchor";
+
+    function closeList(){
+      if(listType){
+        html.push(listType==="ol" ? "</ol>" : "</ul>");
+        listType="";
+      }
+    }
+
+    function headingTag(level,text,raw){
+      closeList();
+      var id=(anchor&&raw===anchor) ? " id=\""+markerId+"\"" : "";
+      html.push("<h"+level+id+">"+helpInline(text)+"</h"+level+">");
+    }
+
+    for(var i=0;i<lines.length;i++){
+      var line=lines[i];
+      var trimmed=line.replace(/^\s+|\s+$/g,"");
+
+      if(/^```/.test(trimmed)){
+        if(inCode){
+          html.push("<pre class=\"cc-help-code\"><code>"+esc(code.join("\n"))+"</code></pre>");
+          code=[];
+          inCode=false;
+        }else{
+          closeList();
+          inCode=true;
+        }
+        continue;
+      }
+
+      if(inCode){
+        code.push(line);
+        continue;
+      }
+
+      var hm=line.match(/^(#{1,6})\s+(.+)$/);
+      if(hm){
+        headingTag(hm[1].length,hm[2],line);
+        continue;
+      }
+
+      if(/^---+$/.test(trimmed)){
+        closeList();
+        html.push("<hr>");
+        continue;
+      }
+
+      var om=line.match(/^\s*([0-9]+)\.\s+(.+)$/);
+      if(om){
+        if(listType!=="ol"){
+          closeList();
+          html.push("<ol>");
+          listType="ol";
+        }
+        html.push("<li>"+helpInline(om[2])+"</li>");
+        continue;
+      }
+
+      var um=line.match(/^\s*[-*]\s+(.+)$/);
+      if(um){
+        if(listType!=="ul"){
+          closeList();
+          html.push("<ul>");
+          listType="ul";
+        }
+        html.push("<li>"+helpInline(um[1])+"</li>");
+        continue;
+      }
+
+      if(!trimmed){
+        closeList();
+        continue;
+      }
+
+      closeList();
+      html.push("<p>"+helpInline(trimmed)+"</p>");
+    }
+
+    if(inCode){
+      html.push("<pre class=\"cc-help-code\"><code>"+esc(code.join("\n"))+"</code></pre>");
+    }
+
+    closeList();
+    return html.join("");
+  }
+
+  function closeHelpArticle(){
+    pane.style.display="none";
+    pane.innerHTML="";
+    openHelpFile="";
+    openHelpAnchor="";
+
+    var topBtn=document.getElementById("cc-help-back-top");
+    if(topBtn&&topBtn.parentNode){
+      topBtn.parentNode.removeChild(topBtn);
+    }
+
+    if(list){
+      if(search&&String(search.value||"").trim()){
+        list.style.display="none";
+      }else{
+        list.style.display="";
+      }
+    }
+  }
+
   function openArticle(file,anchor){
 
     anchor=String(anchor||"");
@@ -7857,11 +7977,24 @@ function init(){
       pane.innerHTML="";
       openHelpFile="";
       openHelpAnchor="";
+
+      if(list){
+        if(search&&String(search.value||"").trim()){
+          list.style.display="none";
+        }else{
+          list.style.display="";
+        }
+      }
+
       return;
     }
 
     openHelpFile=file;
     openHelpAnchor=anchor;
+
+    if(list){
+      list.style.display="none";
+    }
 
     pane.style.display="block";
     pane.innerHTML="<strong>Loading Help article...</strong>";
@@ -7885,27 +8018,64 @@ function init(){
           : "<div style=\"margin-bottom:14px;font-weight:700;\">CURRENT HELP / HOW-TO</div>";
 
         var content=String(d.content||"");
-        var rendered=esc(content);
         var markerId="cc-help-match-anchor";
-
-        if(anchor){
-          var pos=content.indexOf(anchor);
-          if(pos>=0){
-            rendered=
-              esc(content.substring(0,pos))+
-              "<span id=\""+markerId+"\">"+esc(anchor)+"</span>"+
-              esc(content.substring(pos+anchor.length));
-          }
-        }
+        var rendered=helpRenderMarkdown(content,anchor);
 
         pane.innerHTML=
-          badge+
-          "<div style=\"font-size:24px;font-weight:700;margin-bottom:16px;\">"+
+          "<div id=\"cc-help-article-top\" style=\"display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;\">"+
+            "<div>"+badge+"</div>"+
+            "<button type=\"button\" class=\"cc-btn\" id=\"cc-help-close-article\">Close Article</button>"+
+          "</div>"+
+          "<div class=\"cc-help-article-title\">"+
           esc(title(file))+
           "</div>"+
-          "<pre style=\"white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:15px;line-height:1.6;margin:0;\">"+
+          "<div class=\"cc-help-article\">"+
           rendered+
-          "</pre>";
+          "</div>";
+
+        var closeBtn=document.getElementById("cc-help-close-article");
+        if(closeBtn){
+          closeBtn.onclick=closeHelpArticle;
+        }
+
+        var oldTopBtn=document.getElementById("cc-help-back-top");
+        if(oldTopBtn&&oldTopBtn.parentNode){
+          oldTopBtn.parentNode.removeChild(oldTopBtn);
+        }
+
+        var topBtn=document.createElement("button");
+        topBtn.type="button";
+        topBtn.id="cc-help-back-top";
+        topBtn.className="cc-btn";
+        topBtn.title="Back to top";
+        topBtn.setAttribute("aria-label","Back to top");
+        topBtn.innerHTML="&#8593; Top";
+
+        topBtn.style.position="fixed";
+        topBtn.style.right="24px";
+        topBtn.style.bottom="24px";
+        topBtn.style.zIndex="2147483647";
+        topBtn.style.padding="9px 14px";
+        topBtn.style.fontWeight="700";
+        topBtn.style.boxShadow="0 3px 12px rgba(0,0,0,.35)";
+
+        document.body.appendChild(topBtn);
+
+        topBtn.onclick=function(){
+          var top=document.getElementById("cc-help-article-top");
+          if(!top)return;
+
+          var scrollNow=
+            window.pageYOffset ||
+            document.documentElement.scrollTop ||
+            document.body.scrollTop ||
+            0;
+
+          var y=top.getBoundingClientRect().top+scrollNow-135;
+          if(y<0)y=0;
+
+          window.scrollTo(0,y);
+        };
 
         var marker=document.getElementById(markerId);
 
@@ -8038,7 +8208,16 @@ function init(){
     q=String(q||"").trim();
     clearExpanded();
     if(!oldResults)return;
-    if(!q){oldResults.style.display="none";oldResults.innerHTML="";if(list)list.style.display="";return;}
+    if(!q){
+      oldResults.style.display="none";
+      oldResults.innerHTML="";
+      pane.style.display="none";
+      pane.innerHTML="";
+      openHelpFile="";
+      openHelpAnchor="";
+      if(list)list.style.display="";
+      return;
+    }
     pane.style.display="none";
     pane.innerHTML="";
     openHelpFile="";
