@@ -1544,15 +1544,15 @@ def api_help_search():
         if not words or not all(w in hay for w in words):
             continue
         title=next((x[2:].strip() for x in body.splitlines() if x.startswith("# ")),f.name)
-        sections=re.split(r"(?m)(?=^#{2,6}\\s+)",body)
+        sections=re.split(r"(?m)(?=^#{2,6}\s+)",body)
         def secscore(sec):
             sn=norm(sec)
-            head=next((x for x in sec.splitlines() if re.match(r"^#{2,6}\\s+",x)),"")
+            head=next((x for x in sec.splitlines() if re.match(r"^#{2,6}\s+",x)),"")
             hn=norm(head)
             return sum(min(sn.count(w),8)*4 for w in words)+sum(100 for w in words if w in hn)+sum(20 for w in words if w in norm(title+" "+f.name))
         best=max(sections,key=secscore)
-        anchor=next((x.strip() for x in best.splitlines() if re.match(r"^#{2,6}\\s+",x)),"")
-        section=re.sub(r"^#{2,6}\\s+","",anchor).strip() or title
+        anchor=next((x.strip() for x in best.splitlines() if re.match(r"^#{2,6}\s+",x)),"")
+        section=re.sub(r"^#{2,6}\s+","",anchor).strip() or title
         ref=f.name.startswith("REF_")
         score=secscore(best)+(35 if not ref else -30)-(140 if f.name=="00_HELP_INDEX.md" else 0)
         out.append({"file":f.name,"title":title,"type":"Reference Runbook" if ref else "Current How-To","section":section,"anchor":anchor,"score":score})
