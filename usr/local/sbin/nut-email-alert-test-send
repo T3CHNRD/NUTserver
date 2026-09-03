@@ -297,6 +297,11 @@ def enforce_email_mode_policy(action, kind, mode, mode_label):
         "off": set(),
     }
 
+    # Legacy storm_guard is also a PROTECTING mode.
+    allowed_by_mode["storm_guard"] = set(
+        allowed_by_mode["armed"]
+    )
+
     allowed = allowed_by_mode.get(mode, set())
 
     if kind in allowed:

@@ -431,6 +431,27 @@ email_duration_for_ups() {
   echo "${minutes} minutes ${seconds} seconds"
 }
 
+email_state_before_restore() {
+  local ups_name="${1:-unknown}"
+  local file="${STATE_DIR}/${ups_name}.json"
+
+  python3 - "$file" <<'PY2'
+import json, sys
+from pathlib import Path
+
+p=Path(sys.argv[1])
+
+try:
+    d=json.loads(p.read_text())
+except Exception:
+    d={}
+
+print(str(d.get("state","unknown")).replace("\n"," "))
+print(str(d.get("note","")).replace("\n"," "))
+PY2
+}
+
+
 email_context_for_type() {
   local kind="${1:-}"
   local reason="${2:-}"
@@ -454,15 +475,68 @@ email_context_for_type() {
       export NUT_MANUAL_RECOVERY_REQUIRED="No, unless equipment shows issues."
       ;;
     online|cancelled)
+      local pre_state="unknown"
+      local pre_note=""
+      local -a pre_restore=()
+
       if [ -n "$ups_name" ]; then
         export NUT_OUTAGE_DURATION="$(email_duration_for_ups "$ups_name")"
+
+        mapfile -t pre_restore < <(
+          email_state_before_restore "$ups_name"
+        )
+
+        pre_state="${pre_restore[0]:-unknown}"
+        pre_note="${pre_restore[1]:-}"
       else
         export NUT_OUTAGE_DURATION="unavailable - UPS name was not available"
       fi
-      export NUT_SHUTDOWN_ATTEMPTED="No"
-      export NUT_SYSTEMS_SHUT_DOWN="None reported by the NUT orchestrator before power returned."
-      export NUT_SYSTEMS_STILL_RUNNING="Protected systems remained online or shutdown was canceled before additional action was required."
-      export NUT_MANUAL_RECOVERY_REQUIRED="No, unless equipment shows issues."
+
+      if [ "$pre_state" = "shutdown_committed" ]; then
+        export NUT_SHUTDOWN_ATTEMPTED="Yes"
+        export NUT_MANUAL_RECOVERY_REQUIRED="Yes. Verify affected systems before returning them to normal service."
+
+        case "$ups_name" in
+          ups7)
+            if printf '%s' "$pre_note" | grep -qi 'shutdown confirmed'; then
+              export NUT_SYSTEMS_SHUT_DOWN="DB01 - verified shutdown\nDB02 - verified shutdown"
+              export NUT_SYSTEMS_STILL_RUNNING="No additional UPS7 shutdown targets were scheduled."
+            else
+              export NUT_SYSTEMS_SHUT_DOWN="Not confirmed: DB01/DB02 shutdown was attempted, but verification was incomplete."
+              export NUT_SYSTEMS_STILL_RUNNING="Verify DB01 and DB02 manually before recovery."
+            fi
+            ;;
+          ups2)
+            export NUT_SYSTEMS_SHUT_DOWN="Not independently confirmed: Blue Iris shutdown wrapper executed."
+            export NUT_SYSTEMS_STILL_RUNNING="Verify Blue Iris state manually."
+            ;;
+          ups8)
+            export NUT_SYSTEMS_SHUT_DOWN="Not independently confirmed: VOIP shutdown wrapper executed."
+            export NUT_SYSTEMS_STILL_RUNNING="VME Server and Merlin phone switch were alert-only and were not automatically shut down."
+            ;;
+          ups6)
+            export NUT_SYSTEMS_SHUT_DOWN="Not independently confirmed: Lansweeper shutdown wrapper executed."
+            export NUT_SYSTEMS_STILL_RUNNING="Cisco ASA 5508 and AT&T router were alert-only and were not automatically shut down."
+            ;;
+          ups9)
+            export NUT_SYSTEMS_SHUT_DOWN="Shutdown sequence reached commit for VMware/storage/NUT server domain; verify individual target results in the event log."
+            export NUT_SYSTEMS_STILL_RUNNING="Final target state requires recovery verification."
+            ;;
+          ups3)
+            export NUT_SYSTEMS_SHUT_DOWN="None: UPS3 Phase 2 validation timer reached commit; no production target shutdown is defined by this validation handler."
+            export NUT_SYSTEMS_STILL_RUNNING="Production targets were not shut down by the UPS3 validation handler."
+            ;;
+          *)
+            export NUT_SYSTEMS_SHUT_DOWN="Shutdown commit occurred; exact target status requires event-log review."
+            export NUT_SYSTEMS_STILL_RUNNING="Target status requires verification."
+            ;;
+        esac
+      else
+        export NUT_SHUTDOWN_ATTEMPTED="No"
+        export NUT_SYSTEMS_SHUT_DOWN="None. Power returned before a shutdown commit occurred."
+        export NUT_SYSTEMS_STILL_RUNNING="Protected systems remained online; pending shutdown was canceled."
+        export NUT_MANUAL_RECOVERY_REQUIRED="No, unless equipment shows issues."
+      fi
       ;;
     shutdown)
       export NUT_SHUTDOWN_ATTEMPTED="Yes"
@@ -692,9 +766,9 @@ case "${1:-}" in
 
   ups7-online)
     log_line "UPS_SHUTDOWN_CANCELED_POWER_RESTORED ups7 before_commit='yes'"
-    write_state "ups7" "ups7" "power_restored_canceled" "targeted shutdown" 0 0 "Shutdown canceled / power restored"
     send_outage_email "online" "ups7 power restored / grid returned"
     send_outage_email "cancelled" "ups7 power restored before shutdown"
+    write_state "ups7" "ups7" "power_restored_canceled" "targeted shutdown" 0 0 "Shutdown canceled / power restored"
     ;;
 
   ups7-commit)
@@ -710,9 +784,9 @@ case "${1:-}" in
 
   ups2-online)
     log_line "UPS_SHUTDOWN_CANCELED_POWER_RESTORED ups2 before_commit='yes'"
-    write_state "ups2" "ups2" "power_restored_canceled" "targeted shutdown" 0 0 "Shutdown canceled / power restored"
     send_outage_email "online" "ups2 power restored / grid returned"
     send_outage_email "cancelled" "ups2 power restored before shutdown"
+    write_state "ups2" "ups2" "power_restored_canceled" "targeted shutdown" 0 0 "Shutdown canceled / power restored"
     ;;
 
   ups2-commit)
@@ -728,9 +802,9 @@ case "${1:-}" in
 
   ups8-online)
     log_line "UPS_SHUTDOWN_CANCELED_POWER_RESTORED ups8 before_commit='yes'"
-    write_state "ups8" "ups8" "power_restored_canceled" "targeted shutdown" 0 0 "Shutdown canceled / power restored"
     send_outage_email "online" "ups8 power restored / grid returned"
     send_outage_email "cancelled" "ups8 power restored before shutdown"
+    write_state "ups8" "ups8" "power_restored_canceled" "targeted shutdown" 0 0 "Shutdown canceled / power restored"
     ;;
 
   ups8-commit)
@@ -746,9 +820,9 @@ case "${1:-}" in
 
   ups6-online)
     log_line "UPS_SHUTDOWN_CANCELED_POWER_RESTORED ups6 before_commit='yes'"
-    write_state "ups6" "ups6" "power_restored_canceled" "targeted shutdown" 0 0 "Shutdown canceled / power restored"
     send_outage_email "online" "ups6 power restored / grid returned"
     send_outage_email "cancelled" "ups6 power restored before shutdown"
+    write_state "ups6" "ups6" "power_restored_canceled" "targeted shutdown" 0 0 "Shutdown canceled / power restored"
     ;;
 
   ups6-commit)
@@ -764,9 +838,9 @@ case "${1:-}" in
 
   ups9-online)
     log_line "UPS_SHUTDOWN_CANCELED_POWER_RESTORED ups9 before_commit='yes'"
-    write_state "ups9" "ups9" "power_restored_canceled" "broader VMware shutdown" 0 0 "Shutdown canceled / power restored"
     send_outage_email "online" "ups9 power restored / grid returned"
     send_outage_email "cancelled" "ups9 power restored before shutdown"
+    write_state "ups9" "ups9" "power_restored_canceled" "broader VMware shutdown" 0 0 "Shutdown canceled / power restored"
     ;;
 
   ups9-commit)
@@ -782,9 +856,9 @@ case "${1:-}" in
 
   phase2-power-restore-abort-ups3)
     # Production notification must never depend on the legacy Phase 2 helper.
-    write_state "ups3" "ups3" "power_restored_canceled" "phase2 validation" 0 0 "Power restored before UPS3 shutdown commit"
     send_outage_email "online" "ups3 power restored / grid returned"
     send_outage_email "cancelled" "ups3 power restored before shutdown"
+    write_state "ups3" "ups3" "power_restored_canceled" "phase2 validation" 0 0 "Power restored before UPS3 shutdown commit"
 
     run_phase2_power_restore_abort "ups3"
     rc=$?
