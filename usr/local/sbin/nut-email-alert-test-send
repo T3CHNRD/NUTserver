@@ -161,6 +161,8 @@ import subprocess
 import sys
 import socket
 import re
+import fcntl
+import time
 
 action = sys.argv[1]
 kind = sys.argv[2]
@@ -1468,12 +1470,48 @@ msg["Date"] = formatdate(localtime=True)
 msg["Subject"] = subject
 msg.set_content(body)
 
-proc = subprocess.run(
-    ["/usr/sbin/sendmail", "-t"],
-    input=msg.as_bytes(),
-    stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-)
+lock_path = Path("/run/nut-email-send.lock")
+stamp_path = Path("/run/nut-email-last-send")
+
+with lock_path.open("a+") as lock:
+    fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+
+    # Prevent simultaneous UPS events from exceeding the
+    # Exchange client submission-rate limit.
+    try:
+        last = float(stamp_path.read_text().strip())
+    except Exception:
+        last = 0.0
+
+    wait = 3.0 - (time.time() - last)
+    if wait > 0:
+        time.sleep(wait)
+
+    proc = None
+
+    for attempt, delay in enumerate((0, 20, 40), start=1):
+        if delay:
+            print(
+                f"EMAIL TRANSPORT RETRY attempt={attempt} "
+                f"delay={delay}s",
+                file=sys.stderr,
+            )
+            time.sleep(delay)
+
+        proc = subprocess.run(
+            ["/usr/sbin/sendmail", "-t"],
+            input=msg.as_bytes(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        if proc.returncode == 0:
+            stamp_path.write_text(str(time.time()))
+            break
+
+        # EX_UNAVAILABLE / EX_TEMPFAIL are temporary delivery failures.
+        if proc.returncode not in (69, 75):
+            break
 
 log_line = f"EMAIL PRODUCTION FORMAT MANUAL SEND type={kind} rc={proc.returncode} subject={subject!r}\n"
 with log_path.open("a", encoding="utf-8") as f:

@@ -97,20 +97,65 @@ def run(cmd,t=15):
 
 
 def mode():
-    rc,out,_=run(
-        ["/usr/local/sbin/nut-production-status"],
-        10
-    )
+    from pathlib import Path
+
+    configured = "disarmed"
 
     try:
-        d=json.loads(out) if rc==0 else {}
+        data = {}
+
+        for raw in Path(
+            "/etc/nut/production-mode.conf"
+        ).read_text(errors="replace").splitlines():
+
+            line = raw.strip()
+
+            if (
+                not line
+                or line.startswith("#")
+                or "=" not in line
+            ):
+                continue
+
+            k,v = line.split("=",1)
+
+            data[k.strip()] = (
+                v.strip()
+                .strip('"')
+                .strip("'")
+            )
+
+        configured = data.get(
+            "NUT_PRODUCTION_MODE",
+            "disarmed"
+        ).strip().lower()
+
     except Exception:
-        d={}
+        configured = "disarmed"
+
+    labels = {
+        "off": "OFF",
+        "disarmed": "STANDBY FOR MAINTENANCE",
+        "storm_guard": "PROTECTING",
+        "armed": "PROTECTING",
+    }
+
+    if configured not in labels:
+        configured = "disarmed"
+
+    rc,out,_ = run(
+        ["systemctl","is-active","nut-monitor.service"],
+        3
+    )
+
+    monitor = (
+        out.strip() or "unknown"
+    ).upper()
 
     return (
-        str(d.get("mode","unknown")).lower(),
-        str(d.get("mode_label","UNKNOWN")),
-        str(d.get("nut_monitor","UNKNOWN")).upper()
+        configured,
+        labels[configured],
+        monitor
     )
 
 
@@ -127,7 +172,7 @@ def ok_mode(kind):
     }:
         return False
 
-    return m in {"armed","disarmed"}
+    return m in {"armed","storm_guard","disarmed"}
 
 
 def safe(s):
