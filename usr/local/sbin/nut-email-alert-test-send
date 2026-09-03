@@ -1214,10 +1214,85 @@ def daily_health_closing_thought():
         )
 
 
+
+UPS_EVENT_TYPES = {
+    "onbatt",
+    "online",
+    "shutdown",
+    "cancelled",
+    "final",
+    "lowbatt",
+    "commbad",
+    "commok",
+}
+
+def event_ups_identity():
+    ups_id = os.environ.get("NUT_UPS_ID", "").strip().lower()
+
+    if not ups_id:
+        m = re.search(r"\bups[1-9]\b", event_reason_text, re.I)
+        if m:
+            ups_id = m.group(0).lower()
+
+    if not ups_id:
+        return "", "", ""
+
+    rack_location = "Unknown / not mapped"
+    rack_map = Path("/var/www/html/ups-rack-map.txt")
+
+    try:
+        for raw in rack_map.read_text(encoding="utf-8").splitlines():
+            key, sep, value = raw.partition("=")
+            if sep and key.strip().lower() == ups_id:
+                rack_location = value.strip()
+                break
+    except Exception:
+        pass
+
+    props = {}
+
+    try:
+        rc, out, _ = run(
+            ["/usr/bin/upsc", f"{ups_id}@localhost"],
+            timeout=4
+        )
+
+        if rc == 0:
+            for raw in out.splitlines():
+                key, sep, value = raw.partition(":")
+                if sep:
+                    props[key.strip()] = value.strip()
+    except Exception:
+        pass
+
+    friendly_name = (
+        props.get("friendly_system_name")
+        or props.get("ups.id")
+        or props.get("device_model")
+        or props.get("device.model")
+        or props.get("ups.model")
+        or ups_id.upper()
+    )
+
+    return ups_id.upper(), friendly_name, rack_location
+
+
+event_ups_id, event_friendly_name, event_rack_location = (
+    event_ups_identity()
+)
+
+event_subject_identity = ""
+
+if event_ups_id:
+    event_subject_identity = event_ups_id
+
+    if event_rack_location:
+        event_subject_identity += f" - {event_rack_location}"
+
 templates = {
     "onbatt": {
-        "subject": "Power switched to UPS",
-        "title": "Power switched to UPS battery",
+        "subject": "POWER OUTAGE - UPS ON BATTERY",
+        "title": "POWER OUTAGE - UPS IS RUNNING ON BATTERY",
         "body": [
             f"Power-loss timestamp: {now_text}",
             "",
@@ -1229,16 +1304,21 @@ templates = {
         ],
     },
     "online": {
-        "subject": "Power returned to grid",
-        "title": "Power returned to line/grid power",
+        "subject": "POWER RESTORED - GRID POWER RETURNED",
+        "title": "POWER RESTORED - UTILITY / GRID POWER RETURNED",
         "body": [
             f"Power-restored timestamp: {now_text}",
+            "",
             f"Outage duration: {outage_duration_text}",
+            "",
             f"Shutdown attempted: {shutdown_attempted_text}",
+            "",
             "Systems already shut down:",
             *systems_down_lines,
+            "",
             "Systems still running / not shut down:",
             *systems_running_lines,
+            "",
             f"Manual recovery required: {manual_recovery_text}",
             "",
             "Status:",
@@ -1249,8 +1329,8 @@ templates = {
         ],
     },
     "shutdown": {
-        "subject": "Protected systems shutting down",
-        "title": "Protected systems are shutting down",
+        "subject": "SHUTDOWN STARTED - Protected systems shutting down",
+        "title": "SHUTDOWN STARTED - PROTECTED SYSTEMS",
         "body": [
             f"Shutdown-start timestamp: {now_text}",
             "",
@@ -1267,8 +1347,8 @@ templates = {
         ],
     },
     "cancelled": {
-        "subject": "Shutdown cancelled, power restored",
-        "title": "Shutdown sequence cancelled because power returned",
+        "subject": "POWER RESTORED - Shutdown cancelled",
+        "title": "POWER RESTORED - SHUTDOWN SEQUENCE CANCELLED",
         "body": [
             f"Power-restored timestamp: {now_text}",
             "",
@@ -1289,8 +1369,8 @@ templates = {
         ],
     },
     "final": {
-        "subject": "NUT server final shutdown warning",
-        "title": "NUT server final shutdown due to depleted UPS runtime",
+        "subject": "FINAL SHUTDOWN WARNING - NUT server",
+        "title": "FINAL SHUTDOWN WARNING - NUT SERVER",
         "body": [
             f"Final-shutdown timestamp: {now_text}",
             "",
@@ -1306,8 +1386,8 @@ templates = {
         ],
     },
     "lowbatt": {
-        "subject": "CRITICAL: UPS battery is low",
-        "title": "UPS low-battery condition detected",
+        "subject": "CRITICAL LOW BATTERY - UPS battery low",
+        "title": "CRITICAL LOW BATTERY - UPS",
         "body": [
             f"Low-battery timestamp: {now_text}",
             f"Event details: {event_reason_text}",
@@ -1321,7 +1401,7 @@ templates = {
         ],
     },
     "commbad": {
-        "subject": "UPS communication lost",
+        "subject": "UPS COMMUNICATION LOST",
         "title": "Communication with a monitored UPS was lost",
         "body": [
             f"Communication-loss timestamp: {now_text}",
@@ -1336,7 +1416,7 @@ templates = {
         ],
     },
     "commok": {
-        "subject": "UPS communication restored",
+        "subject": "UPS COMMUNICATION RESTORED",
         "title": "Communication with a monitored UPS was restored",
         "body": [
             f"Communication-restored timestamp: {now_text}",
@@ -1426,13 +1506,29 @@ if (
     )
     sys.exit(0)
 
-test_mode = os.environ.get("NUT_EMAIL_TEST", "").strip() == "1"
+test_mode = (
+    os.environ.get("NUT_EMAIL_TEST", "").strip() == "1"
+    or event_reason_text.upper().startswith("TEST ONLY")
+)
+
+base_subject = tpl["subject"]
+
+if (
+    kind in UPS_EVENT_TYPES
+    and event_subject_identity
+):
+    base_subject = (
+        f"{base_subject} - {event_subject_identity}"
+    )
 
 if test_mode:
-    subject = f"{prefix} [TEST - NO ACTION REQUIRED] {tpl['subject']}"
+    subject = (
+        f"{prefix} [TEST - NO ACTION REQUIRED] "
+        f"{base_subject}"
+    )
     display_title = f"TEST ONLY - {tpl['title']}"
 else:
-    subject = f"{prefix} {tpl['subject']}"
+    subject = f"{prefix} {base_subject}"
     display_title = tpl["title"]
 
 body_lines = [
@@ -1446,6 +1542,15 @@ if test_mode:
         "THIS IS A CONTROLLED EMAIL TEST.",
         "NO REAL UPS, POWER, BATTERY, OR COMMUNICATION EVENT HAS OCCURRED.",
         "NO ACTION IS REQUIRED.",
+        "",
+    ])
+
+if kind in UPS_EVENT_TYPES and event_ups_id:
+    body_lines.extend([
+        "Affected UPS:",
+        f"UPS ID: {event_ups_id}",
+        f"Friendly name: {event_friendly_name}",
+        f"Rack / Location: {event_rack_location}",
         "",
     ])
 

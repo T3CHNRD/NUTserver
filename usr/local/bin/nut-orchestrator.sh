@@ -208,7 +208,7 @@ commit_placeholder() {
       #
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB01 method='telnet solaris wrapper'"
-      send_outage_email "shutdown" "shutdown sequence started / DB target action attempted"
+      send_outage_email "shutdown" "ups7 shutdown sequence started / DB target action attempted"
 
       if SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full DB_LIVE_APPROVED=1 /usr/local/sbin/nut-db-shutdown.sh DB01 >> "$LOG_FILE" 2>&1; then
         db01_rc=0
@@ -219,7 +219,7 @@ commit_placeholder() {
       fi
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB02 method='telnet solaris wrapper'"
-      send_outage_email "shutdown" "shutdown sequence started / DB target action attempted"
+      send_outage_email "shutdown" "ups7 shutdown sequence started / DB target action attempted"
 
       if SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full DB_LIVE_APPROVED=1 /usr/local/sbin/nut-db-shutdown.sh DB02 >> "$LOG_FILE" 2>&1; then
         db02_rc=0
@@ -271,7 +271,7 @@ commit_placeholder() {
       log_line "UPS_SHUTDOWN_COMMITTED ups2 targeted shutdown started"
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups2 Blue Iris method='native shutdown.exe via wrapper'"
-    send_outage_email "shutdown" "shutdown sequence started / Blue Iris target action attempted"
+    send_outage_email "shutdown" "ups2 shutdown sequence started / Blue Iris target action attempted"
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full BLUEIRIS_LIVE_APPROVED=1 /usr/local/sbin/nut-blueiris-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
@@ -287,7 +287,7 @@ commit_placeholder() {
       log_line "UPS_SHUTDOWN_COMMITTED ups8 targeted shutdown started"
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups8 VOIP method='linux wrapper'"
-    send_outage_email "shutdown" "shutdown sequence started / VOIP target action attempted"
+    send_outage_email "shutdown" "ups8 shutdown sequence started / VOIP target action attempted"
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full VOIP_LIVE_APPROVED=1 /usr/local/sbin/nut-voip-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
@@ -306,7 +306,7 @@ commit_placeholder() {
       log_line "UPS_SHUTDOWN_COMMITTED ups6 targeted shutdown started"
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups6 Lansweeper method='native shutdown.exe via wrapper'"
-    send_outage_email "shutdown" "shutdown sequence started / Lansweeper target action attempted"
+    send_outage_email "shutdown" "ups6 shutdown sequence started / Lansweeper target action attempted"
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase1-lansweeper LANSWEEPER_LIVE_APPROVED=1 /usr/local/sbin/nut-lansweeper-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
@@ -325,7 +325,7 @@ commit_placeholder() {
       log_line "UPS_SHUTDOWN_COMMITTED ups9 broader VMware shutdown started"
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups9 VMware method='vCenter API with PowerCLI fallback'"
-    send_outage_email "shutdown" "shutdown sequence started / VMware target action attempted"
+    send_outage_email "shutdown" "ups9 shutdown sequence started / VMware target action attempted"
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production VMWARE_LIVE_APPROVED=1 ALLOW_ESXI_SSH_FALLBACK=1 VMWARE_HOST_ACTION_APPROVED=1 CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN=1 /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
@@ -335,7 +335,7 @@ commit_placeholder() {
       fi
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups9 Albl-synology1 method='synology wrapper'"
-    send_outage_email "shutdown" "shutdown sequence started / Synology target action attempted"
+    send_outage_email "shutdown" "ups9 shutdown sequence started / Synology target action attempted"
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full SYNOLOGY_LIVE_APPROVED=1 /usr/local/sbin/nut-synology-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
@@ -345,7 +345,7 @@ commit_placeholder() {
       fi
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups9 Alblnetapp01 method='ONTAP CLI halt over SSH'"
-    send_outage_email "shutdown" "shutdown sequence started / NetApp target action attempted"
+    send_outage_email "shutdown" "ups9 shutdown sequence started / NetApp target action attempted"
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production NETAPP_LIVE_APPROVED=1 /usr/local/sbin/nut-netapp-halt.sh Alblnetapp01 >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
@@ -355,7 +355,7 @@ commit_placeholder() {
       fi
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups9 Alblnetapp02 method='ONTAP CLI halt over SSH'"
-    send_outage_email "shutdown" "shutdown sequence started / NetApp target action attempted"
+    send_outage_email "shutdown" "ups9 shutdown sequence started / NetApp target action attempted"
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production NETAPP_LIVE_APPROVED=1 /usr/local/sbin/nut-netapp-halt.sh Alblnetapp02 >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
@@ -365,7 +365,7 @@ commit_placeholder() {
       fi
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups9 nutserver method='local final shutdown wrapper - should run last'"
-    send_outage_email "final" "final NUT server shutdown step reached"
+    send_outage_email "final" "ups9 final NUT server shutdown step reached"
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production NUTSERVER_LIVE_APPROVED=1 /usr/local/sbin/nut-local-final-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
@@ -460,6 +460,7 @@ email_context_for_type() {
   ups_name="$(email_ups_from_reason "$reason")"
 
   export NUT_EMAIL_REASON="$reason"
+  export NUT_UPS_ID="$ups_name"
   export NUT_OUTAGE_DURATION=""
   export NUT_SHUTDOWN_ATTEMPTED=""
   export NUT_SYSTEMS_SCHEDULED=""
