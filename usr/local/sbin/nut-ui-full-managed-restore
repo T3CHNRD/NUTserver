@@ -1,0 +1,206 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+REPO = Path("/opt/nut-admin/repo-template")
+REMOTE = "origin"
+DEFAULT_BRANCH = "backup-sanitized-initial"
+SSH_DIR = Path("/var/lib/nut-orchestrator-ui/github-ssh")
+
+ALLOWED_PREFIXES = (
+    "opt/nut-orchestrator-ui/",
+    "usr/local/sbin/",
+    "usr/local/bin/",
+    "etc/nut/",
+    "etc/systemd/system/",
+)
+
+ALLOWED_EXACT = {
+    "var/www/html/nutserver-dashboard.priority1.html",
+    "var/www/html/ups-rack-map.txt",
+}
+
+# These contain live-only credentials/secrets and must NEVER be
+# overwritten from sanitized GitHub content.
+PRESERVE_LIVE = {
+    "etc/nut/db-telnet.pass",
+    "etc/nut/vcenter.pass",
+    "etc/nut/nut-email-alerts.conf",
+}
+
+PRESERVE_PREFIXES = (
+    "etc/nut/secrets/",
+    "root/.ssh/",
+    ".ssh/",
+)
+
+# These may exist in GitHub in sanitized form. A future live restore
+# must merge/preserve their live secret values rather than blindly copy.
+MERGE_LIVE_SECRETS = {
+    "etc/nut/upsmon.conf",
+    "etc/nut/ups.conf",
+    "etc/nut/nut-orchestrator.conf",
+}
+
+SKIP_PATTERNS = (
+    ".pre-",
+    ".bak",
+    ".save",
+    ".tmp",
+    ".swp",
+    "__pycache__",
+)
+
+def fail(msg):
+    print(f"FAIL: {msg}", file=sys.stderr)
+    raise SystemExit(1)
+
+def git(*args):
+    env = os.environ.copy()
+    env["GIT_SSH_COMMAND"] = (
+        f"ssh -i {SSH_DIR}/id_ed25519 "
+        f"-o UserKnownHostsFile={SSH_DIR}/known_hosts "
+        f"-o IdentitiesOnly=yes"
+    )
+
+    p = subprocess.run(
+        ["git", "-C", str(REPO), *args],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    if p.returncode != 0:
+        fail(p.stderr.strip() or "git command failed")
+    return p.stdout
+
+def valid_branch(branch):
+    if not branch:
+        return False
+    if branch.startswith("/") or branch.endswith("/"):
+        return False
+    if ".." in branch or "@{" in branch or branch.endswith(".lock"):
+        return False
+    return bool(re.fullmatch(r"[A-Za-z0-9._/-]+", branch))
+
+def destination(repo_rel):
+    return "/" + repo_rel
+
+def allowed(repo_rel):
+    if repo_rel in ALLOWED_EXACT:
+        return True
+    return any(repo_rel.startswith(p) for p in ALLOWED_PREFIXES)
+
+def skipped(repo_rel):
+    return any(x in repo_rel for x in SKIP_PATTERNS)
+
+def handling(repo_rel):
+    if repo_rel in PRESERVE_LIVE:
+        return "PRESERVE-LIVE-SECRET"
+
+    if any(repo_rel.startswith(p) for p in PRESERVE_PREFIXES):
+        return "PRESERVE-LIVE-SECRET"
+
+    if repo_rel in MERGE_LIVE_SECRETS:
+        return "MERGE-LIVE-SECRETS"
+
+    return "RESTORE"
+
+def main():
+    mode = sys.argv[1] if len(sys.argv) > 1 else "plan"
+    branch = sys.argv[2] if len(sys.argv) > 2 else DEFAULT_BRANCH
+
+    if mode != "plan":
+        fail(
+            "only plan mode is enabled right now; "
+            "live full rollback is intentionally not enabled yet"
+        )
+
+    if not REPO.joinpath(".git").is_dir():
+        fail(f"{REPO} is not a Git repository")
+
+    if not valid_branch(branch):
+        fail("invalid branch name")
+
+    # Read remote state without changing GitHub structure.
+    git("fetch", "--prune", REMOTE)
+
+    ref = f"refs/remotes/{REMOTE}/{branch}"
+
+    git("rev-parse", "--verify", f"{ref}^{{commit}}")
+
+    tree = git(
+        "ls-tree",
+        "-r",
+        "--name-only",
+        ref,
+    ).splitlines()
+
+    rows = []
+
+    for repo_rel in tree:
+        repo_rel = repo_rel.strip()
+
+        if not repo_rel:
+            continue
+
+        if not allowed(repo_rel):
+            continue
+
+        if skipped(repo_rel):
+            continue
+
+        rows.append(
+            (
+                handling(repo_rel),
+                repo_rel,
+                destination(repo_rel),
+            )
+        )
+
+    restore = sum(1 for x in rows if x[0] == "RESTORE")
+    merge = sum(1 for x in rows if x[0] == "MERGE-LIVE-SECRETS")
+    preserve = sum(
+        1 for x in rows
+        if x[0] == "PRESERVE-LIVE-SECRET"
+    )
+
+    print("===== FULL MANAGED-SYSTEM RESTORE PLAN =====")
+    print(f"branch={branch}")
+    print(f"source={REMOTE}/{branch}")
+    print("github_structure_changed=no")
+    print("live_changes=no")
+    print("restore_engine_status=PLAN_ONLY")
+    print()
+    print(f"restore_files={restore}")
+    print(f"merge_secret_files={merge}")
+    print(f"preserve_live_secret_files={preserve}")
+    print(f"total_managed_items={len(rows)}")
+    print()
+
+    for action, repo_rel, live_path in rows:
+        print(
+            f"action={action} "
+            f"repo={repo_rel} "
+            f"live={live_path}"
+        )
+
+    print()
+    print("===== SAFETY MODEL =====")
+    print("Repository structure: unchanged")
+    print("Existing live secrets: preserved")
+    print("Sanitized configs: require secret-preserving merge")
+    print("Pre-restore backup: required before future live apply")
+    print("Protection-mode gate: required before future live apply")
+    print("Validation: required before activation")
+    print("Automatic rollback: required if activation fails")
+    print()
+    print("PASS: full managed-system rollback plan generated")
+    print("NO LIVE RESTORE WAS PERFORMED")
+
+if __name__ == "__main__":
+    main()

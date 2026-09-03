@@ -1,0 +1,479 @@
+#!/usr/bin/env python3
+
+import hashlib
+import json
+import os
+import re
+import stat
+import subprocess
+import sys
+import tarfile
+import tempfile
+from datetime import datetime
+from pathlib import Path
+
+PLANNER = Path("/usr/local/sbin/nut-ui-full-managed-restore")
+REPO = Path("/opt/nut-admin/repo-template")
+BACKUP_ROOT = Path("/var/backups/nut-admin/full-managed-restore")
+DEFAULT_BRANCH = "backup-sanitized-initial"
+
+LIVE_SECRET_PATHS = [
+    Path("/etc/nut/db-telnet.pass"),
+    Path("/etc/nut/vcenter.pass"),
+    Path("/etc/nut/nut-email-alerts.conf"),
+    Path("/etc/nut/secrets"),
+]
+
+SAFE_REDACTED = {
+    "redacted",
+    "[redacted]",
+    "<redacted>",
+    "masked",
+    "[masked]",
+    "<masked>",
+    "***",
+    "********",
+}
+
+def fail(msg):
+    print(f"FAIL: {msg}", file=sys.stderr)
+    raise SystemExit(1)
+
+def run(cmd, text=True, env=None):
+    p = subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=text,
+        env=env,
+    )
+
+    if p.returncode != 0:
+        err = p.stderr.strip() if text else "command failed"
+        fail(err or f"command failed rc={p.returncode}")
+
+    return p.stdout
+
+def git_env():
+    env = os.environ.copy()
+
+    ssh = Path("/var/lib/nut-orchestrator-ui/github-ssh")
+
+    env["GIT_SSH_COMMAND"] = (
+        f"ssh -i {ssh}/id_ed25519 "
+        f"-o UserKnownHostsFile={ssh}/known_hosts "
+        f"-o IdentitiesOnly=yes"
+    )
+
+    return env
+
+def git_bytes(*args):
+    p = subprocess.run(
+        ["git", "-C", str(REPO), *args],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=git_env(),
+    )
+
+    if p.returncode != 0:
+        fail(
+            p.stderr.decode(errors="replace").strip()
+            or "git command failed"
+        )
+
+    return p.stdout
+
+def parse_plan(branch):
+    output = run(
+        [str(PLANNER), "plan", branch],
+        text=True,
+    )
+
+    items = []
+
+    for line in output.splitlines():
+        m = re.fullmatch(
+            r"action=(\S+) repo=(\S+) live=(\S+)",
+            line.strip(),
+        )
+
+        if not m:
+            continue
+
+        items.append({
+            "action": m.group(1),
+            "repo": m.group(2),
+            "live": m.group(3),
+        })
+
+    if not items:
+        fail("planner returned no managed restore items")
+
+    return output, items
+
+def get_source_commit(branch):
+    raw = git_bytes(
+        "rev-parse",
+        f"refs/remotes/origin/{branch}^{{commit}}",
+    )
+
+    return raw.decode().strip()
+
+def current_mode():
+    try:
+        raw = run(
+            ["/usr/local/sbin/nut-production-status"],
+            text=True,
+        )
+        data = json.loads(raw)
+
+        return (
+            str(data.get("mode", "unknown")),
+            str(data.get("mode_label", "unknown")),
+        )
+    except Exception:
+        return "unknown", "unknown"
+
+def file_metadata(path):
+    try:
+        st = path.lstat()
+    except FileNotFoundError:
+        return {
+            "exists": False,
+        }
+
+    return {
+        "exists": True,
+        "mode": stat.S_IMODE(st.st_mode),
+        "uid": st.st_uid,
+        "gid": st.st_gid,
+        "size": st.st_size,
+        "is_symlink": path.is_symlink(),
+    }
+
+def safe_arcname(path):
+    if not path.is_absolute():
+        fail(f"backup path is not absolute: {path}")
+
+    return str(path).lstrip("/")
+
+def add_to_backup(tf, path):
+    if not os.path.lexists(path):
+        return False
+
+    tf.add(
+        str(path),
+        arcname=safe_arcname(path),
+        recursive=True,
+    )
+
+    return True
+
+def sha(data):
+    return hashlib.sha256(data).digest()
+
+def merge_upsmon(remote_bytes, live_path):
+    if not live_path.is_file():
+        fail("live upsmon.conf missing; cannot preserve credentials")
+
+    remote = remote_bytes.decode(errors="strict")
+    live = live_path.read_text()
+
+    live_monitor = {}
+
+    for raw in live.splitlines():
+        if not re.match(r"^\s*MONITOR\s+", raw, re.I):
+            continue
+
+        parts = raw.split()
+
+        if len(parts) < 6:
+            fail("live upsmon.conf contains malformed MONITOR record")
+
+        live_monitor[parts[1]] = parts
+
+    output = []
+    remote_count = 0
+
+    for raw in remote.splitlines():
+        if not re.match(r"^\s*MONITOR\s+", raw, re.I):
+            output.append(raw)
+            continue
+
+        parts = raw.split()
+
+        if len(parts) < 6:
+            fail("GitHub upsmon.conf contains malformed MONITOR record")
+
+        remote_count += 1
+        source = parts[1]
+
+        if source not in live_monitor:
+            fail(
+                "GitHub/live UPSMON structures differ for "
+                f"{source}; refusing secret merge"
+            )
+
+        live_parts = live_monitor[source]
+
+        # Preserve the current live credential pair.
+        parts[3] = live_parts[3]
+        parts[4] = live_parts[4]
+
+        output.append(" ".join(parts))
+
+    if remote_count == 0:
+        fail("GitHub upsmon.conf contains no MONITOR records")
+
+    if remote_count != len(live_monitor):
+        fail(
+            "GitHub/live UPSMON MONITOR counts differ; "
+            "refusing secret merge"
+        )
+
+    merged = "\n".join(output) + (
+        "\n" if remote.endswith("\n") else ""
+    )
+
+    for raw in merged.splitlines():
+        if not re.match(r"^\s*MONITOR\s+", raw, re.I):
+            continue
+
+        parts = raw.split()
+
+        if len(parts) >= 6:
+            if parts[4].strip().lower() in SAFE_REDACTED:
+                fail(
+                    "secret merge left a redacted MONITOR "
+                    "credential in staged upsmon.conf"
+                )
+
+    return merged.encode()
+
+def validate_staged(path, repo_rel):
+    data = path.read_bytes()
+
+    try:
+        text = data.decode()
+    except UnicodeDecodeError:
+        return "binary-skipped"
+
+    first = text.splitlines()[0] if text.splitlines() else ""
+
+    if repo_rel.endswith(".json"):
+        json.loads(text)
+        return "json-pass"
+
+    if repo_rel.endswith(".py") or "python" in first:
+        compile(text, repo_rel, "exec")
+        return "python-pass"
+
+    if (
+        repo_rel.endswith(".sh")
+        or first.startswith("#!/bin/bash")
+        or first.startswith("#!/usr/bin/env bash")
+        or first.startswith("#!/bin/sh")
+    ):
+        p = subprocess.run(
+            ["/usr/bin/bash", "-n", str(path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+        if p.returncode != 0:
+            fail(
+                f"shell validation failed for {repo_rel}: "
+                f"{p.stderr.strip()}"
+            )
+
+        return "shell-pass"
+
+    return "not-applicable"
+
+def main():
+    if len(sys.argv) > 2:
+        fail("usage: nut-ui-full-managed-restore-preflight [branch]")
+
+    branch = (
+        sys.argv[1]
+        if len(sys.argv) == 2
+        else DEFAULT_BRANCH
+    )
+
+    if not PLANNER.is_file():
+        fail(f"planner missing: {PLANNER}")
+
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup_dir = BACKUP_ROOT / timestamp
+
+    backup_dir.mkdir(
+        parents=True,
+        exist_ok=False,
+        mode=0o700,
+    )
+
+    os.chmod(backup_dir, 0o700)
+
+    plan_text, items = parse_plan(branch)
+    commit = get_source_commit(branch)
+    mode, mode_label = current_mode()
+
+    (backup_dir / "plan.txt").write_text(plan_text)
+    (backup_dir / "source-commit.txt").write_text(
+        commit + "\n"
+    )
+
+    live_paths = {
+        Path(item["live"])
+        for item in items
+    }
+
+    for secret_path in LIVE_SECRET_PATHS:
+        live_paths.add(secret_path)
+
+    metadata = {
+        str(path): file_metadata(path)
+        for path in sorted(live_paths, key=str)
+    }
+
+    (backup_dir / "live-metadata.json").write_text(
+        json.dumps(metadata, indent=2) + "\n"
+    )
+
+    archive = backup_dir / "live-before-restore.tar.gz"
+
+    backed_up = 0
+
+    with tarfile.open(archive, "w:gz") as tf:
+        for path in sorted(live_paths, key=str):
+            if add_to_backup(tf, path):
+                backed_up += 1
+
+    os.chmod(archive, 0o600)
+
+    validation_counts = {}
+    changed = 0
+    identical = 0
+    missing_live = 0
+    merge_count = 0
+
+    with tempfile.TemporaryDirectory(
+        prefix="nut-full-restore-preflight-"
+    ) as temp_name:
+
+        stage_root = Path(temp_name)
+        os.chmod(stage_root, 0o700)
+
+        ref = f"refs/remotes/origin/{branch}"
+
+        for item in items:
+            repo_rel = item["repo"]
+            live_path = Path(item["live"])
+            action = item["action"]
+
+            source = git_bytes(
+                "show",
+                f"{ref}:{repo_rel}",
+            )
+
+            if (
+                action == "MERGE-LIVE-SECRETS"
+                and repo_rel == "etc/nut/upsmon.conf"
+            ):
+                source = merge_upsmon(
+                    source,
+                    live_path,
+                )
+                merge_count += 1
+
+            elif action == "MERGE-LIVE-SECRETS":
+                fail(
+                    "no secret-preserving merge implementation "
+                    f"exists yet for {repo_rel}"
+                )
+
+            staged = stage_root / repo_rel
+            staged.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+            staged.write_bytes(source)
+
+            result = validate_staged(
+                staged,
+                repo_rel,
+            )
+
+            validation_counts[result] = (
+                validation_counts.get(result, 0) + 1
+            )
+
+            if not live_path.exists():
+                missing_live += 1
+            else:
+                try:
+                    live_bytes = live_path.read_bytes()
+                except Exception:
+                    changed += 1
+                else:
+                    if sha(source) == sha(live_bytes):
+                        identical += 1
+                    else:
+                        changed += 1
+
+    future_apply_allowed = (
+        "no"
+        if mode in {"armed", "storm_guard"}
+        or mode_label.upper() == "PROTECTING"
+        else "yes"
+    )
+
+    summary = {
+        "branch": branch,
+        "source_commit": commit,
+        "managed_items": len(items),
+        "backup_entries": backed_up,
+        "changed_vs_live": changed,
+        "identical_to_live": identical,
+        "missing_live_destinations": missing_live,
+        "secret_merge_items": merge_count,
+        "validation": validation_counts,
+        "nut_mode": mode,
+        "nut_mode_label": mode_label,
+        "future_live_apply_allowed": future_apply_allowed,
+        "live_changes_performed": False,
+        "services_restarted": False,
+    }
+
+    (backup_dir / "preflight-summary.json").write_text(
+        json.dumps(summary, indent=2) + "\n"
+    )
+
+    print("===== FULL MANAGED RESTORE PREFLIGHT =====")
+    print(f"branch={branch}")
+    print(f"source_commit={commit[:12]}")
+    print(f"managed_items={len(items)}")
+    print(f"backup_entries={backed_up}")
+    print(f"changed_vs_live={changed}")
+    print(f"identical_to_live={identical}")
+    print(f"missing_live_destinations={missing_live}")
+    print(f"secret_merge_items={merge_count}")
+    print(f"nut_mode={mode}")
+    print(f"nut_mode_label={mode_label}")
+    print(
+        f"future_live_apply_allowed="
+        f"{future_apply_allowed}"
+    )
+    print(f"backup_directory={backup_dir}")
+    print(f"backup_archive={archive}")
+    print()
+    print("PASS: current live managed files backed up")
+    print("PASS: live-only secrets included in protected backup")
+    print("PASS: GitHub snapshot staged and validated")
+    print("PASS: UPSMON live credentials preserved in staging")
+    print("PASS: no live files were restored")
+    print("PASS: no services were restarted")
+
+if __name__ == "__main__":
+    main()

@@ -4886,6 +4886,371 @@ function closeLabSelectedRestoreScreen() {
       }
     }
 
+
+
+    function selectedFullRestoreBranch() {
+      const select =
+        document.getElementById(
+          "cc-full-restore-branch"
+        );
+
+      return String(
+        select && select.value
+          ? select.value
+          : "backup-sanitized-initial"
+      ).trim();
+    }
+
+
+    async function loadFullRestoreBranches() {
+      const select =
+        document.getElementById(
+          "cc-full-restore-branch"
+        );
+
+      if (!select) return;
+
+      try {
+        const data = await ccApiJson(
+          "/nut-ui/api/restore/branches"
+        );
+
+        const branches =
+          Array.isArray(data.branches)
+            ? data.branches
+            : [];
+
+        if (!branches.length) return;
+
+        const current =
+          selectedFullRestoreBranch();
+
+        select.innerHTML = "";
+
+        branches.forEach(function (branch) {
+          const option =
+            document.createElement("option");
+
+          option.value = branch;
+          option.textContent = branch;
+
+          if (branch === current) {
+            option.selected = true;
+          }
+
+          select.appendChild(option);
+        });
+
+      } catch (err) {
+        // Keep the known default branch available.
+      }
+    }
+
+
+    async function loadFullManagedRestoreStatus() {
+      const target =
+        document.getElementById("cc-full-restore-status");
+
+      if (!target) return;
+
+      target.textContent = "Loading Restore status...";
+
+      try {
+        const data = await ccApiJson(
+          "/nut-ui/api/restore/full-status?branch=" +
+          encodeURIComponent(
+            selectedFullRestoreBranch()
+          )
+        );
+
+        if (!data || !data.ok) {
+          target.textContent =
+            "Restore status could not be loaded.";
+          return;
+        }
+
+        const r =
+          data.restore_levels &&
+          data.restore_levels.full_managed_system
+            ? data.restore_levels.full_managed_system
+            : {};
+
+        const nut = data.nut || {};
+
+        target.innerHTML =
+          "<strong>GitHub branch:</strong> " +
+          String(data.branch || "backup-sanitized-initial") +
+          "<br>" +
+          "<strong>NUT mode:</strong> " +
+          String(nut.mode_label || nut.mode || "Unknown") +
+          "<br>" +
+          "<strong>Files restored:</strong> " +
+          String(r.restore_files ?? "?") +
+          "<br>" +
+          "<strong>Secret-preserving merges:</strong> " +
+          String(r.merge_live_secrets ?? "?") +
+          "<br>" +
+          "<strong>Files preserved live:</strong> " +
+          String(r.preserve_live ?? "?") +
+          "<br>" +
+          "<strong>Reference/template files skipped:</strong> " +
+          String(r.skip_reference ?? "?") +
+          "<br><br>" +
+          "<strong>Live Apply currently allowed:</strong> " +
+          (r.currently_allowed ? "YES" : "NO");
+      } catch (err) {
+        target.textContent =
+          "Restore status error: " + String(err);
+      }
+    }
+
+
+    function openFullManagedRestoreScreen() {
+      closeRestoreOptionsModal();
+
+      const screen =
+        document.getElementById(
+          "cc-full-managed-restore-screen"
+        );
+
+      if (screen) {
+        screen.classList.add("open");
+        screen.setAttribute("aria-hidden", "false");
+      }
+
+      const input =
+        document.getElementById(
+          "cc-full-restore-confirm-input"
+        );
+
+      if (input) input.value = "";
+
+      loadFullRestoreBranches().then(
+        loadFullManagedRestoreStatus
+      );
+    }
+
+
+    function closeFullManagedRestoreScreen() {
+      const screen =
+        document.getElementById(
+          "cc-full-managed-restore-screen"
+        );
+
+      if (screen) {
+        screen.classList.remove("open");
+        screen.setAttribute("aria-hidden", "true");
+      }
+    }
+
+
+    async function runFullManagedRestorePreflight() {
+      setControlCenterOutput(
+        "Full Managed-System Restore",
+        "Running non-destructive full restore preflight..."
+      );
+
+      try {
+        const data = await ccApiJson(
+          "/nut-ui/api/restore/full-preflight",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              branch: selectedFullRestoreBranch()
+            })
+          }
+        );
+
+        setControlCenterOutput(
+          "Full Managed-System Restore Preflight",
+          data,
+          !data.ok
+        );
+
+        loadFullManagedRestoreStatus();
+      } catch (err) {
+        setControlCenterOutput(
+          "Full Restore Preflight Error",
+          String(err),
+          true
+        );
+      }
+    }
+
+
+
+    async function pollFullRestoreJob(jobId) {
+      const title =
+        "Full Managed-System Restore";
+
+      let attempts = 0;
+
+      while (attempts < 450) {
+        attempts += 1;
+
+        try {
+          const data = await ccApiJson(
+            "/nut-ui/api/restore/full-job/" +
+            encodeURIComponent(jobId)
+          );
+
+          setControlCenterOutput(
+            title,
+            data,
+            (
+              data.state === "FAILED"
+              || data.state === "ROLLED_BACK"
+            )
+          );
+
+          if (
+            data.state === "SUCCESS"
+            || data.state === "FAILED"
+            || data.state === "ROLLED_BACK"
+          ) {
+            return;
+          }
+
+        } catch (err) {
+          // The UI service may briefly disappear during
+          // a future restore activation/restart.
+        }
+
+        await new Promise(function (resolve) {
+          setTimeout(resolve, 2000);
+        });
+      }
+
+      setControlCenterOutput(
+        title,
+        "Restore job status polling timed out. Job ID: " +
+        jobId,
+        true
+      );
+    }
+
+
+    async function runFullManagedRestore() {
+      const phrase =
+        "RESTORE FULL MANAGED SYSTEM";
+
+      const input =
+        document.getElementById(
+          "cc-full-restore-confirm-input"
+        );
+
+      const typed =
+        String(input ? input.value : "").trim();
+
+      if (typed !== phrase) {
+        setControlCenterOutput(
+          "Full Managed-System Restore",
+          "Full restore blocked. Exact confirmation phrase was not entered.",
+          true
+        );
+        return;
+      }
+
+      try {
+        const data = await ccApiJson(
+          "/nut-ui/api/restore/full-live",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              branch: selectedFullRestoreBranch(),
+              confirmation: phrase
+            })
+          }
+        );
+
+        setControlCenterOutput(
+          "Full Managed-System Restore",
+          data,
+          !data.ok
+        );
+
+        if (
+          data.ok
+          && data.accepted
+          && data.job_id
+        ) {
+          pollFullRestoreJob(
+            String(data.job_id)
+          );
+        }
+      } catch (err) {
+        setControlCenterOutput(
+          "Full Managed-System Restore Error",
+          String(err),
+          true
+        );
+      }
+    }
+
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      function () {
+        const open =
+          document.getElementById(
+            "cc-open-full-managed-restore"
+          );
+
+        const back =
+          document.getElementById(
+            "cc-full-managed-restore-back"
+          );
+
+        const preflight =
+          document.getElementById(
+            "cc-run-full-restore-preflight"
+          );
+
+        const run =
+          document.getElementById(
+            "cc-run-full-managed-restore"
+          );
+
+        if (open) {
+          open.addEventListener(
+            "click",
+            openFullManagedRestoreScreen
+          );
+        }
+
+        if (back) {
+          back.addEventListener(
+            "click",
+            function () {
+              closeFullManagedRestoreScreen();
+              openRestoreOptionsModal();
+            }
+          );
+        }
+
+        if (preflight) {
+          preflight.addEventListener(
+            "click",
+            runFullManagedRestorePreflight
+          );
+        }
+
+        if (run) {
+          run.addEventListener(
+            "click",
+            runFullManagedRestore
+          );
+        }
+      }
+    );
+
+
     async function runControlCenterRestore() {
       openRestoreOptionsModal();
     }
@@ -5914,38 +6279,269 @@ function closeLabSelectedRestoreScreen() {
   
   <div class="cc-restore-modal-overlay" id="cc-restore-modal-overlay" aria-hidden="true">
     <div class="cc-restore-modal" role="dialog" aria-modal="true" aria-labelledby="cc-restore-modal-title">
+
       <div class="cc-restore-modal-header">
         <div>
-          <div class="cc-restore-modal-title" id="cc-restore-modal-title">Restore from GitHub Options</div>
+          <div class="cc-restore-modal-title" id="cc-restore-modal-title">
+            Restore from GitHub
+          </div>
           <div class="cc-restore-modal-subtitle">
-            Choose a restore action. Repo sync updates the local backup copy only. Preview shows restore mappings without copying files.
+            Choose how much of the NUT server you want to restore.
+            All restore levels use the existing GitHub backup structure.
           </div>
         </div>
-        <button class="cc-btn" type="button" id="cc-restore-modal-close">Close</button>
+
+        <button class="cc-btn" type="button" id="cc-restore-modal-close">
+          Close
+        </button>
+      </div>
+
+      <div style="
+        border:1px solid rgba(251,191,36,.30);
+        background:rgba(251,191,36,.08);
+        border-radius:16px;
+        padding:.85rem 1rem;
+        margin-bottom:1rem;
+        line-height:1.45;
+      ">
+        <strong>Restore safety:</strong>
+        You can review and prepare all restore levels while NUT is PROTECTING.
+        Live production changes are blocked by the backend until the current
+        NUT mode permits them.
       </div>
 
       <div class="cc-restore-option-grid">
-        <button class="cc-restore-option" type="button" data-restore-action="sync-repo">
-          Sync backup repo from GitHub
-          <small>Updates /opt/nut-admin/repo-template only. Does not restore live files.</small>
+
+        <button
+          class="cc-restore-option"
+          type="button"
+          data-restore-action="sync-repo"
+        >
+          <span style="display:block;font-size:.72rem;opacity:.65;margin-bottom:.35rem;">
+            LEVEL 1
+          </span>
+
+          Repository rollback
+
+          <small>
+            Reset only /opt/nut-admin/repo-template to the selected GitHub
+            branch or snapshot. Live NUT files and services are not changed.
+          </small>
         </button>
 
-        <button class="cc-restore-option" type="button" data-restore-dry-run="all">
-          Preview restore plan
-          <small>Shows all restore mappings. No files copied.</small>
+        <button
+          class="cc-restore-option"
+          type="button"
+          id="cc-lab-open-selected-restore"
+        >
+          <span style="display:block;font-size:.72rem;opacity:.65;margin-bottom:.35rem;">
+            LEVEL 2
+          </span>
+
+          Selected-file live restore
+
+          <small>
+            Choose one approved file and restore it to its live production
+            path. A pre-restore backup and exact confirmation are required.
+          </small>
         </button>
 
-        <button class="cc-restore-option" type="button" id="cc-lab-open-selected-restore">
-          Live restore selected file
-          <small>Open the in-modal restore selection screen. No separate restore page.</small>
+        <button
+          class="cc-restore-option"
+          type="button"
+          id="cc-open-full-managed-restore"
+        >
+          <span style="display:block;font-size:.72rem;opacity:.65;margin-bottom:.35rem;">
+            LEVEL 3
+          </span>
+
+          Full managed-system rollback
+
+          <small>
+            Restore the approved NUT application/configuration stack.
+            Current secrets and protection mode are preserved. Preflight,
+            backup, validation and rollback protection are required.
+          </small>
+        </button>
+
+      </div>
+
+      <div style="
+        border-top:1px solid rgba(255,255,255,.10);
+        margin-top:1rem;
+        padding-top:1rem;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:1rem;
+        flex-wrap:wrap;
+      ">
+        <div>
+          <div style="font-weight:750;">Safe restore preview</div>
+          <div style="font-size:.82rem;opacity:.62;margin-top:.25rem;">
+            Review existing restore mappings without copying any files.
+          </div>
+        </div>
+
+        <button
+          class="cc-btn"
+          type="button"
+          data-restore-dry-run="all"
+        >
+          Preview Restore Plan
         </button>
       </div>
+
     </div>
   </div>
 
-  
-  
-  <div class="cc-restore-modal-overlay" id="cc-lab-selected-restore-screen" aria-hidden="true">
+
+  <div
+    class="cc-restore-modal-overlay"
+    id="cc-full-managed-restore-screen"
+    aria-hidden="true"
+  >
+    <div
+      class="cc-restore-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cc-full-managed-restore-title"
+    >
+
+      <div class="cc-restore-modal-header">
+        <div>
+          <div
+            class="cc-restore-modal-title"
+            id="cc-full-managed-restore-title"
+          >
+            Full Managed-System Rollback
+          </div>
+
+          <div class="cc-restore-modal-subtitle">
+            Restore the approved NUT-managed application and configuration
+            stack from GitHub. This is not a bare-metal Ubuntu rebuild.
+          </div>
+        </div>
+
+        <button
+          class="cc-btn"
+          type="button"
+          id="cc-full-managed-restore-back"
+        >
+          Back
+        </button>
+      </div>
+
+
+      <div class="cc-card" style="margin-bottom:1rem;">
+        <div class="cc-kicker">GitHub restore snapshot</div>
+
+        <p style="opacity:.72;">
+          Choose the existing GitHub branch/snapshot to restore.
+          The GitHub repository structure itself is not changed.
+        </p>
+
+        <select
+          id="cc-full-restore-branch"
+          class="cc-input"
+          style="width:100%;"
+        >
+          <option value="backup-sanitized-initial">
+            backup-sanitized-initial
+          </option>
+        </select>
+      </div>
+
+      <div class="cc-card" style="margin-bottom:1rem;">
+        <div class="cc-kicker">Restore scope</div>
+
+        <div
+          id="cc-full-restore-status"
+          style="margin-top:.65rem;line-height:1.6;"
+        >
+          Loading Restore status...
+        </div>
+      </div>
+
+
+      <div class="cc-card" style="margin-bottom:1rem;">
+        <div class="cc-kicker">Step 1 — Preflight</div>
+
+        <p style="opacity:.72;">
+          Creates a protected pre-restore backup, compares GitHub to the
+          running server, preserves live secrets and validates staged files.
+          No live files are restored during preflight.
+        </p>
+
+        <button
+          class="cc-btn"
+          type="button"
+          id="cc-run-full-restore-preflight"
+        >
+          Run Full Restore Preflight
+        </button>
+      </div>
+
+
+      <div class="cc-card">
+        <div class="cc-kicker">Step 2 — Full live rollback</div>
+
+        <p style="opacity:.72;">
+          The backend will refuse this operation while NUT is PROTECTING.
+          When an allowed mode is active, the same workflow will perform the
+          managed rollback using the required backup and safety controls.
+        </p>
+
+        <label
+          class="cc-kicker"
+          for="cc-full-restore-confirm-input"
+        >
+          Type exact confirmation phrase
+        </label>
+
+        <input
+          id="cc-full-restore-confirm-input"
+          class="cc-input"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="RESTORE FULL MANAGED SYSTEM"
+          style="width:100%;margin-top:.45rem;"
+        />
+
+        <div style="
+          border:1px solid rgba(239,68,68,.32);
+          background:rgba(239,68,68,.08);
+          border-radius:16px;
+          padding:.8rem;
+          margin-top:.9rem;
+        ">
+          Live rollback requires the exact phrase
+          <strong>RESTORE FULL MANAGED SYSTEM</strong>.
+          Protection mode is checked again by the backend before any files
+          can be changed.
+        </div>
+
+        <div style="
+          display:flex;
+          justify-content:flex-end;
+          margin-top:1rem;
+        ">
+          <button
+            class="cc-btn cc-btn-danger"
+            type="button"
+            id="cc-run-full-managed-restore"
+          >
+            Run Full Managed-System Rollback
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+<div class="cc-restore-modal-overlay" id="cc-lab-selected-restore-screen" aria-hidden="true">
     <div class="cc-restore-modal" role="dialog" aria-modal="true" aria-labelledby="cc-lab-selected-restore-title">
       <div class="cc-restore-modal-header">
         <div>

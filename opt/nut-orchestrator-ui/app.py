@@ -1511,6 +1511,218 @@ def restore_selected_file_live():
     })
 
 
+
+# =========================
+# FULL MANAGED-SYSTEM RESTORE
+# =========================
+
+@app.route("/api/restore/full-status", methods=["GET"])
+def restore_full_status():
+    branch = str(
+        request.args.get("branch")
+        or "backup-sanitized-initial"
+    ).strip()
+
+    cmd = [
+        "/usr/bin/sudo",
+        "/usr/local/sbin/nut-ui-restore-status",
+        branch,
+    ]
+
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+
+    if result.returncode != 0:
+        return jsonify({
+            "ok": False,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "output": result.stdout + result.stderr,
+            "returncode": result.returncode,
+        }), 500
+
+    try:
+        payload = json.loads(result.stdout)
+    except Exception:
+        return jsonify({
+            "ok": False,
+            "error": "Restore status helper returned invalid JSON",
+            "output": result.stdout + result.stderr,
+            "returncode": 500,
+        }), 500
+
+    payload["ok"] = True
+    return jsonify(payload)
+
+
+@app.route(
+    "/api/restore/full-job/<job_id>",
+    methods=["GET"]
+)
+def restore_full_job(job_id):
+    import re
+
+    if not re.fullmatch(
+        r"[0-9]{8}-[0-9]{6}-[0-9]+",
+        str(job_id or ""),
+    ):
+        return jsonify({
+            "ok": False,
+            "error": "Invalid restore job id",
+            "returncode": 400,
+        }), 400
+
+    status_file = Path(
+        "/var/lib/nut-orchestrator-ui/"
+        f"restore-jobs/{job_id}.json"
+    )
+
+    if not status_file.is_file():
+        return jsonify({
+            "ok": False,
+            "error": "Restore job status not found",
+            "returncode": 404,
+        }), 404
+
+    try:
+        data = json.loads(status_file.read_text())
+    except Exception as exc:
+        return jsonify({
+            "ok": False,
+            "error": f"Invalid restore job status: {exc}",
+            "returncode": 500,
+        }), 500
+
+    data["ok"] = True
+    return jsonify(data)
+
+
+
+@app.route(
+    "/api/restore/full-preflight",
+    methods=["POST"]
+)
+def restore_full_preflight():
+    payload = request.get_json(silent=True) or {}
+
+    branch = str(
+        payload.get("branch")
+        or "backup-sanitized-initial"
+    ).strip()
+
+    cmd = [
+        "/usr/bin/sudo",
+        "/usr/local/sbin/nut-ui-full-managed-restore-preflight",
+        branch,
+    ]
+
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+
+    return jsonify({
+        "ok": result.returncode == 0,
+        "branch": branch,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "output": result.stdout + result.stderr,
+        "returncode": result.returncode,
+        "live_restore_performed": False,
+    })
+
+
+@app.route(
+    "/api/restore/full-live",
+    methods=["POST"]
+)
+def restore_full_live():
+    blocked = block_if_protecting(
+        "full managed-system live restore"
+    )
+
+    if blocked:
+        return blocked
+
+    payload = request.get_json(silent=True) or {}
+
+    branch = str(
+        payload.get("branch")
+        or "backup-sanitized-initial"
+    ).strip()
+
+    confirmation = str(
+        payload.get("confirmation") or ""
+    ).strip()
+
+    required = "RESTORE FULL MANAGED SYSTEM"
+
+    if confirmation != required:
+        return jsonify({
+            "ok": False,
+            "error": (
+                "Full managed-system restore requires "
+                f"exact confirmation phrase: {required}"
+            ),
+            "returncode": 403,
+        }), 403
+
+    helper = Path(
+        "/usr/local/sbin/"
+        "nut-ui-full-managed-restore-live"
+    )
+
+    if not helper.is_file():
+        return jsonify({
+            "ok": False,
+            "error": (
+                "Full managed-system restore engine "
+                "is not installed."
+            ),
+            "returncode": 503,
+        }), 503
+
+    result = subprocess.run(
+        [
+            "/usr/bin/sudo",
+            str(helper),
+            branch,
+            confirmation,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=900,
+    )
+
+    job_id = ""
+
+    for line in result.stdout.splitlines():
+        if line.startswith("job_id="):
+            job_id = line.split("=", 1)[1].strip()
+            break
+
+    return jsonify({
+        "ok": result.returncode == 0,
+        "accepted": (
+            result.returncode == 0
+            and bool(job_id)
+        ),
+        "job_id": job_id,
+        "branch": branch,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "output": result.stdout + result.stderr,
+        "returncode": result.returncode,
+    })
+
+
+
 # =========================
 # POWER EVENTS (NEW)
 # =========================

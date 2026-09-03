@@ -1,0 +1,899 @@
+#!/usr/bin/env python3
+
+import fnmatch
+import json
+import os
+import re
+import shutil
+import stat
+import subprocess
+import sys
+import tarfile
+import tempfile
+import time
+from datetime import datetime
+from pathlib import Path
+
+REPO = Path("/opt/nut-admin/repo-template")
+PLANNER = Path("/usr/local/sbin/nut-ui-full-managed-restore")
+PREFLIGHT = Path("/usr/local/sbin/nut-ui-full-managed-restore-preflight")
+POLICY = Path("/etc/nut/restore/full-managed-restore-policy.json")
+SSH_DIR = Path("/var/lib/nut-orchestrator-ui/github-ssh")
+
+BACKUP_ROOT = Path("/var/backups/nut-admin/full-managed-restore-live")
+STATUS_ROOT = Path("/var/lib/nut-orchestrator-ui/restore-jobs")
+AUTH_ROOT = Path("/run/nut")
+
+REQUIRED_CONFIRMATION = "RESTORE FULL MANAGED SYSTEM"
+
+LIVE_SECRET_PATHS = (
+    Path("/etc/nut/db-telnet.pass"),
+    Path("/etc/nut/vcenter.pass"),
+    Path("/etc/nut/nut-email-alerts.conf"),
+    Path("/etc/nut/secrets"),
+)
+
+SAFE_REDACTED = {
+    "redacted", "[redacted]", "<redacted>",
+    "masked", "[masked]", "<masked>",
+    "***", "********",
+}
+
+
+def fail(msg):
+    raise RuntimeError(str(msg))
+
+
+def cmd(args, check=True, env=None):
+    p = subprocess.run(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=env,
+    )
+
+    if check and p.returncode != 0:
+        fail(
+            p.stderr.strip()
+            or p.stdout.strip()
+            or f"command failed rc={p.returncode}: {' '.join(args)}"
+        )
+
+    return p
+
+
+def git_env():
+    env = os.environ.copy()
+    env["GIT_SSH_COMMAND"] = (
+        f"ssh -i {SSH_DIR}/id_ed25519 "
+        f"-o UserKnownHostsFile={SSH_DIR}/known_hosts "
+        f"-o IdentitiesOnly=yes"
+    )
+    return env
+
+
+def git_bytes(*args):
+    p = subprocess.run(
+        ["git", "-C", str(REPO), *args],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=git_env(),
+    )
+
+    if p.returncode != 0:
+        fail(
+            p.stderr.decode(errors="replace").strip()
+            or "git command failed"
+        )
+
+    return p.stdout
+
+
+def production_status():
+    p = cmd(
+        ["/usr/local/sbin/nut-production-status"]
+    )
+
+    try:
+        return json.loads(p.stdout)
+    except Exception:
+        fail("production status did not return valid JSON")
+
+
+def require_live_restore_mode():
+    data = production_status()
+
+    mode = str(data.get("mode", "unknown"))
+    label = str(data.get("mode_label", "unknown"))
+
+    if (
+        mode in {"armed", "storm_guard"}
+        or label.upper() == "PROTECTING"
+    ):
+        fail(
+            "LIVE RESTORE BLOCKED: NUT server is currently "
+            "PROTECTING. No files were changed."
+        )
+
+    return data
+
+
+def write_status(job, **updates):
+    STATUS_ROOT.mkdir(parents=True, exist_ok=True)
+    os.chmod(STATUS_ROOT, 0o755)
+
+    path = STATUS_ROOT / f"{job}.json"
+
+    current = {}
+
+    if path.exists():
+        try:
+            current = json.loads(path.read_text())
+        except Exception:
+            current = {}
+
+    current.update(updates)
+    current["job_id"] = job
+    current["updated"] = datetime.now().isoformat()
+
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(current, indent=2) + "\n")
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, path)
+
+
+def parse_plan(branch):
+    p = cmd(
+        [str(PLANNER), "plan", branch]
+    )
+
+    items = []
+
+    for raw in p.stdout.splitlines():
+        m = re.fullmatch(
+            r"action=(\S+) repo=(\S+) live=(\S+)",
+            raw.strip(),
+        )
+
+        if m:
+            items.append({
+                "original_action": m.group(1),
+                "repo": m.group(2),
+                "live": m.group(3),
+            })
+
+    if not items:
+        fail("restore planner returned no managed items")
+
+    return items
+
+
+def apply_policy(items):
+    policy = json.loads(POLICY.read_text())
+    rules = policy["rules"]
+
+    exact_skip = set(
+        rules["templates_and_reference"]["exact_paths"]
+    )
+    patterns = rules["templates_and_reference"]["patterns"]
+
+    preserve = set()
+
+    for section in (
+        "production_mode",
+        "restore_infrastructure",
+        "non_nut_remote_access",
+    ):
+        preserve.update(
+            rules[section]["exact_paths"]
+        )
+
+    merge = set(
+        rules["secret_handling"]["merge_live_secrets"]
+    )
+
+    result = []
+
+    for item in items:
+        repo = item["repo"]
+
+        if (
+            repo in exact_skip
+            or any(fnmatch.fnmatch(repo, pat) for pat in patterns)
+        ):
+            item["action"] = "SKIP"
+
+        elif repo in preserve:
+            item["action"] = "PRESERVE"
+
+        elif repo in merge:
+            item["action"] = "MERGE"
+
+        else:
+            item["action"] = "RESTORE"
+
+        result.append(item)
+
+    return result
+
+
+def merge_upsmon(remote_bytes, live_path):
+    if not live_path.is_file():
+        fail("live upsmon.conf is missing")
+
+    remote = remote_bytes.decode()
+    live = live_path.read_text()
+
+    live_records = {}
+
+    for line in live.splitlines():
+        if not re.match(r"^\s*MONITOR\s+", line, re.I):
+            continue
+
+        parts = line.split()
+
+        if len(parts) < 6:
+            fail("malformed live UPSMON MONITOR record")
+
+        live_records[parts[1]] = parts
+
+    out = []
+    remote_count = 0
+
+    for line in remote.splitlines():
+        if not re.match(r"^\s*MONITOR\s+", line, re.I):
+            out.append(line)
+            continue
+
+        parts = line.split()
+
+        if len(parts) < 6:
+            fail("malformed GitHub UPSMON MONITOR record")
+
+        source = parts[1]
+        remote_count += 1
+
+        if source not in live_records:
+            fail(
+                f"UPSMON structure mismatch for {source}"
+            )
+
+        current = live_records[source]
+
+        # Preserve the current production username/password.
+        parts[3] = current[3]
+        parts[4] = current[4]
+
+        if parts[4].strip().lower() in SAFE_REDACTED:
+            fail("UPSMON secret merge produced redacted credential")
+
+        out.append(" ".join(parts))
+
+    if remote_count != len(live_records):
+        fail("UPSMON MONITOR record count mismatch")
+
+    return (
+        "\n".join(out)
+        + ("\n" if remote.endswith("\n") else "")
+    ).encode()
+
+
+def validate_stage(path, repo_rel):
+    data = path.read_bytes()
+
+    try:
+        text = data.decode()
+    except UnicodeDecodeError:
+        return
+
+    first = text.splitlines()[0] if text.splitlines() else ""
+
+    if repo_rel.endswith(".json"):
+        json.loads(text)
+        return
+
+    if repo_rel.endswith(".py") or "python" in first:
+        compile(text, repo_rel, "exec")
+        return
+
+    if (
+        repo_rel.endswith(".sh")
+        or first.startswith("#!/bin/bash")
+        or first.startswith("#!/usr/bin/env bash")
+        or first.startswith("#!/bin/sh")
+    ):
+        p = cmd(
+            ["/usr/bin/bash", "-n", str(path)],
+            check=False,
+        )
+
+        if p.returncode != 0:
+            fail(
+                f"shell validation failed for {repo_rel}: "
+                f"{p.stderr.strip()}"
+            )
+
+
+def git_mode(ref, repo_rel):
+    raw = git_bytes(
+        "ls-tree",
+        ref,
+        repo_rel,
+    ).decode().strip()
+
+    if not raw:
+        fail(f"Git metadata missing for {repo_rel}")
+
+    return raw.split()[0]
+
+
+def backup_path(tf, path):
+    if not os.path.lexists(path):
+        return False
+
+    tf.add(
+        str(path),
+        arcname=str(path).lstrip("/"),
+        recursive=True,
+    )
+
+    return True
+
+
+def stage_files(branch, items, stage_root):
+    ref = f"refs/remotes/origin/{branch}"
+    staged = []
+
+    for item in items:
+        if item["action"] not in {"RESTORE", "MERGE"}:
+            continue
+
+        repo_rel = item["repo"]
+        live = Path(item["live"])
+
+        source = git_bytes(
+            "show",
+            f"{ref}:{repo_rel}",
+        )
+
+        if item["action"] == "MERGE":
+            if repo_rel != "etc/nut/upsmon.conf":
+                fail(
+                    f"no secret merge handler for {repo_rel}"
+                )
+
+            source = merge_upsmon(source, live)
+
+        stage = stage_root / repo_rel
+        stage.parent.mkdir(parents=True, exist_ok=True)
+        stage.write_bytes(source)
+
+        validate_stage(stage, repo_rel)
+
+        item["stage"] = str(stage)
+        item["git_mode"] = git_mode(ref, repo_rel)
+        staged.append(item)
+
+    return staged
+
+
+def capture_service_states(items):
+    units = {
+        "nut-server.service",
+        "nut-monitor.service",
+        "nut-orchestrator-ui.service",
+    }
+
+    for item in items:
+        repo = item["repo"]
+
+        if not repo.startswith("etc/systemd/system/"):
+            continue
+
+        rel = repo[len("etc/systemd/system/"):]
+        first = rel.split("/", 1)[0]
+
+        if first.endswith(".d"):
+            first = first[:-2]
+
+        if first.endswith(
+            (".service", ".timer", ".path")
+        ):
+            units.add(first)
+
+    states = {}
+
+    for unit in sorted(units):
+        p = cmd(
+            ["systemctl", "is-active", unit],
+            check=False,
+        )
+
+        states[unit] = (
+            p.stdout.strip() == "active"
+        )
+
+    return states
+
+
+def install_staged(item):
+    live = Path(item["live"])
+    stage = Path(item["stage"])
+    gitmode = item["git_mode"]
+
+    live.parent.mkdir(parents=True, exist_ok=True)
+
+    if os.path.lexists(live):
+        st = os.lstat(live)
+        owner = st.st_uid
+        group = st.st_gid
+        mode = stat.S_IMODE(st.st_mode)
+    else:
+        owner = 0
+        group = 0
+        mode = 0o755 if gitmode == "100755" else 0o644
+
+    temp = live.parent / (
+        f".{live.name}.nut-restore-{os.getpid()}"
+    )
+
+    if os.path.lexists(temp):
+        os.unlink(temp)
+
+    if gitmode == "120000":
+        target = stage.read_text().strip()
+        os.symlink(target, temp)
+    else:
+        shutil.copyfile(stage, temp)
+        os.chmod(temp, mode)
+        os.chown(temp, owner, group)
+
+    os.replace(temp, live)
+
+
+def restore_backup(archive, touched, absent):
+    # Remove restored/new files first so type changes do not
+    # interfere with extraction.
+    for path in touched:
+        p = Path(path)
+
+        if os.path.lexists(p):
+            if p.is_dir() and not p.is_symlink():
+                continue
+
+            try:
+                p.unlink()
+            except FileNotFoundError:
+                pass
+
+    with tarfile.open(archive, "r:gz") as tf:
+        tf.extractall(
+            "/",
+            filter="fully_trusted",
+        )
+
+    for raw in absent:
+        p = Path(raw)
+
+        if os.path.lexists(p):
+            if p.is_dir() and not p.is_symlink():
+                shutil.rmtree(p)
+            else:
+                p.unlink()
+
+
+def restore_service_states(states):
+    cmd(["systemctl", "daemon-reload"], check=False)
+
+    # Restore non-UI units first.
+    for unit, was_active in states.items():
+        if unit == "nut-orchestrator-ui.service":
+            continue
+
+        if was_active:
+            cmd(
+                ["systemctl", "restart", unit],
+                check=False,
+            )
+        else:
+            cmd(
+                ["systemctl", "stop", unit],
+                check=False,
+            )
+
+    # UI last.
+    ui_active = states.get(
+        "nut-orchestrator-ui.service",
+        False,
+    )
+
+    if ui_active:
+        cmd(
+            ["systemctl", "restart",
+             "nut-orchestrator-ui.service"],
+            check=False,
+        )
+    else:
+        cmd(
+            ["systemctl", "stop",
+             "nut-orchestrator-ui.service"],
+            check=False,
+        )
+
+
+def validate_activation(before_mode, before_ups, service_states):
+    time.sleep(3)
+
+    after = production_status()
+
+    if str(after.get("mode")) != str(before_mode):
+        fail(
+            "NUT protection mode changed during restore"
+        )
+
+    for unit, was_active in service_states.items():
+        if not was_active:
+            continue
+
+        p = cmd(
+            ["systemctl", "is-active", unit],
+            check=False,
+        )
+
+        if p.stdout.strip() != "active":
+            fail(
+                f"service did not return active: {unit}"
+            )
+
+    if before_ups:
+        p = cmd(
+            ["/usr/bin/upsc", "-l"],
+            check=False,
+        )
+
+        after_ups = {
+            x.strip()
+            for x in p.stdout.splitlines()
+            if x.strip()
+        }
+
+        if after_ups != before_ups:
+            fail(
+                "UPS inventory changed after restore; "
+                "automatic rollback required"
+            )
+
+
+def worker(branch, job):
+    auth = AUTH_ROOT / f"full-restore-{job}.auth"
+
+    if not auth.is_file():
+        fail("restore authorization token is missing")
+
+    auth_data = json.loads(auth.read_text())
+
+    if auth_data.get("branch") != branch:
+        fail("restore authorization branch mismatch")
+
+    auth.unlink()
+
+    write_status(
+        job,
+        state="STARTING",
+        branch=branch,
+        message="Full managed-system rollback starting",
+    )
+
+    # Recheck immediately before any live modification.
+    status = require_live_restore_mode()
+    before_mode = str(status.get("mode"))
+
+    before_ups_proc = cmd(
+        ["/usr/bin/upsc", "-l"],
+        check=False,
+    )
+
+    before_ups = {
+        x.strip()
+        for x in before_ups_proc.stdout.splitlines()
+        if x.strip()
+    }
+
+    write_status(
+        job,
+        state="PREFLIGHT",
+        message="Running required preflight",
+    )
+
+    cmd(
+        [str(PREFLIGHT), branch]
+    )
+
+    items = apply_policy(parse_plan(branch))
+
+    service_states = capture_service_states(items)
+
+    tx = BACKUP_ROOT / job
+    tx.mkdir(parents=True, exist_ok=False)
+    os.chmod(tx, 0o700)
+
+    archive = tx / "live-before-restore.tar.gz"
+    manifest = tx / "manifest.json"
+
+    touched = [
+        item["live"]
+        for item in items
+        if item["action"] in {"RESTORE", "MERGE"}
+    ]
+
+    absent = [
+        path
+        for path in touched
+        if not os.path.lexists(path)
+    ]
+
+    backup_sources = {
+        Path(path)
+        for path in touched
+        if os.path.lexists(path)
+    }
+
+    for secret in LIVE_SECRET_PATHS:
+        if os.path.lexists(secret):
+            backup_sources.add(secret)
+
+    write_status(
+        job,
+        state="BACKUP",
+        message="Creating immediate pre-restore backup",
+    )
+
+    with tarfile.open(archive, "w:gz") as tf:
+        for path in sorted(backup_sources, key=str):
+            backup_path(tf, path)
+
+    os.chmod(archive, 0o600)
+
+    manifest.write_text(
+        json.dumps({
+            "job_id": job,
+            "branch": branch,
+            "before_mode": before_mode,
+            "before_ups": sorted(before_ups),
+            "service_states": service_states,
+            "touched": touched,
+            "originally_absent": absent,
+            "archive": str(archive),
+        }, indent=2) + "\n"
+    )
+
+    os.chmod(manifest, 0o600)
+
+    applied = False
+
+    try:
+        with tempfile.TemporaryDirectory(
+            prefix="nut-full-live-stage-"
+        ) as temp_name:
+
+            stage_root = Path(temp_name)
+            os.chmod(stage_root, 0o700)
+
+            write_status(
+                job,
+                state="STAGING",
+                message="Staging and validating GitHub snapshot",
+            )
+
+            staged = stage_files(
+                branch,
+                items,
+                stage_root,
+            )
+
+            # Final mode check immediately before first write.
+            require_live_restore_mode()
+
+            write_status(
+                job,
+                state="APPLYING",
+                message=f"Applying {len(staged)} managed files",
+                files_to_apply=len(staged),
+            )
+
+            applied = True
+
+            for index, item in enumerate(staged, 1):
+                install_staged(item)
+
+                write_status(
+                    job,
+                    state="APPLYING",
+                    files_to_apply=len(staged),
+                    files_applied=index,
+                    current_file=item["live"],
+                )
+
+        write_status(
+            job,
+            state="ACTIVATING",
+            message="Reloading systemd and activating restored services",
+        )
+
+        cmd(["systemctl", "daemon-reload"])
+
+        # Restart only units that were running before the restore.
+        # Do not start services that were intentionally inactive.
+        for unit, was_active in service_states.items():
+            if (
+                unit == "nut-orchestrator-ui.service"
+                or not was_active
+            ):
+                continue
+
+            cmd(["systemctl", "restart", unit])
+
+        # UI restart is safe because this worker is running as
+        # an independent systemd transient service.
+        if service_states.get(
+            "nut-orchestrator-ui.service",
+            False,
+        ):
+            cmd([
+                "systemctl",
+                "restart",
+                "nut-orchestrator-ui.service",
+            ])
+
+        write_status(
+            job,
+            state="VALIDATING",
+            message="Validating restored production stack",
+        )
+
+        validate_activation(
+            before_mode,
+            before_ups,
+            service_states,
+        )
+
+        write_status(
+            job,
+            state="SUCCESS",
+            message="Full managed-system rollback completed successfully",
+            backup_archive=str(archive),
+            files_applied=len(staged),
+        )
+
+    except Exception as exc:
+        if applied:
+            write_status(
+                job,
+                state="ROLLING_BACK",
+                message=(
+                    "Validation/apply failure detected; "
+                    "restoring pre-restore backup"
+                ),
+                error=str(exc),
+            )
+
+            restore_backup(
+                archive,
+                touched,
+                absent,
+            )
+
+            restore_service_states(
+                service_states
+            )
+
+            write_status(
+                job,
+                state="ROLLED_BACK",
+                message=(
+                    "Restore failed and automatic rollback "
+                    "completed"
+                ),
+                error=str(exc),
+                backup_archive=str(archive),
+            )
+        else:
+            write_status(
+                job,
+                state="FAILED",
+                message="Restore stopped before live files were changed",
+                error=str(exc),
+            )
+
+        raise
+
+
+def launch(branch, confirmation):
+    if confirmation != REQUIRED_CONFIRMATION:
+        fail(
+            "exact confirmation phrase required: "
+            + REQUIRED_CONFIRMATION
+        )
+
+    # Reject now instead of scheduling a job that cannot run.
+    require_live_restore_mode()
+
+    if not POLICY.is_file():
+        fail(f"restore policy missing: {POLICY}")
+
+    if not PLANNER.is_file():
+        fail(f"restore planner missing: {PLANNER}")
+
+    if not PREFLIGHT.is_file():
+        fail(f"restore preflight helper missing: {PREFLIGHT}")
+
+    job = datetime.now().strftime(
+        "%Y%m%d-%H%M%S"
+    ) + f"-{os.getpid()}"
+
+    STATUS_ROOT.mkdir(parents=True, exist_ok=True)
+    AUTH_ROOT.mkdir(parents=True, exist_ok=True)
+
+    auth = AUTH_ROOT / f"full-restore-{job}.auth"
+
+    auth.write_text(
+        json.dumps({
+            "branch": branch,
+            "created": datetime.now().isoformat(),
+        }) + "\n"
+    )
+
+    os.chmod(auth, 0o600)
+
+    write_status(
+        job,
+        state="QUEUED",
+        branch=branch,
+        message="Full managed-system rollback queued",
+    )
+
+    unit = f"nut-full-managed-restore-{job}"
+
+    p = cmd([
+        "/usr/bin/systemd-run",
+        "--unit", unit,
+        "--collect",
+        "--no-block",
+        "/usr/local/sbin/nut-ui-full-managed-restore-live",
+        "--worker",
+        branch,
+        job,
+    ])
+
+    print(f"job_id={job}")
+    print(f"unit={unit}")
+    print(f"status_file={STATUS_ROOT / (job + '.json')}")
+    print("accepted=yes")
+    print("message=Full managed-system rollback started")
+
+
+def main():
+    try:
+        if len(sys.argv) >= 2 and sys.argv[1] == "--worker":
+            if len(sys.argv) != 4:
+                fail("worker usage: --worker BRANCH JOB_ID")
+
+            worker(sys.argv[2], sys.argv[3])
+            return
+
+        if len(sys.argv) != 3:
+            fail(
+                "usage: nut-ui-full-managed-restore-live "
+                "BRANCH 'RESTORE FULL MANAGED SYSTEM'"
+            )
+
+        launch(sys.argv[1], sys.argv[2])
+
+    except Exception as exc:
+        print(f"FAIL: {exc}", file=sys.stderr)
+        raise SystemExit(1)
+
+
+if __name__ == "__main__":
+    main()

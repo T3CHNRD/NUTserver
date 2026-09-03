@@ -37,6 +37,7 @@ if [ "$REQUESTED_ID" = "restore_test_probe" ]; then
   OWNER="root"
   GROUP="root"
   RESTORE_ENABLED="true"
+  SENSITIVE="false"
   BLOCKED_REASON=""
 else
   [ -f "$CATALOG" ] || fail "restore target catalog missing: $CATALOG"
@@ -73,11 +74,16 @@ PY
   OWNER="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("owner","") or "root")' "$item_json")"
   GROUP="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("group","") or "root")' "$item_json")"
   RESTORE_ENABLED="$(python3 -c 'import json,sys; print(str(json.loads(sys.argv[1]).get("restore_enabled",False)).lower())' "$item_json")"
+  SENSITIVE="$(python3 -c 'import json,sys; print(str(json.loads(sys.argv[1]).get("sensitive",False)).lower())' "$item_json")"
   BLOCKED_REASON="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("blocked_reason",""))' "$item_json")"
 fi
 
 [ -n "$REPO_SOURCE" ] || fail "repo source is empty for restore item: $REQUESTED_ID"
 [ -n "$LIVE_PATH" ] || fail "live path is empty for restore item: $REQUESTED_ID"
+
+if [ "$SENSITIVE" = "true" ]; then
+  fail "restore item is sensitive and requires secret-preserving restore: ${BLOCKED_REASON:-separate handling required}"
+fi
 
 if [ "$RESTORE_ENABLED" != "true" ]; then
   fail "restore item is blocked: ${BLOCKED_REASON:-unknown reason}"

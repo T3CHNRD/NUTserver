@@ -1,0 +1,272 @@
+#!/usr/bin/env python3
+
+import fnmatch
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+PLANNER = Path("/usr/local/sbin/nut-ui-full-managed-restore")
+POLICY = Path("/etc/nut/restore/full-managed-restore-policy.json")
+CATALOG = Path("/etc/nut/restore/restore-targets.json")
+DEFAULT_BRANCH = "backup-sanitized-initial"
+
+
+def fail(msg):
+    print(f"FAIL: {msg}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+def run(cmd):
+    p = subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+    if p.returncode != 0:
+        fail(
+            p.stderr.strip()
+            or f"command failed rc={p.returncode}"
+        )
+
+    return p.stdout
+
+
+def production_status():
+    try:
+        raw = run(
+            ["/usr/local/sbin/nut-production-status"]
+        )
+        data = json.loads(raw)
+
+        mode = str(data.get("mode", "unknown"))
+        label = str(
+            data.get("mode_label", "unknown")
+        )
+
+        protecting = (
+            mode in {"armed", "storm_guard"}
+            or label.upper() == "PROTECTING"
+        )
+
+        return {
+            "mode": mode,
+            "mode_label": label,
+            "protecting": protecting,
+        }
+
+    except Exception:
+        return {
+            "mode": "unknown",
+            "mode_label": "unknown",
+            "protecting": True,
+        }
+
+
+def effective_plan(branch):
+    if not POLICY.is_file():
+        fail(f"restore policy missing: {POLICY}")
+
+    policy = json.loads(POLICY.read_text())
+    rules = policy["rules"]
+
+    plan = run(
+        [str(PLANNER), "plan", branch]
+    )
+
+    exact_skip = set(
+        rules["templates_and_reference"]
+        ["exact_paths"]
+    )
+
+    patterns = (
+        rules["templates_and_reference"]
+        ["patterns"]
+    )
+
+    preserve = set()
+
+    for section in (
+        "production_mode",
+        "restore_infrastructure",
+        "non_nut_remote_access",
+    ):
+        preserve.update(
+            rules[section]["exact_paths"]
+        )
+
+    merge = set(
+        rules["secret_handling"]
+        ["merge_live_secrets"]
+    )
+
+    result = {
+        "restore": [],
+        "merge_live_secrets": [],
+        "preserve_live": [],
+        "skip_reference": [],
+    }
+
+    for raw in plan.splitlines():
+        m = re.fullmatch(
+            r"action=(\S+) repo=(\S+) live=(\S+)",
+            raw.strip(),
+        )
+
+        if not m:
+            continue
+
+        original_action, repo, live = m.groups()
+
+        item = {
+            "repo": repo,
+            "live": live,
+            "original_action": original_action,
+        }
+
+        if (
+            repo in exact_skip
+            or any(
+                fnmatch.fnmatch(repo, pattern)
+                for pattern in patterns
+            )
+        ):
+            result["skip_reference"].append(item)
+
+        elif repo in preserve:
+            result["preserve_live"].append(item)
+
+        elif repo in merge:
+            result["merge_live_secrets"].append(item)
+
+        else:
+            result["restore"].append(item)
+
+    return result
+
+
+def selected_file_status():
+    if not CATALOG.is_file():
+        return {
+            "total_targets": 0,
+            "enabled_targets": 0,
+            "blocked_targets": 0,
+        }
+
+    data = json.loads(CATALOG.read_text())
+    items = data.get("targets", [])
+
+    enabled = 0
+    blocked = 0
+
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+
+        if (
+            bool(item.get("restore_enabled", False))
+            and not bool(item.get("sensitive", False))
+        ):
+            enabled += 1
+        else:
+            blocked += 1
+
+    return {
+        "total_targets": len(items),
+        "enabled_targets": enabled,
+        "blocked_targets": blocked,
+    }
+
+
+def main():
+    branch = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else DEFAULT_BRANCH
+    )
+
+    status = production_status()
+    plan = effective_plan(branch)
+    selected = selected_file_status()
+
+    full_apply_allowed = not status["protecting"]
+
+    data = {
+        "branch": branch,
+        "nut": status,
+
+        "restore_levels": {
+            "repository_rollback": {
+                "title": "Repository rollback",
+                "description": (
+                    "Reset only the local NUT backup "
+                    "repository to the selected GitHub "
+                    "branch/snapshot."
+                ),
+                "changes_live_system": False,
+                "available": True,
+            },
+
+            "selected_file_live": {
+                "title": "Selected-file live restore",
+                "description": (
+                    "Restore one approved repository "
+                    "file to its live production path."
+                ),
+                "changes_live_system": True,
+                "blocked_while_protecting": True,
+                "currently_allowed": (
+                    not status["protecting"]
+                ),
+                **selected,
+            },
+
+            "full_managed_system": {
+                "title": (
+                    "Full managed-system rollback"
+                ),
+                "description": (
+                    "Restore the approved NUT-managed "
+                    "application and configuration stack "
+                    "from the selected GitHub snapshot."
+                ),
+                "changes_live_system": True,
+                "blocked_while_protecting": True,
+                "currently_allowed": (
+                    full_apply_allowed
+                ),
+                "restore_files": len(
+                    plan["restore"]
+                ),
+                "merge_live_secrets": len(
+                    plan["merge_live_secrets"]
+                ),
+                "preserve_live": len(
+                    plan["preserve_live"]
+                ),
+                "skip_reference": len(
+                    plan["skip_reference"]
+                ),
+                "preflight_required": True,
+                "backup_required": True,
+                "validation_required": True,
+                "automatic_rollback_required": True,
+                "explicit_confirmation_required": True,
+            },
+        },
+
+        "safety": {
+            "github_structure_changed": False,
+            "live_restore_performed": False,
+            "service_restart_performed": False,
+        },
+    }
+
+    print(json.dumps(data, indent=2))
+
+
+if __name__ == "__main__":
+    main()
