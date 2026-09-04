@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+
+from pathlib import Path
+import re
+import sys
+
+if len(sys.argv) != 2:
+    print("usage: nut-sanitize-public-site-scripts REPO")
+    raise SystemExit(2)
+
+repo = Path(sys.argv[1])
+
+files = [
+    "usr/local/bin/nut-test-logic.sh",
+    "usr/local/sbin/nut-apc-idf-event-monitor.sh",
+    "usr/local/sbin/nut-blueiris-shutdown.sh",
+    "usr/local/sbin/nut-db-shutdown.sh",
+    "usr/local/sbin/nut-email-alert-test-send",
+    "usr/local/sbin/nut-esxi-ssh-readonly-preflight.sh",
+    "usr/local/sbin/nut-v24013-shutdown.sh",
+    "usr/local/sbin/nut-v240-test-shutdown.sh",
+    "usr/local/sbin/nut-voip-shutdown.sh",
+]
+
+private_ip = re.compile(
+    r'(?<![\d.])(?:'
+    r'10\.(?:\d{1,3}\.){2}\d{1,3}|'
+    r'192\.168\.(?:\d{1,3}\.)\d{1,3}|'
+    r'172\.(?:1[6-9]|2\d|3[01])\.(?:\d{1,3}\.)\d{1,3}'
+    r')(?![\d.])'
+)
+
+def sanitize(text):
+    # Normalize IP-bearing credential filename before IP replacement.
+    text = re.sub(
+        r'win2003-(?:'
+        r'10\.(?:\d{1,3}\.){2}\d{1,3}|'
+        r'192\.168\.(?:\d{1,3}\.)\d{1,3}|'
+        r'172\.(?:1[6-9]|2\d|3[01])\.(?:\d{1,3}\.)\d{1,3}'
+        r')\.creds',
+        'windows-rpc.creds',
+        text,
+        flags=re.I,
+    )
+
+    # Use RFC 5737 TEST-NET addresses so shell syntax remains valid.
+    mapping = {}
+    next_host = 10
+
+    def repl_ip(match):
+        nonlocal next_host
+        value = match.group(0)
+
+        if value not in mapping:
+            mapping[value] = f"198.51.100.{next_host}"
+            next_host += 1
+
+            if next_host > 240:
+                next_host = 10
+
+        return mapping[value]
+
+    text = private_ip.sub(repl_ip, text)
+
+    text = re.sub(
+        r'Aluminum Blanking Co\.,?\s*Inc\.?',
+        'Example Organization',
+        text,
+        flags=re.I,
+    )
+
+    text = re.sub(
+        r'Aluminum Blanking',
+        'Example Organization',
+        text,
+        flags=re.I,
+    )
+
+    text = re.sub(
+        r'\bABCo\b',
+        'ExampleOrg',
+        text,
+        flags=re.I,
+    )
+
+    text = re.sub(
+        r'\balbl\.com\b',
+        'example.com',
+        text,
+        flags=re.I,
+    )
+
+    text = re.sub(
+        r'\bALBL\b',
+        'EXAMPLE',
+        text,
+    )
+
+    text = re.sub(
+        r'\balblvmhost([0-9]+)\.example\.com\b',
+        r'esxi-host\1.example.com',
+        text,
+        flags=re.I,
+    )
+
+    # Standalone installation-specific protected-system labels.
+    text = re.sub(r'\bDB01\b', 'DB_SERVER_1', text)
+    text = re.sub(r'\bDB02\b', 'DB_SERVER_2', text)
+    text = re.sub(r'\bV24013\b', 'SOLARIS_SERVER', text)
+    text = re.sub(r'\bTESTV240\b', 'TEST_SOLARIS', text)
+
+    # Public-safe credential/log filenames.
+    text = re.sub(
+        r'v24013-shutdown\.env',
+        'solaris-server-shutdown.env',
+        text,
+        flags=re.I,
+    )
+
+    text = re.sub(
+        r'nut-v24013-shutdown\.log',
+        'nut-solaris-server-shutdown.log',
+        text,
+        flags=re.I,
+    )
+
+    return text
+
+changed = 0
+
+for rel in files:
+    path = repo / rel
+
+    if not path.exists():
+        print(f"WARN missing: {rel}")
+        continue
+
+    original = path.read_text(errors="surrogateescape")
+    public = sanitize(original)
+
+    if public != original:
+        path.write_text(public, errors="surrogateescape")
+        changed += 1
+        print(f"SANITIZED: {rel}")
+    else:
+        print(f"UNCHANGED: {rel}")
+
+print(f"SANITIZED_SCRIPT_FILES={changed}")

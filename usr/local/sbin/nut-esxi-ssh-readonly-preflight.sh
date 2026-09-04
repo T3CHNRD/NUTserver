@@ -11,9 +11,9 @@ ESXI_USER="${ESXI_USER:-root}"
 SSH_KEY="${ESXI_SSH_KEY:-/root/.ssh/id_rsa}"
 
 HOSTS=(
-  "alblvmhost01.albl.com"
-  "alblvmhost02.albl.com"
-  "alblvmhost03.albl.com"
+  "esxi-host01.example.com"
+  "esxi-host02.example.com"
+  "esxi-host03.example.com"
 )
 
 mkdir -p "$OUT_DIR"

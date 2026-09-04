@@ -13,8 +13,8 @@ exec 1>> "$LOG_FILE"
 echo "--- START EVENT: $* AT $(date) ---"
 echo "Running as user: $(id)"
 
-TARGET_IP="192.168.1.24"
-CREDS="/etc/nut/win2003-192.168.1.24.creds"
+TARGET_IP="198.51.100.10"
+CREDS="/etc/nut/windows-rpc.creds"
 
 PHASE2_ABORT_SCRIPT="/usr/local/sbin/phase2-power-restore-abort"
 
