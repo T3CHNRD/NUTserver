@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "description": "Safety policy for future NUT full managed-system rollback",
+
+  "rules": {
+    "restore_normal_managed_files": true,
+    "restore_nut_systemd_units": true,
+
+    "templates_and_reference": {
+      "action": "skip",
+      "reason": "Reference/template material is rebuild documentation, not active live configuration.",
+      "patterns": [
+        "*.template"
+      ],
+      "exact_paths": [
+        "etc/nut/apache-notes.txt"
+      ]
+    },
+
+    "production_mode": {
+      "action": "preserve-live",
+      "reason": "A rollback must never silently change the current NUT protection mode.",
+      "exact_paths": [
+        "etc/nut/production-mode.conf"
+      ]
+    },
+
+    "restore_infrastructure": {
+      "action": "preserve-live",
+      "reason": "The restore engine must not overwrite itself while performing a rollback.",
+      "exact_paths": [
+        "etc/nut/restore-live-test-probe.txt",
+        "opt/nut-orchestrator-ui/templates/control-center-restore-lab.html",
+        "usr/local/sbin/nut-ui-live-restore-dry-run",
+        "usr/local/sbin/nut-ui-live-restore-selected",
+        "usr/local/sbin/nut-ui-live-restore-selected-dry-run",
+        "usr/local/sbin/nut-ui-restore-github",
+        "usr/local/sbin/nut-ui-rollback"
+      ]
+    },
+
+    "non_nut_remote_access": {
+      "action": "preserve-live",
+      "reason": "Remote-access services are outside the NUT managed rollback scope and must not be changed by NUT Restore.",
+      "exact_paths": [
+        "etc/systemd/system/tigervnc-backup.service",
+        "etc/systemd/system/x11vnc.service",
+        "usr/local/sbin/rollback-remote-access.sh",
+        "usr/local/sbin/start-x11vnc.sh"
+      ]
+    },
+
+    "secret_handling": [REDACTED]
+      "merge_live_secrets": [REDACTED]
+        "etc/nut/upsmon.conf"
+      ],
+      "preserve_live_only": [
+        "etc/nut/db-telnet.pass",
+        "etc/nut/vcenter.pass",
+        "etc/nut/nut-email-alerts.conf"
+      ],
+      "preserve_prefixes": [
+        "etc/nut/secrets/"
+      ]
+    }
+  },
+
+  "future_live_apply_requirements": {
+    "must_not_be_protecting": true,
+    "pre_restore_backup_required": true,
+    "preflight_required": true,
+    "secret_preservation_required": true,
+    "validation_before_activation_required": true,
+    "automatic_rollback_on_validation_failure_required": true,
+    "explicit_operator_confirmation_required": true
+  }
+}

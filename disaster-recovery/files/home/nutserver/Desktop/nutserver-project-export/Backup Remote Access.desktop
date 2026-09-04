@@ -1,9 +1,0 @@
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=Backup Remote Access
-Comment=Create a backup of the current XRDP and VNC configuration
-Exec=bash -lc '/home/nutserver/bin/backup-remote-access.sh'
-Icon=document-save
-Terminal=true
-Categories=System;

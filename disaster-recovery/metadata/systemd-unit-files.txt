@@ -6,16 +6,16 @@ dev-hugepages.mount                            static          -
 dev-mqueue.mount                               static          -
 proc-sys-fs-binfmt_misc.mount                  disabled        disabled
 snap-bare-5.mount                              enabled         enabled
-snap-chromium-3499.mount                       enabled         enabled
 snap-chromium-3507.mount                       enabled         enabled
-snap-core22-2339.mount                         enabled         enabled
+snap-chromium-3520.mount                       enabled         enabled
 snap-core22-2411.mount                         enabled         enabled
+snap-core22-2437.mount                         enabled         enabled
 snap-core24-1587.mount                         enabled         enabled
 snap-core24-1643.mount                         enabled         enabled
 snap-cups-1229.mount                           enabled         enabled
 snap-cups-1238.mount                           enabled         enabled
-snap-firefox-8702.mount                        enabled         enabled
-snap-firefox-8736.mount                        enabled         enabled
+snap-firefox-8803.mount                        enabled         enabled
+snap-firefox-8819.mount                        enabled         enabled
 snap-firmware\x2dupdater-224.mount             enabled         enabled
 snap-firmware\x2dupdater-226.mount             enabled         enabled
 snap-gnome\x2d42\x2d2204-247.mount             enabled         enabled
@@ -28,8 +28,8 @@ snap-mesa\x2d2404-1165.mount                   enabled         enabled
 snap-mesa\x2d2404-1839.mount                   enabled         enabled
 snap-snap\x2dstore-1216.mount                  enabled         enabled
 snap-snap\x2dstore-1218.mount                  enabled         enabled
-snap-snapd-27591.mount                         enabled         enabled
 snap-snapd-27710.mount                         enabled         enabled
+snap-snapd-27738.mount                         enabled         enabled
 snap-snapd\x2ddesktop\x2dintegration-387.mount enabled         enabled
 snap-snapd\x2ddesktop\x2dintegration-391.mount enabled         enabled
 sys-fs-fuse-connections.mount                  static          -
@@ -40,6 +40,8 @@ var-snap-firefox-common-host\x2dhunspell.mount enabled         enabled
 apport-autoreport.path                         enabled         enabled
 cups.path                                      enabled         enabled
 nut-driver-enumerator.path                     enabled         enabled
+nut-telegram-dispatch.path                     enabled         enabled
+nut-telegram-final.path                        enabled         enabled
 systemd-ask-password-console.path              static          -
 systemd-ask-password-plymouth.path             static          -
 systemd-ask-password-wall.path                 static          -
@@ -167,6 +169,11 @@ nut-monitor.service                            enabled         enabled
 nut-orchestrator-ui.service                    enabled         enabled
 nut-power-events-refresh.service               static          -
 nut-server.service                             enabled         enabled
+nut-telegram-command-bot.service               enabled         enabled
+nut-telegram-dispatch.service                  static          -
+nut-telegram-final.service                     static          -
+nut-telegram-heartbeat.service                 static          -
+nut-weather-cache-refresh.service              static          -
 openvpn-client@.service                        disabled        enabled
 openvpn-server@.service                        disabled        enabled
 openvpn.service                                enabled         enabled
@@ -495,6 +502,8 @@ motd-news.timer                                enabled         enabled
 nut-apc-idf-event-monitor.timer                enabled         enabled
 nut-daily-health-email.timer                   enabled         enabled
 nut-power-events-refresh.timer                 enabled         enabled
+nut-telegram-heartbeat.timer                   enabled         enabled
+nut-weather-cache-refresh.timer                enabled         enabled
 snapd.snap-repair.timer                        enabled         enabled
 sysstat-collect.timer                          enabled         enabled
 sysstat-summary.timer                          enabled         enabled
@@ -505,4 +514,4 @@ ua-timer.timer                                 enabled         enabled
 update-notifier-download.timer                 enabled         enabled
 update-notifier-motd.timer                     enabled         enabled
 
-505 unit files listed.
+514 unit files listed.

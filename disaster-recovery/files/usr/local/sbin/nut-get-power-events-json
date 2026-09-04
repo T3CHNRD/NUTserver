@@ -130,7 +130,16 @@ events = list(deduped.values())
 events.sort(key=lambda e: (e["dt"], e["source"], e["idx"]), reverse=True)
 
 json.dump(
-    [{"line": e["line"]} for e in events],
+    [
+        {
+            "line": e["line"],
+            "recent": (
+                e["dt"] <= NOW
+                and e["dt"] >= NOW - timedelta(hours=24)
+            ),
+        }
+        for e in events
+    ],
     sys.stdout,
     indent=2
 )

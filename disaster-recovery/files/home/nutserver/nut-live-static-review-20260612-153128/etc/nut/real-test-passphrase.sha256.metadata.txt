@@ -1,2 +1,0 @@
-65 /home/nutserver/nut-live-static-review-20260612-153128/etc/nut/real-test-passphrase.sha256
--rw-r----- 1 root www-data 65 Apr 24 15:20 /home/nutserver/nut-live-static-review-20260612-153128/etc/nut/real-test-passphrase.sha256

@@ -178,6 +178,8 @@ main() {
 
   log "Syncing safe live files into repo after pull"
   /usr/local/sbin/nut-sync-live-to-repo-for-backup
+  log "Refreshing sanitized disaster-recovery snapshot"
+  /usr/local/sbin/nut-build-disaster-recovery-snapshot
 
   mkdir -p ./opt/nut-orchestrator-ui/{lib,templates,static}
   mkdir -p ./etc/systemd/system
@@ -282,6 +284,26 @@ main() {
   if [ -f /usr/local/sbin/nut-ui-live-restore-selected ]; then
     copy_executable_file /usr/local/sbin/nut-ui-live-restore-selected ./usr/local/sbin/nut-ui-live-restore-selected
   fi
+
+  # TELEGRAM BACKUP FILES
+  # Safe code/unit files only. Live credentials under /etc/nut/secrets
+  # are intentionally excluded from GitHub and DR.
+  mkdir -p ./etc/systemd/system
+  copy_executable_file /usr/local/sbin/nut-telegram-alert ./usr/local/sbin/nut-telegram-alert
+  copy_text_file /etc/systemd/system/nut-telegram-dispatch.service ./etc/systemd/system/nut-telegram-dispatch.service 644
+  copy_text_file /etc/systemd/system/nut-telegram-dispatch.path ./etc/systemd/system/nut-telegram-dispatch.path 644
+  copy_text_file /etc/systemd/system/nut-telegram-final.service ./etc/systemd/system/nut-telegram-final.service 644
+  copy_text_file /etc/systemd/system/nut-telegram-final.path ./etc/systemd/system/nut-telegram-final.path 644
+  copy_text_file /etc/systemd/system/nut-telegram-heartbeat.service ./etc/systemd/system/nut-telegram-heartbeat.service 644
+  copy_text_file /etc/systemd/system/nut-telegram-heartbeat.timer ./etc/systemd/system/nut-telegram-heartbeat.timer 644
+
+  # TELEGRAM COMPLETE COMMAND BOT BACKUP FILES
+  # Access IDs remain local and are intentionally NOT copied to GitHub.
+  copy_executable_file /usr/local/sbin/nut-telegram-command-bot ./usr/local/sbin/nut-telegram-command-bot
+  copy_text_file /etc/systemd/system/nut-telegram-command-bot.service ./etc/systemd/system/nut-telegram-command-bot.service 644
+  copy_text_file /etc/nut/config.d/telegram-notification-schedule.conf ./etc/nut/config.d/telegram-notification-schedule.conf 644
+  copy_text_file /etc/systemd/system/nut-daily-health-email.timer.d/telegram-schedule.conf ./etc/systemd/system/nut-daily-health-email.timer.d/telegram-schedule.conf 644
+  copy_text_file /etc/systemd/system/nut-telegram-heartbeat.timer.d/telegram-schedule.conf ./etc/systemd/system/nut-telegram-heartbeat.timer.d/telegram-schedule.conf 644
 
   chown -R "$HOST_USER:$HOST_GROUP" "$REPO_DIR"
 

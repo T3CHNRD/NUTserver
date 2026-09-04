@@ -1,9 +1,13 @@
 # Copyright (c) 2026 T3CHNRD. All rights reserved.
 [Unit]
-Description=NUT Daily UPS Health Email
+Description=NUT Daily UPS Health Email and Telegram Report
 Wants=network-online.target
 After=network-online.target
 
 [Service]
 Type=oneshot
 ExecStart=/usr/local/sbin/nut-email-alert-test-send --send weekly
+
+# Telegram health runs immediately with the existing health email.
+# Telegram failure must not make the proven email service fail.
+ExecStartPost=-/usr/local/sbin/nut-telegram-alert health

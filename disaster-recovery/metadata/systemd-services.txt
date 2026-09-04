@@ -74,7 +74,7 @@
   NetworkManager.service                                                                    loaded    active   running Network Manager
 ● nslcd.service                                                                             not-found inactive dead    nslcd.service
   nut-apc-idf-event-monitor.service                                                         loaded    inactive dead    Logging-only APC IDF2/IDF3 web event monitor for NUT dashboard
-  nut-daily-health-email.service                                                            loaded    inactive dead    NUT Daily UPS Health Email
+  nut-daily-health-email.service                                                            loaded    inactive dead    NUT Daily UPS Health Email and Telegram Report
   nut-driver-enumerator.service                                                             loaded    inactive dead    Network UPS Tools - enumeration of configure-file devices into systemd unit instances
   nut-driver@ups1.service                                                                   loaded    active   running Network UPS Tools - device driver for NUT device 'ups1'
   nut-driver@ups2.service                                                                   loaded    active   running Network UPS Tools - device driver for NUT device 'ups2'
@@ -90,6 +90,11 @@
   nut-orchestrator-ui.service                                                               loaded    active   running NUT Orchestrator UI Flask Service
   nut-power-events-refresh.service                                                          loaded    inactive dead    Refresh shared NUT power events JSON feed for Dashboard and NUT UI
   nut-server.service                                                                        loaded    active   running Network UPS Tools - power devices information server
+  nut-telegram-command-bot.service                                                          loaded    active   running ALBL NUT Private Telegram Command Bot
+  nut-telegram-dispatch.service                                                             loaded    inactive dead    NUT Telegram Alert Dispatcher
+  nut-telegram-final.service                                                                loaded    inactive dead    NUT Telegram Immediate Final Alert
+  nut-telegram-heartbeat.service                                                            loaded    inactive dead    NUT Telegram Heartbeat
+  nut-weather-cache-refresh.service                                                         loaded    inactive dead    NUT Weather Cache Refresh
 ● oem-config.service                                                                        not-found inactive dead    oem-config.service
   openvpn.service                                                                           loaded    active   exited  OpenVPN service
 ● ovsdb-server.service                                                                      not-found inactive dead    ovsdb-server.service
@@ -222,5 +227,5 @@ Legend: LOAD   → Reflects whether the unit definition was properly loaded.
         ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
         SUB    → The low-level unit activation state, values depend on unit type.
 
-218 loaded units listed.
+223 loaded units listed.
 To show all installed unit files use 'systemctl list-unit-files'.

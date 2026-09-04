@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh NUT weather cache at 4 AM and noon
+
+[Timer]
+OnCalendar=*-*-* 04,12:00:00 America/Detroit
+Persistent=true
+Unit=nut-weather-cache-refresh.service
+
+[Install]
+WantedBy=timers.target

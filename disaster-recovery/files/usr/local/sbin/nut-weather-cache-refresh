@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+import json
+import os
+import tempfile
+import urllib.request
+from datetime import datetime
+
+CACHE = "/var/cache/nut/weather-cache.json"
+
+URL = (
+    "https://api.open-meteo.com/v1/forecast"
+    "?latitude=42.6389&longitude=-83.2910"
+    "&current=temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m"
+    "&daily=temperature_2m_max,temperature_2m_min,weather_code,"
+    "precipitation_probability_max,wind_gusts_10m_max"
+    "&temperature_unit=fahrenheit"
+    "&wind_speed_unit=mph"
+    "&timezone=America%2FDetroit"
+    "&forecast_days=1"
+)
+
+os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+
+try:
+    req = urllib.request.Request(
+        URL,
+        headers={"User-Agent": "nutserver-weather-cache"}
+    )
+
+    with urllib.request.urlopen(req, timeout=15) as response:
+        status = getattr(response, "status", 200)
+        raw = response.read()
+        content_type = response.headers.get("Content-Type", "")
+
+    if status != 200:
+        raise RuntimeError(f"HTTP status {status}")
+
+    if not raw.strip():
+        raise RuntimeError("Open-Meteo returned an empty response")
+
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except Exception as exc:
+        raise RuntimeError(
+            f"Open-Meteo returned invalid JSON; content-type={content_type}"
+        ) from exc
+
+    if not isinstance(data, dict) or not data.get("current"):
+        raise RuntimeError("Open-Meteo response is missing current weather data")
+
+    payload = {
+        "ok": True,
+        "source": "Open-Meteo",
+        "fetched_at": datetime.now().astimezone().isoformat(),
+        "data": data,
+    }
+
+    fd, tmp = tempfile.mkstemp(
+        prefix=".weather-",
+        dir=os.path.dirname(CACHE)
+    )
+
+    with os.fdopen(fd, "w") as f:
+        json.dump(payload, f)
+        f.write("\n")
+
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, CACHE)
+
+    print("WEATHER_CACHE_REFRESH=PASS")
+
+except Exception as exc:
+    print(
+        "WEATHER_CACHE_REFRESH=FAIL "
+        f"error={type(exc).__name__}: {exc}; "
+        "LAST_GOOD_CACHE_PRESERVED=YES"
+    )
+    raise SystemExit(1)

@@ -3,18 +3,9 @@
   "display_name": "ups5",
   "state": "normal",
   "scope": "alert_only",
-  "countdown_active": false,
-  "countdown_seconds_remaining": 0,
-  "commit_seconds_remaining": 0,
-  "current_phase": "idle",
-  "last_event": "none",
-  "last_event_time": "",
-  "shutdown_committed": false,
-  "shutdown_canceled": false,
-  "finalized": false,
-  "recent_history": [],
-  "target_results": [],
-  "note": "No active orchestration event recorded yet.",
-  "updated_epoch": 0,
-  "updated_at": ""
+  "countdown_seconds": 0,
+  "commit_seconds": 0,
+  "updated_epoch": 1788449783,
+  "updated_at": "2026-09-03 11:36:23",
+  "note": "Power restored; alert-only UPS returned online"
 }

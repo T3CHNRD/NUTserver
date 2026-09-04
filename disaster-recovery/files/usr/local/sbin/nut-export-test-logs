@@ -21,6 +21,39 @@ mkdir -p "$EXPORT_DIR"/ui
 mkdir -p "$EXPORT_DIR"/apache
 mkdir -p "$EXPORT_DIR"/metadata
 
+
+sanitize_upsmon_config() {
+  local src="$1"
+  local dst="$2"
+
+  [ -f "$src" ] || return 0
+
+  awk '
+    /^[[:space:]]*MONITOR[[:space:]]/ {
+      n=split($0,f,/[[:space:]]+/)
+      if (n >= 6) {
+        f[5]="[REDACTED]"
+        out=f[1]
+        for (i=2; i<=n; i++) out=out " " f[i]
+        print out
+        next
+      }
+    }
+    { print }
+  ' "$src" > "$dst"
+}
+
+sanitize_key_value_config() {
+  local src="$1"
+  local dst="$2"
+
+  [ -f "$src" ] || return 0
+
+  sed -E \
+    -e 's/^([[:space:]]*[A-Za-z0-9_.-]*(PASSWORD|PASS|TOKEN|SECRET|CREDENTIAL|COMMUNITY|PRIVATE_KEY)[A-Za-z0-9_.-]*[[:space:]]*=[[:space:]]*).*/\1[REDACTED]/I' \
+    "$src" > "$dst"
+}
+
 {
   echo "NUT full log export created: $EXPORT_TS"
   echo
@@ -90,16 +123,16 @@ systemctl status nut-server.service nut-monitor.service nut-orchestrator-ui.serv
   done
 } > "$EXPORT_DIR/system/ups-status.txt" 2>&1
 
-cp -a /etc/nut/ups.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+sanitize_key_value_config /etc/nut/ups.conf "$EXPORT_DIR/configs/ups.conf"
 cp -a /etc/nut/upsd.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
-cp -a /etc/nut/upsmon.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+sanitize_upsmon_config /etc/nut/upsmon.conf "$EXPORT_DIR/configs/upsmon.conf"
 cp -a /etc/nut/upssched.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
 cp -a /etc/nut/nut.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
 cp -a /etc/nut/hosts.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
 cp -a /etc/nut/config.d/approved-targets.yml "$EXPORT_DIR/configs/" 2>/dev/null || true
 cp -a /etc/nut/config.d/dashboard-ui.json "$EXPORT_DIR/configs/" 2>/dev/null || true
 cp -a /etc/nut/config.d/shutdown-verification-targets.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
-cp -a /etc/nut/nut-orchestrator.conf "$EXPORT_DIR/configs/" 2>/dev/null || true
+sanitize_key_value_config /etc/nut/nut-orchestrator.conf "$EXPORT_DIR/configs/nut-orchestrator.conf"
 
 cp -a \
   /usr/local/sbin/nut-ui-run-test \

@@ -2411,6 +2411,42 @@
     }
 
 </style>
+
+<style id="cc-help-link-contrast-fix">
+/*
+ * Help article link contrast.
+ * Scoped to Help content only so normal Control Center
+ * buttons, navigation, and other links are unchanged.
+ */
+.cc-help-article a,
+.cc-help-internal-link {
+    color: #7dd3fc !important;
+    text-decoration-color: currentColor !important;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 2px;
+    font-weight: 600;
+}
+
+.cc-help-article a:visited,
+.cc-help-internal-link:visited {
+    color: #c4b5fd !important;
+}
+
+.cc-help-article a:hover,
+.cc-help-internal-link:hover {
+    color: #bae6fd !important;
+    text-decoration-thickness: 2px;
+}
+
+.cc-help-article a:focus-visible,
+.cc-help-internal-link:focus-visible {
+    color: #e0f2fe !important;
+    outline: 2px solid #7dd3fc;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+</style>
+
 </head>
 
 <body>
@@ -3162,6 +3198,7 @@ function updateNutProductionButtons(mode) {
       <a href="#cc-events-section" data-cc-tab="cc-events-section">Events</a>
       <a href="#cc-tests-logs-live-section" data-cc-tab="cc-tests-logs-live-section">Tests & Logs</a>
       <a href="#cc-config-section" data-cc-tab="cc-config-section">Configuration</a>
+      <a href="#cc-help-section" data-cc-tab="cc-help-section">Help</a>
     </nav>
 
     <section class="cc-hero-grid">
@@ -3297,6 +3334,7 @@ function updateNutProductionButtons(mode) {
       </div>
 
       <div class="cc-card cc-wide cc-config-launch-card cc-tab-panel" id="cc-config-section">
+
         <div class="cc-section-tag">Configuration</div>
         <div class="cc-config-launch-layout">
           <div>
@@ -3324,7 +3362,24 @@ function updateNutProductionButtons(mode) {
 
     <section class="cc-grid">
       <div class="cc-card cc-wide cc-tab-panel" id="cc-config-section">
-        <div class="cc-section-tag">Configuration</div>
+
+
+      <div
+        class="cc-card cc-wide"
+        id="nut-notifications-configuration-card"
+        style="margin-bottom:18px;"
+      >
+        <div class="nut-settings-section-heading">
+          Notification Settings
+        </div>
+
+        <div id="nut-notifications-panel-host"></div>
+      </div>
+
+
+        <div class="nut-settings-section-heading nut-configuration-heading">
+          Configuration
+        </div>
         
         <div class="cc-section-subtitle">
           Uses the same approved live-config and read-only reference registry as the current NUT Orchestrator UI.
@@ -3413,7 +3468,63 @@ function updateNutProductionButtons(mode) {
 
     </section>
 
-    <section class="cc-card cc-danger-zone cc-tab-panel" id="cc-tests-logs-live-section">
+    
+    <section class="cc-card cc-wide cc-tab-panel" id="cc-help-section">
+      <div class="cc-section-tag">Help &amp; Runbook</div>
+
+      <div class="cc-section-title">
+        <h2>NUT Control Center Help &amp; Runbook</h2>
+      </div>
+
+      <p class="cc-section-subtitle">
+        Step-by-step operator and administrator documentation for every
+        NUT Control Center feature, setting, workflow, test, service,
+        notification, backup, restore, and protected-system function.
+      </p>
+
+      <div style="margin:18px 0;">
+        <input
+          id="cc-help-search" style="width:100%;min-height:56px;font-size:18px;padding:12px 16px;box-sizing:border-box;"
+          class="cc-input"
+          type="search"
+          placeholder="Search Help: example Telegram, UPS, email, restore..."
+          style="width:100%;"
+        >
+      </div>
+
+      <div id="cc-help-results" style="display:none;margin:14px 0 18px 0;min-height:110px;max-height:230px;overflow-y:auto;"></div>
+      <div id="cc-help-category-list" class="cc-grid" data-help-ready="1">
+        <div class="cc-mini"><strong>01 - Getting Started</strong></div>
+        <div class="cc-mini"><strong>02 - System Overview</strong></div>
+        <div class="cc-mini"><strong>03 - Monitoring</strong></div>
+        <div class="cc-mini"><strong>04 - Events</strong></div>
+        <div class="cc-mini"><strong>05 - Notification Settings</strong></div>
+        <div class="cc-mini"><strong>06 - Telegram</strong></div>
+        <div class="cc-mini"><strong>07 - Email</strong></div>
+        <div class="cc-mini"><strong>08 - Maintenance and Weather</strong></div>
+        <div class="cc-mini"><strong>09 - Configuration</strong></div>
+        <div class="cc-mini"><strong>10 - Tests and Logs</strong></div>
+        <div class="cc-mini"><strong>11 - Backup</strong></div>
+        <div class="cc-mini"><strong>12 - Restore and Disaster Recovery</strong></div>
+        <div class="cc-mini"><strong>13 - Shutdown Orchestration</strong></div>
+        <div class="cc-mini"><strong>14 - Protected Systems</strong></div>
+        <div class="cc-mini"><strong>15 - Services and Timers</strong></div>
+        <div class="cc-mini"><strong>16 - Logs</strong></div>
+        <div class="cc-mini"><strong>17 - Troubleshooting</strong></div>
+        <div class="cc-mini"><strong>18 - Security</strong></div>
+        <div class="cc-mini"><strong>19 - Technical Reference</strong></div>
+      </div>
+
+      <div class="cc-mini" style="margin-top:20px;">
+        <strong>Documentation standard:</strong>
+        Every feature will include what it does, where to find it,
+        step-by-step instructions, expected results, verification,
+        rollback/revert information, production-hours safety,
+        troubleshooting, logs, and technical references.
+      </div>
+    </section>
+
+<section class="cc-card cc-danger-zone cc-tab-panel" id="cc-tests-logs-live-section">
       <div class="cc-section-tag">Operations</div>
       
       <div class="cc-section-subtitle">
@@ -3644,6 +3755,117 @@ function updateNutProductionButtons(mode) {
       return row;
     }
 
+
+    const CC_LATEST_EVENT_MAX_AGE_MS =
+      3 * 60 * 60 * 1000;
+
+    function ccParseEventTimestamp(value) {
+      const text = String(value || "").trim();
+
+      // Expected dashboard format:
+      // MM/DD/YYYY HH:MM:SS AM/PM [timezone]
+      let m = text.match(
+        /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)?/i
+      );
+
+      if (m) {
+        let hour = Number(m[4]);
+        const ampm = String(m[7] || "").toUpperCase();
+
+        if (ampm === "PM" && hour < 12) hour += 12;
+        if (ampm === "AM" && hour === 12) hour = 0;
+
+        return new Date(
+          Number(m[3]),
+          Number(m[1]) - 1,
+          Number(m[2]),
+          hour,
+          Number(m[5]),
+          Number(m[6])
+        );
+      }
+
+      const parsed = new Date(text);
+
+      return Number.isNaN(parsed.getTime())
+        ? null
+        : parsed;
+    }
+
+    function ccLatestEventAgeMs(row) {
+      const when =
+        ccParseEventTimestamp(row && row.time);
+
+      if (!when) return Number.POSITIVE_INFINITY;
+
+      return Math.max(
+        0,
+        Date.now() - when.getTime()
+      );
+    }
+
+    function ccPowerStateForEvent(row) {
+      if (!row) return "";
+
+      const text = (
+        String(row.type || "") + " " +
+        String(row.message || "")
+      ).toUpperCase();
+
+      // Notification-delivery bookkeeping is not itself
+      // the authoritative power-state event.
+      if (
+        text.includes("EMAIL_NOTIFY_SENT") ||
+        text.includes("TELEGRAM_ENQUEUE") ||
+        text.includes("TELEGRAM_SENT")
+      ) {
+        return "";
+      }
+
+      if (
+        text.includes("ONBATT") ||
+        text.includes("ON BATTERY") ||
+        text.includes("POWER OUTAGE") ||
+        text.includes("POWER LOSS") ||
+        text.includes("POWER_SOURCE_BATTERY")
+      ) {
+        return "ONBATT";
+      }
+
+      if (
+        text.includes("POWER RESTORED") ||
+        text.includes("POWER RETURNED") ||
+        text.includes("POWER RESTORE") ||
+        text.includes("UTILITY POWER RETURNS") ||
+        text.includes("POWER_SOURCE_ONLINE") ||
+        text.includes("SHUTDOWN CANCELLED") ||
+        text.includes("SHUTDOWN CANCELED")
+      ) {
+        return "ONLINE";
+      }
+
+      return "";
+    }
+
+    function ccFindNewestPowerState(rows) {
+      for (const row of rows) {
+        const state =
+          ccPowerStateForEvent(row);
+
+        if (state) {
+          return {
+            state,
+            row
+          };
+        }
+      }
+
+      return {
+        state: "",
+        row: null
+      };
+    }
+
     async function loadControlCenterEvents() {
       const box = document.getElementById("cc-event-box");
       const summary = document.getElementById("cc-event-summary");
@@ -3672,11 +3894,74 @@ function updateNutProductionButtons(mode) {
 
         const rows = events.slice(0, 100).map(item => parseEventLine(item.line || String(item)));
         const latest = rows[0];
+        const newestPowerState =
+          ccFindNewestPowerState(rows);
 
         health.textContent = "Online";
-        latestType.textContent = latest.type || "Event";
-        latestTime.textContent = latest.time || "Latest event loaded.";
-        summary.textContent = "Latest event shown below. Total loaded: " + events.length;
+
+        if (
+          newestPowerState.state === "ONBATT"
+          && newestPowerState.row
+        ) {
+          // ONBATT represents an unresolved state, not a transient
+          // event. Never age it out until an ONLINE/restoration event
+          // becomes the newest power state.
+          latestType.textContent =
+            "ONBATT - Power Outage";
+
+          latestTime.textContent =
+            newestPowerState.row.time ||
+            "Power outage currently active.";
+
+          summary.textContent =
+            "Active power outage. ONBATT remains displayed until power is restored.";
+
+        } else if (
+          newestPowerState.state === "ONLINE"
+          && newestPowerState.row
+          && ccLatestEventAgeMs(
+            newestPowerState.row
+          ) <= CC_LATEST_EVENT_MAX_AGE_MS
+        ) {
+          // Restoration is important enough to take precedence over
+          // follow-up email/Telegram bookkeeping.
+          latestType.textContent =
+            "Power Restored";
+
+          latestTime.textContent =
+            newestPowerState.row.time ||
+            "Utility power restored.";
+
+          summary.textContent =
+            "Power restoration event shown below. It will clear after 3 hours if no newer event occurs.";
+
+        } else if (
+          latest
+          && ccLatestEventAgeMs(latest)
+             <= CC_LATEST_EVENT_MAX_AGE_MS
+        ) {
+          latestType.textContent =
+            latest.type || "Event";
+
+          latestTime.textContent =
+            latest.time ||
+            "Latest event loaded.";
+
+          summary.textContent =
+            "Latest event shown below. Total loaded: " +
+            events.length;
+
+        } else {
+          latestType.textContent =
+            "Clear";
+
+          latestTime.textContent =
+            "No recent event in the last 3 hours.";
+
+          summary.textContent =
+            "No current event. Historical events remain available below. Total loaded: " +
+            events.length;
+        }
 
         box.innerHTML = `
           <table class="cc-event-table">
@@ -4797,6 +5082,371 @@ function closeLabSelectedRestoreScreen() {
       }
     }
 
+
+
+    function selectedFullRestoreBranch() {
+      const select =
+        document.getElementById(
+          "cc-full-restore-branch"
+        );
+
+      return String(
+        select && select.value
+          ? select.value
+          : "backup-sanitized-initial"
+      ).trim();
+    }
+
+
+    async function loadFullRestoreBranches() {
+      const select =
+        document.getElementById(
+          "cc-full-restore-branch"
+        );
+
+      if (!select) return;
+
+      try {
+        const data = await ccApiJson(
+          "/nut-ui/api/restore/branches"
+        );
+
+        const branches =
+          Array.isArray(data.branches)
+            ? data.branches
+            : [];
+
+        if (!branches.length) return;
+
+        const current =
+          selectedFullRestoreBranch();
+
+        select.innerHTML = "";
+
+        branches.forEach(function (branch) {
+          const option =
+            document.createElement("option");
+
+          option.value = branch;
+          option.textContent = branch;
+
+          if (branch === current) {
+            option.selected = true;
+          }
+
+          select.appendChild(option);
+        });
+
+      } catch (err) {
+        // Keep the known default branch available.
+      }
+    }
+
+
+    async function loadFullManagedRestoreStatus() {
+      const target =
+        document.getElementById("cc-full-restore-status");
+
+      if (!target) return;
+
+      target.textContent = "Loading Restore status...";
+
+      try {
+        const data = await ccApiJson(
+          "/nut-ui/api/restore/full-status?branch=" +
+          encodeURIComponent(
+            selectedFullRestoreBranch()
+          )
+        );
+
+        if (!data || !data.ok) {
+          target.textContent =
+            "Restore status could not be loaded.";
+          return;
+        }
+
+        const r =
+          data.restore_levels &&
+          data.restore_levels.full_managed_system
+            ? data.restore_levels.full_managed_system
+            : {};
+
+        const nut = data.nut || {};
+
+        target.innerHTML =
+          "<strong>GitHub branch:</strong> " +
+          String(data.branch || "backup-sanitized-initial") +
+          "<br>" +
+          "<strong>NUT mode:</strong> " +
+          String(nut.mode_label || nut.mode || "Unknown") +
+          "<br>" +
+          "<strong>Files restored:</strong> " +
+          String(r.restore_files ?? "?") +
+          "<br>" +
+          "<strong>Secret-preserving merges:[REDACTED]
+          String(r.merge_live_secrets ?? "?") +
+          "<br>" +
+          "<strong>Files preserved live:</strong> " +
+          String(r.preserve_live ?? "?") +
+          "<br>" +
+          "<strong>Reference/template files skipped:</strong> " +
+          String(r.skip_reference ?? "?") +
+          "<br><br>" +
+          "<strong>Live Apply currently allowed:</strong> " +
+          (r.currently_allowed ? "YES" : "NO");
+      } catch (err) {
+        target.textContent =
+          "Restore status error: " + String(err);
+      }
+    }
+
+
+    function openFullManagedRestoreScreen() {
+      closeRestoreOptionsModal();
+
+      const screen =
+        document.getElementById(
+          "cc-full-managed-restore-screen"
+        );
+
+      if (screen) {
+        screen.classList.add("open");
+        screen.setAttribute("aria-hidden", "false");
+      }
+
+      const input =
+        document.getElementById(
+          "cc-full-restore-confirm-input"
+        );
+
+      if (input) input.value = "";
+
+      loadFullRestoreBranches().then(
+        loadFullManagedRestoreStatus
+      );
+    }
+
+
+    function closeFullManagedRestoreScreen() {
+      const screen =
+        document.getElementById(
+          "cc-full-managed-restore-screen"
+        );
+
+      if (screen) {
+        screen.classList.remove("open");
+        screen.setAttribute("aria-hidden", "true");
+      }
+    }
+
+
+    async function runFullManagedRestorePreflight() {
+      setControlCenterOutput(
+        "Full Managed-System Restore",
+        "Running non-destructive full restore preflight..."
+      );
+
+      try {
+        const data = await ccApiJson(
+          "/nut-ui/api/restore/full-preflight",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              branch: selectedFullRestoreBranch()
+            })
+          }
+        );
+
+        setControlCenterOutput(
+          "Full Managed-System Restore Preflight",
+          data,
+          !data.ok
+        );
+
+        loadFullManagedRestoreStatus();
+      } catch (err) {
+        setControlCenterOutput(
+          "Full Restore Preflight Error",
+          String(err),
+          true
+        );
+      }
+    }
+
+
+
+    async function pollFullRestoreJob(jobId) {
+      const title =
+        "Full Managed-System Restore";
+
+      let attempts = 0;
+
+      while (attempts < 450) {
+        attempts += 1;
+
+        try {
+          const data = await ccApiJson(
+            "/nut-ui/api/restore/full-job/" +
+            encodeURIComponent(jobId)
+          );
+
+          setControlCenterOutput(
+            title,
+            data,
+            (
+              data.state === "FAILED"
+              || data.state === "ROLLED_BACK"
+            )
+          );
+
+          if (
+            data.state === "SUCCESS"
+            || data.state === "FAILED"
+            || data.state === "ROLLED_BACK"
+          ) {
+            return;
+          }
+
+        } catch (err) {
+          // The UI service may briefly disappear during
+          // a future restore activation/restart.
+        }
+
+        await new Promise(function (resolve) {
+          setTimeout(resolve, 2000);
+        });
+      }
+
+      setControlCenterOutput(
+        title,
+        "Restore job status polling timed out. Job ID: " +
+        jobId,
+        true
+      );
+    }
+
+
+    async function runFullManagedRestore() {
+      const phrase =
+        "RESTORE FULL MANAGED SYSTEM";
+
+      const input =
+        document.getElementById(
+          "cc-full-restore-confirm-input"
+        );
+
+      const typed =
+        String(input ? input.value : "").trim();
+
+      if (typed !== phrase) {
+        setControlCenterOutput(
+          "Full Managed-System Restore",
+          "Full restore blocked. Exact confirmation phrase was not entered.",
+          true
+        );
+        return;
+      }
+
+      try {
+        const data = await ccApiJson(
+          "/nut-ui/api/restore/full-live",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              branch: selectedFullRestoreBranch(),
+              confirmation: phrase
+            })
+          }
+        );
+
+        setControlCenterOutput(
+          "Full Managed-System Restore",
+          data,
+          !data.ok
+        );
+
+        if (
+          data.ok
+          && data.accepted
+          && data.job_id
+        ) {
+          pollFullRestoreJob(
+            String(data.job_id)
+          );
+        }
+      } catch (err) {
+        setControlCenterOutput(
+          "Full Managed-System Restore Error",
+          String(err),
+          true
+        );
+      }
+    }
+
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      function () {
+        const open =
+          document.getElementById(
+            "cc-open-full-managed-restore"
+          );
+
+        const back =
+          document.getElementById(
+            "cc-full-managed-restore-back"
+          );
+
+        const preflight =
+          document.getElementById(
+            "cc-run-full-restore-preflight"
+          );
+
+        const run =
+          document.getElementById(
+            "cc-run-full-managed-restore"
+          );
+
+        if (open) {
+          open.addEventListener(
+            "click",
+            openFullManagedRestoreScreen
+          );
+        }
+
+        if (back) {
+          back.addEventListener(
+            "click",
+            function () {
+              closeFullManagedRestoreScreen();
+              openRestoreOptionsModal();
+            }
+          );
+        }
+
+        if (preflight) {
+          preflight.addEventListener(
+            "click",
+            runFullManagedRestorePreflight
+          );
+        }
+
+        if (run) {
+          run.addEventListener(
+            "click",
+            runFullManagedRestore
+          );
+        }
+      }
+    );
+
+
     async function runControlCenterRestore() {
       openRestoreOptionsModal();
     }
@@ -5825,38 +6475,269 @@ function closeLabSelectedRestoreScreen() {
   
   <div class="cc-restore-modal-overlay" id="cc-restore-modal-overlay" aria-hidden="true">
     <div class="cc-restore-modal" role="dialog" aria-modal="true" aria-labelledby="cc-restore-modal-title">
+
       <div class="cc-restore-modal-header">
         <div>
-          <div class="cc-restore-modal-title" id="cc-restore-modal-title">Restore from GitHub Options</div>
+          <div class="cc-restore-modal-title" id="cc-restore-modal-title">
+            Restore from GitHub
+          </div>
           <div class="cc-restore-modal-subtitle">
-            Choose a restore action. Repo sync updates the local backup copy only. Preview shows restore mappings without copying files.
+            Choose how much of the NUT server you want to restore.
+            All restore levels use the existing GitHub backup structure.
           </div>
         </div>
-        <button class="cc-btn" type="button" id="cc-restore-modal-close">Close</button>
+
+        <button class="cc-btn" type="button" id="cc-restore-modal-close">
+          Close
+        </button>
+      </div>
+
+      <div style="
+        border:1px solid rgba(251,191,36,.30);
+        background:rgba(251,191,36,.08);
+        border-radius:16px;
+        padding:.85rem 1rem;
+        margin-bottom:1rem;
+        line-height:1.45;
+      ">
+        <strong>Restore safety:</strong>
+        You can review and prepare all restore levels while NUT is PROTECTING.
+        Live production changes are blocked by the backend until the current
+        NUT mode permits them.
       </div>
 
       <div class="cc-restore-option-grid">
-        <button class="cc-restore-option" type="button" data-restore-action="sync-repo">
-          Sync backup repo from GitHub
-          <small>Updates /opt/nut-admin/repo-template only. Does not restore live files.</small>
+
+        <button
+          class="cc-restore-option"
+          type="button"
+          data-restore-action="sync-repo"
+        >
+          <span style="display:block;font-size:.72rem;opacity:.65;margin-bottom:.35rem;">
+            LEVEL 1
+          </span>
+
+          Repository rollback
+
+          <small>
+            Reset only /opt/nut-admin/repo-template to the selected GitHub
+            branch or snapshot. Live NUT files and services are not changed.
+          </small>
         </button>
 
-        <button class="cc-restore-option" type="button" data-restore-dry-run="all">
-          Preview restore plan
-          <small>Shows all restore mappings. No files copied.</small>
+        <button
+          class="cc-restore-option"
+          type="button"
+          id="cc-lab-open-selected-restore"
+        >
+          <span style="display:block;font-size:.72rem;opacity:.65;margin-bottom:.35rem;">
+            LEVEL 2
+          </span>
+
+          Selected-file live restore
+
+          <small>
+            Choose one approved file and restore it to its live production
+            path. A pre-restore backup and exact confirmation are required.
+          </small>
         </button>
 
-        <button class="cc-restore-option" type="button" id="cc-lab-open-selected-restore">
-          Live restore selected file
-          <small>Open the in-modal restore selection screen. No separate restore page.</small>
+        <button
+          class="cc-restore-option"
+          type="button"
+          id="cc-open-full-managed-restore"
+        >
+          <span style="display:block;font-size:.72rem;opacity:.65;margin-bottom:.35rem;">
+            LEVEL 3
+          </span>
+
+          Full managed-system rollback
+
+          <small>
+            Restore the approved NUT application/configuration stack.
+            Current secrets and protection mode are preserved. Preflight,
+            backup, validation and rollback protection are required.
+          </small>
+        </button>
+
+      </div>
+
+      <div style="
+        border-top:1px solid rgba(255,255,255,.10);
+        margin-top:1rem;
+        padding-top:1rem;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:1rem;
+        flex-wrap:wrap;
+      ">
+        <div>
+          <div style="font-weight:750;">Safe restore preview</div>
+          <div style="font-size:.82rem;opacity:.62;margin-top:.25rem;">
+            Review existing restore mappings without copying any files.
+          </div>
+        </div>
+
+        <button
+          class="cc-btn"
+          type="button"
+          data-restore-dry-run="all"
+        >
+          Preview Restore Plan
         </button>
       </div>
+
     </div>
   </div>
 
-  
-  
-  <div class="cc-restore-modal-overlay" id="cc-lab-selected-restore-screen" aria-hidden="true">
+
+  <div
+    class="cc-restore-modal-overlay"
+    id="cc-full-managed-restore-screen"
+    aria-hidden="true"
+  >
+    <div
+      class="cc-restore-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cc-full-managed-restore-title"
+    >
+
+      <div class="cc-restore-modal-header">
+        <div>
+          <div
+            class="cc-restore-modal-title"
+            id="cc-full-managed-restore-title"
+          >
+            Full Managed-System Rollback
+          </div>
+
+          <div class="cc-restore-modal-subtitle">
+            Restore the approved NUT-managed application and configuration
+            stack from GitHub. This is not a bare-metal Ubuntu rebuild.
+          </div>
+        </div>
+
+        <button
+          class="cc-btn"
+          type="button"
+          id="cc-full-managed-restore-back"
+        >
+          Back
+        </button>
+      </div>
+
+
+      <div class="cc-card" style="margin-bottom:1rem;">
+        <div class="cc-kicker">GitHub restore snapshot</div>
+
+        <p style="opacity:.72;">
+          Choose the existing GitHub branch/snapshot to restore.
+          The GitHub repository structure itself is not changed.
+        </p>
+
+        <select
+          id="cc-full-restore-branch"
+          class="cc-input"
+          style="width:100%;"
+        >
+          <option value="backup-sanitized-initial">
+            backup-sanitized-initial
+          </option>
+        </select>
+      </div>
+
+      <div class="cc-card" style="margin-bottom:1rem;">
+        <div class="cc-kicker">Restore scope</div>
+
+        <div
+          id="cc-full-restore-status"
+          style="margin-top:.65rem;line-height:1.6;"
+        >
+          Loading Restore status...
+        </div>
+      </div>
+
+
+      <div class="cc-card" style="margin-bottom:1rem;">
+        <div class="cc-kicker">Step 1 — Preflight</div>
+
+        <p style="opacity:.72;">
+          Creates a protected pre-restore backup, compares GitHub to the
+          running server, preserves live secrets and validates staged files.
+          No live files are restored during preflight.
+        </p>
+
+        <button
+          class="cc-btn"
+          type="button"
+          id="cc-run-full-restore-preflight"
+        >
+          Run Full Restore Preflight
+        </button>
+      </div>
+
+
+      <div class="cc-card">
+        <div class="cc-kicker">Step 2 — Full live rollback</div>
+
+        <p style="opacity:.72;">
+          The backend will refuse this operation while NUT is PROTECTING.
+          When an allowed mode is active, the same workflow will perform the
+          managed rollback using the required backup and safety controls.
+        </p>
+
+        <label
+          class="cc-kicker"
+          for="cc-full-restore-confirm-input"
+        >
+          Type exact confirmation phrase
+        </label>
+
+        <input
+          id="cc-full-restore-confirm-input"
+          class="cc-input"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="RESTORE FULL MANAGED SYSTEM"
+          style="width:100%;margin-top:.45rem;"
+        />
+
+        <div style="
+          border:1px solid rgba(239,68,68,.32);
+          background:rgba(239,68,68,.08);
+          border-radius:16px;
+          padding:.8rem;
+          margin-top:.9rem;
+        ">
+          Live rollback requires the exact phrase
+          <strong>RESTORE FULL MANAGED SYSTEM</strong>.
+          Protection mode is checked again by the backend before any files
+          can be changed.
+        </div>
+
+        <div style="
+          display:flex;
+          justify-content:flex-end;
+          margin-top:1rem;
+        ">
+          <button
+            class="cc-btn cc-btn-danger"
+            type="button"
+            id="cc-run-full-managed-restore"
+          >
+            Run Full Managed-System Rollback
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+<div class="cc-restore-modal-overlay" id="cc-lab-selected-restore-screen" aria-hidden="true">
     <div class="cc-restore-modal" role="dialog" aria-modal="true" aria-labelledby="cc-lab-selected-restore-title">
       <div class="cc-restore-modal-header">
         <div>
@@ -5945,6 +6826,2516 @@ function closeLabSelectedRestoreScreen() {
   </script>
 
 
+
+
+<style id="nut-email-recipient-manager-style">
+  .nut-recipient-manager {
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid rgba(148,163,184,.22);
+    border-radius: 12px;
+    background: rgba(15,23,42,.22);
+  }
+
+  .nut-recipient-manager h4 {
+    margin: 0 0 10px 0;
+  }
+
+  .nut-recipient-list {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .nut-recipient-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 10px;
+    border: 1px solid rgba(148,163,184,.16);
+    border-radius: 9px;
+  }
+
+  .nut-recipient-address {
+    overflow-wrap: anywhere;
+  }
+
+  .nut-recipient-remove {
+    flex: 0 0 auto;
+  }
+
+  .nut-recipient-add-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .nut-recipient-add-row input {
+    min-width: 260px;
+    flex: 1 1 260px;
+  }
+
+  .nut-recipient-message {
+    margin-top: 9px;
+    font-size: .9rem;
+    opacity: .85;
+  }
+</style>
+
+<script id="nut-email-recipient-manager">
+(function () {
+  const RECIPIENT_API =
+    "/nut-ui/api/notification-recipients";
+
+  const EMAIL_API =
+    "/nut-ui/api/notification-recipients/email";
+
+  function findNotificationPanel() {
+    return document.getElementById(
+      "nut-notification-control-panel"
+    );
+  }
+
+  function makeButton(label, className) {
+    const button =
+      document.createElement("button");
+
+    button.type = "button";
+    button.textContent = label;
+    button.className =
+      className || "cc-btn";
+
+    return button;
+  }
+
+  function buildEmailManager() {
+    if (
+      document.getElementById(
+        "nut-email-recipient-manager-box"
+      )
+    ) {
+      return;
+    }
+
+    const panel =
+      findNotificationPanel();
+
+    if (!panel) {
+      setTimeout(
+        buildEmailManager,
+        250
+      );
+      return;
+    }
+
+    const dailyToggle =
+      panel.querySelector(
+        '[data-key="daily_health_email"]'
+      );
+
+    if (!dailyToggle) {
+      setTimeout(
+        buildEmailManager,
+        250
+      );
+      return;
+    }
+
+    const row =
+      dailyToggle.closest(
+        ".nut-notification-row"
+      );
+
+    const box =
+      document.createElement("div");
+
+    box.id =
+      "nut-email-recipient-manager-box";
+
+    box.className =
+      "nut-recipient-manager";
+
+    box.innerHTML = `
+      <h4>Email Recipients</h4>
+
+      <div
+        id="nut-email-recipient-list"
+        class="nut-recipient-list">
+      </div>
+
+      <div class="nut-recipient-add-row">
+        <input
+          id="nut-email-recipient-input"
+          type="email"
+          placeholder="name@example.com"
+          autocomplete="off">
+
+        <button
+          type="button"
+          class="cc-btn cc-btn-primary"
+          id="nut-email-recipient-add">
+          Add Email Recipient
+        </button>
+      </div>
+
+      <div
+        id="nut-email-recipient-message"
+        class="nut-recipient-message">
+        Loading recipients...
+      </div>
+    `;
+
+    const closingToggle =
+      panel.querySelector(
+        '[data-key="weather_based_closing_thoughts"]'
+      );
+
+    const closingRow =
+      closingToggle
+        ? closingToggle.closest(
+            ".nut-notification-control-row"
+          )
+        : row;
+
+    closingRow.insertAdjacentElement(
+      "afterend",
+      box
+    );
+
+    document
+      .getElementById(
+        "nut-email-recipient-add"
+      )
+      .addEventListener(
+        "click",
+        addRecipient
+      );
+
+    document
+      .getElementById(
+        "nut-email-recipient-input"
+      )
+      .addEventListener(
+        "keydown",
+        function (event) {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            addRecipient();
+          }
+        }
+      );
+
+    loadRecipients();
+  }
+
+  function setMessage(text) {
+    const el =
+      document.getElementById(
+        "nut-email-recipient-message"
+      );
+
+    if (el) {
+      el.textContent = text;
+    }
+  }
+
+  async function loadRecipients() {
+    setMessage(
+      "Loading recipients..."
+    );
+
+    try {
+      const response =
+        await fetch(
+          RECIPIENT_API,
+          {
+            cache: "no-store"
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+        throw new Error(
+          data.error ||
+          "Unable to load recipients"
+        );
+      }
+
+      renderRecipients(
+        data.email.recipients || []
+      );
+
+      setMessage(
+        "Email recipients loaded."
+      );
+
+    } catch (error) {
+      setMessage(
+        "Unable to load recipients: " +
+        error.message
+      );
+    }
+  }
+
+  function renderRecipients(recipients) {
+    const list =
+      document.getElementById(
+        "nut-email-recipient-list"
+      );
+
+    if (!list) {
+      return;
+    }
+
+    list.innerHTML = "";
+
+    recipients.forEach(
+      function (address) {
+        const item =
+          document.createElement("div");
+
+        item.className =
+          "nut-recipient-item";
+
+        const text =
+          document.createElement("div");
+
+        text.className =
+          "nut-recipient-address";
+
+        text.textContent =
+          address;
+
+        const remove =
+          makeButton(
+            "Remove",
+            "cc-btn nut-recipient-remove"
+          );
+
+        remove.addEventListener(
+          "click",
+          function () {
+            removeRecipient(
+              address,
+              recipients.length
+            );
+          }
+        );
+
+        item.appendChild(text);
+        item.appendChild(remove);
+        list.appendChild(item);
+      }
+    );
+  }
+
+  async function changeRecipient(
+    action,
+    address
+  ) {
+    const response =
+      await fetch(
+        EMAIL_API,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body: JSON.stringify({
+            action: action,
+            email: address
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (
+      !response.ok ||
+      !data.ok
+    ) {
+      throw new Error(
+        data.error ||
+        "Recipient change failed"
+      );
+    }
+
+    return data.recipients || [];
+  }
+
+  async function addRecipient() {
+    const input =
+      document.getElementById(
+        "nut-email-recipient-input"
+      );
+
+    if (!input) {
+      return;
+    }
+
+    const address =
+      input.value.trim();
+
+    if (!address) {
+      setMessage(
+        "Enter an email address first."
+      );
+      return;
+    }
+
+    setMessage(
+      "Adding recipient..."
+    );
+
+    try {
+      const recipients =
+        await changeRecipient(
+          "add",
+          address
+        );
+
+      input.value = "";
+
+      renderRecipients(
+        recipients
+      );
+
+      setMessage(
+        "Email recipient added."
+      );
+
+    } catch (error) {
+      setMessage(
+        "Add failed: " +
+        error.message
+      );
+    }
+  }
+
+  async function removeRecipient(
+    address,
+    count
+  ) {
+    if (count <= 1) {
+      setMessage(
+        "The last email recipient cannot be removed."
+      );
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        "Remove this Daily Health email recipient?\n\n" +
+        address
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setMessage(
+      "Removing recipient..."
+    );
+
+    try {
+      const recipients =
+        await changeRecipient(
+          "remove",
+          address
+        );
+
+      renderRecipients(
+        recipients
+      );
+
+      setMessage(
+        "Email recipient removed."
+      );
+
+    } catch (error) {
+      setMessage(
+        "Remove failed: " +
+        error.message
+      );
+    }
+  }
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      buildEmailManager
+    );
+  } else {
+    buildEmailManager();
+  }
+})();
+</script>
+
+
+<style id="nut-telegram-recipient-manager-style">
+  .nut-telegram-manager {
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid rgba(148,163,184,.22);
+    border-radius: 12px;
+    background: rgba(15,23,42,.22);
+  }
+
+  .nut-telegram-manager h4 {
+    margin: 0 0 10px 0;
+  }
+
+  .nut-telegram-subtitle {
+    margin-top: 16px;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+
+  .nut-telegram-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .nut-telegram-user {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 10px;
+    border: 1px solid rgba(148,163,184,.16);
+    border-radius: 9px;
+  }
+
+  .nut-telegram-user-main {
+    min-width: 0;
+  }
+
+  .nut-telegram-user-name {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .nut-telegram-user-role {
+    margin-top: 2px;
+    font-size: .84rem;
+    opacity: .72;
+  }
+
+  .nut-telegram-status {
+    margin-top: 10px;
+    font-size: .9rem;
+    opacity: .85;
+  }
+</style>
+
+<script id="nut-telegram-recipient-manager">
+(function () {
+  const LIST_API =
+    "/nut-ui/api/notification-recipients";
+
+  const CHANGE_API =
+    "/nut-ui/api/notification-recipients/telegram";
+
+  function findNotificationPanel() {
+    return document.getElementById(
+      "nut-notification-control-panel"
+    );
+  }
+
+  function button(label) {
+    const el =
+      document.createElement("button");
+
+    el.type = "button";
+    el.className = "cc-btn";
+    el.textContent = label;
+
+    return el;
+  }
+
+  function buildTelegramManager() {
+    if (
+      document.getElementById(
+        "nut-telegram-recipient-manager-box"
+      )
+    ) {
+      return;
+    }
+
+    const panel =
+      findNotificationPanel();
+
+    if (!panel) {
+      setTimeout(
+        buildTelegramManager,
+        250
+      );
+      return;
+    }
+
+    const master =
+      panel.querySelector(
+        '[data-key="telegram_push_notifications"]'
+      );
+
+    if (!master) {
+      setTimeout(
+        buildTelegramManager,
+        250
+      );
+      return;
+    }
+
+    const row =
+      master.closest(
+        ".nut-notification-row"
+      );
+
+    const box =
+      document.createElement("div");
+
+    box.id =
+      "nut-telegram-recipient-manager-box";
+
+    box.className =
+      "nut-telegram-manager";
+
+    box.innerHTML = `
+      <h4>Telegram Recipients</h4>
+
+      <div
+        id="nut-telegram-approved"
+        class="nut-telegram-list">
+      </div>
+
+      <div class="nut-telegram-subtitle">
+        Pending Telegram Access
+      </div>
+
+      <div
+        id="nut-telegram-pending"
+        class="nut-telegram-list">
+      </div>
+
+      <div
+        id="nut-telegram-recipient-status"
+        class="nut-telegram-status">
+        Loading Telegram recipients...
+      </div>
+    `;
+
+    const heartbeatToggle =
+      panel.querySelector(
+        '[data-key="telegram_heartbeat"]'
+      );
+
+    const heartbeatRow =
+      heartbeatToggle
+        ? heartbeatToggle.closest(
+            ".nut-notification-control-row"
+          )
+        : row;
+
+    heartbeatRow.insertAdjacentElement(
+      "afterend",
+      box
+    );
+
+    loadTelegramRecipients();
+  }
+
+  function setStatus(text) {
+    const el =
+      document.getElementById(
+        "nut-telegram-recipient-status"
+      );
+
+    if (el) {
+      el.textContent = text;
+    }
+  }
+
+  function makeUserRow(
+    name,
+    role,
+    action
+  ) {
+    const item =
+      document.createElement("div");
+
+    item.className =
+      "nut-telegram-user";
+
+    const main =
+      document.createElement("div");
+
+    main.className =
+      "nut-telegram-user-main";
+
+    const nameEl =
+      document.createElement("div");
+
+    nameEl.className =
+      "nut-telegram-user-name";
+
+    nameEl.textContent =
+      name;
+
+    main.appendChild(nameEl);
+
+    if (role) {
+      const roleEl =
+        document.createElement("div");
+
+      roleEl.className =
+        "nut-telegram-user-role";
+
+      roleEl.textContent =
+        role;
+
+      main.appendChild(roleEl);
+    }
+
+    item.appendChild(main);
+
+    if (action) {
+      item.appendChild(action);
+    }
+
+    return item;
+  }
+
+  async function loadTelegramRecipients() {
+    setStatus(
+      "Loading Telegram recipients..."
+    );
+
+    try {
+      const response =
+        await fetch(
+          LIST_API,
+          {
+            cache: "no-store"
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+        throw new Error(
+          data.error ||
+          "Unable to load Telegram recipients"
+        );
+      }
+
+      renderApproved(
+        data.telegram.approved || []
+      );
+
+      renderPending(
+        data.telegram.pending || []
+      );
+
+      setStatus(
+        "Telegram recipients loaded."
+      );
+
+    } catch (error) {
+      setStatus(
+        "Unable to load Telegram recipients: " +
+        error.message
+      );
+    }
+  }
+
+  function renderApproved(users) {
+    const list =
+      document.getElementById(
+        "nut-telegram-approved"
+      );
+
+    if (!list) {
+      return;
+    }
+
+    list.innerHTML = "";
+
+    if (!users.length) {
+      list.appendChild(
+        makeUserRow(
+          "No approved Telegram recipients",
+          "",
+          null
+        )
+      );
+      return;
+    }
+
+    users.forEach(
+      function (user) {
+        let action = null;
+
+        if (!user.primary) {
+          action =
+            button("Remove");
+
+          action.addEventListener(
+            "click",
+            function () {
+              removeTelegramRecipient(
+                user.name
+              );
+            }
+          );
+        }
+
+        list.appendChild(
+          makeUserRow(
+            user.name,
+            user.role || "USER",
+            action
+          )
+        );
+      }
+    );
+  }
+
+  function renderPending(users) {
+    const list =
+      document.getElementById(
+        "nut-telegram-pending"
+      );
+
+    if (!list) {
+      return;
+    }
+
+    list.innerHTML = "";
+
+    if (!users.length) {
+      list.appendChild(
+        makeUserRow(
+          "No pending requests",
+          "",
+          null
+        )
+      );
+      return;
+    }
+
+    users.forEach(
+      function (user) {
+        const approve =
+          button("Approve");
+
+        approve.addEventListener(
+          "click",
+          function () {
+            approveTelegramRecipient(
+              user.name
+            );
+          }
+        );
+
+        list.appendChild(
+          makeUserRow(
+            user.name,
+            "PENDING",
+            approve
+          )
+        );
+      }
+    );
+  }
+
+  async function changeTelegramRecipient(
+    action,
+    name
+  ) {
+    const response =
+      await fetch(
+        CHANGE_API,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body: JSON.stringify({
+            action: action,
+            name: name
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (
+      !response.ok ||
+      !data.ok
+    ) {
+      throw new Error(
+        data.error ||
+        "Telegram recipient change failed"
+      );
+    }
+
+    return data.telegram;
+  }
+
+  async function approveTelegramRecipient(
+    name
+  ) {
+    const confirmed =
+      window.confirm(
+        "Approve Telegram access for:\n\n" +
+        name
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setStatus(
+      "Approving Telegram recipient..."
+    );
+
+    try {
+      const telegram =
+        await changeTelegramRecipient(
+          "approve",
+          name
+        );
+
+      renderApproved(
+        telegram.approved || []
+      );
+
+      renderPending(
+        telegram.pending || []
+      );
+
+      setStatus(
+        "Telegram recipient approved."
+      );
+
+    } catch (error) {
+      setStatus(
+        "Approval failed: " +
+        error.message
+      );
+    }
+  }
+
+  async function removeTelegramRecipient(
+    name
+  ) {
+    const confirmed =
+      window.confirm(
+        "Remove Telegram access for:\n\n" +
+        name
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setStatus(
+      "Removing Telegram recipient..."
+    );
+
+    try {
+      const telegram =
+        await changeTelegramRecipient(
+          "remove",
+          name
+        );
+
+      renderApproved(
+        telegram.approved || []
+      );
+
+      renderPending(
+        telegram.pending || []
+      );
+
+      setStatus(
+        "Telegram recipient removed."
+      );
+
+    } catch (error) {
+      setStatus(
+        "Remove failed: " +
+        error.message
+      );
+    }
+  }
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      buildTelegramManager
+    );
+  } else {
+    buildTelegramManager();
+  }
+})();
+</script>
+
+
+<style id="nut-notification-control-ui-style">
+  .nut-notification-control-panel {
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid rgba(148,163,184,.22);
+    border-radius: 12px;
+    background: rgba(15,23,42,.22);
+  }
+
+  .nut-notification-control-panel h3 {
+    margin: 0 0 6px 0;
+  }
+
+  .nut-notification-control-copy {
+    margin-bottom: 14px;
+    opacity: .8;
+  }
+
+  .nut-notification-control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 0;
+    border-top: 1px solid rgba(148,163,184,.14);
+  }
+
+  .nut-notification-control-row:first-of-type {
+    border-top: 0;
+  }
+
+  .nut-notification-control-child {
+    margin-left: 24px;
+  }
+
+  .nut-notification-control-name {
+    font-weight: 700;
+  }
+
+  .nut-notification-control-help {
+    margin-top: 3px;
+    font-size: .88rem;
+    opacity: .72;
+  }
+
+  .nut-notification-switch {
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+  }
+
+  .nut-notification-control-status {
+    margin-top: 12px;
+    font-size: .9rem;
+    opacity: .85;
+  }
+
+  .nut-notification-control-warning {
+    display: none;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(248,113,113,.45);
+    border-radius: 10px;
+    background: rgba(127,29,29,.22);
+    font-weight: 700;
+  }
+</style>
+
+<script id="nut-notification-control-ui">
+(function () {
+  const API =
+    "/nut-ui/api/notification-controls";
+
+  function makeRow(
+    key,
+    title,
+    help,
+    child
+  ) {
+    const row =
+      document.createElement("div");
+
+    row.className =
+      "nut-notification-control-row" +
+      (
+        child
+          ? " nut-notification-control-child"
+          : ""
+      );
+
+    const copy =
+      document.createElement("div");
+
+    const name =
+      document.createElement("div");
+
+    name.className =
+      "nut-notification-control-name";
+
+    name.textContent = title;
+
+    const helpEl =
+      document.createElement("div");
+
+    helpEl.className =
+      "nut-notification-control-help";
+
+    helpEl.textContent = help;
+
+    copy.appendChild(name);
+    copy.appendChild(helpEl);
+
+    const switchWrap =
+      document.createElement("label");
+
+    switchWrap.className =
+      "nut-switch";
+
+    const input =
+      document.createElement("input");
+
+    input.type = "checkbox";
+    input.dataset.key = key;
+    input.setAttribute(
+      "aria-label",
+      title
+    );
+
+    const slider =
+      document.createElement("span");
+
+    slider.className =
+      "nut-switch-slider";
+
+    const state =
+      document.createElement("span");
+
+    state.className =
+      "nut-switch-state";
+
+    state.textContent = "OFF";
+
+    switchWrap.appendChild(input);
+    switchWrap.appendChild(slider);
+    switchWrap.appendChild(state);
+
+    row.appendChild(copy);
+    row.appendChild(switchWrap);
+
+    return row;
+  }
+
+  function build() {
+    if (
+      document.getElementById(
+        "nut-notification-control-panel"
+      )
+    ) {
+      return;
+    }
+
+    const host =
+      document.getElementById(
+        "nut-notifications-panel-host"
+      );
+
+    if (!host) {
+      setTimeout(build, 250);
+      return;
+    }
+
+    const panel =
+      document.createElement("div");
+
+    panel.id =
+      "nut-notification-control-panel";
+
+    panel.className =
+      "nut-notification-control-panel";
+
+    panel.innerHTML = `
+      <h3>Notification Controls</h3>
+      <div class="nut-notification-control-copy">
+        Control email and Telegram delivery only.
+        These switches do not change NUT monitoring,
+        logging, timers, or shutdown behavior.
+      </div>
+    `;
+
+    panel.appendChild(
+      makeRow(
+        "daily_health_email",
+        "Daily Health Email",
+        "Send the scheduled Daily UPS health report by email.",
+        false
+      )
+    );
+
+    panel.appendChild(
+      makeRow(
+        "weather_based_closing_thoughts",
+        "Weather-Based Closing Thoughts",
+        "Adds Today's closing thought to the Daily UPS health email.",
+        true
+      )
+    );
+
+    panel.appendChild(
+      makeRow(
+        "telegram_push_notifications",
+        "Telegram Push Notifications",
+        "Master switch for automated Telegram notifications.",
+        false
+      )
+    );
+
+    panel.appendChild(
+      makeRow(
+        "telegram_daily_health_push",
+        "Daily Health Push",
+        "Send the scheduled Daily UPS health summary through Telegram.",
+        true
+      )
+    );
+
+    panel.appendChild(
+      makeRow(
+        "telegram_critical_power_alerts",
+        "Critical Power Alerts",
+        "ONBATT, ONLINE, shutdown, cancelled, and final Telegram alerts.",
+        true
+      )
+    );
+
+    panel.appendChild(
+      makeRow(
+        "telegram_heartbeat",
+        "Heartbeat",
+        "Send the scheduled Telegram heartbeat.",
+        true
+      )
+    );
+
+    const warning =
+      document.createElement("div");
+
+    warning.id =
+      "nut-notification-control-warning";
+
+    warning.className =
+      "nut-notification-control-warning";
+
+    warning.textContent =
+      "Warning: Critical UPS power-event notifications will not be delivered through Telegram while this setting is disabled.";
+
+    panel.appendChild(warning);
+
+    const status =
+      document.createElement("div");
+
+    status.id =
+      "nut-notification-control-status";
+
+    status.className =
+      "nut-notification-control-status";
+
+    status.textContent =
+      "Loading notification settings...";
+
+    panel.appendChild(status);
+
+    host.prepend(panel);
+
+    load();
+  }
+
+  function inputs() {
+    return Array.from(
+      document.querySelectorAll(
+        "#nut-notification-control-panel [data-key]"
+      )
+    );
+  }
+
+  function getInput(key) {
+    return document.querySelector(
+      '#nut-notification-control-panel [data-key="' +
+      key +
+      '"]'
+    );
+  }
+
+  function status(text) {
+    const el =
+      document.getElementById(
+        "nut-notification-control-status"
+      );
+
+    if (el) {
+      el.textContent = text;
+    }
+  }
+
+  function updateDependencies() {
+    const email =
+      getInput(
+        "daily_health_email"
+      );
+
+    const closing =
+      getInput(
+        "weather_based_closing_thoughts"
+      );
+
+    const telegram =
+      getInput(
+        "telegram_push_notifications"
+      );
+
+    const health =
+      getInput(
+        "telegram_daily_health_push"
+      );
+
+    const critical =
+      getInput(
+        "telegram_critical_power_alerts"
+      );
+
+    const heartbeat =
+      getInput(
+        "telegram_heartbeat"
+      );
+
+    inputs().forEach(function (input) {
+      const state =
+        input.closest(".nut-switch")
+          ?.querySelector(".nut-switch-state");
+
+      if (state) {
+        state.textContent =
+          input.checked ? "ON" : "OFF";
+      }
+    });
+
+    const closingRow =
+      closing
+        ? closing.closest(
+            ".nut-notification-control-row"
+          )
+        : null;
+
+    if (closingRow) {
+      closingRow.classList.toggle(
+        "nut-notification-hidden",
+        !email || !email.checked
+      );
+    }
+
+    const emailRecipients =
+      document.getElementById(
+        "nut-email-recipient-manager-box"
+      );
+
+    if (emailRecipients) {
+      emailRecipients.classList.toggle(
+        "nut-notification-hidden",
+        !email || !email.checked
+      );
+    }
+
+    [health, critical, heartbeat]
+      .forEach(function (item) {
+        if (!item) {
+          return;
+        }
+
+        const row =
+          item.closest(
+            ".nut-notification-control-row"
+          );
+
+        if (row) {
+          row.classList.toggle(
+            "nut-notification-hidden",
+            !telegram || !telegram.checked
+          );
+        }
+      });
+
+    const telegramRecipients =
+      document.getElementById(
+        "nut-telegram-recipient-manager-box"
+      );
+
+    if (telegramRecipients) {
+      telegramRecipients.classList.toggle(
+        "nut-notification-hidden",
+        !telegram || !telegram.checked
+      );
+    }
+
+    const warning =
+      document.getElementById(
+        "nut-notification-control-warning"
+      );
+
+    if (
+      warning &&
+      telegram &&
+      critical
+    ) {
+      warning.style.display =
+        (
+          !telegram.checked ||
+          !critical.checked
+        )
+          ? "block"
+          : "none";
+    }
+  }
+
+  async function load() {
+    try {
+      const response =
+        await fetch(
+          API,
+          {
+            cache: "no-store"
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+        throw new Error(
+          data.error ||
+          "Unable to load settings"
+        );
+      }
+
+      inputs().forEach(
+        function (input) {
+          input.checked =
+            !!data.controls[
+              input.dataset.key
+            ];
+
+          input.addEventListener(
+            "change",
+            function () {
+              save(input);
+            }
+          );
+        }
+      );
+
+      updateDependencies();
+
+      status(
+        "Notification settings loaded."
+      );
+
+    } catch (error) {
+      status(
+        "Unable to load notification settings: " +
+        error.message
+      );
+    }
+  }
+
+  async function save(input) {
+    updateDependencies();
+
+    status(
+      "Saving notification setting..."
+    );
+
+    try {
+      const response =
+        await fetch(
+          API,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+            body: JSON.stringify({
+              key:
+                input.dataset.key,
+              value:
+                input.checked
+            })
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+        throw new Error(
+          data.error ||
+          "Unable to save setting"
+        );
+      }
+
+      status("Saved.");
+
+    } catch (error) {
+      input.checked =
+        !input.checked;
+
+      updateDependencies();
+
+      status(
+        "Save failed: " +
+        error.message
+      );
+    }
+  }
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      build
+    );
+  } else {
+    build();
+  }
+})();
+</script>
+
+
+<style id="nut-final-switch-style">
+  .nut-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .nut-switch input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .nut-switch-slider {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+    border-radius: 999px;
+    background: rgba(148,163,184,.4);
+    transition: background .18s ease;
+  }
+
+  .nut-switch-slider::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    transition: transform .18s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,.35);
+  }
+
+  .nut-switch input:checked + .nut-switch-slider {
+    background: #2563eb;
+  }
+
+  .nut-switch input:checked + .nut-switch-slider::after {
+    transform: translateX(24px);
+  }
+
+  .nut-switch-state {
+    min-width: 28px;
+    font-weight: 700;
+    font-size: .82rem;
+  }
+
+  .nut-notification-hidden {
+    display: none !important;
+  }
+</style>
+
+
+<style id="nut-settings-heading-style">
+
+  .nut-settings-section-heading {
+    margin: 2px 0 18px 0;
+    font-size: 1.18rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+    color: inherit;
+  }
+
+  #nut-notifications-configuration-card {
+    margin-bottom: 34px !important;
+  }
+
+  .nut-configuration-heading {
+    margin-top: 8px;
+    margin-bottom: 18px;
+    padding-top: 4px;
+  }
+
+</style>
+
+
+<style id="cc-help-readability-style">
+#cc-help-article-pane{
+  padding:12px 16px !important;
+}
+
+.cc-help-article-title{
+  font-size:22px;
+  font-weight:700;
+  margin:2px 0 10px 0;
+  line-height:1.25;
+}
+
+.cc-help-article{
+  font-size:14px;
+  line-height:1.42;
+  max-width:none;
+}
+
+.cc-help-article h1{
+  font-size:22px;
+  margin:10px 0 8px 0;
+  line-height:1.2;
+}
+
+.cc-help-article h2{
+  font-size:18px;
+  margin:14px 0 7px 0;
+  padding-top:3px;
+  line-height:1.25;
+  border-top:1px solid rgba(255,255,255,.20);
+}
+
+.cc-help-article h3{
+  font-size:16px;
+  margin:10px 0 5px 0;
+  line-height:1.25;
+}
+
+.cc-help-article h4,
+.cc-help-article h5,
+.cc-help-article h6{
+  font-size:14px;
+  margin:8px 0 4px 0;
+  line-height:1.25;
+}
+
+.cc-help-article p{
+  margin:4px 0 7px 0;
+}
+
+.cc-help-article ul,
+.cc-help-article ol{
+  margin:4px 0 8px 22px;
+  padding-left:10px;
+}
+
+.cc-help-article li{
+  margin:1px 0;
+  line-height:1.35;
+}
+
+.cc-help-article hr{
+  margin:10px 0;
+  border:0;
+  border-top:1px solid rgba(255,255,255,.22);
+}
+
+.cc-help-article code{
+  font-family:monospace;
+  font-size:13px;
+  padding:1px 4px;
+  border-radius:4px;
+  background:rgba(0,0,0,.18);
+}
+
+.cc-help-code{
+  margin:6px 0 9px 0;
+  padding:8px 10px;
+  border-radius:6px;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  overflow-x:auto;
+  font-family:monospace;
+  font-size:13px;
+  line-height:1.35;
+  background:rgba(0,0,0,.22);
+}
+
+#cc-help-results .cc-btn{
+  margin-top:4px !important;
+}
+
+.cc-help-code{
+  border-left:3px solid rgba(255,255,255,.35);
+}
+
+.cc-help-heading-safety{
+  border-left:4px solid rgba(255,255,255,.55);
+  padding-left:8px;
+}
+
+.cc-help-heading-verify{
+  border-left:4px solid rgba(255,255,255,.35);
+  padding-left:8px;
+}
+
+.cc-help-heading-troubleshoot{
+  border-left:4px solid rgba(255,255,255,.25);
+  padding-left:8px;
+}
+
+.cc-help-heading{
+  scroll-margin-top:135px;
+}
+</style>
+
+<script id="cc-help-ui-script">
+(function(){
+
+function esc(v){
+  return String(v)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
+}
+
+function title(f){
+  return String(f)
+    .replace(/\.md$/i,"")
+    .replace(/^REF_/i,"")
+    .replace(/^\d+_/,"")
+    .replace(/_/g," ");
+}
+
+function getjson(url,ok,bad){
+  var r=new XMLHttpRequest();
+  r.open("GET",url,true);
+  r.onreadystatechange=function(){
+    if(r.readyState!==4)return;
+    if(r.status>=200&&r.status<300){
+      try{ok(JSON.parse(r.responseText))}
+      catch(e){bad("Invalid JSON response")}
+    }else{
+      bad("HTTP "+r.status);
+    }
+  };
+  r.onerror=function(){bad("Network error")};
+  r.send(null);
+}
+
+function init(){
+
+  var search=document.getElementById("cc-help-search");
+  var list=document.getElementById("cc-help-category-list");
+
+  if(!search||!list)return;
+
+  search.style.width="100%";
+  search.style.minHeight="62px";
+  search.style.fontSize="20px";
+  search.style.padding="14px 18px";
+  search.style.boxSizing="border-box";
+
+  var oldResults=document.getElementById("cc-help-results");
+  if(!oldResults){oldResults=document.createElement("div");oldResults.id="cc-help-results";oldResults.style.display="none";if(list&&list.parentNode){list.parentNode.insertBefore(oldResults,list);}}
+
+  if(oldResults){
+    oldResults.innerHTML="";
+    oldResults.style.display="none";
+  }
+
+  var pane=document.getElementById("cc-help-article-pane");
+
+  if(!pane){
+    pane=document.createElement("div");
+    pane.id="cc-help-article-pane";
+    pane.className="cc-mini";
+    pane.style.marginTop="20px";
+    list.parentNode.insertBefore(pane,list.nextSibling);
+  }
+
+  pane.style.display="none";
+
+  var articles=[];
+
+  var categoryMap={
+    "getting started":[
+      "00_HELP_INDEX.md",
+      "01_GETTING_STARTED.md",
+      "REF_00_INDEX.md"
+    ],
+
+    "system overview":[
+      "02_PROTECTION_MODES.md",
+      "REF_01_CONTROL_CENTER_OVERVIEW.md"
+    ],
+
+    "monitoring":[
+      "03_MONITORING_HOWTOS.md",
+      "REF_02_MONITORING_TAB.md"
+    ],
+
+    "events":[
+      "04_EVENTS_HOWTOS.md",
+      "REF_03_EVENTS_TAB.md"
+    ],
+
+    "notification settings":[
+      "05_NOTIFICATION_SETTINGS.md"
+    ],
+
+    "telegram":[
+      "06_TELEGRAM_HOWTOS.md",
+      "05_NOTIFICATION_SETTINGS.md"
+    ],
+
+    "email":[
+      "07_EMAIL_HOWTOS.md",
+      "05_NOTIFICATION_SETTINGS.md"
+    ],
+
+    "maintenance and weather":[
+      "08_MAINTENANCE_AND_WEATHER_HOWTOS.md",
+      "05_NOTIFICATION_SETTINGS.md"
+    ],
+
+    "configuration":[
+      "09_CONFIGURATION_HOWTOS.md",
+      "REF_05_CONFIGURATION_TAB.md",
+      "REF_07_SAFE_EDITING_RULES.md",
+      "REF_10_ups_conf.md",
+      "REF_11_upsd_conf.md",
+      "REF_12_upsmon_conf.md",
+      "REF_13_upssched_conf.md",
+      "REF_14_nut_conf.md",
+      "REF_15_hosts_conf.md",
+      "REF_16_nut_orchestrator_conf.md",
+      "REF_17_config_d_nut_orchestrator_conf.md",
+      "REF_18_approved_targets_yml.md",
+      "REF_19_dashboard_ui_json.md",
+      "REF_20_shutdown_verification_targets_conf.md"
+    ],
+
+    "tests and logs":[
+      "10_TESTS_AND_LOGS_HOWTOS.md",
+      "REF_04_TESTS_AND_LOGS_TAB.md",
+      "REF_06_PHASE1_LANSWEEPER_LIVE_TEST.md",
+      "REF_37_nut_ui_run_test.md",
+      "REF_38_nut_ui_run_real_test_approved.md"
+    ],
+
+    "backup":[
+      "11_BACKUP_HOWTOS.md"
+    ],
+
+    "restore and disaster recovery":[
+      "12_RESTORE_AND_DR_HOWTOS.md"
+    ],
+
+    "shutdown orchestration":[
+      "13_SHUTDOWN_ORCHESTRATION_HOWTOS.md",
+      "REF_39_nut_orchestrator_sh.md",
+      "REF_40_nut_local_final_shutdown.md"
+    ],
+
+    "protected systems":[
+      "14_PROTECTED_SYSTEMS_HOWTOS.md",
+      "REF_30_nut_lansweeper_shutdown.md",
+      "REF_31_nut_synology_shutdown.md",
+      "REF_32_nut_voip_shutdown.md",
+      "REF_33_nut_db_shutdown.md",
+      "REF_34_nut_blueiris_shutdown.md",
+      "REF_35_nut_vmware_shutdown.md",
+      "REF_36_nut_netapp_halt.md"
+    ],
+
+    "services and timers":[
+      "15_SERVICES_AND_TIMERS_HOWTOS.md",
+      "REF_12_upsmon_conf.md",
+      "REF_13_upssched_conf.md",
+      "REF_39_nut_orchestrator_sh.md"
+    ],
+
+    "logs":[
+      "16_LOGS_HOWTOS.md",
+      "10_TESTS_AND_LOGS_HOWTOS.md"
+    ],
+
+    "troubleshooting":[
+      "17_TROUBLESHOOTING_HOWTOS.md",
+      "10_TESTS_AND_LOGS_HOWTOS.md"
+    ],
+
+    "security":[
+      "18_SECURITY_HOWTOS.md",
+      "18_CREDENTIAL_AND_PASSWORD_CHANGES.md",
+      "REF_07_SAFE_EDITING_RULES.md",
+      "REF_50_db_telnet_user.md",
+      "REF_51_db_telnet_pass.md",
+      "REF_52_vcenter_pass.md"
+    ],
+
+    "technical reference":[
+      "19_TECHNICAL_REFERENCE_HOWTOS.md",
+      "REF_10_ups_conf.md",
+      "REF_11_upsd_conf.md",
+      "REF_12_upsmon_conf.md",
+      "REF_13_upssched_conf.md",
+      "REF_14_nut_conf.md",
+      "REF_15_hosts_conf.md",
+      "REF_16_nut_orchestrator_conf.md",
+      "REF_17_config_d_nut_orchestrator_conf.md",
+      "REF_18_approved_targets_yml.md",
+      "REF_19_dashboard_ui_json.md",
+      "REF_20_shutdown_verification_targets_conf.md"
+    ]
+  };
+
+  function findArticle(file){
+    var i;
+    for(i=0;i<articles.length;i++){
+      if(articles[i].file===file)return articles[i];
+    }
+    return null;
+  }
+
+  var openHelpFile="";
+  var openHelpAnchor="";
+
+  function helpInline(s){
+    s=esc(String(s||""));
+    s=s.replace(/`([^`]+)`/g,"<code>$1</code>");
+    s=s.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+
+    // Internal Help article links:
+    // [Monitoring](03_MONITORING_HOWTOS.md)
+    s=s.replace(
+      /\[([^\]]+)\]\(([A-Za-z0-9_.-]+\.md)\)/g,
+      function(match,label,file){
+        return "<a href=\"#\" class=\"cc-help-internal-link\" data-help-file=\""+
+          file+
+          "\">"+
+          label+
+          "</a>";
+      }
+    );
+
+    return s;
+  }
+
+  function helpRenderMarkdown(md,anchor){
+    var lines=String(md||"").replace(/\r/g,"").split("\n");
+    var html=[];
+    var inCode=false;
+    var code=[];
+    var listType="";
+    var markerId="cc-help-match-anchor";
+
+    function closeList(){
+      if(listType){
+        html.push(listType==="ol" ? "</ol>" : "</ul>");
+        listType="";
+      }
+    }
+
+    function headingTag(level,text,raw){
+      closeList();
+
+      var id=(anchor&&raw===anchor) ? " id=\""+markerId+"\"" : "";
+      var t=String(text||"").toLowerCase();
+      var cls="";
+
+      if(t.indexOf("safety")>=0||t.indexOf("warning")>=0){
+        cls=" cc-help-heading-safety";
+      }else if(
+        t.indexOf("verify")>=0||
+        t.indexOf("verification")>=0||
+        t.indexOf("expected result")>=0
+      ){
+        cls=" cc-help-heading-verify";
+      }else if(t.indexOf("troubleshoot")>=0){
+        cls=" cc-help-heading-troubleshoot";
+      }
+
+      html.push(
+        "<h"+level+
+        id+
+        " class=\"cc-help-heading"+cls+"\">"+
+        helpInline(text)+
+        "</h"+level+">"
+      );
+    }
+
+    for(var i=0;i<lines.length;i++){
+      var line=lines[i];
+      var trimmed=line.replace(/^\s+|\s+$/g,"");
+
+      if(/^```/.test(trimmed)){
+        if(inCode){
+          html.push("<pre class=\"cc-help-code\"><code>"+esc(code.join("\n"))+"</code></pre>");
+          code=[];
+          inCode=false;
+        }else{
+          closeList();
+          inCode=true;
+        }
+        continue;
+      }
+
+      if(inCode){
+        code.push(line);
+        continue;
+      }
+
+      var hm=line.match(/^(#{1,6})\s+(.+)$/);
+      if(hm){
+        headingTag(hm[1].length,hm[2],line);
+        continue;
+      }
+
+      if(/^---+$/.test(trimmed)){
+        closeList();
+        html.push("<hr>");
+        continue;
+      }
+
+      var om=line.match(/^\s*([0-9]+)\.\s+(.+)$/);
+      if(om){
+        if(listType!=="ol"){
+          closeList();
+          html.push("<ol>");
+          listType="ol";
+        }
+        html.push("<li>"+helpInline(om[2])+"</li>");
+        continue;
+      }
+
+      var um=line.match(/^\s*[-*]\s+(.+)$/);
+      if(um){
+        if(listType!=="ul"){
+          closeList();
+          html.push("<ul>");
+          listType="ul";
+        }
+        html.push("<li>"+helpInline(um[1])+"</li>");
+        continue;
+      }
+
+      if(!trimmed){
+        closeList();
+        continue;
+      }
+
+      closeList();
+      html.push("<p>"+helpInline(trimmed)+"</p>");
+    }
+
+    if(inCode){
+      html.push("<pre class=\"cc-help-code\"><code>"+esc(code.join("\n"))+"</code></pre>");
+    }
+
+    closeList();
+    return html.join("");
+  }
+
+  window.addEventListener("popstate",function(ev){
+    var state=ev.state||null;
+
+    if(state&&state.ccHelp){
+      var file=String(state.file||"");
+      var anchor=String(state.anchor||"");
+
+      if(file){
+        openArticle(file,anchor);
+      }else{
+        closeHelpArticle();
+      }
+    }
+  });
+
+  function closeHelpArticle(){
+    pane.style.display="none";
+    pane.innerHTML="";
+    openHelpFile="";
+    openHelpAnchor="";
+
+    var topBtn=document.getElementById("cc-help-back-top");
+    if(topBtn&&topBtn.parentNode){
+      topBtn.parentNode.removeChild(topBtn);
+    }
+
+    if(list){
+      if(search&&String(search.value||"").trim()){
+        list.style.display="none";
+      }else{
+        list.style.display="";
+      }
+    }
+  }
+
+  function openArticle(file,anchor){
+
+    anchor=String(anchor||"");
+
+    if(openHelpFile===file&&openHelpAnchor===anchor&&pane.style.display!=="none"){
+      pane.style.display="none";
+      pane.innerHTML="";
+      openHelpFile="";
+      openHelpAnchor="";
+
+      if(list){
+        if(search&&String(search.value||"").trim()){
+          list.style.display="none";
+        }else{
+          list.style.display="";
+        }
+      }
+
+      return;
+    }
+
+    openHelpFile=file;
+    openHelpAnchor=anchor;
+
+    if(list){
+      list.style.display="none";
+    }
+
+    pane.style.display="block";
+    pane.innerHTML="<strong>Loading Help article...</strong>";
+
+    getjson(
+      "/nut-ui/api/help/article/"+encodeURIComponent(file),
+
+      function(d){
+
+        if(!d.ok){
+          pane.innerHTML=
+            "<strong>Unable to load Help article.</strong><br><br>"+
+            esc(d.error||"Unknown error");
+          return;
+        }
+
+        var ref=String(file).indexOf("REF_")===0;
+
+        var badge=ref
+          ? "<div style=\"margin-bottom:14px;font-weight:700;\">REFERENCE RUNBOOK</div>"
+          : "<div style=\"margin-bottom:14px;font-weight:700;\">CURRENT HELP / HOW-TO</div>";
+
+        var content=String(d.content||"");
+        var markerId="cc-help-match-anchor";
+        var rendered=helpRenderMarkdown(content,anchor);
+
+        pane.innerHTML=
+          "<div id=\"cc-help-article-top\" style=\"display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;\">"+
+            "<div>"+badge+"</div>"+
+            "<button type=\"button\" class=\"cc-btn\" id=\"cc-help-close-article\">Close Article</button>"+
+          "</div>"+
+          "<div class=\"cc-help-article-title\">"+
+          esc(title(file))+
+          "</div>"+
+          "<div class=\"cc-help-article\">"+
+          rendered+
+          "</div>";
+
+        var closeBtn=document.getElementById("cc-help-close-article");
+        if(closeBtn){
+          closeBtn.onclick=closeHelpArticle;
+        }
+
+        var helpLinks=pane.querySelectorAll(".cc-help-internal-link");
+        for(var hl=0;hl<helpLinks.length;hl++){
+          helpLinks[hl].onclick=function(ev){
+            if(ev)ev.preventDefault();
+
+            var target=this.getAttribute("data-help-file")||"";
+
+            if(target){
+              // Preserve the currently open Help article as the
+              // current browser-history state.
+              history.replaceState(
+                {
+                  ccHelp:true,
+                  file:openHelpFile||"",
+                  anchor:openHelpAnchor||""
+                },
+                "",
+                "#cc-help-section"
+              );
+
+              // Create a same-page history entry for the target article.
+              history.pushState(
+                {
+                  ccHelp:true,
+                  file:target,
+                  anchor:""
+                },
+                "",
+                "#cc-help-section"
+              );
+
+              openArticle(target,"");
+            }
+
+            return false;
+          };
+        }
+
+        var oldTopBtn=document.getElementById("cc-help-back-top");
+        if(oldTopBtn&&oldTopBtn.parentNode){
+          oldTopBtn.parentNode.removeChild(oldTopBtn);
+        }
+
+        var topBtn=document.createElement("button");
+        topBtn.type="button";
+        topBtn.id="cc-help-back-top";
+        topBtn.className="cc-btn";
+        topBtn.title="Back to top";
+        topBtn.setAttribute("aria-label","Back to top");
+        topBtn.innerHTML="&#8593; Top";
+
+        topBtn.style.position="fixed";
+        topBtn.style.right="24px";
+        topBtn.style.bottom="24px";
+        topBtn.style.zIndex="2147483647";
+        topBtn.style.padding="9px 14px";
+        topBtn.style.fontWeight="700";
+        topBtn.style.boxShadow="0 3px 12px rgba(0,0,0,.35)";
+
+        document.body.appendChild(topBtn);
+
+        topBtn.onclick=function(){
+          var top=document.getElementById("cc-help-article-top");
+          if(!top)return;
+
+          var scrollNow=
+            window.pageYOffset ||
+            document.documentElement.scrollTop ||
+            document.body.scrollTop ||
+            0;
+
+          var y=top.getBoundingClientRect().top+scrollNow-135;
+          if(y<0)y=0;
+
+          window.scrollTo(0,y);
+        };
+
+        var marker=document.getElementById(markerId);
+
+        if(marker&&marker.scrollIntoView){
+          marker.scrollIntoView(true);
+
+          /*
+           * The Control Center has a fixed status/header bar.
+           * scrollIntoView(true) places the matched heading behind it,
+           * so move the viewport upward enough to keep the complete
+           * matched section heading visible.
+           */
+          if(window.scrollBy){
+            window.scrollBy(0,-135);
+          }
+        }else if(pane.scrollIntoView){
+          pane.scrollIntoView(true);
+          if(window.scrollBy){
+            window.scrollBy(0,-135);
+          }
+        }
+      },
+
+      function(m){
+        pane.innerHTML=
+          "<strong>Unable to load Help article.</strong><br><br>"+
+          esc(m);
+      }
+    );
+  }
+
+  function clearExpanded(){
+    var x=list.getElementsByClassName("cc-help-category-articles");
+    var i;
+    for(i=0;i<x.length;i++){
+      x[i].style.display="none";
+      x[i].innerHTML="";
+    }
+  }
+
+  function showCategory(card){
+
+    var label=String(
+      card.getAttribute("data-help-label")||
+      card.textContent||
+      card.innerText||
+      ""
+    ).replace(/^\s+|\s+$/g,"");
+
+    var key=label
+      .replace(/^\d+\s*-\s*/,"")
+      .toLowerCase();
+
+    search.value="";
+
+    var holder=card.getElementsByClassName("cc-help-category-articles")[0];
+
+    clearExpanded();
+
+    if(!holder)return;
+
+    holder.style.display="block";
+
+    var files=categoryMap[key]||[];
+    var shown=0;
+    var firstCurrent=null;
+    var firstAny=null;
+    var i;
+
+    for(i=0;i<files.length;i++){
+
+      var a=findArticle(files[i]);
+
+      if(!a)continue;
+
+      if(!firstAny)firstAny=a;
+
+      if(!firstCurrent && String(a.file).indexOf("REF_")!==0){
+        firstCurrent=a;
+      }
+
+      var b=document.createElement("button");
+
+      b.type="button";
+      b.className="cc-btn";
+      b.style.margin="8px 8px 4px 0";
+      b.style.minHeight="42px";
+
+      var prefix=String(a.file).indexOf("REF_")===0
+        ? "Reference: "
+        : "How-To: ";
+
+      b.appendChild(
+        document.createTextNode(prefix+title(a.file))
+      );
+
+      (function(file){
+        b.onclick=function(ev){
+          if(ev&&ev.stopPropagation)ev.stopPropagation();
+          openArticle(file);
+          return false;
+        };
+      })(a.file);
+
+      holder.appendChild(b);
+      shown++;
+    }
+
+    if(!shown){
+      holder.innerHTML=
+        "<div style=\"padding:10px 4px;\">"+
+        "No Help article has been written for this category yet."+
+        "</div>";
+
+      pane.style.display="none";
+      return;
+    }
+
+    /*
+     * Category clicks only expand the available articles.
+     * The operator must explicitly click an article before it opens.
+     */
+    pane.style.display="none";
+    pane.innerHTML="";
+    openHelpFile="";
+    openHelpAnchor="";
+  }
+
+  function searchArticles(q){
+    q=String(q||"").trim();
+    clearExpanded();
+    if(!oldResults)return;
+    if(!q){
+      oldResults.style.display="none";
+      oldResults.innerHTML="";
+      pane.style.display="none";
+      pane.innerHTML="";
+      openHelpFile="";
+      openHelpAnchor="";
+      if(list)list.style.display="";
+      return;
+    }
+    pane.style.display="none";
+    pane.innerHTML="";
+    openHelpFile="";
+    openHelpAnchor="";
+    if(list)list.style.display="none";
+    oldResults.style.display="block";
+    oldResults.innerHTML="<b>Search Results</b><div>Searching...</div>";
+    getjson("/nut-ui/api/help/search?q="+encodeURIComponent(q),function(d){
+      oldResults.innerHTML="<b>Search Results</b>";
+      if(!d.results||!d.results.length){oldResults.innerHTML+="<div>No matching Help article found.</div>";return;}
+      d.results.forEach(function(x){
+        var b=document.createElement("button");
+        b.type="button";b.className="cc-btn";
+        b.style.margin="6px 6px 0 0";
+        var label=x.type+": "+x.title;
+        if(x.section&&x.section!==x.title){
+          label+=" -> "+x.section;
+        }
+        b.appendChild(document.createTextNode(label));
+        b.onclick=function(){openArticle(x.file,x.anchor||"");};
+        oldResults.appendChild(b);
+      });
+    },function(m){oldResults.innerHTML="<b>Search Results</b><div>Search failed: "+esc(m)+"</div>";});
+  }
+
+  var cards=list.getElementsByClassName("cc-mini");
+  var i;
+
+  for(i=0;i<cards.length;i++){
+
+    (function(card){
+
+      var original=String(
+        card.textContent||
+        card.innerText||
+        ""
+      ).replace(/^\s+|\s+$/g,"");
+
+      card.setAttribute("data-help-label",original);
+      card.style.cursor="pointer";
+      card.setAttribute("tabindex","0");
+
+      var holder=document.createElement("div");
+      holder.className="cc-help-category-articles";
+      holder.style.display="none";
+      holder.style.marginTop="8px";
+      holder.style.paddingTop="6px";
+      holder.style.borderTop="1px solid rgba(255,255,255,.12)";
+
+      card.appendChild(holder);
+
+      card.onclick=function(){
+        showCategory(card);
+      };
+
+      card.onkeydown=function(k){
+        k=k||window.event;
+        var v=k.key||k.keyCode;
+
+        if(v==="Enter"||v===13||v===" "||v===32){
+          showCategory(card);
+        }
+      };
+
+    })(cards[i]);
+  }
+
+  var helpSearchTimer=null;
+  search.onkeyup=null;
+  search.oninput=function(){
+    window.clearTimeout(helpSearchTimer);
+    var value=search.value;
+    helpSearchTimer=window.setTimeout(function(){searchArticles(value);},250);
+  };
+
+  getjson(
+    "/nut-ui/api/help/articles",
+
+    function(d){
+
+      if(!d.ok||!d.articles){
+        if(oldResults){
+          oldResults.style.display="block";
+          oldResults.innerHTML=
+            "<strong>Unable to load Help library.</strong>";
+        }
+        return;
+      }
+
+      articles=d.articles;
+
+      if(oldResults){
+        oldResults.style.display="none";
+        oldResults.innerHTML="";
+      }
+    },
+
+    function(m){
+
+      if(oldResults){
+        oldResults.style.display="block";
+        oldResults.innerHTML=
+          "<strong>Unable to load Help library.</strong><br><br>"+
+          esc(m);
+      }
+    }
+  );
+}
+
+if(document.readyState==="loading"){
+  if(document.addEventListener){
+    document.addEventListener("DOMContentLoaded",init,false);
+  }else{
+    window.attachEvent("onload",init);
+  }
+}else{
+  init();
+}
+
+})();
+</script>
 
 </body>
 </html>

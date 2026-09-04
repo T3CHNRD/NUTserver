@@ -1,11 +1,11 @@
 {
   "ups_name": "ups8",
   "display_name": "ups8",
-  "state": "shutdown_committed",
+  "state": "power_restored_canceled",
   "scope": "targeted shutdown",
   "countdown_seconds": 0,
   "commit_seconds": 0,
-  "updated_epoch": 1783118179,
-  "updated_at": "2026-07-03 18:36:19",
-  "note": "Committed; VOIP wrapper executed, VME and Merlin alert only"
+  "updated_epoch": 1788454010,
+  "updated_at": "2026-09-03 12:46:50",
+  "note": "Shutdown canceled / power restored"
 }

@@ -1,9 +1,0 @@
-ups1=Rack 1 - Network
-ups2=Rack 2 - USB
-ups3=Rack 2 - USB
-ups4=Rack 3 - Network
-ups5=Rack 4 - Network
-ups8=Rack 5 - USB
-ups6=Rack 5 - Network
-ups7=Rack 2 - Network
-ups9=MDF Cabinet 1 - Network

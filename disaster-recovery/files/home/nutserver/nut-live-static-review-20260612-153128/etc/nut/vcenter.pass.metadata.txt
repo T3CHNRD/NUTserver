@@ -1,2 +1,0 @@
-0 /home/nutserver/nut-live-static-review-20260612-153128/etc/nut/vcenter.pass
--rw------- 1 root root 0 May 12 12:59 /home/nutserver/nut-live-static-review-20260612-153128/etc/nut/vcenter.pass

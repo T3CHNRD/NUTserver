@@ -1,2 +1,0 @@
-May 06 15:00:25 nutserver nut-monitor[2414]: UPS ups7@localhost battery is low
-May 06 15:00:25 nutserver nut-monitor[2563940]: Network UPS Tools upsmon 2.8.1

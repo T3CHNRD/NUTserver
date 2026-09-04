@@ -1,0 +1,518 @@
+#!/usr/bin/env python3
+
+import json
+import os
+import re
+import shlex
+import sys
+import tempfile
+from pathlib import Path
+
+EMAIL_CONF = Path("/etc/nut/nut-email-alerts.conf")
+TG_ACCESS = Path("/var/lib/nut-telegram-alerts/access.json")
+
+
+def parse_shell_config(path):
+    data = {}
+
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+
+        try:
+            parsed = shlex.split(value)
+            value = parsed[0] if parsed else ""
+        except Exception:
+            value = value.strip('"').strip("'")
+
+        data[key] = value
+
+    return data
+
+
+def email_recipients():
+    data = parse_shell_config(EMAIL_CONF)
+    raw = data.get("EMAIL_RECIPIENTS", "")
+
+    seen = set()
+    result = []
+
+    for item in raw.split(","):
+        address = item.strip()
+
+        if not address:
+            continue
+
+        lowered = address.lower()
+
+        if lowered in seen:
+            continue
+
+        seen.add(lowered)
+        result.append(address)
+
+    return result
+
+
+def valid_email(address):
+    return bool(
+        re.fullmatch(
+            r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+"
+            r"@"
+            r"[A-Za-z0-9-]+"
+            r"(?:\.[A-Za-z0-9-]+)+",
+            address,
+        )
+    )
+
+
+def write_email_recipients(recipients):
+    source = EMAIL_CONF.read_text(encoding="utf-8")
+
+    replacement = (
+        'EMAIL_RECIPIENTS="'
+        + ",".join(recipients)
+        + '"'
+    )
+
+    output = []
+    replaced = False
+
+    for line in source.splitlines():
+        if line.strip().startswith("EMAIL_RECIPIENTS="):
+            output.append(replacement)
+            replaced = True
+        else:
+            output.append(line)
+
+    if not replaced:
+        output.append(replacement)
+
+    new_text = "\n".join(output) + "\n"
+
+    st = os.stat(EMAIL_CONF)
+
+    fd, tmp = tempfile.mkstemp(
+        prefix=".nut-email-alerts-",
+        dir=str(EMAIL_CONF.parent),
+        text=True,
+    )
+
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(new_text)
+
+        os.chmod(tmp, st.st_mode & 0o777)
+        os.chown(tmp, st.st_uid, st.st_gid)
+        os.replace(tmp, EMAIL_CONF)
+
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
+def safe_name(record):
+    if not isinstance(record, dict):
+        return "Telegram User"
+
+    for key in (
+        "display_name",
+        "name",
+        "username",
+        "first_name",
+    ):
+        value = record.get(key)
+
+        if value:
+            return str(value)
+
+    return "Telegram User"
+
+
+def telegram_view():
+    result = {
+        "approved": [],
+        "pending": [],
+        "primary_admin_configured": False,
+    }
+
+    if not TG_ACCESS.exists():
+        return result
+
+    try:
+        data = json.loads(
+            TG_ACCESS.read_text(encoding="utf-8")
+        )
+    except Exception:
+        return result
+
+    if not isinstance(data, dict):
+        return result
+
+    users = data.get("users", {})
+    pending = data.get("pending", {})
+    primary = str(
+        data.get("primary_admin_id", "")
+    )
+
+    result["primary_admin_configured"] = bool(primary)
+
+    if isinstance(users, dict):
+        for chat_id, record in users.items():
+            if not isinstance(record, dict):
+                continue
+
+            role = str(
+                record.get("role", "user")
+            ).upper()
+
+            result["approved"].append({
+                "name": safe_name(record),
+                "role": (
+                    "PRIMARY ADMIN"
+                    if str(chat_id) == primary
+                    else role
+                ),
+                "primary": (
+                    str(chat_id) == primary
+                ),
+            })
+
+    if isinstance(pending, dict):
+        for record in pending.values():
+            if not isinstance(record, dict):
+                continue
+
+            result["pending"].append({
+                "name": safe_name(record),
+            })
+
+    return result
+
+
+def emit(data, rc=0):
+    print(
+        json.dumps(
+            data,
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    raise SystemExit(rc)
+
+
+def main():
+    if len(sys.argv) < 2:
+        emit({
+            "ok": False,
+            "error": "missing action",
+        }, 2)
+
+    action = sys.argv[1]
+
+    if action == "list":
+        emit({
+            "ok": True,
+            "email": {
+                "recipients": email_recipients(),
+            },
+            "telegram": telegram_view(),
+        })
+
+    if action in {"email-add", "email-remove"}:
+        if len(sys.argv) != 3:
+            emit({
+                "ok": False,
+                "error": "email argument required",
+            }, 2)
+
+        address = sys.argv[2].strip()
+
+        if not valid_email(address):
+            emit({
+                "ok": False,
+                "error": "invalid email address",
+            }, 2)
+
+        recipients = email_recipients()
+
+        if action == "email-add":
+            if address.lower() not in {
+                x.lower()
+                for x in recipients
+            }:
+                recipients.append(address)
+
+        else:
+            remaining = [
+                x
+                for x in recipients
+                if x.lower() != address.lower()
+            ]
+
+            if len(remaining) == len(recipients):
+                emit({
+                    "ok": False,
+                    "error": "recipient not found",
+                }, 3)
+
+            if not remaining:
+                emit({
+                    "ok": False,
+                    "error": "cannot remove last email recipient",
+                }, 4)
+
+            recipients = remaining
+
+        write_email_recipients(recipients)
+
+        emit({
+            "ok": True,
+            "recipients": email_recipients(),
+        })
+
+    if action in {
+        "telegram-approve",
+        "telegram-remove",
+    }:
+        if len(sys.argv) != 3:
+            emit({
+                "ok": False,
+                "error": "recipient name required",
+            }, 2)
+
+        requested_name = (
+            sys.argv[2]
+            .strip()
+            .lower()
+        )
+
+        if not requested_name:
+            emit({
+                "ok": False,
+                "error": "recipient name required",
+            }, 2)
+
+        if not TG_ACCESS.exists():
+            emit({
+                "ok": False,
+                "error": "Telegram access database not found",
+            }, 3)
+
+        try:
+            access = json.loads(
+                TG_ACCESS.read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        except Exception:
+            emit({
+                "ok": False,
+                "error": "Telegram access database is invalid",
+            }, 3)
+
+        if not isinstance(
+            access,
+            dict
+        ):
+            emit({
+                "ok": False,
+                "error": "Telegram access database format is invalid",
+            }, 3)
+
+        users = access.setdefault(
+            "users",
+            {}
+        )
+
+        pending = access.setdefault(
+            "pending",
+            {}
+        )
+
+        primary = str(
+            access.get(
+                "primary_admin_id",
+                ""
+            )
+        )
+
+        def matches(record):
+            return (
+                safe_name(record)
+                .strip()
+                .lower()
+                ==
+                requested_name
+            )
+
+        def save_access():
+            st = os.stat(
+                TG_ACCESS
+            )
+
+            fd, tmp = tempfile.mkstemp(
+                prefix=".access-",
+                dir=str(
+                    TG_ACCESS.parent
+                ),
+                text=True,
+            )
+
+            try:
+                with os.fdopen(
+                    fd,
+                    "w",
+                    encoding="utf-8"
+                ) as handle:
+                    json.dump(
+                        access,
+                        handle,
+                        indent=2,
+                        sort_keys=True
+                    )
+                    handle.write("\n")
+
+                os.chmod(
+                    tmp,
+                    st.st_mode & 0o777
+                )
+
+                os.chown(
+                    tmp,
+                    st.st_uid,
+                    st.st_gid
+                )
+
+                os.replace(
+                    tmp,
+                    TG_ACCESS
+                )
+
+            finally:
+                if os.path.exists(
+                    tmp
+                ):
+                    os.unlink(tmp)
+
+        if action == "telegram-approve":
+            matches_found = [
+                (
+                    str(chat_id),
+                    record
+                )
+                for chat_id, record
+                in pending.items()
+                if isinstance(
+                    record,
+                    dict
+                )
+                and matches(record)
+            ]
+
+            if not matches_found:
+                emit({
+                    "ok": False,
+                    "error": "Pending recipient was not found",
+                }, 4)
+
+            if len(matches_found) > 1:
+                emit({
+                    "ok": False,
+                    "error":
+                        "More than one pending recipient has that name; use /access approve in Telegram",
+                }, 5)
+
+            chat_id, record = (
+                matches_found[0]
+            )
+
+            approved = dict(
+                record
+            )
+
+            approved["role"] = "user"
+
+            users[chat_id] = approved
+
+            pending.pop(
+                chat_id,
+                None
+            )
+
+            save_access()
+
+            emit({
+                "ok": True,
+                "telegram":
+                    telegram_view(),
+            })
+
+        if action == "telegram-remove":
+            matches_found = [
+                (
+                    str(chat_id),
+                    record
+                )
+                for chat_id, record
+                in users.items()
+                if isinstance(
+                    record,
+                    dict
+                )
+                and matches(record)
+            ]
+
+            if not matches_found:
+                emit({
+                    "ok": False,
+                    "error": "Approved recipient was not found",
+                }, 4)
+
+            if len(matches_found) > 1:
+                emit({
+                    "ok": False,
+                    "error":
+                        "More than one approved recipient has that name; use /access remove in Telegram",
+                }, 5)
+
+            chat_id, record = (
+                matches_found[0]
+            )
+
+            if chat_id == primary:
+                emit({
+                    "ok": False,
+                    "error":
+                        "The primary Telegram admin cannot be removed",
+                }, 6)
+
+            users.pop(
+                chat_id,
+                None
+            )
+
+            save_access()
+
+            emit({
+                "ok": True,
+                "telegram":
+                    telegram_view(),
+            })
+
+
+    emit({
+        "ok": False,
+        "error": "unsupported action",
+    }, 2)
+
+
+if __name__ == "__main__":
+    main()

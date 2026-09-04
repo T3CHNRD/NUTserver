@@ -1,5 +1,0 @@
-Backup timestamp: 20260619-110521
-
--rwxr-x--- 1 root root 5594 Jun 16 08:20 /usr/local/sbin/nut-apc-idf-event-monitor.sh
-71e3cafb52b2545534bdd305202f7e077418dae6763897c8ead8dd5994491c9d  /usr/local/sbin/nut-apc-idf-event-monitor.sh
-241 /usr/local/sbin/nut-apc-idf-event-monitor.sh

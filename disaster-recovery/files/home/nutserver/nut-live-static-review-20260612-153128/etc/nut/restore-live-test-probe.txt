@@ -1,2 +1,0 @@
-KNOWN_GOOD_RESTORE_TEST_PROBE=1
-purpose="Safe live restore test file. This file is intentionally non-operational."

@@ -44,9 +44,9 @@
       "owner": "root",
       "group": "root",
       "mode": "640",
-      "sensitive": false,
-      "restore_enabled": true,
-      "blocked_reason": ""
+      "sensitive": true,
+      "restore_enabled": false,
+      "blocked_reason": "GitHub copy contains redacted MONITOR credentials; requires secret-preserving restore"
     },
     {
       "id": "upssched_conf",

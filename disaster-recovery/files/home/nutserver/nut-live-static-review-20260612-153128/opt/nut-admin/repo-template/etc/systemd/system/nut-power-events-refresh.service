@@ -1,8 +1,0 @@
-[Unit]
-Description=Refresh shared NUT power events JSON feed for Dashboard and NUT UI
-After=nut-monitor.service apache2.service
-Wants=apache2.service
-
-[Service]
-Type=oneshot
-ExecStart=/bin/bash -c '/usr/local/sbin/nut-get-power-events-json > /var/www/html/nut-power-events.json.tmp && chown root:www-data /var/www/html/nut-power-events.json.tmp && chmod 664 /var/www/html/nut-power-events.json.tmp && mv /var/www/html/nut-power-events.json.tmp /var/www/html/nut-power-events.json'

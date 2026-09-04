@@ -16,6 +16,16 @@ fi
 is_secret_path() {
   local src="$1"
 
+  # AUTHORITATIVE HELP DOCUMENTATION OVERRIDE
+  # Help articles may legitimately contain words such as password,
+  # secret, credential, token, or key in their filenames/content.
+  # They are documentation, not credential stores.
+  case "$src" in
+    /opt/nut-orchestrator-ui/docs/help/*)
+      return 1
+      ;;
+  esac
+
   case "$src" in
     */.ssh/*|/root/.ssh/*|*.key|*.pem|*.p12|*.pfx|*.pass|*.secret|*.creds|*/vcenter.pass|*/db-telnet.pass|*/db-telnet.user)
       return 0
@@ -35,7 +45,7 @@ is_temp_artifact() {
   local src="$1"
 
   case "$src" in
-    *.pre-*|*.bak*|*.save|*.tmp|*.swp|*.pyc|*/__pycache__/*)
+    *.pre-*|*.before-*|*.bak*|*.backup|*.candidate|*.working-*|*.save|*.tmp|*.swp|*.pyc|*/__pycache__/*)
       return 0
       ;;
     *.broken-*|*.disabled-*|*.final-before-*|*final-before-promotion*|*restore-github.html.disabled*)
@@ -187,6 +197,14 @@ sync_directory_safe_files() {
   fi
 
   find "$src_dir" -type f | sort | while read -r src; do
+    case "$src" in
+      /opt/nut-orchestrator-ui/docs/help-sources/*)
+        if [ "$src" != "/opt/nut-orchestrator-ui/docs/help-sources/RECONCILIATION_INVENTORY.txt" ]; then
+          echo "SKIP unreconciled historical Help source: $src"
+          continue
+        fi
+        ;;
+    esac
     if is_secret_path "$src"; then
       echo "SKIP secret-like file: $src"
       continue
@@ -363,6 +381,126 @@ copy_exec /usr/local/sbin/rollback-remote-access.sh usr/local/sbin/rollback-remo
 copy_exec /usr/local/sbin/start-x11vnc.sh usr/local/sbin/start-x11vnc.sh
 
 echo
+
+echo "===== AUTHORITATIVE RECOVERY COVERAGE SYNC ====="
+
+
+# COMPLETE NON-SECRET INFRASTRUCTURE CONFIGURATION
+#
+# These contain operational topology/target information required to rebuild
+# the working server. Actual secret files remain excluded by is_secret_path().
+sync_directory_safe_files \
+    /etc/nut/config.d \
+    etc/nut/config.d
+
+sync_directory_safe_files \
+    /etc/nut/hypervisors \
+    etc/nut/hypervisors
+
+sync_directory_safe_files \
+    /etc/nut/restore \
+    etc/nut/restore
+
+
+
+# COMPLETE CONTROL CENTER SOURCE TREE
+#
+# Capture the complete current application tree so a new feature/file cannot
+# silently be omitted just because an older backup script did not know about it.
+#
+# sync_directory_safe_files applies the secret and temporary-artifact rules.
+# Raw help-sources are separately limited to the reconciliation inventory.
+sync_directory_safe_files \
+    /opt/nut-orchestrator-ui \
+    opt/nut-orchestrator-ui
+
+
+# GitHub repository front-page README.
+copy_file \
+    /opt/nut-orchestrator-ui/docs/GITHUB_PROJECT_README.md \
+    README.md
+
+
+# Current authoritative Control Center documentation.
+# Raw historical help-sources are skipped above except for
+# RECONCILIATION_INVENTORY.txt.
+sync_directory_safe_files \
+    /opt/nut-orchestrator-ui/docs \
+    opt/nut-orchestrator-ui/docs
+
+# Backup/inventory implementation.
+sync_directory_safe_files \
+    /opt/nut-admin/bin \
+    opt/nut-admin/bin
+
+# Apache configuration required to expose the Control Center.
+copy_file \
+    /etc/apache2/conf-available/nut-orchestrator-ui.conf \
+    etc/apache2/conf-available/nut-orchestrator-ui.conf
+
+# Current NUT-related sudo policy.
+sync_glob_files \
+    "/etc/sudoers.d/nut-*" \
+    etc/sudoers.d
+
+# Full-managed restore configuration.
+copy_file \
+    /etc/nut/restore/full-managed-restore-policy.json \
+    etc/nut/restore/full-managed-restore-policy.json
+
+copy_file \
+    /etc/nut/restore/restore-targets.json \
+    etc/nut/restore/restore-targets.json
+
+# Current local systemd drop-ins and overrides.
+for dropin in \
+    /etc/systemd/system/nut-*.service.d \
+    /etc/systemd/system/nut-*.timer.d \
+    /etc/systemd/system/nut-*.path.d
+do
+    [ -d "$dropin" ] || continue
+
+    sync_directory_safe_files \
+        "$dropin" \
+        "etc/systemd/system/$(basename "$dropin")"
+done
+
+
+
+echo "===== REMOVE TEMP/HISTORICAL ARTIFACTS FROM REPO COPY ONLY ====="
+
+find "$REPO" \
+    -path "$REPO/.git" -prune -o \
+    -type f \
+    \( \
+        -name '*.before-*' \
+        -o -name '*.pre-*' \
+        -o -name '*.bak*' \
+        -o -name '*.backup' \
+        -o -name '*.candidate' \
+        -o -name '*.working-*' \
+        -o -name '*.final-before-*' \
+    \) \
+    -print0 \
+| xargs -0 -r rm -f --
+
+# Remove historical raw Help-source files from the repository copy.
+# Keep only the reconciliation inventory.
+HS="$REPO/opt/nut-orchestrator-ui/docs/help-sources"
+
+if [ -d "$HS" ]; then
+    find "$HS" \
+        -type f \
+        ! -name 'RECONCILIATION_INVENTORY.txt' \
+        -delete
+
+    find "$HS" \
+        -depth \
+        -type d \
+        -empty \
+        -delete
+fi
+
 echo "===== REMOVE UNSAFE SECRET-LIKE FILES FROM REPO COPY ONLY ====="
 find "$REPO" -type f \( \
   -path '*/root/.ssh/*' \

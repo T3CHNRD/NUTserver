@@ -523,6 +523,681 @@ def update_config(config_id):
 # =========================
 # TEST RUNNER
 # =========================
+
+# =========================
+# NOTIFICATION RECIPIENT MANAGEMENT
+# =========================
+
+EMAIL_ALERTS_CONF = Path(
+    "/etc/nut/nut-email-alerts.conf"
+)
+
+TELEGRAM_ACCESS_DB = Path(
+    "/var/lib/nut-telegram-alerts/access.json"
+)
+
+
+def _parse_shell_config(path):
+    import shlex
+
+    data = {}
+
+    for raw in path.read_text(
+        encoding="utf-8"
+    ).splitlines():
+
+        line = raw.strip()
+
+        if (
+            not line
+            or line.startswith("#")
+            or "=" not in line
+        ):
+            continue
+
+        key, value = line.split(
+            "=",
+            1
+        )
+
+        key = key.strip()
+        value = value.strip()
+
+        try:
+            parsed = shlex.split(
+                value
+            )
+
+            value = (
+                parsed[0]
+                if parsed
+                else ""
+            )
+
+        except Exception:
+            value = value.strip(
+                '"'
+            ).strip(
+                "'"
+            )
+
+        data[key] = value
+
+    return data
+
+
+def _email_recipients():
+    if not EMAIL_ALERTS_CONF.exists():
+        return []
+
+    data = _parse_shell_config(
+        EMAIL_ALERTS_CONF
+    )
+
+    raw = data.get(
+        "EMAIL_RECIPIENTS",
+        ""
+    )
+
+    seen = set()
+    result = []
+
+    for item in raw.split(","):
+        address = item.strip()
+
+        if not address:
+            continue
+
+        lowered = address.lower()
+
+        if lowered in seen:
+            continue
+
+        seen.add(lowered)
+        result.append(address)
+
+    return result
+
+
+def _valid_email(address):
+    import re
+
+    return bool(
+        re.fullmatch(
+            r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+"
+            r"@"
+            r"[A-Za-z0-9-]+"
+            r"(?:\.[A-Za-z0-9-]+)+",
+            address
+        )
+    )
+
+
+def _write_email_recipients(recipients):
+    import os
+    import tempfile
+
+    source = EMAIL_ALERTS_CONF.read_text(
+        encoding="utf-8"
+    )
+
+    replacement = (
+        'EMAIL_RECIPIENTS="'
+        + ",".join(recipients)
+        + '"'
+    )
+
+    lines = source.splitlines()
+    output = []
+    replaced = False
+
+    for line in lines:
+        if line.strip().startswith(
+            "EMAIL_RECIPIENTS="
+        ):
+            output.append(
+                replacement
+            )
+            replaced = True
+        else:
+            output.append(line)
+
+    if not replaced:
+        output.append(
+            replacement
+        )
+
+    new_text = (
+        "\n".join(output)
+        + "\n"
+    )
+
+    stat = os.stat(
+        EMAIL_ALERTS_CONF
+    )
+
+    fd, tmp = tempfile.mkstemp(
+        prefix=".nut-email-alerts-",
+        dir=str(
+            EMAIL_ALERTS_CONF.parent
+        ),
+        text=True,
+    )
+
+    try:
+        with os.fdopen(
+            fd,
+            "w",
+            encoding="utf-8"
+        ) as handle:
+            handle.write(
+                new_text
+            )
+
+        os.chmod(
+            tmp,
+            stat.st_mode & 0o777
+        )
+
+        try:
+            os.chown(
+                tmp,
+                stat.st_uid,
+                stat.st_gid
+            )
+        except PermissionError:
+            pass
+
+        os.replace(
+            tmp,
+            EMAIL_ALERTS_CONF
+        )
+
+    finally:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+
+
+def _telegram_recipient_view():
+    """
+    Return dashboard-safe Telegram recipient data.
+
+    Raw chat IDs are intentionally not exposed by this API.
+    """
+
+    import json
+
+    result = {
+        "approved": [],
+        "pending": [],
+        "primary_admin_configured": False,
+    }
+
+    if not TELEGRAM_ACCESS_DB.exists():
+        return result
+
+    try:
+        data = json.loads(
+            TELEGRAM_ACCESS_DB.read_text(
+                encoding="utf-8"
+            )
+        )
+
+    except Exception:
+        return result
+
+    def safe_name(record):
+        if not isinstance(
+            record,
+            dict
+        ):
+            return "Telegram User"
+
+        for key in (
+            "display_name",
+            "name",
+            "username",
+            "first_name"
+        ):
+            value = record.get(
+                key
+            )
+
+            if value:
+                return str(value)
+
+        return "Telegram User"
+
+    # Support the existing access database without exposing
+    # its private numeric identifiers. We intentionally make
+    # this view tolerant of dict- or list-shaped stores.
+
+    approved_candidates = []
+
+    for key in (
+        "approved",
+        "users",
+        "authorized"
+    ):
+        value = data.get(
+            key
+        ) if isinstance(data, dict) else None
+
+        if isinstance(
+            value,
+            dict
+        ):
+            approved_candidates.extend(
+                value.values()
+            )
+
+        elif isinstance(
+            value,
+            list
+        ):
+            approved_candidates.extend(
+                value
+            )
+
+    pending_candidates = []
+
+    if isinstance(
+        data,
+        dict
+    ):
+        value = data.get(
+            "pending"
+        )
+
+        if isinstance(
+            value,
+            dict
+        ):
+            pending_candidates.extend(
+                value.values()
+            )
+
+        elif isinstance(
+            value,
+            list
+        ):
+            pending_candidates.extend(
+                value
+            )
+
+        primary = (
+            data.get("primary_admin")
+            or data.get("primary")
+            or data.get("owner")
+        )
+
+        result[
+            "primary_admin_configured"
+        ] = bool(primary)
+
+    for item in approved_candidates:
+        if not isinstance(
+            item,
+            dict
+        ):
+            continue
+
+        role = str(
+            item.get(
+                "role",
+                "USER"
+            )
+        ).upper()
+
+        result[
+            "approved"
+        ].append({
+            "name":
+                safe_name(item),
+            "role":
+                role,
+            "primary":
+                role in {
+                    "PRIMARY",
+                    "PRIMARY ADMIN",
+                    "PRIMARY_ADMIN"
+                }
+        })
+
+    for item in pending_candidates:
+        if not isinstance(
+            item,
+            dict
+        ):
+            continue
+
+        result[
+            "pending"
+        ].append({
+            "name":
+                safe_name(item)
+        })
+
+    return result
+
+
+@app.route(
+    "/api/notification-recipients",
+    methods=["GET"]
+)
+def notification_recipients():
+    import json
+    import subprocess
+
+    cmd = [
+        "sudo",
+        "-n",
+        "/usr/local/sbin/nut-notification-recipients",
+        "list",
+    ]
+
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+
+    if proc.returncode != 0:
+        return jsonify({
+            "ok": False,
+            "error":
+                "Unable to read notification recipients"
+        }), 500
+
+    try:
+        data = json.loads(proc.stdout)
+
+    except Exception:
+        return jsonify({
+            "ok": False,
+            "error":
+                "Recipient helper returned invalid data"
+        }), 500
+
+    return jsonify(data)
+
+
+@app.route(
+    "/api/notification-recipients/email",
+    methods=["POST"]
+)
+def notification_email_recipient_change():
+    import json
+    import subprocess
+
+    payload = request.get_json(
+        silent=True
+    ) or {}
+
+    action = str(
+        payload.get(
+            "action",
+            ""
+        )
+    ).strip().lower()
+
+    address = str(
+        payload.get(
+            "email",
+            ""
+        )
+    ).strip()
+
+    if action == "add":
+        helper_action = "email-add"
+
+    elif action == "remove":
+        helper_action = "email-remove"
+
+    else:
+        return jsonify({
+            "ok": False,
+            "error":
+                "action must be add or remove"
+        }), 400
+
+    if not address:
+        return jsonify({
+            "ok": False,
+            "error":
+                "email address is required"
+        }), 400
+
+    cmd = [
+        "sudo",
+        "-n",
+        "/usr/local/sbin/nut-notification-recipients",
+        helper_action,
+        address,
+    ]
+
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+
+    try:
+        data = json.loads(
+            proc.stdout
+        )
+
+    except Exception:
+        return jsonify({
+            "ok": False,
+            "error":
+                "Recipient helper returned invalid data"
+        }), 500
+
+    if proc.returncode != 0:
+        status = 400
+
+        if proc.returncode == 4:
+            status = 409
+
+        elif proc.returncode == 3:
+            status = 404
+
+        return jsonify(data), status
+
+    return jsonify(data)
+
+
+
+@app.route(
+    "/api/notification-recipients/telegram",
+    methods=["POST"]
+)
+def notification_telegram_recipient_change():
+    import json
+    import subprocess
+
+    payload = request.get_json(
+        silent=True
+    ) or {}
+
+    action = str(
+        payload.get(
+            "action",
+            ""
+        )
+    ).strip().lower()
+
+    name = str(
+        payload.get(
+            "name",
+            ""
+        )
+    ).strip()
+
+    if action == "approve":
+        helper_action = (
+            "telegram-approve"
+        )
+
+    elif action == "remove":
+        helper_action = (
+            "telegram-remove"
+        )
+
+    else:
+        return jsonify({
+            "ok": False,
+            "error":
+                "action must be approve or remove"
+        }), 400
+
+    if not name:
+        return jsonify({
+            "ok": False,
+            "error":
+                "Telegram recipient name is required"
+        }), 400
+
+    cmd = [
+        "sudo",
+        "-n",
+        "/usr/local/sbin/nut-notification-recipients",
+        helper_action,
+        name,
+    ]
+
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+
+    try:
+        data = json.loads(
+            proc.stdout
+        )
+
+    except Exception:
+        return jsonify({
+            "ok": False,
+            "error":
+                "Recipient helper returned invalid data"
+        }), 500
+
+    if proc.returncode != 0:
+        status = 400
+
+        if proc.returncode == 4:
+            status = 404
+
+        elif proc.returncode == 5:
+            status = 409
+
+        elif proc.returncode == 6:
+            status = 409
+
+        return jsonify(data), status
+
+    return jsonify(data)
+
+
+
+@app.route(
+    "/api/notification-controls",
+    methods=["GET", "POST"]
+)
+def notification_controls_api():
+    import json
+    import subprocess
+
+    helper = (
+        "/usr/local/sbin/"
+        "nut-notification-controls"
+    )
+
+    if request.method == "GET":
+        cmd = [
+            "sudo",
+            "-n",
+            helper,
+            "list",
+        ]
+
+    else:
+        payload = request.get_json(
+            silent=True
+        ) or {}
+
+        key = str(
+            payload.get(
+                "key",
+                ""
+            )
+        ).strip()
+
+        value = payload.get(
+            "value"
+        )
+
+        if not key:
+            return jsonify({
+                "ok": False,
+                "error":
+                    "control key is required"
+            }), 400
+
+        if not isinstance(
+            value,
+            bool
+        ):
+            return jsonify({
+                "ok": False,
+                "error":
+                    "control value must be true or false"
+            }), 400
+
+        cmd = [
+            "sudo",
+            "-n",
+            helper,
+            "set",
+            key,
+            (
+                "true"
+                if value
+                else "false"
+            ),
+        ]
+
+    proc = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+
+    try:
+        data = json.loads(
+            proc.stdout
+        )
+
+    except Exception:
+        return jsonify({
+            "ok": False,
+            "error":
+                "Notification helper returned invalid data"
+        }), 500
+
+    if proc.returncode != 0:
+        return jsonify(data), 400
+
+    return jsonify(data)
+
+
 @app.route("/api/test/<mode>", methods=["POST"])
 def run_test(mode):
     blocked = block_if_protecting("test run")
@@ -836,9 +1511,416 @@ def restore_selected_file_live():
     })
 
 
+
+# =========================
+# FULL MANAGED-SYSTEM RESTORE
+# =========================
+
+@app.route("/api/restore/full-status", methods=["GET"])
+def restore_full_status():
+    branch = str(
+        request.args.get("branch")
+        or "backup-sanitized-initial"
+    ).strip()
+
+    cmd = [
+        "/usr/bin/sudo",
+        "/usr/local/sbin/nut-ui-restore-status",
+        branch,
+    ]
+
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+
+    if result.returncode != 0:
+        return jsonify({
+            "ok": False,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "output": result.stdout + result.stderr,
+            "returncode": result.returncode,
+        }), 500
+
+    try:
+        payload = json.loads(result.stdout)
+    except Exception:
+        return jsonify({
+            "ok": False,
+            "error": "Restore status helper returned invalid JSON",
+            "output": result.stdout + result.stderr,
+            "returncode": 500,
+        }), 500
+
+    payload["ok"] = True
+    return jsonify(payload)
+
+
+@app.route(
+    "/api/restore/full-job/<job_id>",
+    methods=["GET"]
+)
+def restore_full_job(job_id):
+    import re
+
+    if not re.fullmatch(
+        r"[0-9]{8}-[0-9]{6}-[0-9]+",
+        str(job_id or ""),
+    ):
+        return jsonify({
+            "ok": False,
+            "error": "Invalid restore job id",
+            "returncode": 400,
+        }), 400
+
+    status_file = Path(
+        "/var/lib/nut-orchestrator-ui/"
+        f"restore-jobs/{job_id}.json"
+    )
+
+    if not status_file.is_file():
+        return jsonify({
+            "ok": False,
+            "error": "Restore job status not found",
+            "returncode": 404,
+        }), 404
+
+    try:
+        data = json.loads(status_file.read_text())
+    except Exception as exc:
+        return jsonify({
+            "ok": False,
+            "error": f"Invalid restore job status: {exc}",
+            "returncode": 500,
+        }), 500
+
+    data["ok"] = True
+    return jsonify(data)
+
+
+
+@app.route(
+    "/api/restore/full-preflight",
+    methods=["POST"]
+)
+def restore_full_preflight():
+    payload = request.get_json(silent=True) or {}
+
+    branch = str(
+        payload.get("branch")
+        or "backup-sanitized-initial"
+    ).strip()
+
+    cmd = [
+        "/usr/bin/sudo",
+        "/usr/local/sbin/nut-ui-full-managed-restore-preflight",
+        branch,
+    ]
+
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+
+    return jsonify({
+        "ok": result.returncode == 0,
+        "branch": branch,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "output": result.stdout + result.stderr,
+        "returncode": result.returncode,
+        "live_restore_performed": False,
+    })
+
+
+@app.route(
+    "/api/restore/full-live",
+    methods=["POST"]
+)
+def restore_full_live():
+    blocked = block_if_protecting(
+        "full managed-system live restore"
+    )
+
+    if blocked:
+        return blocked
+
+    payload = request.get_json(silent=True) or {}
+
+    branch = str(
+        payload.get("branch")
+        or "backup-sanitized-initial"
+    ).strip()
+
+    confirmation = str(
+        payload.get("confirmation") or ""
+    ).strip()
+
+    required = "RESTORE FULL MANAGED SYSTEM"
+
+    if confirmation != required:
+        return jsonify({
+            "ok": False,
+            "error": (
+                "Full managed-system restore requires "
+                f"exact confirmation phrase: {required}"
+            ),
+            "returncode": 403,
+        }), 403
+
+    helper = Path(
+        "/usr/local/sbin/"
+        "nut-ui-full-managed-restore-live"
+    )
+
+    if not helper.is_file():
+        return jsonify({
+            "ok": False,
+            "error": (
+                "Full managed-system restore engine "
+                "is not installed."
+            ),
+            "returncode": 503,
+        }), 503
+
+    result = subprocess.run(
+        [
+            "/usr/bin/sudo",
+            str(helper),
+            branch,
+            confirmation,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=900,
+    )
+
+    job_id = ""
+
+    for line in result.stdout.splitlines():
+        if line.startswith("job_id="):
+            job_id = line.split("=", 1)[1].strip()
+            break
+
+    return jsonify({
+        "ok": result.returncode == 0,
+        "accepted": (
+            result.returncode == 0
+            and bool(job_id)
+        ),
+        "job_id": job_id,
+        "branch": branch,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "output": result.stdout + result.stderr,
+        "returncode": result.returncode,
+    })
+
+
+
 # =========================
 # POWER EVENTS (NEW)
 # =========================
+
+HELP_DIR = Path("/opt/nut-orchestrator-ui/docs/help")
+
+@app.route("/api/help/articles", methods=["GET"])
+def help_articles():
+    articles = []
+    if HELP_DIR.is_dir():
+        for path in sorted(HELP_DIR.glob("*.md")):
+            articles.append({
+                "file": path.name,
+                "title": path.stem.replace("_", " ").title()
+            })
+    return jsonify({"ok": True, "articles": articles})
+
+
+@app.route("/api/help/search", methods=["GET"])
+def api_help_search():
+    from flask import request
+    import re
+
+    def norm(s):
+        s=(s or "").lower()
+        s=s.replace("dbo1","db01").replace("dbo2","db02")
+        s=re.sub(r"\bup\s+date\b","update",s)
+        s=re.sub(r"\bcome\s+from\b","source",s)
+        return s
+
+    q=norm(request.args.get("q") or "")
+
+    stop={
+        "how","to","i","the","a","an","do","does","my",
+        "is","are","in","on","for","of","can","what","where",
+        "button","buttons","please"
+    }
+
+    aliases={
+        "update":{"update","change","edit","modify","manage","add","remove"},
+        "change":{"update","change","edit","modify","manage"},
+        "edit":{"update","change","edit","modify","manage"},
+        "recipient":{"recipient","recipients","address","addresses"},
+        "recipients":{"recipient","recipients","address","addresses"},
+        "email":{"email","emails"},
+        "password":[REDACTED],
+        "source":{"source","provider","origin"},
+        "backup":{"backup","backups"},
+        "restore":{"restore","recovery"},
+    }
+
+    words=[x for x in re.findall(r"[a-z0-9]+",q) if x not in stop]
+
+    def terms(word):
+        return aliases.get(word,{word})
+
+    def concept_match(text,word):
+        return any(t in text for t in terms(word))
+
+    out=[]
+
+    for f in sorted(HELP_DIR.glob("*.md")):
+        body=f.read_text(errors="replace")
+        hay=norm(f.name+" "+body)
+
+        if not words or not all(concept_match(hay,w) for w in words):
+            continue
+
+        title=next(
+            (x[2:].strip() for x in body.splitlines() if x.startswith("# ")),
+            f.name
+        )
+
+        sections=re.split(r"(?m)(?=^#{2,6}\s+)",body)
+
+        def secscore(sec):
+            sn=norm(sec)
+            head=next(
+                (x for x in sec.splitlines() if re.match(r"^#{2,6}\s+",x)),
+                ""
+            )
+            hn=norm(head)
+
+            score=0
+
+            # Natural-language intent boosts.
+            # These only affect ranking; normal matching still returns
+            # other relevant Help results.
+            qn=q.strip()
+            hn=norm(head)
+
+            if qn in {
+                "turn protection on",
+                "enable protection",
+                "enable shutdown protection",
+                "arm nut"
+            }:
+                if "protecting mode" in hn and "put the nut server" in hn:
+                    score+=500
+
+            if qn in {
+                "turn nut back on",
+                "resume nut",
+                "leave off mode",
+                "restore monitoring"
+            }:
+                if "return from off to normal operation" in hn:
+                    score+=500
+
+            if qn in {
+                "what should i check first",
+                "start using dashboard",
+                "how do i use nut"
+            }:
+                if "begin a normal nut control center operator session" in hn:
+                    score+=500
+
+            for w in words:
+                ts=terms(w)
+
+                if any(t in hn for t in ts):
+                    score+=120
+
+                hits=sum(sn.count(t) for t in ts)
+                score+=min(hits,8)*4
+
+                if any(t in norm(title+" "+f.name) for t in ts):
+                    score+=20
+
+            return score
+
+        best=max(sections,key=secscore)
+
+        anchor=next(
+            (x.strip() for x in best.splitlines()
+             if re.match(r"^#{2,6}\s+",x)),
+            ""
+        )
+
+        section=re.sub(r"^#{2,6}\s+","",anchor).strip() or title
+
+        ref=f.name.startswith("REF_")
+
+        score=secscore(best)
+        score+=(35 if not ref else -30)
+
+        # Prefer the substantive Getting Started article over the index
+        # for a direct getting-started search.
+        if q.strip()=="getting started" and f.name=="01_GETTING_STARTED.md":
+            score+=100
+
+        if f.name=="00_HELP_INDEX.md":
+            score-=140
+
+        out.append({
+            "file":f.name,
+            "title":title,
+            "type":"Reference Runbook" if ref else "Current How-To",
+            "section":section,
+            "anchor":anchor,
+            "score":score
+        })
+
+    out.sort(key=lambda x:-x["score"])
+    return jsonify({"ok":True,"query":q,"results":out[:8]})
+
+
+@app.route("/api/help/article/<filename>", methods=["GET"])
+def help_article(filename):
+    if "/" in filename or "\\" in filename or not filename.endswith(".md"):
+        return jsonify({"ok": False, "error": "Invalid help article name"}), 400
+
+    path = HELP_DIR / filename
+
+    try:
+        resolved = path.resolve()
+        help_root = HELP_DIR.resolve()
+    except OSError:
+        return jsonify({"ok": False, "error": "Unable to resolve help article"}), 500
+
+    if resolved.parent != help_root:
+        return jsonify({"ok": False, "error": "Invalid help article path"}), 400
+
+    if not resolved.is_file():
+        return jsonify({"ok": False, "error": "Help article not found"}), 404
+
+    try:
+        content = resolved.read_text(encoding="utf-8")
+    except OSError:
+        return jsonify({"ok": False, "error": "Unable to read help article"}), 500
+
+    return jsonify({
+        "ok": True,
+        "file": resolved.name,
+        "content": content
+    })
+
+
 @app.route("/api/power-events", methods=["GET"])
 def power_events():
     result = subprocess.run(

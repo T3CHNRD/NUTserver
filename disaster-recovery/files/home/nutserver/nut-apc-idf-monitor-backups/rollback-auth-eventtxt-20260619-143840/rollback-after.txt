@@ -1,7 +1,0 @@
-Rollback timestamp: 20260619-143840
-
-Live script after rollback:
--rwxr-x--- 1 root root 5594 Jun 19 14:38 /usr/local/sbin/nut-apc-idf-event-monitor.sh
-71e3cafb52b2545534bdd305202f7e077418dae6763897c8ead8dd5994491c9d  /usr/local/sbin/nut-apc-idf-event-monitor.sh
-241 /usr/local/sbin/nut-apc-idf-event-monitor.sh
-PASS: [REDACTED]

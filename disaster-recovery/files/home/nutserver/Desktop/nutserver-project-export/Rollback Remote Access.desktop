@@ -1,9 +1,0 @@
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=Rollback Remote Access
-Comment=Restore the last known-good XRDP and VNC configuration
-Exec=pkexec /usr/local/sbin/rollback-remote-access.sh
-Icon=system-restore
-Terminal=true
-Categories=System;

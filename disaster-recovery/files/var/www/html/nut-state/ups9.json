@@ -1,11 +1,11 @@
 {
   "ups_name": "ups9",
   "display_name": "ups9",
-  "state": "shutdown_committed",
+  "state": "power_restored_canceled",
   "scope": "broader VMware shutdown",
   "countdown_seconds": 0,
   "commit_seconds": 0,
-  "updated_epoch": 1783118391,
-  "updated_at": "2026-07-03 18:39:51",
-  "note": "Committed; VMware wrapper executed, Synology wrapper executed, NetApp wrappers executed, NUT server final shutdown wrapper executed last"
+  "updated_epoch": 1788454010,
+  "updated_at": "2026-09-03 12:46:50",
+  "note": "Shutdown canceled / power restored"
 }
