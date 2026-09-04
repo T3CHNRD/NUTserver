@@ -1,8 +1,8 @@
 NEXT                             LEFT LAST                              PASSED UNIT                            ACTIVATES
-Fri 2026-09-04 11:00:00 EDT  2min 47s Fri 2026-09-04 10:50:05 EDT     7min ago sysstat-collect.timer           sysstat-collect.service
+Fri 2026-09-04 11:00:00 EDT  2min 34s Fri 2026-09-04 10:50:05 EDT     7min ago sysstat-collect.timer           sysstat-collect.service
 Fri 2026-09-04 11:07:35 EDT     10min Fri 2026-09-04 08:07:35 EDT 2h 49min ago apport-autoreport.timer         apport-autoreport.service
-Fri 2026-09-04 11:31:01 EDT     33min Fri 2026-09-04 10:34:13 EDT    22min ago anacron.timer                   anacron.service
-Fri 2026-09-04 11:31:14 EDT     34min Fri 2026-09-04 10:15:39 EDT    41min ago fwupd-refresh.timer             fwupd-refresh.service
+Fri 2026-09-04 11:31:01 EDT     33min Fri 2026-09-04 10:34:13 EDT    23min ago anacron.timer                   anacron.service
+Fri 2026-09-04 11:31:14 EDT     33min Fri 2026-09-04 10:15:39 EDT    41min ago fwupd-refresh.timer             fwupd-refresh.service
 Fri 2026-09-04 12:00:00 EDT   1h 2min Fri 2026-09-04 04:00:03 EDT       6h ago nut-weather-cache-refresh.timer nut-weather-cache-refresh.service
 Fri 2026-09-04 15:00:04 EDT   4h 2min Fri 2026-09-04 01:51:22 EDT       9h ago apt-daily.timer                 apt-daily.service
 Fri 2026-09-04 15:23:33 EDT  4h 26min Fri 2026-09-04 02:57:43 EDT       7h ago motd-news.timer                 motd-news.service
@@ -12,7 +12,7 @@ Sat 2026-09-05 00:00:00 EDT       13h Fri 2026-09-04 00:00:01 EDT      10h ago l
 Sat 2026-09-05 00:07:00 EDT       13h Fri 2026-09-04 00:07:10 EDT      10h ago sysstat-summary.timer           sysstat-summary.service
 Sat 2026-09-05 01:13:27 EDT       14h Fri 2026-09-04 00:53:39 EDT      10h ago man-db.timer                    man-db.service
 Sat 2026-09-05 06:44:02 EDT       19h Fri 2026-09-04 06:04:36 EDT 4h 52min ago apt-daily-upgrade.timer         apt-daily-upgrade.service
-Sat 2026-09-05 06:51:24 EDT       19h Fri 2026-09-04 06:51:24 EDT  4h 5min ago update-notifier-download.timer  update-notifier-download.service
+Sat 2026-09-05 06:51:24 EDT       19h Fri 2026-09-04 06:51:24 EDT  4h 6min ago update-notifier-download.timer  update-notifier-download.service
 Sat 2026-09-05 07:00:05 EDT       20h Fri 2026-09-04 07:00:05 EDT 3h 57min ago systemd-tmpfiles-clean.timer    systemd-tmpfiles-clean.service
 Sat 2026-09-05 08:00:00 EDT       21h Fri 2026-09-04 08:00:02 EDT 2h 57min ago nut-telegram-heartbeat.timer    nut-telegram-heartbeat.service
 Sun 2026-09-06 03:10:53 EDT 1 day 16h Sun 2026-08-30 03:10:26 EDT   5 days ago e2scrub_all.timer               e2scrub_all.service
