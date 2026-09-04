@@ -93,7 +93,7 @@ Search phrases:
 
 ## How to Update or Troubleshoot the Sun Fire V240 Integration
 
-The SOLARIS_SERVER integration is a **future-use deployment path**. It is not currently part of the production rack shutdown mapping and should not be treated as a current production protected system.
+The V24013 integration is a **future-use deployment path**. It is not currently part of the production rack shutdown mapping and should not be treated as a current production protected system.
 
 Current planned production V240 address:
 

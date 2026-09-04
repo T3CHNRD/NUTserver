@@ -63,14 +63,14 @@ def sanitize(text):
     text = private_ip.sub(repl_ip, text)
 
     text = re.sub(
-        r'Example Organization Co\.,?\s*Inc\.?',
+        r'Aluminum Blanking Co\.,?\s*Inc\.?',
         'Example Organization',
         text,
         flags=re.I,
     )
 
     text = re.sub(
-        r'Example Organization',
+        r'Aluminum Blanking',
         'Example Organization',
         text,
         flags=re.I,

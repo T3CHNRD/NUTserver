@@ -878,6 +878,7 @@
 /usr/local/sbin/nut-publish-power-events-json.bak.2026-05-08-174706|755|root|root
 /usr/local/sbin/nut-rebuild-msmtp-from-email-config|755|root|root
 /usr/local/sbin/nut-production-mode.pre-mode-change-printf-20260623-104407|755|root|root
+/usr/local/sbin/nut-sanitize-public-dr|755|root|root
 /usr/local/sbin/nut-sync-live-to-repo-for-backup.pre-apc-idf-sanitize-20260622-143657|755|root|root
 /usr/local/sbin/nut-ui-full-managed-restore-live|750|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-complete-backup-20260622-135710|755|root|root
@@ -927,6 +928,7 @@
 /usr/local/sbin/__pycache__/nut-ui-full-managed-restore-livecpython-312.pyc|640|root|root
 /usr/local/sbin/__pycache__/nut-ups-identity-comparecpython-312.pyc|644|root|root
 /usr/local/sbin/__pycache__/nut-telegram-command-botcpython-312.pyc|644|root|root
+/usr/local/sbin/__pycache__/nut-sanitize-public-drcpython-312.pyc|644|root|root
 /usr/local/sbin/__pycache__/nut-vmware-readonly-placement.cpython-312.pyc|644|root|root
 /usr/local/sbin/__pycache__/nut-vmware-hybrid-dry-run-plan.cpython-312.pyc|640|root|root
 /usr/local/sbin/__pycache__/nut-sanitize-public-site-scriptscpython-312.pyc|644|root|root

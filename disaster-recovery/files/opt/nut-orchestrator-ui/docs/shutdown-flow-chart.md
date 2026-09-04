@@ -33,7 +33,7 @@ Production decision:
 | UPS  | Timer | Purpose |
 |------|------:|--------|
 | ups8 | 180s  | VOIP / early timer |
-| ups7 | 240s  | DB_SERVER_1 / DB_SERVER_2 timer |
+| ups7 | 240s  | DB01 / DB02 timer |
 | ups6 | 300s  | Lansweeper timer |
 | ups9 | 360s  | VMware / NetApp / Synology timer |
 | ups2 | 420s  | Blue Iris / final timer |

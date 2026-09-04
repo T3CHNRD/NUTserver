@@ -207,26 +207,26 @@ commit_placeholder() {
       # potentially slow post-shutdown verification phase.
       #
 
-      log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB_SERVER_1 method='telnet solaris wrapper'"
+      log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB01 method='telnet solaris wrapper'"
       send_outage_email "shutdown" "ups7 shutdown sequence started / DB target action attempted"
 
-      if SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full DB_LIVE_APPROVED=1 /usr/local/sbin/nut-db-shutdown.sh DB_SERVER_1 >> "$LOG_FILE" 2>&1; then
+      if SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full DB_LIVE_APPROVED=1 /usr/local/sbin/nut-db-shutdown.sh DB01 >> "$LOG_FILE" 2>&1; then
         db01_rc=0
-        log_line "UPS_TARGET_COMMAND_ACCEPTED ups7 DB_SERVER_1"
+        log_line "UPS_TARGET_COMMAND_ACCEPTED ups7 DB01"
       else
         db01_rc=$?
-        log_line "UPS_TARGET_ACTION_FAILED ups7 DB_SERVER_1 rc=$db01_rc"
+        log_line "UPS_TARGET_ACTION_FAILED ups7 DB01 rc=$db01_rc"
       fi
 
-      log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB_SERVER_2 method='telnet solaris wrapper'"
+      log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB02 method='telnet solaris wrapper'"
       send_outage_email "shutdown" "ups7 shutdown sequence started / DB target action attempted"
 
-      if SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full DB_LIVE_APPROVED=1 /usr/local/sbin/nut-db-shutdown.sh DB_SERVER_2 >> "$LOG_FILE" 2>&1; then
+      if SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full DB_LIVE_APPROVED=1 /usr/local/sbin/nut-db-shutdown.sh DB02 >> "$LOG_FILE" 2>&1; then
         db02_rc=0
-        log_line "UPS_TARGET_COMMAND_ACCEPTED ups7 DB_SERVER_2"
+        log_line "UPS_TARGET_COMMAND_ACCEPTED ups7 DB02"
       else
         db02_rc=$?
-        log_line "UPS_TARGET_ACTION_FAILED ups7 DB_SERVER_2 rc=$db02_rc"
+        log_line "UPS_TARGET_ACTION_FAILED ups7 DB02 rc=$db02_rc"
       fi
 
       #
@@ -235,31 +235,31 @@ commit_placeholder() {
       # whether each server actually became unreachable.
       #
 
-      log_line "UPS_TARGET_VERIFICATION_STARTED ups7 DB_SERVER_1"
+      log_line "UPS_TARGET_VERIFICATION_STARTED ups7 DB01"
 
-      if db01_classification="$(/usr/local/sbin/nut-classify-target-shutdown DB_SERVER_1 "$db01_rc" 2>&1)"; then
+      if db01_classification="$(/usr/local/sbin/nut-classify-target-shutdown DB01 "$db01_rc" 2>&1)"; then
         db01_classify_rc=0
       else
         db01_classify_rc=$?
       fi
 
-      log_line "UPS_TARGET_VERIFICATION_RESULT ups7 DB_SERVER_1 rc=$db01_classify_rc result='$db01_classification'"
+      log_line "UPS_TARGET_VERIFICATION_RESULT ups7 DB01 rc=$db01_classify_rc result='$db01_classification'"
 
-      log_line "UPS_TARGET_VERIFICATION_STARTED ups7 DB_SERVER_2"
+      log_line "UPS_TARGET_VERIFICATION_STARTED ups7 DB02"
 
-      if db02_classification="$(/usr/local/sbin/nut-classify-target-shutdown DB_SERVER_2 "$db02_rc" 2>&1)"; then
+      if db02_classification="$(/usr/local/sbin/nut-classify-target-shutdown DB02 "$db02_rc" 2>&1)"; then
         db02_classify_rc=0
       else
         db02_classify_rc=$?
       fi
 
-      log_line "UPS_TARGET_VERIFICATION_RESULT ups7 DB_SERVER_2 rc=$db02_classify_rc result='$db02_classification'"
+      log_line "UPS_TARGET_VERIFICATION_RESULT ups7 DB02 rc=$db02_classify_rc result='$db02_classification'"
 
       if [ "$db01_classify_rc" -eq 0 ] && [ "$db02_classify_rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups7 DB_SERVER_1 verified_shutdown=yes"
-        log_line "UPS_TARGET_ACTION_SUCCESS ups7 DB_SERVER_2 verified_shutdown=yes"
+        log_line "UPS_TARGET_ACTION_SUCCESS ups7 DB01 verified_shutdown=yes"
+        log_line "UPS_TARGET_ACTION_SUCCESS ups7 DB02 verified_shutdown=yes"
 
-        write_state           "ups7"           "ups7"           "shutdown_committed"           "targeted shutdown"           0           0           "DB_SERVER_1 and DB_SERVER_2 shutdown confirmed"
+        write_state           "ups7"           "ups7"           "shutdown_committed"           "targeted shutdown"           0           0           "DB01 and DB02 shutdown confirmed"
       else
         log_line "UPS_TARGET_VERIFICATION_INCOMPLETE ups7 DB01_rc=$db01_classify_rc DB02_rc=$db02_classify_rc"
 
@@ -334,14 +334,14 @@ commit_placeholder() {
         log_line "UPS_TARGET_ACTION_FAILED ups9 VMware rc=$rc"
       fi
 
-      log_line "UPS_TARGET_ACTION_ATTEMPT ups9 example-synology1 method='synology wrapper'"
+      log_line "UPS_TARGET_ACTION_ATTEMPT ups9 Albl-synology1 method='synology wrapper'"
     send_outage_email "shutdown" "ups9 shutdown sequence started / Synology target action attempted"
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full SYNOLOGY_LIVE_APPROVED=1 /usr/local/sbin/nut-synology-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups9 example-synology1"
+        log_line "UPS_TARGET_ACTION_SUCCESS ups9 Albl-synology1"
       else
-        log_line "UPS_TARGET_ACTION_FAILED ups9 example-synology1 rc=$rc"
+        log_line "UPS_TARGET_ACTION_FAILED ups9 Albl-synology1 rc=$rc"
       fi
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups9 Alblnetapp01 method='ONTAP CLI halt over SSH'"
@@ -500,11 +500,11 @@ email_context_for_type() {
         case "$ups_name" in
           ups7)
             if printf '%s' "$pre_note" | grep -qi 'shutdown confirmed'; then
-              export NUT_SYSTEMS_SHUT_DOWN="DB_SERVER_1 - verified shutdown\nDB02 - verified shutdown"
+              export NUT_SYSTEMS_SHUT_DOWN="DB01 - verified shutdown\nDB02 - verified shutdown"
               export NUT_SYSTEMS_STILL_RUNNING="No additional UPS7 shutdown targets were scheduled."
             else
-              export NUT_SYSTEMS_SHUT_DOWN="Not confirmed: DB_SERVER_1/DB_SERVER_2 shutdown was attempted, but verification was incomplete."
-              export NUT_SYSTEMS_STILL_RUNNING="Verify DB_SERVER_1 and DB_SERVER_2 manually before recovery."
+              export NUT_SYSTEMS_SHUT_DOWN="Not confirmed: DB01/DB02 shutdown was attempted, but verification was incomplete."
+              export NUT_SYSTEMS_STILL_RUNNING="Verify DB01 and DB02 manually before recovery."
             fi
             ;;
           ups2)
@@ -762,7 +762,7 @@ case "${1:-}" in
     log_line "UPS_ONBATT_DETECTED ups7 runtime='18m' countdown='240s'"
     send_outage_email "onbatt" "ups7 on battery / grid power lost"
     log_line "UPS_COUNTDOWN_STARTED ups7 scope='targeted shutdown' countdown='240s'"
-    write_state "ups7" "ups7" "on_battery_pending" "targeted shutdown" 240 240 "DB_SERVER_1 and DB_SERVER_2 pending graceful shutdown"
+    write_state "ups7" "ups7" "on_battery_pending" "targeted shutdown" 240 240 "DB01 and DB02 pending graceful shutdown"
     ;;
 
   ups7-online)

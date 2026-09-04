@@ -9,7 +9,7 @@ TOOLS_REPORT = Path("/var/log/nut-vmware-inventory/vmware-tools-status-latest.js
 INVENTORY_DIR = Path("/var/log/nut-vmware-inventory")
 OUT_DIR = Path("/var/log/nut-vmware-inventory")
 
-VCSA_NAME = "example-vcsa"
+VCSA_NAME = "albl-vcsa"
 ESXI_SHUTDOWN_REASON = "power outage"
 
 DANGEROUS_WORDS = [

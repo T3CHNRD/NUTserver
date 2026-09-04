@@ -858,6 +858,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-te
 SKIP temp-development-artifact /usr/local/sbin/nut-publish-power-events-json.bak.2026-05-08-174706
 FILE /usr/local/sbin/nut-rebuild-msmtp-from-email-config -> files/usr/local/sbin/nut-rebuild-msmtp-from-email-config mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-production-mode.pre-mode-change-printf-20260623-104407
+FILE /usr/local/sbin/nut-sanitize-public-dr -> files/usr/local/sbin/nut-sanitize-public-dr mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-sync-live-to-repo-for-backup.pre-apc-idf-sanitize-20260622-143657
 FILE /usr/local/sbin/nut-ui-full-managed-restore-live -> files/usr/local/sbin/nut-ui-full-managed-restore-live mode=0750
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-complete-backup-20260622-135710

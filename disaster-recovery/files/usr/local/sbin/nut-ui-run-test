@@ -204,8 +204,8 @@ run_simulate() {
   run_sim_wrapper "NetApp02" /usr/local/sbin/nut-netapp-halt.sh Alblnetapp02
   run_sim_wrapper "Synology" /usr/local/sbin/nut-synology-shutdown.sh
   run_sim_wrapper "VOIP" /usr/local/sbin/nut-voip-shutdown.sh
-  run_sim_wrapper "DB_SERVER_1" /usr/local/sbin/nut-db-shutdown.sh DB_SERVER_1
-  run_sim_wrapper "DB_SERVER_2" /usr/local/sbin/nut-db-shutdown.sh DB_SERVER_2
+  run_sim_wrapper "DB01" /usr/local/sbin/nut-db-shutdown.sh DB01
+  run_sim_wrapper "DB02" /usr/local/sbin/nut-db-shutdown.sh DB02
   run_sim_wrapper "Blue Iris" /usr/local/sbin/nut-blueiris-shutdown.sh
   run_sim_wrapper "Lansweeper" /usr/local/sbin/nut-lansweeper-shutdown.sh
 
@@ -431,7 +431,7 @@ run_real() {
       fi
 
       log_line ""
-      log_line "===== PHASE 3 / UPS7: DB_SERVER_1 THEN DB_SERVER_2 COMMIT PATH ====="
+      log_line "===== PHASE 3 / UPS7: DB01 THEN DB02 COMMIT PATH ====="
       power_event "REAL TEST PHASE3 accelerated_commit ups=ups7 target=DB01_DB02"
       if ALLOW_REAL_TEST=1 SIMULATE=0 /usr/local/bin/nut-orchestrator.sh ups7-commit | tee -a "$LOG_FILE"; then
         pass "Phase 3 ups7 accelerated commit path"

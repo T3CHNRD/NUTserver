@@ -4,7 +4,7 @@ set -u
 
 LOG_FILE="/var/log/nut-blueiris-shutdown.log"
 TARGET_NAME="BlueIris"
-TARGET_IP="198.51.100.18"
+TARGET_IP="198.51.100.10"
 CREDS_FILE="/etc/nut/lansweeper.creds"
 SIMULATE="${SIMULATE:-1}"
 

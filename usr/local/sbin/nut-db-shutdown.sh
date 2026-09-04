@@ -40,8 +40,8 @@ load_db_config() {
   . "$CONFIG_FILE"
 
   DB_SHUTDOWN_METHOD="${DB_SHUTDOWN_METHOD:-telnet}"
-  DB01_HOST="${DB01_HOST:-198.51.100.19}"
-  DB02_HOST="${DB02_HOST:-198.51.100.20}"
+  DB01_HOST="${DB01_HOST:-192.168.1.9}"
+  DB02_HOST="${DB02_HOST:-192.168.1.11}"
   DB_USERNAME="${DB_USERNAME:-}"
   DB_PASSWORD="${DB_PASSWORD:-}"
   DB_TELNET_LOGIN_TIMEOUT="${DB_TELNET_LOGIN_TIMEOUT:-20}"
@@ -85,10 +85,10 @@ validate_common_config() {
 
 resolve_target_host() {
   case "$TARGET" in
-    DB_SERVER_1)
+    DB01)
       HOST="${DB01_HOST:-}"
       ;;
-    DB_SERVER_2)
+    DB02)
       HOST="${DB02_HOST:-}"
       ;;
     *)

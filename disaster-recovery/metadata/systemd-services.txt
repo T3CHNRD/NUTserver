@@ -90,7 +90,7 @@
   nut-orchestrator-ui.service                                                               loaded    active   running NUT Orchestrator UI Flask Service
   nut-power-events-refresh.service                                                          loaded    inactive dead    Refresh shared NUT power events JSON feed for Dashboard and NUT UI
   nut-server.service                                                                        loaded    active   running Network UPS Tools - power devices information server
-  nut-telegram-command-bot.service                                                          loaded    active   running EXAMPLE NUT Private Telegram Command Bot
+  nut-telegram-command-bot.service                                                          loaded    active   running ALBL NUT Private Telegram Command Bot
   nut-telegram-dispatch.service                                                             loaded    inactive dead    NUT Telegram Alert Dispatcher
   nut-telegram-final.service                                                                loaded    inactive dead    NUT Telegram Immediate Final Alert
   nut-telegram-heartbeat.service                                                            loaded    inactive dead    NUT Telegram Heartbeat

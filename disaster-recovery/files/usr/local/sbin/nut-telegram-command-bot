@@ -148,7 +148,7 @@ def api(method, payload=None, timeout=55):
             "Content-Type":
                 "application/x-www-form-urlencoded",
             "User-Agent":
-                "example-nut-private-bot",
+                "albl-nut-private-bot",
         },
     )
 
@@ -563,7 +563,7 @@ def sync_profile():
         "setMyDescription",
         {
             "description":
-                "Private EXAMPLE NUT/UPS "
+                "Private ALBL NUT/UPS "
                 "monitoring bot for "
                 "authorized personnel. "
                 "Provides read-only "
@@ -579,7 +579,7 @@ def sync_profile():
         "setMyShortDescription",
         {
             "short_description":
-                "Private EXAMPLE NUT/UPS "
+                "Private ALBL NUT/UPS "
                 "monitoring for "
                 "authorized personnel."
         },
@@ -880,7 +880,7 @@ def status_text():
 
     return "\n".join(
         [
-            "EXAMPLE NUT STATUS",
+            "ALBL NUT STATUS",
             "",
             "Mode: "
             + str(
@@ -931,7 +931,7 @@ def health_text():
         )
     except Exception:
         return (
-            "EXAMPLE NUT HEALTH\n\n"
+            "ALBL NUT HEALTH\n\n"
             "Unable to build the full health report."
         )
 
@@ -941,7 +941,7 @@ def health_text():
         return report
 
     return (
-        "EXAMPLE NUT HEALTH\n\n"
+        "ALBL NUT HEALTH\n\n"
         "Unable to build the full health report."
     )
 
@@ -951,7 +951,7 @@ def maintenance_text():
     )
 
     lines = [
-        "EXAMPLE NUT MAINTENANCE",
+        "ALBL NUT MAINTENANCE",
         "",
         "Maintenance: "
         + status,
@@ -1093,7 +1093,7 @@ def ups_text(argument=None):
         )
 
     lines = [
-        "EXAMPLE UPS STATUS",
+        "ALBL UPS STATUS",
         "",
     ]
 
@@ -1265,7 +1265,7 @@ def schedule_text():
 
     return "\n".join(
         [
-            "EXAMPLE NUT "
+            "ALBL NUT "
             "NOTIFICATION SCHEDULE",
             "",
             "Health email + Telegram:",
@@ -1325,7 +1325,7 @@ def write_schedule(
     )
 
     tmp.write_text(
-        "# EXAMPLE NUT Telegram "
+        "# ALBL NUT Telegram "
         "scheduled notifications\n"
         "# Critical power/shutdown "
         "alerts remain event-driven.\n"
@@ -1507,7 +1507,7 @@ def help_text(
 ):
 
     lines = [
-        "EXAMPLE NUT BOT COMMANDS",
+        "ALBL NUT BOT COMMANDS",
         "",
         "/start - Welcome and "
         "bot purpose",
@@ -1559,7 +1559,7 @@ def help_text(
 
     lines += [
         "",
-        "EXAMPLE NUT Alerts is a "
+        "ALBL NUT Alerts is a "
         "private monitoring bot "
         "for authorized personnel.",
         "",
@@ -1583,10 +1583,10 @@ def intro_text(
 
     return "\n".join(
         [
-            "Welcome to EXAMPLE NUT Alerts.",
+            "Welcome to ALBL NUT Alerts.",
             "",
             "This private bot provides "
-            "authorized EXAMPLE personnel "
+            "authorized ALBL personnel "
             "with read-only NUT/UPS "
             "status, health, maintenance "
             "guidance, notification "
@@ -1613,7 +1613,7 @@ def access_list_text(
 ):
 
     lines = [
-        "EXAMPLE NUT BOT ACCESS",
+        "ALBL NUT BOT ACCESS",
         "",
         "Approved users: "
         + str(
@@ -1877,7 +1877,7 @@ def handle_access(
         try:
             send(
                 target,
-                "Your EXAMPLE NUT Alerts "
+                "Your ALBL NUT Alerts "
                 "access has been approved."
                 "\n\nSend /start to begin."
             )
@@ -1946,7 +1946,7 @@ def handle_access(
         try:
             send(
                 target,
-                "Your EXAMPLE NUT Alerts "
+                "Your ALBL NUT Alerts "
                 "access has been removed."
             )
         except Exception:
@@ -1996,7 +1996,7 @@ def handle_access(
             send(
                 target,
                 "You are now an "
-                "EXAMPLE NUT Bot "
+                "ALBL NUT Bot "
                 "administrator."
             )
         except Exception:
@@ -2059,7 +2059,7 @@ def handle_access(
         try:
             send(
                 target,
-                "Your EXAMPLE NUT Bot "
+                "Your ALBL NUT Bot "
                 "role is now "
                 "read-only user."
             )
@@ -2108,7 +2108,7 @@ def handle_access(
                 + target
                 + " CONFIRM"
                 "\n\nThis transfers only "
-                "EXAMPLE NUT Bot application "
+                "ALBL NUT Bot application "
                 "administration. It does "
                 "not transfer BotFather "
                 "ownership."
@@ -2143,13 +2143,13 @@ def handle_access(
                 target,
                 "You are now the primary "
                 "administrator for "
-                "EXAMPLE NUT Alerts."
+                "ALBL NUT Alerts."
             )
         except Exception:
             pass
 
         return (
-            "Primary EXAMPLE NUT Bot "
+            "Primary ALBL NUT Bot "
             "administration transferred."
             "\n\nYour account remains "
             "an administrator until the "
