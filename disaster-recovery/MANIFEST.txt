@@ -821,6 +821,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-eve
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-early-health-gate-20260827-100104
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-run-test.bak.2026-05-08-175754
 SKIP temp-development-artifact /usr/local/sbin/nut-voip-shutdown.sh.bak.2026-05-12-092314
+FILE /usr/local/sbin/nut-sanitize-public-site-scripts -> files/usr/local/sbin/nut-sanitize-public-site-scripts mode=0755
 FILE /usr/local/sbin/nut-publish-power-events-json -> files/usr/local/sbin/nut-publish-power-events-json mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-hypervisor-fallback-backup-20260603-131733
 FILE /usr/local/sbin/nut-vmware-export-inventory.sh -> files/usr/local/sbin/nut-vmware-export-inventory.sh mode=0750

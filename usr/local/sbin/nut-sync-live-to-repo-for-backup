@@ -501,6 +501,9 @@ done
 
 
 
+echo "===== PUBLIC SCRIPT SANITIZATION ====="
+/usr/local/sbin/nut-sanitize-public-site-scripts "$REPO"
+
 echo "===== REMOVE TEMP/HISTORICAL ARTIFACTS FROM REPO COPY ONLY ====="
 
 find "$REPO" \

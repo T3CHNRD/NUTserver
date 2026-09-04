@@ -132,7 +132,7 @@ def sanitize(text):
     # can miss.
     import ipaddress
 
-    ipv4_token = re.compile(
+    ipv4_token = [REDACTED]
         r'(?<![0-9])(?:[0-9]{1,3}\\.){3}[0-9]{1,3}(?![0-9])'
     )
 

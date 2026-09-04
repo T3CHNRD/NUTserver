@@ -841,6 +841,7 @@
 /usr/local/sbin/nut-ui-run-test.bak.2026-05-08-175754|755|root|root
 /usr/local/sbin/rollback-xrdp-gnome-known-good.sh|755|root|root
 /usr/local/sbin/nut-voip-shutdown.sh.bak.2026-05-12-092314|755|root|root
+/usr/local/sbin/nut-sanitize-public-site-scripts|755|root|root
 /usr/local/sbin/nut-publish-power-events-json|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-hypervisor-fallback-backup-20260603-131733|755|root|root
 /usr/local/sbin/nut-vmware-export-inventory.sh|750|root|root
@@ -928,6 +929,7 @@
 /usr/local/sbin/__pycache__/nut-telegram-command-botcpython-312.pyc|644|root|root
 /usr/local/sbin/__pycache__/nut-vmware-readonly-placement.cpython-312.pyc|644|root|root
 /usr/local/sbin/__pycache__/nut-vmware-hybrid-dry-run-plan.cpython-312.pyc|640|root|root
+/usr/local/sbin/__pycache__/nut-sanitize-public-site-scriptscpython-312.pyc|644|root|root
 /usr/local/sbin/__pycache__/nut-production-statuscpython-312.pyc|640|root|root
 /usr/local/sbin/__pycache__/nut-ups-identity-snapshotcpython-312.pyc|644|root|root
 /usr/local/sbin/__pycache__/nut-ups-maintenance-statecpython-312.pyc|644|root|root
