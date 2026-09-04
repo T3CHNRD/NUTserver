@@ -26,11 +26,11 @@ Before changing any protected-system integration:
 
 ---
 
-## How to Update or Troubleshoot DB01 Shutdown Integration
+## How to Update or Troubleshoot <DATABASE_SERVER_1> Shutdown Integration
 
-Production DB01:
+Production <DATABASE_SERVER_1>:
 
-- IP: 192.168.1.9
+- IP: <INTERNAL_IP>
 
 Current integration reference:
 
@@ -38,32 +38,32 @@ Current integration reference:
 
 Procedure:
 
-1. Confirm you are working with DB01 and not DB02.
+1. Confirm you are working with <DATABASE_SERVER_1> and not <DATABASE_SERVER_2>.
 2. Review the DB shutdown target/configuration.
-3. Confirm the DB01 IP is correct.
+3. Confirm the <DATABASE_SERVER_1> IP is correct.
 4. Confirm the configured Telnet username reference.
 5. Confirm the password reference without displaying it.
 6. If the password changed, use [Credential and Password Changes](18_CREDENTIAL_AND_PASSWORD_CHANGES.md).
 7. Perform only the approved non-destructive authentication validation.
 8. Review wrapper output/logs.
 
-DO NOT perform a live shutdown of production DB01 as a routine test.
+DO NOT perform a live shutdown of production <DATABASE_SERVER_1> as a routine test.
 
 Search phrases:
 
-- DB01 shutdown
-- DB01 NUT
+- <DATABASE_SERVER_1> shutdown
+- <DATABASE_SERVER_1> NUT
 - DBO1 password
-- DB01 shutdown failed
-- update DB01 in NUT
+- <DATABASE_SERVER_1> shutdown failed
+- update <DATABASE_SERVER_1> in NUT
 
 ---
 
-## How to Update or Troubleshoot DB02 Shutdown Integration
+## How to Update or Troubleshoot <DATABASE_SERVER_2> Shutdown Integration
 
-Production DB02:
+Production <DATABASE_SERVER_2>:
 
-- IP: 192.168.1.11
+- IP: <INTERNAL_IP>
 
 Current integration reference:
 
@@ -71,23 +71,23 @@ Current integration reference:
 
 Procedure:
 
-1. Confirm you are working with DB02.
+1. Confirm you are working with <DATABASE_SERVER_2>.
 2. Review the DB shutdown configuration.
-3. Confirm the DB02 IP.
+3. Confirm the <DATABASE_SERVER_2> IP.
 4. Confirm the username reference.
 5. Confirm the password reference without exposing it.
 6. Use non-destructive authentication validation.
 7. Review wrapper output/logs.
 
-DO NOT perform a live shutdown of production DB02 as a routine test.
+DO NOT perform a live shutdown of production <DATABASE_SERVER_2> as a routine test.
 
 Search phrases:
 
-- DB02 shutdown
-- DB02 NUT
+- <DATABASE_SERVER_2> shutdown
+- <DATABASE_SERVER_2> NUT
 - DBO2 password
-- DB02 shutdown failed
-- update DB02 in NUT
+- <DATABASE_SERVER_2> shutdown failed
+- update <DATABASE_SERVER_2> in NUT
 
 ---
 
@@ -97,13 +97,13 @@ The V24013 integration is a **future-use deployment path**. It is not currently 
 
 Current planned production V240 address:
 
-- 192.168.1.13
+- <INTERNAL_IP>
 
 Dedicated wrapper reference:
 
 - /usr/local/sbin/nut-v24013-shutdown.sh
 
-A separate temporary recovery/test address 192.168.10.85 has previously been used to validate the Solaris shutdown process.
+A separate temporary recovery/test address <INTERNAL_IP> has previously been used to validate the Solaris shutdown process.
 
 That previous validation does not authorize future live shutdown tests automatically.
 
@@ -115,14 +115,14 @@ Procedure:
 4. Confirm credentials without displaying them.
 5. Confirm approved-target mapping.
 6. Use non-disruptive verification whenever possible.
-7. Never accidentally target production DB01 or DB02 while testing V240 logic.
+7. Never accidentally target production <DATABASE_SERVER_1> or <DATABASE_SERVER_2> while testing V240 logic.
 
 Search phrases:
 
 - V240 shutdown
 - Sun Fire shutdown
 - Solaris shutdown
-- 192.168.1.13
+- <INTERNAL_IP>
 - V240 NUT
 
 ---
@@ -338,8 +338,8 @@ Do not assume the address exists in only one file.
 
 Search Help for:
 
-- DB01 password
-- DB02 password
+- <DATABASE_SERVER_1> password
+- <DATABASE_SERVER_2> password
 - vCenter password
 - Synology password
 - credential change
@@ -383,8 +383,8 @@ HIGH RISK:
 
 LIVE / DISRUPTIVE - DO NOT RUN WITHOUT APPROVAL:
 
-- real DB01 shutdown
-- real DB02 shutdown
+- real <DATABASE_SERVER_1> shutdown
+- real <DATABASE_SERVER_2> shutdown
 - real VMware shutdown
 - real Synology halt
 - real NetApp halt

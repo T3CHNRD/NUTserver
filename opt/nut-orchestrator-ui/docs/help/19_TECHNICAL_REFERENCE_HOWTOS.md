@@ -97,7 +97,7 @@ Primary references:
 
 ---
 
-## DB01 / DB02 Shutdown
+## <DATABASE_SERVER_1> / <DATABASE_SERVER_2> Shutdown
 
 Primary reference:
 
@@ -105,8 +105,8 @@ Primary reference:
 
 Production addresses currently documented:
 
-- DB01: 192.168.1.9
-- DB02: 192.168.1.11
+- <DATABASE_SERVER_1>: <INTERNAL_IP>
+- <DATABASE_SERVER_2>: <INTERNAL_IP>
 
 ---
 
@@ -118,7 +118,7 @@ Primary reference:
 
 Current planned production address:
 
-- 192.168.1.13
+- <INTERNAL_IP>
 
 ---
 

@@ -265,15 +265,15 @@ Do not change logical mapping merely because a system appears near a different U
 
 Not every credential used by the NUT environment is exposed as a normal field under Configuration -> EDITABLE LIVE CONFIG.
 
-For DB01 and DB02 database shutdown access, use the dedicated **Credential and Password Changes** Help article instead of assuming the password is stored in a general Configuration form.
+For <DATABASE_SERVER_1> and <DATABASE_SERVER_2> database shutdown access, use the dedicated **Credential and Password Changes** Help article instead of assuming the password is stored in a general Configuration form.
 
 Use that article for searches and tasks such as:
 
-- DB01 password
+- <DATABASE_SERVER_1> password
 - DBO1 password
-- update DB01 password
-- DB02 password
-- update DB02 password
+- update <DATABASE_SERVER_1> password
+- <DATABASE_SERVER_2> password
+- update <DATABASE_SERVER_2> password
 - database Telnet password
 - database Telnet username
 - update username

@@ -215,8 +215,8 @@ UPS7 uses a 240-second shutdown timer.
 
 ### Automatic Shutdown Targets
 
-- DB01
-- DB02
+- <DATABASE_SERVER_1>
+- <DATABASE_SERVER_2>
 
 Both Solaris shutdown commands are attempted before post-shutdown verification begins.
 
@@ -228,21 +228,21 @@ The current shutdown integration uses the dedicated Solaris/Telnet DB shutdown w
 
 ### Historical Mapping Warning
 
-Some older spreadsheet-derived documents placed DB01 and DB02 under UPS4 / UPS 3_3.
+Some older spreadsheet-derived documents placed <DATABASE_SERVER_1> and <DATABASE_SERVER_2> under UPS4 / UPS 3_3.
 
 That is not the current NUT shutdown mapping.
 
-The current live orchestrator assigns DB01 and DB02 to UPS7.
+The current live orchestrator assigns <DATABASE_SERVER_1> and <DATABASE_SERVER_2> to UPS7.
 
 Physical power wiring should still be independently verified before a live outage test.
 
 Search phrases:
 
 - what is on UPS7
-- which UPS protects DB01
-- which UPS protects DB02
-- DB01 UPS
-- DB02 UPS
+- which UPS protects <DATABASE_SERVER_1>
+- which UPS protects <DATABASE_SERVER_2>
+- <DATABASE_SERVER_1> UPS
+- <DATABASE_SERVER_2> UPS
 - UPS7 shutdown
 
 ---
@@ -370,7 +370,7 @@ A physically connected device can intentionally be alert-only.
 | UPS4 | None | Alert only |
 | UPS5 | None | Alert only |
 | UPS6 | 300 seconds | Lansweeper |
-| UPS7 | 240 seconds | DB01 + DB02 |
+| UPS7 | 240 seconds | <DATABASE_SERVER_1> + <DATABASE_SERVER_2> |
 | UPS8 | 180 seconds | VOIP |
 | UPS9 | 360 seconds | VMware/storage/NUT sequence |
 

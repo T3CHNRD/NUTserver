@@ -227,8 +227,8 @@ Related Help:
 - ESXi
 - Synology
 - NetApp
-- DB01
-- DB02
+- <DATABASE_SERVER_1>
+- <DATABASE_SERVER_2>
 - V240
 - Blue Iris
 - Lansweeper

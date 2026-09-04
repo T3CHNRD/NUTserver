@@ -21,7 +21,7 @@ Purpose:
   script, and protected credential files.
 
 Control Center URL:
-  http://192.168.3.251/nut-ui/control-center
+  http://<INTERNAL_IP>/nut-ui/control-center
 
 Current known state:
   - Control Center uses tabbed sections.

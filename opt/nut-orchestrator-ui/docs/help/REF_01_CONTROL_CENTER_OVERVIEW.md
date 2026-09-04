@@ -16,7 +16,7 @@ SECURITY: Sanitized copy; credential-like values are redacted.
 NUT CONTROL CENTER OVERVIEW
 
 URL:
-  http://192.168.3.251/nut-ui/control-center
+  http://<INTERNAL_IP>/nut-ui/control-center
 
 Purpose:
   The NUT Control Center is the consolidated page for UPS monitoring,

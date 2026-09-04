@@ -24,7 +24,7 @@ The most important rule in this section is to distinguish a safe Simulated Test 
 - Real Test
 - Any test that executes a real protected-system shutdown command
 - Any test that intentionally creates a UPS power event
-- Any test that powers off DB01, DB02, VMware, storage, or another production system
+- Any test that powers off <DATABASE_SERVER_1>, <DATABASE_SERVER_2>, VMware, storage, or another production system
 
 ---
 
@@ -231,7 +231,7 @@ Before a Real Test:
 5. Confirm recovery/access methods are available.
 6. Review the test-specific runbook.
 7. Review Show Safety Notes.
-8. Confirm you are not accidentally targeting DB01, DB02, or another production system that is excluded from live testing.
+8. Confirm you are not accidentally targeting <DATABASE_SERVER_1>, <DATABASE_SERVER_2>, or another production system that is excluded from live testing.
 
 When the Control Center requires a Real Test passphrase:
 
@@ -255,14 +255,14 @@ Search phrases:
 
 ---
 
-## DB01 and DB02 Real-Test Restriction
+## <DATABASE_SERVER_1> and <DATABASE_SERVER_2> Real-Test Restriction
 
-Production DB01 and DB02 must not be used for live shutdown testing unless separately and explicitly authorized.
+Production <DATABASE_SERVER_1> and <DATABASE_SERVER_2> must not be used for live shutdown testing unless separately and explicitly authorized.
 
 Current production references:
 
-- DB01: 192.168.1.9
-- DB02: 192.168.1.11
+- <DATABASE_SERVER_1>: <INTERNAL_IP>
+- <DATABASE_SERVER_2>: <INTERNAL_IP>
 
 Use non-destructive validation for these systems.
 
@@ -270,7 +270,7 @@ Use non-destructive validation for these systems.
 
 ## V240 Shutdown Test Guidance
 
-A separate Sun Fire V240 has previously been used to prove the Solaris shutdown process without using production DB01 or DB02 as live-test targets.
+A separate Sun Fire V240 has previously been used to prove the Solaris shutdown process without using production <DATABASE_SERVER_1> or <DATABASE_SERVER_2> as live-test targets.
 
 Do not repeat a live V240 test automatically just because the test path exists.
 Always verify which physical server and IP are being targeted before any live action.
@@ -323,7 +323,7 @@ DO NOT RUN WITHOUT APPROVAL:
 - Real Test
 - real UPS power-event tests
 - actual shutdown commands
-- production DB01 or DB02 shutdown tests
+- production <DATABASE_SERVER_1> or <DATABASE_SERVER_2> shutdown tests
 - production storage/VMware shutdown tests
 
 ---
