@@ -4,7 +4,7 @@
 # Dedicated Sun Fire V240 shutdown validation wrapper.
 #
 # SAFETY:
-#   This test wrapper may ONLY target TEST_SOLARIS at 192.168.10.85.
+#   This test wrapper may ONLY target TEST_SOLARIS at 198.51.100.100.
 #   It must never target DB_SERVER_1, DB_SERVER_2, or the future production .13 address.
 
 set -u

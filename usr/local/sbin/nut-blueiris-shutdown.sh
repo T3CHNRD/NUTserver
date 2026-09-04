@@ -4,7 +4,7 @@ set -u
 
 LOG_FILE="/var/log/nut-blueiris-shutdown.log"
 TARGET_NAME="BlueIris"
-TARGET_IP="192.168.1.25"
+TARGET_IP="198.51.100.10"
 CREDS_FILE="/etc/nut/lansweeper.creds"
 SIMULATE="${SIMULATE:-1}"
 
@@ -35,7 +35,7 @@ if [ -f "$CREDS_FILE" ]; then
   . "$CREDS_FILE"
 fi
 
-RPC_DOMAIN="${LANSWEEPER_DOMAIN:-ALBL}"
+RPC_DOMAIN="${LANSWEEPER_DOMAIN:-EXAMPLE}"
 RPC_USERNAME="${LANSWEEPER_USERNAME:-administrator}"
 RPC_PASSWORD="${LANSWEEPER_PASSWORD:-}"
 

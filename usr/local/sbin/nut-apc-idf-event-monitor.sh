@@ -524,8 +524,8 @@ main() {
     exit 0
   fi
 
-  monitor_target "IDF2" "http://APC-IDF2.albl.com" "http://192.168.9.251" "192.168.9.251" "APC-IDF2.albl.com"
-  monitor_target "IDF3" "http://apc-idf3.albl.com/" "http://192.168.9.252" "192.168.9.252" "apc-idf3.albl.com"
+  monitor_target "IDF2" "http://APC-IDF2.example.com" "http://198.51.100.10" "198.51.100.10" "APC-IDF2.example.com"
+  monitor_target "IDF3" "http://apc-idf3.example.com/" "http://198.51.100.11" "198.51.100.11" "apc-idf3.example.com"
 }
 
 main "$@"
