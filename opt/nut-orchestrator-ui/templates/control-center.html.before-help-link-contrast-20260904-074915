@@ -2411,42 +2411,6 @@
     }
 
 </style>
-
-<style id="cc-help-link-contrast-fix">
-/*
- * Help article link contrast.
- * Scoped to Help content only so normal Control Center
- * buttons, navigation, and other links are unchanged.
- */
-.cc-help-article a,
-.cc-help-internal-link {
-    color: #7dd3fc !important;
-    text-decoration-color: currentColor !important;
-    text-decoration-thickness: 1.5px;
-    text-underline-offset: 2px;
-    font-weight: 600;
-}
-
-.cc-help-article a:visited,
-.cc-help-internal-link:visited {
-    color: #c4b5fd !important;
-}
-
-.cc-help-article a:hover,
-.cc-help-internal-link:hover {
-    color: #bae6fd !important;
-    text-decoration-thickness: 2px;
-}
-
-.cc-help-article a:focus-visible,
-.cc-help-internal-link:focus-visible {
-    color: #e0f2fe !important;
-    outline: 2px solid #7dd3fc;
-    outline-offset: 2px;
-    border-radius: 2px;
-}
-</style>
-
 </head>
 
 <body>
@@ -3755,117 +3719,6 @@ function updateNutProductionButtons(mode) {
       return row;
     }
 
-
-    const CC_LATEST_EVENT_MAX_AGE_MS =
-      3 * 60 * 60 * 1000;
-
-    function ccParseEventTimestamp(value) {
-      const text = String(value || "").trim();
-
-      // Expected dashboard format:
-      // MM/DD/YYYY HH:MM:SS AM/PM [timezone]
-      let m = text.match(
-        /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)?/i
-      );
-
-      if (m) {
-        let hour = Number(m[4]);
-        const ampm = String(m[7] || "").toUpperCase();
-
-        if (ampm === "PM" && hour < 12) hour += 12;
-        if (ampm === "AM" && hour === 12) hour = 0;
-
-        return new Date(
-          Number(m[3]),
-          Number(m[1]) - 1,
-          Number(m[2]),
-          hour,
-          Number(m[5]),
-          Number(m[6])
-        );
-      }
-
-      const parsed = new Date(text);
-
-      return Number.isNaN(parsed.getTime())
-        ? null
-        : parsed;
-    }
-
-    function ccLatestEventAgeMs(row) {
-      const when =
-        ccParseEventTimestamp(row && row.time);
-
-      if (!when) return Number.POSITIVE_INFINITY;
-
-      return Math.max(
-        0,
-        Date.now() - when.getTime()
-      );
-    }
-
-    function ccPowerStateForEvent(row) {
-      if (!row) return "";
-
-      const text = (
-        String(row.type || "") + " " +
-        String(row.message || "")
-      ).toUpperCase();
-
-      // Notification-delivery bookkeeping is not itself
-      // the authoritative power-state event.
-      if (
-        text.includes("EMAIL_NOTIFY_SENT") ||
-        text.includes("TELEGRAM_ENQUEUE") ||
-        text.includes("TELEGRAM_SENT")
-      ) {
-        return "";
-      }
-
-      if (
-        text.includes("ONBATT") ||
-        text.includes("ON BATTERY") ||
-        text.includes("POWER OUTAGE") ||
-        text.includes("POWER LOSS") ||
-        text.includes("POWER_SOURCE_BATTERY")
-      ) {
-        return "ONBATT";
-      }
-
-      if (
-        text.includes("POWER RESTORED") ||
-        text.includes("POWER RETURNED") ||
-        text.includes("POWER RESTORE") ||
-        text.includes("UTILITY POWER RETURNS") ||
-        text.includes("POWER_SOURCE_ONLINE") ||
-        text.includes("SHUTDOWN CANCELLED") ||
-        text.includes("SHUTDOWN CANCELED")
-      ) {
-        return "ONLINE";
-      }
-
-      return "";
-    }
-
-    function ccFindNewestPowerState(rows) {
-      for (const row of rows) {
-        const state =
-          ccPowerStateForEvent(row);
-
-        if (state) {
-          return {
-            state,
-            row
-          };
-        }
-      }
-
-      return {
-        state: "",
-        row: null
-      };
-    }
-
     async function loadControlCenterEvents() {
       const box = document.getElementById("cc-event-box");
       const summary = document.getElementById("cc-event-summary");
@@ -3894,73 +3747,24 @@ function updateNutProductionButtons(mode) {
 
         const rows = events.slice(0, 100).map(item => parseEventLine(item.line || String(item)));
         const latest = rows[0];
-        const newestPowerState =
-          ccFindNewestPowerState(rows);
+
+        // The backend retains five days of history and marks whether
+        // the newest event occurred within the last 24 hours.
+        // Keep historical events visible without presenting them as
+        // a current dashboard condition.
+        const latestIsRecent =
+          Boolean(events[0] && events[0].recent === true);
 
         health.textContent = "Online";
 
-        if (
-          newestPowerState.state === "ONBATT"
-          && newestPowerState.row
-        ) {
-          // ONBATT represents an unresolved state, not a transient
-          // event. Never age it out until an ONLINE/restoration event
-          // becomes the newest power state.
-          latestType.textContent =
-            "ONBATT - Power Outage";
-
-          latestTime.textContent =
-            newestPowerState.row.time ||
-            "Power outage currently active.";
-
-          summary.textContent =
-            "Active power outage. ONBATT remains displayed until power is restored.";
-
-        } else if (
-          newestPowerState.state === "ONLINE"
-          && newestPowerState.row
-          && ccLatestEventAgeMs(
-            newestPowerState.row
-          ) <= CC_LATEST_EVENT_MAX_AGE_MS
-        ) {
-          // Restoration is important enough to take precedence over
-          // follow-up email/Telegram bookkeeping.
-          latestType.textContent =
-            "Power Restored";
-
-          latestTime.textContent =
-            newestPowerState.row.time ||
-            "Utility power restored.";
-
-          summary.textContent =
-            "Power restoration event shown below. It will clear after 3 hours if no newer event occurs.";
-
-        } else if (
-          latest
-          && ccLatestEventAgeMs(latest)
-             <= CC_LATEST_EVENT_MAX_AGE_MS
-        ) {
-          latestType.textContent =
-            latest.type || "Event";
-
-          latestTime.textContent =
-            latest.time ||
-            "Latest event loaded.";
-
-          summary.textContent =
-            "Latest event shown below. Total loaded: " +
-            events.length;
-
+        if (latestIsRecent) {
+          latestType.textContent = latest.type || "Event";
+          latestTime.textContent = latest.time || "Latest event loaded.";
+          summary.textContent = "Latest event shown below. Total loaded: " + events.length;
         } else {
-          latestType.textContent =
-            "Clear";
-
-          latestTime.textContent =
-            "No recent event in the last 3 hours.";
-
-          summary.textContent =
-            "No current event. Historical events remain available below. Total loaded: " +
-            events.length;
+          latestType.textContent = "No Current Errors";
+          latestTime.textContent = "No recent power/UPS issues detected.";
+          summary.textContent = "Historical events shown below. Total loaded: " + events.length;
         }
 
         box.innerHTML = `
