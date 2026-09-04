@@ -890,6 +890,7 @@
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-142422|755|root|root
 /usr/local/sbin/nut-classify-target-shutdown|750|root|root
 /usr/local/sbin/nut-apc-idf-event-monitor.sh.pre-dedup-fix-20260805-095152|755|root|root
+/usr/local/sbin/nut-sanitize-public-site-docs|755|root|root
 /usr/local/sbin/nut-v240-test-shutdown.sh.pre-solaris-auth-fix-20260825-093420|750|root|nut
 /usr/local/sbin/nut-email-alert-test-send.pre-storm-guard-20260903-111943|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-142353|755|root|root
@@ -934,6 +935,7 @@
 /usr/local/sbin/__pycache__/nut-telegram-alertcpython-312.pyc|644|root|root
 /usr/local/sbin/__pycache__/nut-notification-controlscpython-312.pyc|640|root|root
 /usr/local/sbin/__pycache__/nut-ui-full-managed-restorecpython-312.pyc|640|root|root
+/usr/local/sbin/__pycache__/nut-sanitize-public-site-docscpython-312.pyc|644|root|root
 /usr/local/sbin/__pycache__/nut-get-power-events-jsoncpython-312.pyc|644|root|root
 /usr/local/sbin/__pycache__/nut-ups-maintenance-suppression-checkcpython-312.pyc|644|root|root
 /usr/local/sbin/nut-blueiris-shutdown.sh|750|root|nut

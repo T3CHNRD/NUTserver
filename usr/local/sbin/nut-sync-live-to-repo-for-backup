@@ -16,6 +16,16 @@ fi
 is_secret_path() {
   local src="$1"
 
+  # PUBLIC REPO SITE-LOCAL CONFIG EXCLUSIONS
+  #
+  # These files contain installation-specific topology/targets.
+  # Public GitHub carries .template copies instead.
+  case "$src" in
+    /etc/nut/config.d/approved-targets.yml|    /etc/nut/config.d/shutdown-verification-targets.conf|    /etc/nut/config.d/vmware-vm-map.conf|    /etc/nut/db-telnet.conf|    /etc/nut/hosts.conf|    /etc/nut/restore/restore-targets.json)
+      return 0
+      ;;
+  esac
+
   # PUBLIC REPO SITE-LOCAL HYPERVISOR CONFIG
   # Keep the real installation-specific host/IP/topology configuration
   # private. GitHub carries the .template file instead.
@@ -447,6 +457,10 @@ sync_directory_safe_files \
     "$REPO/opt/nut-orchestrator-ui/docs/help" \
     /etc/nut/public-export-redactions.secret
 
+
+# PUBLIC NON-HELP DOCUMENT SANITIZATION
+# Preserve private live documentation while publishing generic public copies.
+/usr/local/sbin/nut-sanitize-public-site-docs "$REPO"
 
 # Backup/inventory implementation.
 sync_directory_safe_files \

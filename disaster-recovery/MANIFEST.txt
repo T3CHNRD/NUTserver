@@ -870,6 +870,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-te
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-142422
 FILE /usr/local/sbin/nut-classify-target-shutdown -> files/usr/local/sbin/nut-classify-target-shutdown mode=0750
 SKIP temp-development-artifact /usr/local/sbin/nut-apc-idf-event-monitor.sh.pre-dedup-fix-20260805-095152
+FILE /usr/local/sbin/nut-sanitize-public-site-docs -> files/usr/local/sbin/nut-sanitize-public-site-docs mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-v240-test-shutdown.sh.pre-solaris-auth-fix-20260825-093420
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-storm-guard-20260903-111943
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-142353

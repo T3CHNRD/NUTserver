@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+
+from pathlib import Path
+import re
+import sys
+
+if len(sys.argv) != 2:
+    print("usage: nut-sanitize-public-site-docs REPO")
+    raise SystemExit(2)
+
+repo = Path(sys.argv[1])
+
+files = [
+    "architecture.md",
+    "docs/nut_backup_inventory.md",
+    "opt/nut-orchestrator-ui/docs/control-center-editable-config-runbook.txt",
+    "opt/nut-orchestrator-ui/docs/emergency-cheat-sheet.md",
+    "opt/nut-orchestrator-ui/docs/runbooks/00_INDEX.txt",
+    "opt/nut-orchestrator-ui/docs/runbooks/01_CONTROL_CENTER_OVERVIEW.txt",
+    "opt/nut-orchestrator-ui/docs/shutdown-flow-chart.md",
+]
+
+private_ip = re.compile(
+    r'(?<![\d.])(?:'
+    r'10\.(?:\d{1,3}\.){2}\d{1,3}|'
+    r'192\.168\.(?:\d{1,3}\.)\d{1,3}|'
+    r'172\.(?:1[6-9]|2\d|3[01])\.(?:\d{1,3}\.)\d{1,3}'
+    r')(?![\d.])'
+)
+
+email = re.compile(
+    r'(?<![A-Za-z0-9._%+-])'
+    r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
+    r'(?![A-Za-z0-9.-])'
+)
+
+company_patterns = [
+    (re.compile(r'Aluminum Blanking Co\.,?\s*Inc\.?', re.I),
+     '<COMPANY_NAME>'),
+    (re.compile(r'Aluminum Blanking', re.I),
+     '<COMPANY_NAME>'),
+    (re.compile(r'\bABCo\b', re.I),
+     '<COMPANY_NAME>'),
+    (re.compile(r'\balbl\.com\b', re.I),
+     '<COMPANY_DOMAIN>'),
+]
+
+changed = 0
+
+for rel in files:
+    path = repo / rel
+
+    if not path.exists():
+        print(f"WARN missing: {rel}")
+        continue
+
+    original = path.read_text(errors="surrogateescape")
+    text = original
+
+    text = private_ip.sub("<INTERNAL_IP>", text)
+
+    for pattern, replacement in company_patterns:
+        text = pattern.sub(replacement, text)
+
+    def replace_email(match):
+        value = match.group(0)
+        lower = value.lower()
+
+        if lower.endswith("@example.com"):
+            return value
+        if lower.endswith("@example.org"):
+            return value
+        if lower.endswith("@example.net"):
+            return value
+        if lower == "noreply@github.com":
+            return value
+
+        return "<EMAIL_ADDRESS>"
+
+    text = email.sub(replace_email, text)
+
+    if text != original:
+        path.write_text(text, errors="surrogateescape")
+        changed += 1
+        print(f"SANITIZED: {rel}")
+    else:
+        print(f"UNCHANGED: {rel}")
+
+print(f"SANITIZED_FILES={changed}")
