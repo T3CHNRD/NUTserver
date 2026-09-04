@@ -1,6 +1,6 @@
 # NUT Server Architecture and Complete Feature Map
 
-This document is the source-of-truth architecture, feature map, file map, function map, and AI handoff reference for the ABCo NUT server project.
+This document is the source-of-truth architecture, feature map, file map, function map, and AI handoff reference for the <COMPANY_NAME> NUT server project.
 
 This file is intended for:
 
@@ -38,8 +38,8 @@ Do not store passwords, tokens, private keys, API keys, SMTP passwords, vCenter 
 | OS | Ubuntu 24.04 LTS |
 | Main repo | `/opt/nut-admin/repo-template` |
 | Live Control Center app | `/opt/nut-orchestrator-ui` |
-| Control Center URL | `http://192.168.3.251/nut-ui` |
-| Dashboard URL | `http://192.168.3.251/nutserver-dashboard.priority1.html` |
+| Control Center URL | `http://<INTERNAL_IP>/nut-ui` |
+| Dashboard URL | `http://<INTERNAL_IP>/nutserver-dashboard.priority1.html` |
 | Flask/Gunicorn bind | `127.0.0.1:5080` |
 | Apache role | Reverse proxy for `/nut-ui/` and static dashboard hosting |
 | GitHub backup branch | `origin/backup-sanitized-initial` |
@@ -1606,7 +1606,7 @@ Use this section when trying to find where a service, log path, mode flag, event
 | `docs/nut_backup_inventory.md` | 49 | Reference | `- /etc/nut/ups.conf` | `` |
 | `etc/nut/config.d/nut-orchestrator.conf` | 8 | Reference | `log_dir=/var/log/nut-orchestrator-ui` | `` |
 | `etc/nut/config.d/nut-orchestrator.conf.template` | 12 | Reference | `log_dir=/var/log/nut-orchestrator-ui` | `` |
-| `etc/nut/config.d/shutdown-verification-targets.conf` | 24 | Reference | `VOIP\|192.168.1.14\|300\|\|/usr/local/sbin/nut-voip-shutdown.sh\|Ubuntu PBX server; SSH root shutdown using systemctl poweroff; ping verification` | `` |
+| `etc/nut/config.d/shutdown-verification-targets.conf` | 24 | Reference | `VOIP\|<INTERNAL_IP>\|300\|\|/usr/local/sbin/nut-voip-shutdown.sh\|Ubuntu PBX server; SSH root shutdown using systemctl poweroff; ping verification` | `` |
 | `etc/nut/config.d/vmware-vm-map.conf` | 7 | Reference | `# /var/log/nut-vmware-inventory/vcenter-inventory-20260512-141229.json` | `` |
 | `etc/nut/production-mode.conf` | 10 | Reference | `# off = live actions blocked; monitoring/logging timers, daily email reports, and nut-monitor.service are stopped` | `` |
 | `etc/nut/restore/restore-targets.json.template` | 43 | Reference | `"name": "upsmon.conf",` | `` |
@@ -2011,8 +2011,8 @@ Confirmed NetApp targets:
 
 | Target | Cluster management IP | Cluster name | Node A | Node B |
 |---|---:|---|---|---|
-| Alblnetapp01 | 192.168.99.20 | alblnetapp01 | alblnetapp01-01 | alblnetapp01-02 |
-| Alblnetapp02 | 192.168.99.30 | alblnetapp02 | alblnetapp02-01 | alblnetapp02-02 |
+| Alblnetapp01 | <INTERNAL_IP> | alblnetapp01 | alblnetapp01-01 | alblnetapp01-02 |
+| Alblnetapp02 | <INTERNAL_IP> | alblnetapp02 | alblnetapp02-01 | alblnetapp02-02 |
 
 Relevant files:
 
@@ -2061,7 +2061,7 @@ Confirmed Blue Iris target:
 
 | Target | IP | Confirmation |
 |---|---:|---|
-| BlueIris | 192.168.1.25 | HTTP response on port 81 returned BlueServer/5.9.9.98 and page content identified Blue Iris Login |
+| BlueIris | <INTERNAL_IP> | HTTP response on port 81 returned BlueServer/5.9.9.98 and page content identified Blue Iris Login |
 
 Relevant files:
 

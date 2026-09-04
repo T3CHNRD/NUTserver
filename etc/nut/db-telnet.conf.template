@@ -1,4 +1,4 @@
-# DB Telnet shutdown credentials for Solaris DB01 / DB02.
+# DB Telnet shutdown credentials for Solaris <DATABASE_SERVER_1> / <DATABASE_SERVER_2>.
 # Managed through NUT Control Center.
 # Do not commit real passwords to GitHub.
 DB_TELNET_USERNAME="jqni"

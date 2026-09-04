@@ -1,7 +1,3 @@
-# TEMPLATE FILE - SANITIZED
-# Copy this file to the matching live path and replace CHANGE_ME values locally.
-# Do not commit live passwords, tokens, private keys, or production-only secrets.
-
 {
   "summary": {
     "editable_config_count": 25,
@@ -12,9 +8,9 @@
   "targets": [
     {
       "id": "ups_conf",
-      "name": CHANGE_ME
-      "live_path": CHANGE_ME
-      "repo_source": CHANGE_ME
+      "name": "ups.conf",
+      "live_path": "/etc/nut/ups.conf",
+      "repo_source": "/opt/nut-admin/repo-template/etc/nut/ups.conf",
       "repo_source_exists": true,
       "live_exists": true,
       "owner": "root",
@@ -48,9 +44,9 @@
       "owner": "root",
       "group": "root",
       "mode": "640",
-      "sensitive": false,
-      "restore_enabled": true,
-      "blocked_reason": ""
+      "sensitive": true,
+      "restore_enabled": false,
+      "blocked_reason": "GitHub copy contains redacted MONITOR credentials; requires secret-preserving restore"
     },
     {
       "id": "upssched_conf",
@@ -306,9 +302,9 @@
     },
     {
       "id": "db_telnet_user",
-      "name": "DB Telnet CHANGE_ME
-      "live_path": CHANGE_ME
-      "repo_source": CHANGE_ME
+      "name": "DB Telnet Username",
+      "live_path": "/etc/nut/db-telnet.user",
+      "repo_source": "/opt/nut-admin/repo-template/etc/nut/db-telnet.user",
       "repo_source_exists": false,
       "live_exists": true,
       "owner": "root",
@@ -320,9 +316,9 @@
     },
     {
       "id": "db_telnet_pass",
-      "name": "DB Telnet CHANGE_ME
-      "live_path": CHANGE_ME
-      "repo_source": CHANGE_ME
+      "name": "DB Telnet Password",
+      "live_path": "/etc/nut/db-telnet.pass",
+      "repo_source": "/opt/nut-admin/repo-template/etc/nut/db-telnet.pass",
       "repo_source_exists": false,
       "live_exists": true,
       "owner": "root",
@@ -334,9 +330,9 @@
     },
     {
       "id": "vcenter_pass",
-      "name": "vCenter CHANGE_ME
-      "live_path": CHANGE_ME
-      "repo_source": CHANGE_ME
+      "name": "vCenter Password",
+      "live_path": "/etc/nut/vcenter.pass",
+      "repo_source": "/opt/nut-admin/repo-template/etc/nut/vcenter.pass",
       "repo_source_exists": false,
       "live_exists": true,
       "owner": "root",

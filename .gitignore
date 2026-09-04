@@ -72,3 +72,10 @@ telegram-alerts.env.*
 *.working-*
 !etc/nut/hypervisors/
 !etc/nut/hypervisors/hypervisor-ssh-fallback.conf.template
+etc/nut/config.d/approved-targets.yml
+){F}.template
+etc/nut/config.d/shutdown-verification-targets.conf
+etc/nut/config.d/vmware-vm-map.conf
+etc/nut/db-telnet.conf
+etc/nut/hosts.conf
+etc/nut/restore/restore-targets.json

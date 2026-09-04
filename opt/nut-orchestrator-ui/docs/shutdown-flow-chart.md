@@ -77,30 +77,30 @@ Begin shutdown sequence
 
 ### Wave 1 — Applications / VMs
 
-1. 192.168.1.75   Exchange
-2. 192.168.1.150  SQL
-3. 192.168.99.86  VMware Assistant
-4. 192.168.1.23   AD / SDC1
-5. 192.168.1.21   Web build
-6. 192.168.1.20   Web prod
-7. 192.168.3.250  Maintenance VM
-8. 192.168.99.92  Parkview
-9. 192.168.99.88  ActiveIQ
-10. 192.168.1.230 Oracle DB
-11. 192.168.1.14  VOIP
+1. <INTERNAL_IP>   Exchange
+2. <INTERNAL_IP>  SQL
+3. <INTERNAL_IP>  VMware Assistant
+4. <INTERNAL_IP>   AD / SDC1
+5. <INTERNAL_IP>   Web build
+6. <INTERNAL_IP>   Web prod
+7. <INTERNAL_IP>  Maintenance VM
+8. <INTERNAL_IP>  Parkview
+9. <INTERNAL_IP>  ActiveIQ
+10. <INTERNAL_IP> Oracle DB
+11. <INTERNAL_IP>  VOIP
 
 ### Wave 2 — ESXi / vCenter
 
-12. 192.168.99.70
-13. 192.168.99.72
-14. 192.168.99.71
-15. 192.168.99.84 (vCenter)
+12. <INTERNAL_IP>
+13. <INTERNAL_IP>
+14. <INTERNAL_IP>
+15. <INTERNAL_IP> (vCenter)
 
 ### Wave 3 — Physical Hosts
 
-16. 192.168.99.62
-17. 192.168.99.61
-18. 192.168.99.60
+16. <INTERNAL_IP>
+17. <INTERNAL_IP>
+18. <INTERNAL_IP>
 
 ---
 
@@ -155,7 +155,7 @@ nut-ui-run-test real
 ## Real Test Phases
 
 Phase 1:
-→ Lansweeper ONLY (192.168.10.158)
+→ Lansweeper ONLY (<INTERNAL_IP>)
 
 Phase 2:
 → Simulated outage
