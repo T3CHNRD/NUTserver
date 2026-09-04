@@ -156,7 +156,7 @@ This section is generated from `/tmp/nut-architecture-inventory/01_all_files.txt
 | `etc/nut/upsstats-single.html` |
 | `etc/nut/vcenter.pass.template` |
 | `etc/nut/vmware.creds.template` |
-| `etc/nut/win2003-192.168.1.24.creds.template` |
+| `etc/nut/windows-rpc.creds.template` |
 | `etc/sudoers.d/nut-orchestrator-ui` |
 | `etc/sudoers.d/nut-orchestrator-ui-production-mode` |
 | `etc/sudoers.d/nut-orchestrator-ui-ups-locator` |
@@ -314,7 +314,7 @@ This section is generated from `/tmp/nut-architecture-inventory/02_file_roles.ts
 | `etc/nut/upsstats.html` | NUT configuration/template |
 | `etc/nut/vcenter.pass.template` | NUT configuration/template |
 | `etc/nut/vmware.creds.template` | NUT configuration/template |
-| `etc/nut/win2003-192.168.1.24.creds.template` | NUT configuration/template |
+| `etc/nut/windows-rpc.creds.template` | NUT configuration/template |
 | `etc/sudoers.d/nut-orchestrator-ui` | sudoers rule |
 | `etc/sudoers.d/nut-orchestrator-ui-production-mode` | sudoers rule |
 | `etc/sudoers.d/nut-orchestrator-ui-ups-locator` | sudoers rule |
