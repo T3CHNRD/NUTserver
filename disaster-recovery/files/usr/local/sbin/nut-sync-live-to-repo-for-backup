@@ -437,6 +437,17 @@ sync_directory_safe_files \
     /opt/nut-orchestrator-ui/docs \
     opt/nut-orchestrator-ui/docs
 
+# PUBLIC GITHUB HELP SANITIZATION
+#
+# Live Help remains the private authoritative operational copy.
+# Replace the repository Help tree only after all raw docs copying
+# has completed.
+/usr/local/sbin/nut-sanitize-public-help \
+    /opt/nut-orchestrator-ui/docs/help \
+    "$REPO/opt/nut-orchestrator-ui/docs/help" \
+    /etc/nut/public-export-redactions.secret
+
+
 # Backup/inventory implementation.
 sync_directory_safe_files \
     /opt/nut-admin/bin \

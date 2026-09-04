@@ -28,6 +28,7 @@
 /etc/nut/restore/restore-targets.json|644|root|root
 /etc/nut/restore/restore-targets.json.pre-mask-password-like-config-lines-20260624-071306|644|root|root
 /etc/nut/restore/restore-targets.json.pre-restore-safety-20260903-142635|644|root|root
+/etc/nut/public-export-redactions.secret|600|root|root
 /etc/nut/upssched.conf.pre-ups-maint-comm-20260721-083908|644|root|root
 /etc/nut/upsstats-single.html|644|root|nut
 /etc/nut/nut-orchestrator.conf.pre-proxmox-placeholder-20260416-150741|600|root|root
@@ -856,6 +857,7 @@
 /usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-telegram-secret-hardening-20260817-095557|755|root|root
 /usr/local/sbin/nut-email-alert-test-send.pre-idf3-event-match-20260623-113126|750|root|root
 /usr/local/sbin/phase2-power-restore-abort.bak.2026-05-08-174132|750|root|root
+/usr/local/sbin/nut-sanitize-public-help|755|root|root
 /usr/local/sbin/nut-notification-recipients|750|root|root
 /usr/local/sbin/nut-production-status|750|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-apc-idf-monitor-backup-20260526-084337|755|root|root

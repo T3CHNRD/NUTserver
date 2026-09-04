@@ -16,6 +16,7 @@ SKIP temp-development-artifact /etc/nut/upssched.conf.pre-alert-only-145-2026081
 SKIP temp-development-artifact /etc/nut/restore-live-test-probe.txt.pre-live-restore-test-20260604-094820
 SKIP temp-development-artifact /etc/nut/upsmon.conf.bak.2026-05-08-171614
 SKIP secret-file /etc/nut/upsd.users
+SKIP secret-file /etc/nut/public-export-redactions.secret
 SKIP temp-development-artifact /etc/nut/upssched.conf.pre-ups-maint-comm-20260721-083908
 FILE /etc/nut/upsstats-single.html -> files/etc/nut/upsstats-single.html mode=0644
 SKIP temp-development-artifact /etc/nut/nut-orchestrator.conf.pre-proxmox-placeholder-20260416-150741
@@ -409,14 +410,14 @@ FILE /opt/nut-orchestrator-ui/docs/shutdown-flow-chart.md -> files/opt/nut-orche
 FILE /opt/nut-orchestrator-ui/docs/control-center-editable-config-runbook.txt -> files/opt/nut-orchestrator-ui/docs/control-center-editable-config-runbook.txt mode=0644
 FILE /opt/nut-orchestrator-ui/docs/GITHUB_PROJECT_README.md -> files/opt/nut-orchestrator-ui/docs/GITHUB_PROJECT_README.md mode=0644
 FILE /opt/nut-orchestrator-ui/docs/emergency-cheat-sheet.md -> files/opt/nut-orchestrator-ui/docs/emergency-cheat-sheet.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/10_TESTS_AND_LOGS_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/10_TESTS_AND_LOGS_HOWTOS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/00_HELP_INDEX.md -> files/opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/00_HELP_INDEX.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/05_NOTIFICATION_SETTINGS.md.pre-step8e-20260827-124841
-FILE /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/02_PROTECTION_MODES.md -> files/opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/02_PROTECTION_MODES.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/05_NOTIFICATION_SETTINGS.md -> files/opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/05_NOTIFICATION_SETTINGS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/18_CREDENTIAL_AND_PASSWORD_CHANGES.md -> files/opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/18_CREDENTIAL_AND_PASSWORD_CHANGES.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/09_CONFIGURATION_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/09_CONFIGURATION_HOWTOS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/01_GETTING_STARTED.md -> files/opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/01_GETTING_STARTED.md mode=0644
+SKIP historical-help-artifact /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/10_TESTS_AND_LOGS_HOWTOS.md
+SKIP historical-help-artifact /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/00_HELP_INDEX.md
+SKIP historical-help-artifact /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/05_NOTIFICATION_SETTINGS.md.pre-step8e-20260827-124841
+SKIP historical-help-artifact /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/02_PROTECTION_MODES.md
+SKIP historical-help-artifact /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/05_NOTIFICATION_SETTINGS.md
+SKIP historical-help-artifact /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/18_CREDENTIAL_AND_PASSWORD_CHANGES.md
+SKIP historical-help-artifact /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/09_CONFIGURATION_HOWTOS.md
+SKIP historical-help-artifact /opt/nut-orchestrator-ui/docs/help.pre-runbook-import-20260827-125952/01_GETTING_STARTED.md
 SKIP unreconciled-help-source /opt/nut-orchestrator-ui/docs/help-sources/HELP_REMAINING_WORK.md
 SKIP unreconciled-help-source /opt/nut-orchestrator-ui/docs/help-sources/HELP_FORMAL_COVERAGE_AUDIT.md
 SKIP unreconciled-help-source /opt/nut-orchestrator-ui/docs/help-sources/README.md
@@ -500,101 +501,101 @@ SKIP unreconciled-help-source /opt/nut-orchestrator-ui/docs/help-sources/sources
 SKIP unreconciled-help-source /opt/nut-orchestrator-ui/docs/help-sources/sources/NUT Backup Manifest.txt
 SKIP unreconciled-help-source /opt/nut-orchestrator-ui/docs/help-sources/sources/NUT Roll Back.txt
 SKIP unreconciled-help-source /opt/nut-orchestrator-ui/docs/help-sources/sources/NUT Server Phase 2 Summary.txt
-FILE /opt/nut-orchestrator-ui/docs/help/06_TELEGRAM_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/06_TELEGRAM_HOWTOS.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md.pre-upsconf-20260902_142738
-FILE /opt/nut-orchestrator-ui/docs/help/REF_12_upsmon_conf.md -> files/opt/nut-orchestrator-ui/docs/help/REF_12_upsmon_conf.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md.bak-weather-help-20260902_074604
-FILE /opt/nut-orchestrator-ui/docs/help/REF_39_nut_orchestrator_sh.md -> files/opt/nut-orchestrator-ui/docs/help/REF_39_nut_orchestrator_sh.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_13_upssched_conf.md -> files/opt/nut-orchestrator-ui/docs/help/REF_13_upssched_conf.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_03_EVENTS_TAB.md -> files/opt/nut-orchestrator-ui/docs/help/REF_03_EVENTS_TAB.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/10_TESTS_AND_LOGS_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/10_TESTS_AND_LOGS_HOWTOS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_01_CONTROL_CENTER_OVERVIEW.md -> files/opt/nut-orchestrator-ui/docs/help/REF_01_CONTROL_CENTER_OVERVIEW.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md.before-inline-links-20260904-082000
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/07_EMAIL_HOWTOS.md.before-inline-links-20260904-082314
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/07_EMAIL_HOWTOS.md.before-notification-reference-20260904-075248
-FILE /opt/nut-orchestrator-ui/docs/help/REF_37_nut_ui_run_test.md -> files/opt/nut-orchestrator-ui/docs/help/REF_37_nut_ui_run_test.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/02_PROTECTION_MODES.md.pre-normalize-20260902_104032
-FILE /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md -> files/opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md.before-inline-links-20260904-085750
-FILE /opt/nut-orchestrator-ui/docs/help/07_EMAIL_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/07_EMAIL_HOWTOS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/17_TROUBLESHOOTING_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/17_TROUBLESHOOTING_HOWTOS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md.pre-step8e-20260827-124841
-FILE /opt/nut-orchestrator-ui/docs/help/REF_02_MONITORING_TAB.md -> files/opt/nut-orchestrator-ui/docs/help/REF_02_MONITORING_TAB.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/20_UPS_INVENTORY_AND_ACTIONS.md -> files/opt/nut-orchestrator-ui/docs/help/20_UPS_INVENTORY_AND_ACTIONS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_11_upsd_conf.md -> files/opt/nut-orchestrator-ui/docs/help/REF_11_upsd_conf.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/12_RESTORE_AND_DR_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/12_RESTORE_AND_DR_HOWTOS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_40_nut_local_final_shutdown.md -> files/opt/nut-orchestrator-ui/docs/help/REF_40_nut_local_final_shutdown.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md.pre-normalize-20260902_104032
-FILE /opt/nut-orchestrator-ui/docs/help/REF_20_shutdown_verification_targets_conf.md -> files/opt/nut-orchestrator-ui/docs/help/REF_20_shutdown_verification_targets_conf.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_31_nut_synology_shutdown.md -> files/opt/nut-orchestrator-ui/docs/help/REF_31_nut_synology_shutdown.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_19_dashboard_ui_json.md -> files/opt/nut-orchestrator-ui/docs/help/REF_19_dashboard_ui_json.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/02_PROTECTION_MODES.md -> files/opt/nut-orchestrator-ui/docs/help/02_PROTECTION_MODES.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/16_LOGS_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/16_LOGS_HOWTOS.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md.before-ups-inventory-20260904-072920
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/12_RESTORE_AND_DR_HOWTOS.md.before-inline-links-20260904-085340
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md.pre-credential-guidance-20260902_101840
-FILE /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md -> files/opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_52_vcenter_pass.md -> files/opt/nut-orchestrator-ui/docs/help/REF_52_vcenter_pass.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_30_nut_lansweeper_shutdown.md -> files/opt/nut-orchestrator-ui/docs/help/REF_30_nut_lansweeper_shutdown.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_00_INDEX.md -> files/opt/nut-orchestrator-ui/docs/help/REF_00_INDEX.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md.bak-weather-cache-20260902_073854
-FILE /opt/nut-orchestrator-ui/docs/help/15_SERVICES_AND_TIMERS_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/15_SERVICES_AND_TIMERS_HOWTOS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_34_nut_blueiris_shutdown.md -> files/opt/nut-orchestrator-ui/docs/help/REF_34_nut_blueiris_shutdown.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/02_PROTECTION_MODES.md.pre-ht001-006-20260902_105534
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/01_GETTING_STARTED.md.pre-ht001-006-20260902_105534
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.pre-crosslinks-20260902_140448
-FILE /opt/nut-orchestrator-ui/docs/help/REF_07_SAFE_EDITING_RULES.md -> files/opt/nut-orchestrator-ui/docs/help/REF_07_SAFE_EDITING_RULES.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_16_nut_orchestrator_conf.md -> files/opt/nut-orchestrator-ui/docs/help/REF_16_nut_orchestrator_conf.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/03_MONITORING_HOWTOS.md.before-inline-links-20260904-082000
-FILE /opt/nut-orchestrator-ui/docs/help/18_CREDENTIAL_AND_PASSWORD_CHANGES.md -> files/opt/nut-orchestrator-ui/docs/help/18_CREDENTIAL_AND_PASSWORD_CHANGES.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md.before-inline-links-20260904-082314
-FILE /opt/nut-orchestrator-ui/docs/help/11_BACKUP_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/11_BACKUP_HOWTOS.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.before-ups-link-20260904-073425
-FILE /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_10_ups_conf.md -> files/opt/nut-orchestrator-ui/docs/help/REF_10_ups_conf.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/04_EVENTS_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/04_EVENTS_HOWTOS.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.pre-task10f-20260902_142430
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/11_BACKUP_HOWTOS.md.before-inline-links-20260904-085750
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.before-ups-link-20260904-073425
-FILE /opt/nut-orchestrator-ui/docs/help/REF_18_approved_targets_yml.md -> files/opt/nut-orchestrator-ui/docs/help/REF_18_approved_targets_yml.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_06_PHASE1_LANSWEEPER_LIVE_TEST.md -> files/opt/nut-orchestrator-ui/docs/help/REF_06_PHASE1_LANSWEEPER_LIVE_TEST.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/03_MONITORING_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/03_MONITORING_HOWTOS.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/11_BACKUP_HOWTOS.md.before-inline-links-20260904-085340
-FILE /opt/nut-orchestrator-ui/docs/help/REF_14_nut_conf.md -> files/opt/nut-orchestrator-ui/docs/help/REF_14_nut_conf.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_51_db_telnet_pass.md -> files/opt/nut-orchestrator-ui/docs/help/REF_51_db_telnet_pass.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md.before-notification-reference-20260904-075248
-FILE /opt/nut-orchestrator-ui/docs/help/REF_17_config_d_nut_orchestrator_conf.md -> files/opt/nut-orchestrator-ui/docs/help/REF_17_config_d_nut_orchestrator_conf.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/21_NOTIFICATION_EVENT_REFERENCE.md -> files/opt/nut-orchestrator-ui/docs/help/21_NOTIFICATION_EVENT_REFERENCE.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_36_nut_netapp_halt.md -> files/opt/nut-orchestrator-ui/docs/help/REF_36_nut_netapp_halt.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/19_TECHNICAL_REFERENCE_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/19_TECHNICAL_REFERENCE_HOWTOS.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/12_RESTORE_AND_DR_HOWTOS.md.pre-task7c-20260902_135604
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md.before-inline-links-20260904-085750
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/06_TELEGRAM_HOWTOS.md.before-inline-links-20260904-082314
-FILE /opt/nut-orchestrator-ui/docs/help/REF_33_nut_db_shutdown.md -> files/opt/nut-orchestrator-ui/docs/help/REF_33_nut_db_shutdown.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_05_CONFIGURATION_TAB.md -> files/opt/nut-orchestrator-ui/docs/help/REF_05_CONFIGURATION_TAB.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md.pre-task10f-20260902_142430
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/01_GETTING_STARTED.md.pre-task7c-20260902_135604
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md.before-notification-reference-20260904-075248
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.before-ups-inventory-20260904-072920
-FILE /opt/nut-orchestrator-ui/docs/help/REF_35_nut_vmware_shutdown.md -> files/opt/nut-orchestrator-ui/docs/help/REF_35_nut_vmware_shutdown.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/01_GETTING_STARTED.md -> files/opt/nut-orchestrator-ui/docs/help/01_GETTING_STARTED.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.before-ups-inventory-20260904-072920
-FILE /opt/nut-orchestrator-ui/docs/help/18_SECURITY_HOWTOS.md -> files/opt/nut-orchestrator-ui/docs/help/18_SECURITY_HOWTOS.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/10_TESTS_AND_LOGS_HOWTOS.md.before-inline-links-20260904-082314
-FILE /opt/nut-orchestrator-ui/docs/help/REF_50_db_telnet_user.md -> files/opt/nut-orchestrator-ui/docs/help/REF_50_db_telnet_user.md mode=0644
-FILE /opt/nut-orchestrator-ui/docs/help/REF_04_TESTS_AND_LOGS_TAB.md -> files/opt/nut-orchestrator-ui/docs/help/REF_04_TESTS_AND_LOGS_TAB.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md.before-inline-links-20260904-081856
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/04_EVENTS_HOWTOS.md.before-inline-links-20260904-082000
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/07_EMAIL_HOWTOS.md.before-inline-links-20260904-085750
-FILE /opt/nut-orchestrator-ui/docs/help/REF_38_nut_ui_run_real_test_approved.md -> files/opt/nut-orchestrator-ui/docs/help/REF_38_nut_ui_run_real_test_approved.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/06_TELEGRAM_HOWTOS.md.before-inline-links-20260904-085750
-FILE /opt/nut-orchestrator-ui/docs/help/REF_32_nut_voip_shutdown.md -> files/opt/nut-orchestrator-ui/docs/help/REF_32_nut_voip_shutdown.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.before-inline-links-20260904-085750
-FILE /opt/nut-orchestrator-ui/docs/help/REF_15_hosts_conf.md -> files/opt/nut-orchestrator-ui/docs/help/REF_15_hosts_conf.md mode=0644
-SKIP temp-development-artifact /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md.before-ups-link-20260904-073425
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/06_TELEGRAM_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md.pre-upsconf-20260902_142738
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_12_upsmon_conf.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md.bak-weather-help-20260902_074604
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_39_nut_orchestrator_sh.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_13_upssched_conf.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_03_EVENTS_TAB.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/10_TESTS_AND_LOGS_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_01_CONTROL_CENTER_OVERVIEW.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md.before-inline-links-20260904-082000
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/07_EMAIL_HOWTOS.md.before-inline-links-20260904-082314
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/07_EMAIL_HOWTOS.md.before-notification-reference-20260904-075248
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_37_nut_ui_run_test.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/02_PROTECTION_MODES.md.pre-normalize-20260902_104032
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md.before-inline-links-20260904-085750
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/07_EMAIL_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/17_TROUBLESHOOTING_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md.pre-step8e-20260827-124841
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_02_MONITORING_TAB.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/20_UPS_INVENTORY_AND_ACTIONS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_11_upsd_conf.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/12_RESTORE_AND_DR_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_40_nut_local_final_shutdown.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md.pre-normalize-20260902_104032
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_20_shutdown_verification_targets_conf.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_31_nut_synology_shutdown.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_19_dashboard_ui_json.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/02_PROTECTION_MODES.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/16_LOGS_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md.before-ups-inventory-20260904-072920
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/12_RESTORE_AND_DR_HOWTOS.md.before-inline-links-20260904-085340
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md.pre-credential-guidance-20260902_101840
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_52_vcenter_pass.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_30_nut_lansweeper_shutdown.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_00_INDEX.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md.bak-weather-cache-20260902_073854
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/15_SERVICES_AND_TIMERS_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_34_nut_blueiris_shutdown.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/02_PROTECTION_MODES.md.pre-ht001-006-20260902_105534
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/01_GETTING_STARTED.md.pre-ht001-006-20260902_105534
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.pre-crosslinks-20260902_140448
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_07_SAFE_EDITING_RULES.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_16_nut_orchestrator_conf.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/03_MONITORING_HOWTOS.md.before-inline-links-20260904-082000
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/18_CREDENTIAL_AND_PASSWORD_CHANGES.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md.before-inline-links-20260904-082314
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/11_BACKUP_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.before-ups-link-20260904-073425
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_10_ups_conf.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/04_EVENTS_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.pre-task10f-20260902_142430
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/11_BACKUP_HOWTOS.md.before-inline-links-20260904-085750
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.before-ups-link-20260904-073425
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_18_approved_targets_yml.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_06_PHASE1_LANSWEEPER_LIVE_TEST.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/03_MONITORING_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/11_BACKUP_HOWTOS.md.before-inline-links-20260904-085340
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_14_nut_conf.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_51_db_telnet_pass.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md.before-notification-reference-20260904-075248
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_17_config_d_nut_orchestrator_conf.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/21_NOTIFICATION_EVENT_REFERENCE.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_36_nut_netapp_halt.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/19_TECHNICAL_REFERENCE_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/12_RESTORE_AND_DR_HOWTOS.md.pre-task7c-20260902_135604
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md.before-inline-links-20260904-085750
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/06_TELEGRAM_HOWTOS.md.before-inline-links-20260904-082314
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_33_nut_db_shutdown.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_05_CONFIGURATION_TAB.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md.pre-task10f-20260902_142430
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/01_GETTING_STARTED.md.pre-task7c-20260902_135604
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md.before-notification-reference-20260904-075248
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.before-ups-inventory-20260904-072920
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_35_nut_vmware_shutdown.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/01_GETTING_STARTED.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.before-ups-inventory-20260904-072920
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/18_SECURITY_HOWTOS.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/10_TESTS_AND_LOGS_HOWTOS.md.before-inline-links-20260904-082314
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_50_db_telnet_user.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_04_TESTS_AND_LOGS_TAB.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md.before-inline-links-20260904-081856
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/04_EVENTS_HOWTOS.md.before-inline-links-20260904-082000
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/07_EMAIL_HOWTOS.md.before-inline-links-20260904-085750
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_38_nut_ui_run_real_test_approved.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/06_TELEGRAM_HOWTOS.md.before-inline-links-20260904-085750
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_32_nut_voip_shutdown.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.before-inline-links-20260904-085750
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_15_hosts_conf.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md.before-ups-link-20260904-073425
 FILE /opt/nut-orchestrator-ui/docs/runbooks/39_nut_orchestrator_sh.txt -> files/opt/nut-orchestrator-ui/docs/runbooks/39_nut_orchestrator_sh.txt mode=0644
 FILE /opt/nut-orchestrator-ui/docs/runbooks/07_SAFE_EDITING_RULES.txt -> files/opt/nut-orchestrator-ui/docs/runbooks/07_SAFE_EDITING_RULES.txt mode=0644
 FILE /opt/nut-orchestrator-ui/docs/runbooks/03_EVENTS_TAB.txt -> files/opt/nut-orchestrator-ui/docs/runbooks/03_EVENTS_TAB.txt mode=0644
@@ -836,6 +837,7 @@ FILE /usr/local/sbin/nut-weather-cache-refresh -> files/usr/local/sbin/nut-weath
 SKIP temp-development-artifact /usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-telegram-secret-hardening-20260817-095557
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-idf3-event-match-20260623-113126
 SKIP temp-development-artifact /usr/local/sbin/phase2-power-restore-abort.bak.2026-05-08-174132
+FILE /usr/local/sbin/nut-sanitize-public-help -> files/usr/local/sbin/nut-sanitize-public-help mode=0755
 FILE /usr/local/sbin/nut-notification-recipients -> files/usr/local/sbin/nut-notification-recipients mode=0750
 FILE /usr/local/sbin/nut-production-status -> files/usr/local/sbin/nut-production-status mode=0750
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-apc-idf-monitor-backup-20260526-084337

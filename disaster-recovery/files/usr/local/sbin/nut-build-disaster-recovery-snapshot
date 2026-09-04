@@ -145,6 +145,19 @@ def project_relevant(path):
     return False
 
 def should_include(path):
+    # PUBLIC REPO RAW HELP EXCLUSION
+    # Public GitHub uses the sanitized Help tree in the main repository.
+    # Never duplicate the private live Help into disaster-recovery/files.
+    path_text = str(path)
+
+    if path_text.startswith("/opt/nut-orchestrator-ui/docs/help/"):
+        manifest(f"SKIP raw-live-help-public-copy-exists {path}")
+        return False
+
+    if "/opt/nut-orchestrator-ui/docs/help.pre-" in path_text:
+        manifest(f"SKIP historical-help-artifact {path}")
+        return False
+
     # PUBLIC REPO SITE-LOCAL HYPERVISOR EXCLUSION
     # Keep the installation-specific hypervisor host/IP/topology
     # configuration out of the public GitHub repository.
