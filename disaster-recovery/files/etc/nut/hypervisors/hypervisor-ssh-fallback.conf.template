@@ -1,0 +1,77 @@
+# TEMPLATE FILE - SANITIZED
+# Copy this file to the matching live path and replace CHANGE_ME values locally.
+# Do not commit live passwords, tokens, private keys, or production-only secrets.
+
+# Copyright (c) 2026 T3CHNRD. All rights reserved.
+# NUT hypervisor SSH fallback configuration.
+# Prepared for ESXi now and Proxmox later.
+# This file is intentionally execution-disabled until SSH is approved, enabled, trusted, and read-only tested.
+
+HYPERVISOR_SSH_FALLBACK_CONFIGURED=1
+HYPERVISOR_SSH_FALLBACK_ENABLED=0
+
+# Primary VMware path remains vCenter API.
+VMWARE_PRIMARY_HOST_SHUTDOWN_METHOD=CHANGE_ME_HOST_OR_URL
+
+# SSH fallback can be used later only if enabled and tested.
+VMWARE_FALLBACK_HOST_SHUTDOWN_METHOD=CHANGE_ME_HOST_OR_URL
+PROXMOX_FALLBACK_HOST_SHUTDOWN_METHOD=CHANGE_ME_HOST_OR_URL
+
+HYPERVISOR_SSH_KEY=CHANGE_ME
+
+# -----------------------------
+# ESXi current known data
+# -----------------------------
+ESXI_SSH_USER=CHANGE_ME_USERNAME
+
+# vCenter reports these names, but NUT server DNS currently does not resolve them.
+ESXI_HOST_01_NAME=CHANGE_ME_HOST_OR_URL
+ESXI_HOST_02_NAME=CHANGE_ME_HOST_OR_URL
+ESXI_HOST_03_NAME=CHANGE_ME_HOST_OR_URL
+
+# Legacy target IPs exist, but exact hostname-to-IP mapping still needs confirmation.
+# Keep these as candidate IPs until mapped and tested.
+ESXI_CANDIDATE_IP_1=CHANGE_ME_HOST_OR_URL
+ESXI_CANDIDATE_IP_2=CHANGE_ME_HOST_OR_URL
+ESXI_CANDIDATE_IP_3=CHANGE_ME_HOST_OR_URL
+
+ESXI_HOST_01_IP=CHANGE_ME_HOST_OR_URL
+ESXI_HOST_02_IP=CHANGE_ME_HOST_OR_URL
+ESXI_HOST_03_IP=CHANGE_ME_HOST_OR_URL
+
+ESXI_SHUTDOWN_REASON="power outage"
+ESXI_SHUTDOWN_DELAY_SECONDS=60
+
+# Future ESXi live gate requirements:
+#   HYPERVISOR_SSH_FALLBACK_ENABLED=0
+#   ALLOW_REAL_TEST=1
+#   REAL_TEST_PHASE=phase3-full
+#   VMWARE_HOST_ACTION_APPROVED=1
+#   CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN="power outage"
+
+# -----------------------------
+# Proxmox future migration wiring
+# -----------------------------
+PROXMOX_SSH_USER=CHANGE_ME_USERNAME
+
+# Fill these in only if/when Proxmox hosts exist.
+PROXMOX_HOST_01_NAME=CHANGE_ME_HOST_OR_URL
+PROXMOX_HOST_01_IP=CHANGE_ME_HOST_OR_URL
+
+PROXMOX_HOST_02_NAME=CHANGE_ME_HOST_OR_URL
+PROXMOX_HOST_02_IP=CHANGE_ME_HOST_OR_URL
+
+PROXMOX_HOST_03_NAME=CHANGE_ME_HOST_OR_URL
+PROXMOX_HOST_03_IP=CHANGE_ME_HOST_OR_URL
+
+PROXMOX_SHUTDOWN_REASON="power outage"
+
+# Future Proxmox live gate requirements:
+#   HYPERVISOR_SSH_FALLBACK_ENABLED=0
+#   ALLOW_REAL_TEST=1
+#   REAL_TEST_PHASE=phase3-full
+#   PROXMOX_HOST_ACTION_APPROVED=1
+#   CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN="power outage"
+
+# Safety note:
+# This config prepares wiring only. It does not execute anything by itself.

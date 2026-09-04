@@ -54,22 +54,22 @@ PHASE1=(
 )
 
 PHASE2=(
-"Albl-exch2019"
-"albl-SageSQL"
+"example-exch2019"
+"example-SageSQL"
 "alblvvsaa"
 )
 
 PHASE3=(
-"ALBL-WSUS"
-"ALBL-ActiveIQ"
-"ALBL-ParkView-1"
+"example-WSUS"
+"example-ActiveIQ"
+"example-ParkView-1"
 )
 
 PHASE4=(
-"ALBL-SDC1"
+"example-SDC1"
 )
 
-VCENTER_VM="${VMWARE_VCSA_VM:-ALBL-VCSA}"
+VCENTER_VM="${VMWARE_VCSA_VM:-example-VCSA}"
 
 HYPERVISOR_FALLBACK_CONFIG="/etc/nut/hypervisors/hypervisor-ssh-fallback.conf"
 

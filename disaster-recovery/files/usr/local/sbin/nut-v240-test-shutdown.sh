@@ -4,20 +4,20 @@
 # Dedicated Sun Fire V240 shutdown validation wrapper.
 #
 # SAFETY:
-#   This test wrapper may ONLY target TESTV240 at 192.168.10.85.
-#   It must never target DB01, DB02, or the future production .13 address.
+#   This test wrapper may ONLY target TEST_SOLARIS at 198.51.100.100.
+#   It must never target DB_SERVER_1, DB_SERVER_2, or the future production .13 address.
 
 set -u
 
 TARGET="${1:-}"
 
-TEST_HOST="192.168.10.85"
+TEST_HOST="198.51.100.10"
 
-DB01_PROD="192.168.1.9"
-DB02_PROD="192.168.1.11"
-V240_FUTURE="192.168.1.13"
+DB01_PROD="198.51.100.11"
+DB02_PROD="198.51.100.12"
+V240_FUTURE="198.51.100.13"
 
-SECRET_FILE="[REDACTED]"
+SECRET_FILE="/etc/nut/secrets/v240-test-shutdown.env"
 PRODUCTION_ENV="/etc/nut/production-mode.conf"
 LOG_FILE="/var/log/nut-v240-test-shutdown.log"
 
@@ -53,8 +53,8 @@ get_live_actions_allowed() {
     echo "${NUT_ALLOW_LIVE_ACTIONS:-0}"
 }
 
-if [ "$TARGET" != "TESTV240" ]; then
-    die "only target TESTV240 is permitted"
+if [ "$TARGET" != "TEST_SOLARIS" ]; then
+    die "only target TEST_SOLARIS is permitted"
 fi
 
 HOST="$TEST_HOST"
@@ -65,11 +65,11 @@ case "$HOST" in
         ;;
 esac
 
-if [ "$HOST" != "192.168.10.85" ]; then
+if [ "$HOST" != "198.51.100.10" ]; then
     die "test host safety lock failed"
 fi
 
-log "TESTV240 wrapper starting"
+log "TEST_SOLARIS wrapper starting"
 log "Target=$TARGET"
 log "Host=$HOST"
 log "SIMULATE=$SIMULATE"
@@ -85,8 +85,8 @@ if [ "$ALLOW_V240_TEST" != "1" ]; then
     die "ALLOW_V240_TEST is not 1"
 fi
 
-if [ "$V240_TEST_CONFIRM" != "TESTV240-192.168.10.85" ]; then
-    die "V240_TEST_CONFIRM does not exactly match TESTV240-192.168.10.85"
+if [ "$V240_TEST_CONFIRM" != "TEST_SOLARIS-198.51.100.10" ]; then
+    die "V240_TEST_CONFIRM does not exactly match TEST_SOLARIS-198.51.100.10"
 fi
 
 LIVE_ALLOWED="$(get_live_actions_allowed)"
@@ -129,17 +129,17 @@ fi
 # a successful shutdown.
 #
 if ! ping -c 1 -W 2 "$HOST" >/dev/null 2>&1; then
-    die "TESTV240 is not reachable before shutdown attempt"
+    die "TEST_SOLARIS is not reachable before shutdown attempt"
 fi
 
 #
 # Confirm Telnet port is reachable before sending any command.
 #
 if ! timeout 5 bash -c "</dev/tcp/${HOST}/23" >/dev/null 2>&1; then
-    die "TESTV240 Telnet port 23 is not reachable"
+    die "TEST_SOLARIS Telnet port 23 is not reachable"
 fi
 
-log "PRECHECK PASS: TESTV240 responds to ping and Telnet port 23"
+log "PRECHECK PASS: TEST_SOLARIS responds to ping and Telnet port 23"
 
 export V240_TEST_HOST="$HOST"
 export V240_TEST_USERNAME
@@ -222,13 +222,13 @@ if [ "$COMMAND_RC" -ne 0 ]; then
     exit "$COMMAND_RC"
 fi
 
-log "COMMAND SENT: waiting for TESTV240 shutdown verification"
+log "COMMAND SENT: waiting for TEST_SOLARIS shutdown verification"
 
 VERIFY_RC=99
 
 if [ -x /usr/local/sbin/nut-verify-target-down.sh ]; then
     /usr/local/sbin/nut-verify-target-down.sh \
-        TESTV240 \
+        TEST_SOLARIS \
         "$HOST" \
         "$VERIFY_TIMEOUT"
 
@@ -239,7 +239,7 @@ fi
 
 if [ -x /usr/local/sbin/nut-classify-shutdown-result ]; then
     /usr/local/sbin/nut-classify-shutdown-result \
-        TESTV240 \
+        TEST_SOLARIS \
         "$COMMAND_RC" \
         "$VERIFY_RC"
 
@@ -251,10 +251,10 @@ fi
 
 case "$CLASSIFY_RC" in
     0)
-        log "PASS: TESTV240 shutdown confirmed"
+        log "PASS: TEST_SOLARIS shutdown confirmed"
         ;;
     1)
-        log "FAIL: TESTV240 shutdown failed or remained online"
+        log "FAIL: TEST_SOLARIS shutdown failed or remained online"
         ;;
     2)
         log "UNKNOWN: shutdown could not be verified"

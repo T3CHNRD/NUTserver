@@ -4,13 +4,13 @@ set -u
 
 TARGET="${1:-}"
 
-V24013_HOST="192.168.1.13"
+V24013_HOST="198.51.100.10"
 
-DB01_PROD="192.168.1.9"
-DB02_PROD="192.168.1.11"
-TESTV240_OLD="192.168.10.85"
+DB01_PROD="198.51.100.11"
+DB02_PROD="198.51.100.12"
+TESTV240_OLD="198.51.100.13"
 
-SECRET_FILE="[REDACTED]"
+SECRET_FILE="/etc/nut/secrets/solaris-server-shutdown.env"
 
 SIMULATE="${SIMULATE:-1}"
 ALLOW_REAL_TEST="${ALLOW_REAL_TEST:-0}"
@@ -21,7 +21,7 @@ COMMAND_TIMEOUT="${V24013_COMMAND_TIMEOUT:-30}"
 
 SHUTDOWN_COMMAND="/usr/sbin/shutdown -i5 -g0 -y 'UPS power event'"
 
-LOG_FILE="/var/log/nut-v24013-shutdown.log"
+LOG_FILE="/var/log/nut-solaris-server-shutdown.log"
 
 log() {
     printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" \
@@ -51,29 +51,29 @@ except Exception:
     fi
 }
 
-if [ "$TARGET" != "V24013" ]; then
-    die "only target V24013 is permitted"
+if [ "$TARGET" != "SOLARIS_SERVER" ]; then
+    die "only target SOLARIS_SERVER is permitted"
 fi
 
 HOST="$V24013_HOST"
 
 case "$HOST" in
     "$DB01_PROD")
-        die "DB01 production address is prohibited"
+        die "DB_SERVER_1 production address is prohibited"
         ;;
     "$DB02_PROD")
-        die "DB02 production address is prohibited"
+        die "DB_SERVER_2 production address is prohibited"
         ;;
     "$TESTV240_OLD")
-        die "old TESTV240 address is prohibited"
+        die "old TEST_SOLARIS address is prohibited"
         ;;
 esac
 
-if [ "$HOST" != "192.168.1.13" ]; then
-    die "V24013 host does not exactly match 192.168.1.13"
+if [ "$HOST" != "198.51.100.10" ]; then
+    die "SOLARIS_SERVER host does not exactly match 198.51.100.10"
 fi
 
-log "V24013 shutdown wrapper starting"
+log "SOLARIS_SERVER shutdown wrapper starting"
 log "Target=$TARGET"
 log "Host=$HOST"
 log "SIMULATE=$SIMULATE"
@@ -108,7 +108,7 @@ if [ "$LIVE_ALLOWED" != "1" ]; then
 fi
 
 if [ ! -r "$SECRET_FILE" ]; then
-    die "protected V24013 credential file is unavailable"
+    die "protected SOLARIS_SERVER credential file is unavailable"
 fi
 
 # shellcheck disable=SC1090
@@ -126,14 +126,14 @@ if [ -z "$V24013_PASSWORD" ]; then
 fi
 
 if ! ping -c 2 -W 2 "$HOST" >/dev/null 2>&1; then
-    die "V24013 is not reachable before shutdown attempt"
+    die "SOLARIS_SERVER is not reachable before shutdown attempt"
 fi
 
 if ! timeout 5 bash -c "</dev/tcp/${HOST}/23" >/dev/null 2>&1; then
-    die "V24013 Telnet port 23 is not reachable"
+    die "SOLARIS_SERVER Telnet port 23 is not reachable"
 fi
 
-log "PRECHECK PASS: V24013 responds to ping and Telnet port 23"
+log "PRECHECK PASS: SOLARIS_SERVER responds to ping and Telnet port 23"
 
 export V24013_HOST
 export V24013_USERNAME
@@ -211,9 +211,9 @@ EXPECT
 COMMAND_RC=$?
 
 if [ "$COMMAND_RC" -ne 0 ]; then
-    log "FAIL: V24013 Telnet shutdown command failed rc=$COMMAND_RC"
+    log "FAIL: SOLARIS_SERVER Telnet shutdown command failed rc=$COMMAND_RC"
     exit "$COMMAND_RC"
 fi
 
-log "COMMAND SENT: V24013 Solaris shutdown command accepted"
+log "COMMAND SENT: SOLARIS_SERVER Solaris shutdown command accepted"
 exit 0

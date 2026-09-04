@@ -1,5 +1,5 @@
 [Unit]
-Description=ALBL NUT Private Telegram Command Bot
+Description=EXAMPLE NUT Private Telegram Command Bot
 Wants=network-online.target
 After=network-online.target nut-monitor.service
 PartOf=nut-monitor.service

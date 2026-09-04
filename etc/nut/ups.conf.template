@@ -8,7 +8,7 @@ group = nut
 
 [ups1]
     driver = snmp-ups
-    port = 192.168.3.153
+    port = 198.51.100.10
     community = abc_public_101
     pollinterval = 2
     snmp_version = v1
@@ -30,28 +30,28 @@ group = nut
 
 [ups4]
     driver = snmp-ups
-    port = 192.168.3.152
+    port = 198.51.100.11
     community = abc_public_101
     snmp_version = v1
     desc = "APC Smart-UPS 3000"
 
 [ups5]
     driver = snmp-ups
-    port = 192.168.3.150
+    port = 198.51.100.12
     community = abc_public_101
     snmp_version = v1
     desc = "APC Smart-UPS 3000 XLM"
 
 [ups6]
     driver = snmp-ups
-    port = 192.168.3.154
+    port = 198.51.100.13
     community = abc_public_101
     snmp_version = v2c
     desc = "Tripp Lite SU3000RTXL3U"
 
 [ups7]
     driver = snmp-ups
-    port = 192.168.3.151
+    port = 198.51.100.14
     community = abc_public_101
     snmp_version = v2c
     desc = "Tripp Lite SU3000RTXL3U"
@@ -65,7 +65,7 @@ group = nut
 
 [ups9]
     driver = snmp-ups
-    port = 192.168.3.252
+    port = 198.51.100.15
     community = abc_public_101
     snmp_version = v2c
     desc = "Tripp Lite SU5000RT4UHV"

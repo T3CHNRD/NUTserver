@@ -30,7 +30,7 @@ SSL_STATE="STARTTLS"
 EMAIL_RECIPIENTS=CHANGE_ME_HOST_OR_URL
 
 # Sender / subject settings
-EMAIL_FROM="tvedders@albl.com"
+EMAIL_FROM="tvedders@example.com"
 EMAIL_SUBJECT_PREFIX="[NUT Server Reports]"
 
 # OFF mode:

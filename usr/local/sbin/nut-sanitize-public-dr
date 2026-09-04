@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+
+from pathlib import Path
+import ipaddress
+import re
+import shutil
+import sys
+
+repo = Path("/opt/nut-admin/repo-template")
+dr = repo / "disaster-recovery/files"
+
+if not dr.exists():
+    print("FAIL: disaster-recovery/files missing")
+    raise SystemExit(1)
+
+public_copies = [
+    "usr/local/bin/nut-test-logic.sh",
+    "usr/local/sbin/nut-apc-idf-event-monitor.sh",
+    "usr/local/sbin/nut-blueiris-shutdown.sh",
+    "usr/local/sbin/nut-db-shutdown.sh",
+    "usr/local/sbin/nut-email-alert-test-send",
+    "usr/local/sbin/nut-esxi-ssh-readonly-preflight.sh",
+    "usr/local/sbin/nut-v24013-shutdown.sh",
+    "usr/local/sbin/nut-v240-test-shutdown.sh",
+    "usr/local/sbin/nut-voip-shutdown.sh",
+    "opt/nut-orchestrator-ui/docs/control-center-editable-config-runbook.txt",
+    "opt/nut-orchestrator-ui/docs/emergency-cheat-sheet.md",
+    "opt/nut-orchestrator-ui/docs/runbooks/00_INDEX.txt",
+    "opt/nut-orchestrator-ui/docs/runbooks/01_CONTROL_CENTER_OVERVIEW.txt",
+    "opt/nut-orchestrator-ui/docs/shutdown-flow-chart.md",
+]
+
+raw_site_configs = [
+    "etc/nut/config.d/approved-targets.yml",
+    "etc/nut/config.d/shutdown-verification-targets.conf",
+    "etc/nut/config.d/vmware-vm-map.conf",
+    "etc/nut/db-telnet.conf",
+    "etc/nut/db-shutdown.conf",
+    "etc/nut/hosts.conf",
+    "etc/nut/hypervisors/hypervisor-ssh-fallback.conf",
+    "etc/nut/nut-orchestrator.conf",
+    "etc/nut/restore/restore-targets.json",
+    "etc/nut/synology-api.conf",
+    "etc/nut/ups.conf",
+]
+
+runtime_state = [
+    "var/www/html/nut-power-events.json",
+    "var/www/html/nut-state/ups-identity-baseline.json",
+]
+
+def copy_public(rel):
+    src = repo / rel
+    dst = dr / rel
+
+    if not src.exists():
+        return
+
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dst)
+    print("PUBLIC COPY:", rel)
+
+for rel in public_copies:
+    copy_public(rel)
+
+runbook_map = {
+    "var/www/html/NUT_Control_Center_Runbooks/00_INDEX.txt":
+        "opt/nut-orchestrator-ui/docs/runbooks/00_INDEX.txt",
+
+    "var/www/html/NUT_Control_Center_Runbooks/01_CONTROL_CENTER_OVERVIEW.txt":
+        "opt/nut-orchestrator-ui/docs/runbooks/01_CONTROL_CENTER_OVERVIEW.txt",
+}
+
+for dst_rel, src_rel in runbook_map.items():
+    src = repo / src_rel
+    dst = dr / dst_rel
+
+    if src.exists():
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+        print("PUBLIC RUNBOOK COPY:", dst_rel)
+
+for rel in raw_site_configs:
+    raw = dr / rel
+
+    if raw.exists():
+        raw.unlink()
+        print("REMOVED RAW CONFIG:", rel)
+
+    template = repo / (rel + ".template")
+
+    if template.exists():
+        dst = dr / (rel + ".template")
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(template, dst)
+        print("PUBLIC TEMPLATE:", rel + ".template")
+
+for rel in runtime_state:
+    path = dr / rel
+
+    if path.exists():
+        path.unlink()
+        print("REMOVED RUNTIME STATE:", rel)
+
+ipv4 = re.compile(
+    r'(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])'
+)
+
+private_networks = (
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+)
+
+def sanitize_text(text):
+    def replace_ip(match):
+        value = match.group(0)
+
+        try:
+            address = ipaddress.ip_address(value)
+        except ValueError:
+            return value
+
+        if any(address in net for net in private_networks):
+            return "198.51.100.10"
+
+        return value
+
+    text = ipv4.sub(replace_ip, text)
+    text = re.sub(
+        r'Example Organization Co\.,?\s*Inc\.?',
+        'Example Organization',
+        text,
+        flags=re.I,
+    )
+    text = re.sub(
+        r'Example Organization',
+        'Example Organization',
+        text,
+        flags=re.I,
+    )
+    text = re.sub(r'\bABCo\b', 'ExampleOrg', text, flags=re.I)
+    text = re.sub(r'\balbl\.com\b', 'example.com', text, flags=re.I)
+
+    return text
+
+# Metadata is informational, not executable.
+metadata_files = [
+    repo / "disaster-recovery/metadata/file-permissions.txt",
+]
+
+for path in metadata_files:
+    if path.exists():
+        original = path.read_text(errors="replace")
+        clean = sanitize_text(original)
+
+        if clean != original:
+            path.write_text(clean)
+            print("SANITIZED METADATA:", path.relative_to(repo))
+
+print("PUBLIC DR SANITIZATION COMPLETE")

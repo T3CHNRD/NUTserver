@@ -67,7 +67,7 @@
 /etc/nut/vcenter.pass|640|root|nut
 /etc/nut/upsmon.conf.pre-monitor-145-20260810-081654|644|root|root
 /etc/nut/upssched.conf.pre-ups-maint-comm-live-fix-20260721-084004|640|root|nut
-/etc/nut/win2003-192.168.1.24.creds|640|root|nut
+/etc/nut/win2003-198.51.100.10.creds|640|root|nut
 /etc/nut/db-telnet.pass|600|root|root
 /etc/nut/ups.conf|640|root|nut
 /etc/nut/upsd.conf|640|root|nut

@@ -4,7 +4,7 @@ set -euo pipefail
 
 CONF="/etc/nut/nut-email-alerts.conf"
 MSMTP_CONF="/etc/msmtprc"
-SMTP_SECRET="[REDACTED]"
+SMTP_SECRET="/etc/nut/nut-email-alerts.secret"
 LOG="/var/log/nut-orchestrator-ui/ui-actions.log"
 
 usage() {
@@ -440,7 +440,7 @@ def friendly_ups_status(value):
     if not raw or raw == "not available":
         return "Unavailable"
 
-    tokens = [REDACTED]
+    tokens = raw.split()
     translated = []
     mapping = {
         "OL": "Online",
@@ -450,7 +450,7 @@ def friendly_ups_status(value):
         "RB": "Replace battery",
         "CHRG": "Charging",
         "DISCHRG": "Discharging",
-        "BYPASS": "[REDACTED]",
+        "BYPASS": "Bypass",
         "CAL": "Calibration",
         "BOOST": "Boost",
         "TRIM": "Trim",
@@ -517,19 +517,19 @@ def latest_idf_event(source):
             'source="IDF2"',
             'device="IDF2"',
             'device="APC-IDF2"',
-            'ip="192.168.9.251"',
+            'ip="198.51.100.10"',
             'dns="APC-IDF2"',
             'dns="APC-IDF2."',
-            'dns="APC-IDF2.albl.com"',
+            'dns="APC-IDF2.example.com"',
         ],
         "IDF3": [
             'source="IDF3"',
             'device="IDF3"',
             'device="APC-IDF3"',
-            'ip="192.168.9.252"',
+            'ip="198.51.100.11"',
             'dns="apc-idf3"',
             'dns="apc-idf3."',
-            'dns="apc-idf3.albl.com"',
+            'dns="apc-idf3.example.com"',
         ],
     }.get(source_key, [f'source="{source}"'])
 
@@ -574,8 +574,8 @@ def latest_idf_event(source):
 
 def idf_status_lines():
     targets = [
-        ("IDF 2", "IDF2", "192.168.9.251", "APC-IDF2.albl.com"),
-        ("IDF 3", "IDF3", "192.168.9.252", "apc-idf3.albl.com"),
+        ("IDF 2", "IDF2", "198.51.100.10", "APC-IDF2.example.com"),
+        ("IDF 3", "IDF3", "198.51.100.11", "apc-idf3.example.com"),
     ]
 
     lines = [

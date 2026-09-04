@@ -788,3 +788,9 @@ echo "===== FINAL DR BUILD RESULT ====="
 echo "PASS: disaster-recovery snapshot built safely"
 echo "Location: $DR"
 echo "NO Git commit or push performed yet."
+
+# PUBLIC DR SANITIZATION
+# Ensure the GitHub recovery snapshot contains reusable public material only.
+if [ -x /usr/local/sbin/nut-sanitize-public-dr ]; then
+    /usr/local/sbin/nut-sanitize-public-dr
+fi

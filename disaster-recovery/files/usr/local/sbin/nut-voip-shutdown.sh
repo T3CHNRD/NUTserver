@@ -3,7 +3,7 @@
 set -u
 
 LOG_FILE="/var/log/nut-voip-shutdown.log"
-HOST="192.168.1.14"
+HOST="198.51.100.21"
 USER_NAME="root"
 SIMULATE="${SIMULATE:-1}"
 

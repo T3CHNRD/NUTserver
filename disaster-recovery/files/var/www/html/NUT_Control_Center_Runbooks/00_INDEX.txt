@@ -6,7 +6,7 @@ Purpose:
   script, and protected credential files.
 
 Control Center URL:
-  http://192.168.3.251/nut-ui/control-center
+  http://<INTERNAL_IP>/nut-ui/control-center
 
 Current known state:
   - Control Center uses tabbed sections.
@@ -14,7 +14,7 @@ Current known state:
   - Real Test is live-ready.
   - Real Test is passphrase locked.
   - Fake-password proof passed.
-  - Fake-password proof returned: Real Test blocked: [REDACTED]
+  - Fake-password proof returned: Real Test blocked: invalid passphrase.
   - Phase 1 - Lansweeper only is the intended live-test scope.
   - Phase 2 and Phase 3 are deferred unless intentionally approved.
   - Save remains disabled.

@@ -5,7 +5,7 @@ Generated for:
 NUT Server / Control Center
 
 Control Center URL:
-http://192.168.3.251/nut-ui/control-center
+http://<INTERNAL_IP>/nut-ui/control-center
 
 
 ============================================================
@@ -186,7 +186,7 @@ RUNNING PHASE 1 LIVE TEST
 Only when ready:
 
 1. Open:
-   http://192.168.3.251/nut-ui/control-center
+   http://<INTERNAL_IP>/nut-ui/control-center
 
 2. Click:
    Tests & Logs

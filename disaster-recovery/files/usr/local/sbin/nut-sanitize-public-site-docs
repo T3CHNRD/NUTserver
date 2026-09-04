@@ -35,9 +35,9 @@ email = re.compile(
 )
 
 company_patterns = [
-    (re.compile(r'Aluminum Blanking Co\.,?\s*Inc\.?', re.I),
+    (re.compile(r'Example Organization Co\.,?\s*Inc\.?', re.I),
      '<COMPANY_NAME>'),
-    (re.compile(r'Aluminum Blanking', re.I),
+    (re.compile(r'Example Organization', re.I),
      '<COMPANY_NAME>'),
     (re.compile(r'\bABCo\b', re.I),
      '<COMPANY_NAME>'),

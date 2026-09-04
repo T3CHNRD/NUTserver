@@ -26,6 +26,6 @@
 # Examples:
 #
 # MONITOR myups@localhost "Local UPS"
-# MONITOR su2200@10.64.1.1 "Finance department"
-# MONITOR matrix@shs-server.example.edu "Sierra High School data room #1"
+# MONITOR su2200@<INTERNAL_IP> "Finance department"
+# MONITOR <EMAIL_ADDRESS> "Sierra High School data room #1"
 MONITOR ups1@localhost "APC Smart-UPS 1500"
