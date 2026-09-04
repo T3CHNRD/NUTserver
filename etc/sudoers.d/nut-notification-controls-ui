@@ -1,0 +1,2 @@
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-notification-controls list
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-notification-controls set *

@@ -1,0 +1,17 @@
+PROTECTED FILE RUNBOOK - db-telnet.user
+
+Path:
+  /etc/nut/db-telnet.user
+
+Purpose:
+  Stores or references the DB telnet username used by DB shutdown logic.
+
+Risk:
+  Sensitive credential material.
+
+Use only when:
+  - Rotating DB telnet username.
+  - Correcting DB access settings.
+
+Important:
+  Do not paste real credential values into chat.

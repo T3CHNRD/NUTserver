@@ -1,0 +1,208 @@
+======================================================================
+NUT HELP / RUNBOOK RECONCILIATION INVENTORY
+======================================================================
+
+PURPOSE:
+Compare current Help, existing live runbooks, imported legacy runbooks,
+and historical source documents before anything is merged or published.
+
+===== CURRENT LIVE HELP ARTICLES =====
+00_HELP_INDEX.md
+01_GETTING_STARTED.md
+02_PROTECTION_MODES.md
+
+===== CURRENT LIVE RUNBOOKS =====
+00_INDEX.txt
+01_CONTROL_CENTER_OVERVIEW.txt
+02_MONITORING_TAB.txt
+03_EVENTS_TAB.txt
+04_TESTS_AND_LOGS_TAB.txt
+05_CONFIGURATION_TAB.txt
+06_PHASE1_LANSWEEPER_LIVE_TEST.txt
+07_SAFE_EDITING_RULES.txt
+09_UPS_PHYSICAL_LOCATOR_LIST.txt
+10_ups_conf.txt
+11_upsd_conf.txt
+12_upsmon_conf.txt
+13_upssched_conf.txt
+14_nut_conf.txt
+15_hosts_conf.txt
+16_nut_orchestrator_conf.txt
+17_config_d_nut_orchestrator_conf.txt
+18_approved_targets_yml.txt
+19_dashboard_ui_json.txt
+20_shutdown_verification_targets_conf.txt
+30_nut_lansweeper_shutdown.txt
+31_nut_synology_shutdown.txt
+32_nut_voip_shutdown.txt
+33_nut_db_shutdown.txt
+34_nut_blueiris_shutdown.txt
+35_nut_vmware_shutdown.txt
+36_nut_netapp_halt.txt
+37_nut_ui_run_test.txt
+38_nut_ui_run_real_test_approved.txt
+39_nut_orchestrator_sh.txt
+40_nut_local_final_shutdown.txt
+50_db_telnet_user.txt
+51_db_telnet_pass.txt
+52_vcenter_pass.txt
+
+===== IMPORTED LEGACY RUNBOOKS =====
+00_INDEX.txt
+01_CONTROL_CENTER_OVERVIEW.txt
+02_MONITORING_TAB.txt
+03_EVENTS_TAB.txt
+04_TESTS_AND_LOGS_TAB.txt
+05_CONFIGURATION_TAB.txt
+06_PHASE1_LANSWEEPER_LIVE_TEST.txt
+07_SAFE_EDITING_RULES.txt
+10_ups_conf.txt
+11_upsd_conf.txt
+12_upsmon_conf.txt
+13_upssched_conf.txt
+14_nut_conf.txt
+15_hosts_conf.txt
+16_nut_orchestrator_conf.txt
+17_config_d_nut_orchestrator_conf.txt
+18_approved_targets_yml.txt
+19_dashboard_ui_json.txt
+20_shutdown_verification_targets_conf.txt
+30_nut_lansweeper_shutdown.txt
+31_nut_synology_shutdown.txt
+32_nut_voip_shutdown.txt
+33_nut_db_shutdown.txt
+34_nut_blueiris_shutdown.txt
+35_nut_vmware_shutdown.txt
+36_nut_netapp_halt.txt
+37_nut_ui_run_test.txt
+38_nut_ui_run_real_test_approved.txt
+39_nut_orchestrator_sh.txt
+40_nut_local_final_shutdown.txt
+50_db_telnet_user.txt
+51_db_telnet_pass.txt
+52_vcenter_pass.txt
+
+===== IMPORTED HISTORICAL / SOURCE DOCUMENTS =====
+NUT 2.0 shut down and start up orderR! (AutoRecovered).txt
+NUT 2.0 shut down and start up orderR.txt
+NUT 2.0 shut down and start up order.txt
+NUT Backup Manifest.txt
+NUT blocker document.txt
+NUT buttons.txt
+NUT dashbaord ui login.txt
+NUT ESXI shut down.txt
+NUT HA Cluster Design Notes.txt
+NUT HA Shutdown Plan.txt
+NUT Read me.txt
+NUT Real Test RunBook.txt
+NUT Roll Back.txt
+NUT Server 2.0 (AutoRecovered).txt
+NUT Server 2.0.txt
+NUT server backup script.txt
+NUT server CONTROL CENTER PURPOSE.txt
+NUT Server Core Components _ Runtime Behavior.txt
+NUT Server Dashboard _ Monitoring Architecture.txt
+NUT_Server_Documentation_2026-03-16.txt
+NUT Server Emergency Cheat Sheet.txt
+NUT Server Goals and Assessments.txt
+NUT Server Maintenance Backups _ Future Road Map.txt
+NUT_Server_Manual_Recovery_Power_On_Runbook_DRAFT.txt
+NUT_Server_Manual_Recovery_Power_On_Runbook_DRAFT_v3.txt
+nutserver_milestone_01_core_platform_dashboard_backup_rollback.txt
+NUT Server On Startup.txt
+NUT Server Phase 2 (AutoRecovered).txt
+NUT Server Phase 2 Summary.txt
+NUT Server Phase 2.txt
+NUT server Real Validation test.txt
+NUT server  Restore Button setup.txt
+NUT server restore.txt
+Nut Server Shutdown Test.txt
+NUT Server.txt
+NUT Server UPS Inventory _ Logical Mapping.txt
+NUT Shutdown Orchestration Design.txt
+NUT Test key.txt
+NUT UPS Action Matrix.txt
+NUT UPS Shutdown Decision Table.txt
+NUT  UPS to System Mapping.txt
+NUT VMware Control Decision.txt
+Shutdown and Startup Logic.txt
+
+===== IMPORT MANIFEST STATUS COUNTS =====
+exclude-unrelated: 2
+source-candidate: 21
+source-draft-review: 2
+source-duplicate-review: 3
+source-planning-review: 3
+source-security-review: 15
+
+===== LIVE RUNBOOKS ALSO PRESENT IN IMPORTED LEGACY SET =====
+00_INDEX.txt
+01_CONTROL_CENTER_OVERVIEW.txt
+02_MONITORING_TAB.txt
+03_EVENTS_TAB.txt
+04_TESTS_AND_LOGS_TAB.txt
+05_CONFIGURATION_TAB.txt
+06_PHASE1_LANSWEEPER_LIVE_TEST.txt
+07_SAFE_EDITING_RULES.txt
+10_ups_conf.txt
+11_upsd_conf.txt
+12_upsmon_conf.txt
+13_upssched_conf.txt
+14_nut_conf.txt
+15_hosts_conf.txt
+16_nut_orchestrator_conf.txt
+17_config_d_nut_orchestrator_conf.txt
+18_approved_targets_yml.txt
+19_dashboard_ui_json.txt
+20_shutdown_verification_targets_conf.txt
+30_nut_lansweeper_shutdown.txt
+31_nut_synology_shutdown.txt
+32_nut_voip_shutdown.txt
+33_nut_db_shutdown.txt
+34_nut_blueiris_shutdown.txt
+35_nut_vmware_shutdown.txt
+36_nut_netapp_halt.txt
+37_nut_ui_run_test.txt
+38_nut_ui_run_real_test_approved.txt
+39_nut_orchestrator_sh.txt
+40_nut_local_final_shutdown.txt
+50_db_telnet_user.txt
+51_db_telnet_pass.txt
+52_vcenter_pass.txt
+
+===== AUTO-RECOVERED / DRAFT / PLANNING SOURCES =====
+NUT 2.0 shut down and start up orderR! (AutoRecovered).txt
+NUT blocker document.txt
+NUT Server 2.0 (AutoRecovered).txt
+NUT Server Goals and Assessments.txt
+NUT Server Maintenance Backups _ Future Road Map.txt
+NUT_Server_Manual_Recovery_Power_On_Runbook_DRAFT.txt
+NUT_Server_Manual_Recovery_Power_On_Runbook_DRAFT_v3.txt
+NUT Server Phase 2 (AutoRecovered).txt
+NUT Server Phase 2 Summary.txt
+NUT Server Phase 2.txt
+
+===== HIGH-VALUE OPERATOR TOPICS FOUND IN SOURCE FILENAMES =====
+NUT Backup Manifest.txt
+NUT ESXI shut down.txt
+NUT HA Shutdown Plan.txt
+NUT Real Test RunBook.txt
+NUT server backup script.txt
+NUT server CONTROL CENTER PURPOSE.txt
+NUT Server Dashboard _ Monitoring Architecture.txt
+NUT Server Emergency Cheat Sheet.txt
+NUT Server Maintenance Backups _ Future Road Map.txt
+NUT_Server_Manual_Recovery_Power_On_Runbook_DRAFT.txt
+NUT_Server_Manual_Recovery_Power_On_Runbook_DRAFT_v3.txt
+nutserver_milestone_01_core_platform_dashboard_backup_rollback.txt
+NUT Server On Startup.txt
+NUT server  Restore Button setup.txt
+NUT server restore.txt
+Nut Server Shutdown Test.txt
+NUT Server UPS Inventory _ Logical Mapping.txt
+NUT Shutdown Orchestration Design.txt
+NUT UPS Action Matrix.txt
+NUT UPS Shutdown Decision Table.txt
+NUT  UPS to System Mapping.txt
+NUT VMware Control Decision.txt
+Shutdown and Startup Logic.txt

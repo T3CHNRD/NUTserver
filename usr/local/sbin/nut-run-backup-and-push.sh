@@ -178,6 +178,8 @@ main() {
 
   log "Syncing safe live files into repo after pull"
   /usr/local/sbin/nut-sync-live-to-repo-for-backup
+  log "Refreshing sanitized disaster-recovery snapshot"
+  /usr/local/sbin/nut-build-disaster-recovery-snapshot
 
   mkdir -p ./opt/nut-orchestrator-ui/{lib,templates,static}
   mkdir -p ./etc/systemd/system

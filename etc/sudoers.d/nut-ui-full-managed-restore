@@ -1,0 +1,3 @@
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-restore-status *
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-full-managed-restore-preflight *
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-full-managed-restore-live *

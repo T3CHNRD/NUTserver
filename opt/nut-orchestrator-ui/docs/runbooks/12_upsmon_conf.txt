@@ -1,0 +1,25 @@
+EDITABLE LIVE CONFIG - upsmon.conf
+
+Path:
+  /etc/nut/upsmon.conf
+
+Purpose:
+  Controls NUT monitoring behavior and shutdown decision handling.
+
+Controls:
+  - UPS monitoring definitions.
+  - Notification behavior.
+  - NOTIFYCMD integration.
+  - NOTIFYFLAG behavior.
+  - Final shutdown coordination.
+  - Interaction with upssched.
+
+Risk:
+  Critical shutdown-behavior file. Incorrect changes can affect whether outage
+  events trigger correctly.
+
+Use only when:
+  - Adjusting NUT outage handling.
+  - Adjusting notification behavior.
+  - Adjusting upsmon/upssched integration.
+  - Troubleshooting missed ONBATT, ONLINE, or LOWBATT events.

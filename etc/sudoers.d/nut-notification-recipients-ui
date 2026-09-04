@@ -1,0 +1,5 @@
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-notification-recipients list
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-notification-recipients email-add *
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-notification-recipients email-remove *
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-notification-recipients telegram-approve *
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-notification-recipients telegram-remove *

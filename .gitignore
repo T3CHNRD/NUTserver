@@ -66,3 +66,7 @@ telegram-alerts.env
 telegram-alerts.env.*
 *.token.*
 *.secret.*
+*.before-*
+*.backup
+*.candidate
+*.working-*

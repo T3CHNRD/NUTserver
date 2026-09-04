@@ -1,0 +1,21 @@
+CONTROL CENTER TAB - EVENTS
+
+Purpose:
+  Shows the shared Power / Boot Event Log.
+
+Used to review:
+  - Power outage events
+  - Power restored events
+  - APC / IDF monitor events
+  - Simulated test events
+  - Real test events
+  - Shutdown classification events
+  - Control Center readiness/staged events
+
+Expected behavior:
+  - Newest events should appear first.
+  - Event feed should match the shared dashboard/NUT event source.
+  - Page should auto-refresh.
+
+Risk:
+  Read-only event review section.

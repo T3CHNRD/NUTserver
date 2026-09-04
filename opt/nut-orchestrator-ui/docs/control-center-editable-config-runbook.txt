@@ -1,0 +1,899 @@
+NUT CONTROL CENTER RUNBOOK
+Editable Live Configs, Control Center Usage, and Live-Test Safety
+
+Generated for:
+NUT Server / Control Center
+
+Control Center URL:
+http://192.168.3.251/nut-ui/control-center
+
+
+============================================================
+1. CONTROL CENTER PURPOSE
+============================================================
+
+The NUT Control Center is the consolidated operations page for UPS monitoring, event review, safe testing, configuration review, GitHub backup visibility, and live-test readiness.
+
+The Control Center currently provides:
+
+- Monitoring tab
+- Events tab
+- Tests & Logs tab
+- Configuration tab
+- GitHub Backup / Restore controls
+- UPS Rack Overview popup
+- UPS Load graph popup
+- Simulated Test
+- Export Logs
+- Advanced Live Test Controls
+- Editable Live Config viewer/editor
+- Read-only Reference Viewer
+
+
+Current important safety state:
+
+- Real Test is live-ready.
+- Real Test is locked behind the existing Real Test passphrase.
+- Fake-password lockout was tested successfully.
+- Fake-password result was:
+  Real Test blocked: invalid passphrase
+- Phase 1 - Lansweeper only is the intended live-test scope unless the test scope is intentionally changed.
+- Phase 2 and Phase 3 are deferred unless explicitly approved.
+- Save is disabled until a controlled dashboard-ui.json save test is approved.
+
+
+============================================================
+2. CONTROL CENTER TABS
+============================================================
+
+MONITORING TAB
+
+The Monitoring tab shows live UPS information pulled from the same NUT JSON source used by the existing UPS Monitoring Dashboard.
+
+It includes:
+
+- Selected UPS
+- Battery charge
+- UPS load
+- Runtime remaining
+- Input voltage
+- Output voltage
+- UPS status
+- Last refresh time
+- UPS picker
+- UPS Rack Overview popup
+- UPS Load graph popup
+- UPS trivia / legend
+
+Expected behavior:
+
+- Monitoring is the default tab.
+- The selected UPS rotates automatically.
+- Clicking Selected UPS opens the UPS picker.
+- Clicking UPS Load opens the load graph.
+- Clicking UPS Rack Overview opens the rack/location popup.
+- UPS status should visually show online/warning/offline state.
+
+
+EVENTS TAB
+
+The Events tab shows the shared Power / Boot Event Log.
+
+It is used to review:
+
+- Power outage events
+- Power restored events
+- APC / IDF monitor events
+- Simulated test events
+- Real test events
+- Shutdown classification events
+- Control Center readiness/staged events
+
+Expected behavior:
+
+- Newest events should appear first.
+- The event feed should match the shared dashboard/NUT event source.
+- The page should auto-refresh.
+
+
+TESTS & LOGS TAB
+
+The Tests & Logs tab contains:
+
+- Simulated Test
+- Export Logs
+- Action Output
+- Advanced Live Test Controls
+
+Real Test behavior:
+
+- The Run Test button uses the existing protected backend path.
+- The selected Real Test phase is submitted to:
+  /nut-ui/api/test/real
+- A fake password must be rejected with:
+  Real Test blocked: invalid passphrase
+- A real passphrase should only be entered during an approved live-test window.
+- For tonight, use:
+  Phase 1 - Lansweeper only
+- Do not use Phase 2 or Phase 3 unless the scope is intentionally changed.
+
+
+CONFIGURATION TAB
+
+The Configuration tab contains:
+
+- Editable Live Config selector
+- Read-Only Reference selector
+- Config Editor
+- Reference Viewer
+- Reload
+- Validate
+- Revert
+- Save Disabled
+
+Current safety state:
+
+- Reload is available.
+- Validate is available.
+- Revert is available.
+- Save is disabled.
+
+Save should remain disabled until a controlled dashboard-ui.json save test is approved.
+
+
+============================================================
+3. LIVE TEST SAFETY
+============================================================
+
+CURRENT REAL TEST STATUS
+
+Current state:
+
+- Real Test is live-ready.
+- Real Test is passphrase locked.
+- Fake-password lockout was tested successfully.
+- No real live test has been run unless the real passphrase was intentionally entered.
+- Phase 1 is the only intended near-term live-test phase.
+- Phase 2 and Phase 3 are deferred.
+
+
+PHASE 1 LIVE TEST RULE
+
+Use only:
+
+Phase 1 - Lansweeper only
+
+Do not select Phase 2 or Phase 3 unless the test scope is intentionally expanded.
+
+
+BEFORE RUNNING PHASE 1 LIVE TEST
+
+Confirm:
+
+- You are on the Tests & Logs tab.
+- Real Test Phase is set to:
+  Phase 1 - Lansweeper only
+- Action Output is visible.
+- Events tab / Power Boot Event Log is available.
+- Lansweeper is being watched.
+- You are ready for Lansweeper to be acted on.
+- You have the real Real Test passphrase.
+- You are not selecting Phase 2 or Phase 3.
+
+
+RUNNING PHASE 1 LIVE TEST
+
+Only when ready:
+
+1. Open:
+   http://192.168.3.251/nut-ui/control-center
+
+2. Click:
+   Tests & Logs
+
+3. Select:
+   Phase 1 - Lansweeper only
+
+4. Click:
+   Run Test
+
+5. Enter:
+   Real Real Test passphrase
+
+6. Submit only when ready.
+
+7. Watch:
+   Action Output
+
+8. Watch:
+   Events / Power Boot Event Log
+
+9. Confirm:
+   Lansweeper behavior
+
+
+PASSWORD LOCK TEST
+
+To prove the lock without running a real test:
+
+1. Select:
+   Phase 1 - Lansweeper only
+
+2. Click:
+   Run Test
+
+3. Enter a fake password such as:
+   fake-test-only
+
+4. Expected result:
+   Real Test blocked: invalid passphrase
+
+This proves the backend blocks invalid passphrases before allowing the live-test wrapper to run.
+
+
+============================================================
+4. EDITABLE LIVE CONFIGS
+============================================================
+
+The Configuration tab exposes approved Editable Live Configs.
+
+Important rule:
+
+Do not edit live shutdown scripts or critical NUT configs casually.
+
+Preferred workflow:
+
+1. Select file.
+2. Reload.
+3. Review.
+4. Validate.
+5. Revert if needed.
+6. Do not Save until Save is intentionally re-enabled and tested.
+
+
+------------------------------------------------------------
+ups.conf
+------------------------------------------------------------
+
+Path:
+/etc/nut/ups.conf
+
+Purpose:
+Defines the UPS devices known to NUT.
+
+Controls:
+
+- UPS names such as ups1, ups2, ups3, etc.
+- Driver type, such as snmp-ups or usbhid-ups.
+- Network UPS IP/port definitions.
+- USB UPS matching values.
+- SNMP community and SNMP version.
+- Poll interval.
+- UPS descriptions shown in monitoring tools.
+
+Risk:
+Incorrect changes can cause one or more UPS units to stop reporting data.
+
+Use only when:
+
+- Adding a UPS.
+- Removing a UPS.
+- Correcting a UPS IP address.
+- Correcting SNMP or USB driver settings.
+- Updating descriptions.
+
+
+------------------------------------------------------------
+upsd.conf
+------------------------------------------------------------
+
+Path:
+/etc/nut/upsd.conf
+
+Purpose:
+Controls the NUT UPS data server.
+
+Controls:
+
+- How NUT exposes UPS data to clients.
+- Network listen behavior.
+- Local or remote access behavior depending on LISTEN lines.
+
+Risk:
+Incorrect changes can prevent clients or dashboards from reading UPS data.
+
+Use only when:
+
+- Changing NUT server listen behavior.
+- Adjusting client access design.
+- Troubleshooting NUT client connectivity.
+
+
+------------------------------------------------------------
+upsmon.conf
+------------------------------------------------------------
+
+Path:
+/etc/nut/upsmon.conf
+
+Purpose:
+Controls NUT monitoring behavior and shutdown decision handling.
+
+Controls:
+
+- UPS monitoring definitions.
+- Notification behavior.
+- NOTIFYCMD integration.
+- NOTIFYFLAG behavior.
+- Final shutdown coordination.
+- Interaction with upssched.
+
+Risk:
+This is a critical shutdown-behavior file. Incorrect changes can affect whether outage events trigger correctly.
+
+Use only when:
+
+- Adjusting NUT outage handling.
+- Adjusting notification behavior.
+- Adjusting upsmon/upssched integration.
+- Troubleshooting missed ONBATT, ONLINE, or LOWBATT events.
+
+
+------------------------------------------------------------
+upssched.conf
+------------------------------------------------------------
+
+Path:
+/etc/nut/upssched.conf
+
+Purpose:
+Controls scheduled/timed actions triggered by upsmon events.
+
+Controls:
+
+- Timer behavior for ONBATT, ONLINE, LOWBATT, and related events.
+- Which command script runs when a timer fires.
+- Cancellation behavior when power returns.
+- FIFO/lock paths used by upssched.
+
+Risk:
+Incorrect changes can cause delayed actions to run too early, too late, or not at all.
+
+Use only when:
+
+- Adjusting outage delay timers.
+- Adjusting power-restore cancellation behavior.
+- Changing the command script used for timed NUT events.
+
+
+------------------------------------------------------------
+nut.conf
+------------------------------------------------------------
+
+Path:
+/etc/nut/nut.conf
+
+Purpose:
+Defines the NUT operating mode.
+
+Controls:
+
+- Whether the system behaves as standalone, netserver, or netclient.
+
+Risk:
+Incorrect changes can prevent NUT services from behaving as the main UPS data server.
+
+Use only when:
+
+- Changing the NUT server/client architecture.
+- Correcting NUT service startup mode.
+
+
+------------------------------------------------------------
+hosts.conf
+------------------------------------------------------------
+
+Path:
+/etc/nut/hosts.conf
+
+Purpose:
+Controls host display definitions used by some NUT web/status tools.
+
+Controls:
+
+- Display names for monitored UPS hosts.
+- Host entries shown by compatible NUT CGI/status pages.
+
+Risk:
+Usually lower risk than shutdown files, but incorrect entries can confuse status displays.
+
+Use only when:
+
+- Cleaning up visible UPS names.
+- Correcting host display entries.
+
+
+------------------------------------------------------------
+nut-orchestrator.conf
+------------------------------------------------------------
+
+Path:
+/etc/nut/nut-orchestrator.conf
+
+Purpose:
+Primary live orchestration configuration.
+
+Controls:
+
+- Integration settings for orchestrated shutdown behavior.
+- External system connection details.
+- Hostnames and IPs for targets.
+- Credentials or credential-file references.
+- VMware, NetApp, Lansweeper, Blue Iris, Synology, VOIP, DB, or other integration settings depending on current content.
+
+Risk:
+High. Incorrect changes can affect shutdown orchestration and integrations.
+
+Use only when:
+
+- Updating target IPs or hostnames.
+- Updating integration settings.
+- Updating controlled test scope.
+- Correcting orchestration variables.
+
+
+------------------------------------------------------------
+config.d nut-orchestrator.conf
+------------------------------------------------------------
+
+Path:
+/etc/nut/config.d/nut-orchestrator.conf
+
+Purpose:
+Additional orchestrator configuration under /etc/nut/config.d.
+
+Controls:
+
+- Modularized orchestrator settings.
+- Configuration values used by shutdown/test scripts.
+
+Risk:
+High. Incorrect changes can affect target selection, credentials, or shutdown behavior.
+
+Use only when:
+
+- Updating orchestrator modular config.
+- Confirming or changing shutdown target configuration.
+
+
+------------------------------------------------------------
+approved-targets.yml
+------------------------------------------------------------
+
+Path:
+/etc/nut/config.d/approved-targets.yml
+
+Purpose:
+Defines approved/recognized targets for orchestrated actions.
+
+Controls:
+
+- Which targets are approved for orchestration.
+- Target metadata used by scripts or UI validation.
+
+Risk:
+High. Incorrect changes can authorize the wrong target or remove an expected target.
+
+Use only when:
+
+- Adding approved shutdown targets.
+- Removing decommissioned targets.
+- Correcting target names or metadata.
+
+
+------------------------------------------------------------
+dashboard-ui.json
+------------------------------------------------------------
+
+Path:
+/etc/nut/config.d/dashboard-ui.json
+
+Purpose:
+Controls dashboard/UI behavior.
+
+Controls:
+
+- UI-facing dashboard settings.
+- Display behavior or configurable dashboard options depending on current JSON content.
+
+Risk:
+Lower than shutdown scripts/configs. This is the preferred file for a future controlled Save test.
+
+Use only when:
+
+- Testing Control Center Save safely.
+- Adjusting dashboard/UI behavior.
+
+
+============================================================
+5. EDITABLE SHUTDOWN / TEST SCRIPTS
+============================================================
+
+------------------------------------------------------------
+nut-synology-shutdown.sh
+------------------------------------------------------------
+
+Path:
+/usr/local/sbin/nut-synology-shutdown.sh
+
+Purpose:
+Controls Synology DSM API shutdown behavior.
+
+Controls:
+
+- Synology DSM API login/logout.
+- Synology shutdown API call.
+- Simulation vs live behavior.
+- Safety gate checks.
+- Shutdown classification logging.
+
+Risk:
+High. Live execution can shut down the Synology.
+
+Use only when:
+
+- Updating Synology shutdown method.
+- Correcting DSM API behavior.
+- Troubleshooting Synology shutdown classification.
+
+
+------------------------------------------------------------
+nut-voip-shutdown.sh
+------------------------------------------------------------
+
+Path:
+/usr/local/sbin/nut-voip-shutdown.sh
+
+Purpose:
+Controls VOIP/PBX shutdown behavior.
+
+Controls:
+
+- Remote shutdown behavior for the VOIP server.
+- SSH/systemctl-based shutdown behavior depending on script content.
+- Safety gate checks.
+
+Risk:
+High. Live execution can shut down the VOIP/PBX system.
+
+Use only when:
+
+- Updating VOIP shutdown method.
+- Correcting VOIP host/user settings.
+- Preparing VOIP live shutdown testing.
+
+
+------------------------------------------------------------
+nut-db-shutdown.sh
+------------------------------------------------------------
+
+Path:
+/usr/local/sbin/nut-db-shutdown.sh
+
+Purpose:
+Controls database-related shutdown behavior.
+
+Controls:
+
+- DB shutdown sequence.
+- Telnet/API/remote shutdown behavior depending on script content.
+- Safety checks and logging.
+
+Risk:
+High. Live execution can affect database availability.
+
+Use only when:
+
+- Updating DB shutdown method.
+- Troubleshooting DB shutdown test behavior.
+
+
+------------------------------------------------------------
+nut-blueiris-shutdown.sh
+------------------------------------------------------------
+
+Path:
+/usr/local/sbin/nut-blueiris-shutdown.sh
+
+Purpose:
+Controls Blue Iris shutdown behavior.
+
+Controls:
+
+- Blue Iris shutdown sequence.
+- Remote command method.
+- Safety checks and logging.
+
+Risk:
+High. Live execution can shut down Blue Iris or its host.
+
+Use only when:
+
+- Preparing Blue Iris live shutdown testing.
+- Updating Blue Iris shutdown behavior.
+
+
+------------------------------------------------------------
+nut-lansweeper-shutdown.sh
+------------------------------------------------------------
+
+Path:
+/usr/local/sbin/nut-lansweeper-shutdown.sh
+
+Purpose:
+Controls Lansweeper shutdown behavior.
+
+Controls:
+
+- Lansweeper shutdown method.
+- Phase 1 live-test target behavior.
+- Safety gates for live execution.
+- Logging and classification for Lansweeper shutdown.
+
+Risk:
+High. Live execution can shut down Lansweeper.
+
+Use only when:
+
+- Preparing or adjusting Phase 1 live test.
+- Correcting Lansweeper shutdown behavior.
+
+
+------------------------------------------------------------
+nut-vmware-shutdown.sh
+------------------------------------------------------------
+
+Path:
+/usr/local/sbin/nut-vmware-shutdown.sh
+
+Purpose:
+Controls VMware shutdown behavior.
+
+Controls:
+
+- VMware/vCenter/ESXi shutdown orchestration.
+- VM or host handling depending on script content.
+- Safety checks and sequencing.
+
+Risk:
+Very high. Live execution can affect VMs or ESXi hosts.
+
+Use only when:
+
+- Updating VMware shutdown sequence.
+- Preparing VMware live testing.
+- Correcting VMware/vCenter integration behavior.
+
+
+------------------------------------------------------------
+nut-netapp-halt.sh
+------------------------------------------------------------
+
+Path:
+/usr/local/sbin/nut-netapp-halt.sh
+
+Purpose:
+Controls NetApp halt/shutdown behavior.
+
+Controls:
+
+- NetApp SSH/API halt method depending on script content.
+- NetApp node/cluster targeting.
+- Safety checks and logging.
+
+Risk:
+Very high. Live execution can halt NetApp nodes.
+
+Use only when:
+
+- Confirming NetApp live shutdown behavior.
+- Updating NetApp node targeting.
+- Correcting NetApp access or command behavior.
+
+
+------------------------------------------------------------
+nut-ui-run-test
+------------------------------------------------------------
+
+Path:
+/usr/local/sbin/nut-ui-run-test
+
+Purpose:
+Main backend test runner used by the UI.
+
+Controls:
+
+- Simulated test behavior.
+- Real test behavior when called by the approved wrapper.
+- Phase-specific orchestration paths.
+- Test output returned to the UI.
+
+Risk:
+High. This is core test/orchestration logic.
+
+Use only when:
+
+- Updating simulated test behavior.
+- Updating real-test phase behavior.
+- Troubleshooting UI test output.
+
+
+------------------------------------------------------------
+nut-ui-run-real-test-approved
+------------------------------------------------------------
+
+Path:
+/usr/local/sbin/nut-ui-run-real-test-approved
+
+Purpose:
+Approved wrapper for Real Test execution.
+
+Controls:
+
+- Real Test safety gating.
+- ALLOW_REAL_TEST behavior.
+- REAL_TEST_PHASE behavior.
+- Calls into nut-ui-run-test real mode.
+
+Risk:
+Very high. This is the gate between passphrase approval and live test execution.
+
+Use only when:
+
+- Auditing Real Test safety.
+- Updating approved phase handling.
+- Troubleshooting Real Test launch behavior.
+
+
+------------------------------------------------------------
+nut-orchestrator.sh
+------------------------------------------------------------
+
+Path:
+/usr/local/bin/nut-orchestrator.sh
+
+Purpose:
+Main orchestration script.
+
+Controls:
+
+- Overall shutdown orchestration flow.
+- Target order.
+- Integration calls.
+- Logging/classification.
+- Final orchestration behavior during UPS events.
+
+Risk:
+Very high. This is the core production orchestration script.
+
+Use only when:
+
+- Updating shutdown order.
+- Updating orchestration logic.
+- Troubleshooting real event behavior.
+
+
+============================================================
+6. PROTECTED / SENSITIVE FILES
+============================================================
+
+Do not paste real password values into chat.
+
+------------------------------------------------------------
+db-telnet.user
+------------------------------------------------------------
+
+Path:
+/etc/nut/db-telnet.user
+
+Purpose:
+Stores or references the DB telnet username used by DB shutdown logic.
+
+Risk:
+Sensitive credential material.
+
+Use only when:
+
+- Rotating DB telnet username.
+- Correcting DB access settings.
+
+
+------------------------------------------------------------
+db-telnet.pass
+------------------------------------------------------------
+
+Path:
+/etc/nut/db-telnet.pass
+
+Purpose:
+Stores or references the DB telnet password used by DB shutdown logic.
+
+Risk:
+Sensitive credential material.
+
+Use only when:
+
+- Rotating DB telnet password.
+- Correcting DB access settings.
+
+
+------------------------------------------------------------
+vcenter.pass
+------------------------------------------------------------
+
+Path:
+/etc/nut/vcenter.pass
+
+Purpose:
+Stores or references the vCenter password used by VMware integration.
+
+Risk:
+Sensitive credential material.
+
+Use only when:
+
+- Rotating vCenter password.
+- Moving VMware integration away from fallback config.
+- Correcting VMware authentication.
+
+
+============================================================
+7. SAFE EDITING RULES
+============================================================
+
+General rules:
+
+- Do not edit live shutdown scripts casually.
+- Prefer Reload and Validate before any Save.
+- Keep Save disabled until the controlled dashboard-ui.json test is approved.
+- Do not paste real passwords into chat.
+- Do not use Phase 2 or Phase 3 unless the live-test scope is intentionally expanded.
+- Back up to GitHub after meaningful changes.
+- Record major readiness/test status in the event log.
+
+
+Before any Real Test:
+
+- Confirm selected phase.
+- Confirm test window.
+- Confirm affected systems.
+- Confirm monitoring is open.
+- Confirm Action Output is visible.
+- Confirm Events tab / Power Boot Event Log is available.
+- Confirm GitHub backup is current.
+
+
+Tonight's Phase 1 rule:
+
+Use Phase 1 - Lansweeper only.
+
+Do not select Phase 2 or Phase 3 unless the scope is intentionally changed.
+
+
+============================================================
+8. KNOWN CURRENT STATE
+============================================================
+
+Current known Control Center state:
+
+- Live-ready Real Test button is present.
+- Real Test is passphrase locked.
+- Fake-password proof passed.
+- Fake-password proof returned:
+  Real Test blocked: invalid passphrase
+- Control Center state was backed up to GitHub at commit:
+  eb415a7
+- Live test has not been run unless the real passphrase was intentionally entered.
+- Save is still disabled.
+- Phase 2 and Phase 3 are deferred.
+

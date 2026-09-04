@@ -31,12 +31,13 @@ MANIFEST = Path(sys.argv[2])
 CORE_ROOTS = [
     Path("/etc/nut"),
     Path("/opt/nut-orchestrator-ui"),
+    Path("/opt/nut-admin/bin"),
+    Path("/etc/apache2/conf-available"),
     Path("/usr/local/bin"),
     Path("/usr/local/sbin"),
     Path("/etc/systemd/system"),
     Path("/etc/sudoers.d"),
     Path("/var/www/html"),
-    Path("/home/nutserver"),
 ]
 
 PROJECT_WORDS = (
@@ -146,6 +147,37 @@ def project_relevant(path):
 def should_include(path):
     if not path.is_file():
         return False
+
+    lower_path = str(path).lower()
+    lower_name = path.name.lower()
+
+    if "/opt/nut-orchestrator-ui/docs/help-sources/" in lower_path:
+        if lower_name != "reconciliation_inventory.txt":
+            manifest(f"SKIP unreconciled-help-source {path}")
+            return False
+
+    temp_tags = (
+        ".pre-",
+        ".before-",
+        ".bak",
+        ".backup",
+        ".candidate",
+        ".working-",
+        ".final-before-",
+    )
+
+    if any(tag in lower_name for tag in temp_tags):
+        manifest(f"SKIP temp-development-artifact {path}")
+        return False
+
+    if any(
+        part.lower().startswith("pre-")
+        or part.lower().endswith("-backups")
+        for part in path.parts
+    ):
+        manifest(f"SKIP temp-development-artifact {path}")
+        return False
+
 
     if definitely_secret_file(path):
         manifest(f"SKIP secret-file {path}")

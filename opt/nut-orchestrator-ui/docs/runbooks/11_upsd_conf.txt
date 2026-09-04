@@ -1,0 +1,20 @@
+EDITABLE LIVE CONFIG - upsd.conf
+
+Path:
+  /etc/nut/upsd.conf
+
+Purpose:
+  Controls the NUT UPS data server.
+
+Controls:
+  - How NUT exposes UPS data to clients.
+  - Network listen behavior.
+  - Local or remote access behavior depending on LISTEN lines.
+
+Risk:
+  Incorrect changes can prevent clients or dashboards from reading UPS data.
+
+Use only when:
+  - Changing NUT server listen behavior.
+  - Adjusting client access design.
+  - Troubleshooting NUT client connectivity.

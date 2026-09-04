@@ -1,0 +1,37 @@
+PHASE 1 LANSWEEPER LIVE TEST RUNBOOK
+
+Scope:
+  Phase 1 - Lansweeper only
+
+Purpose:
+  This runbook is for the controlled live test that acts only on Lansweeper.
+
+Before running:
+  - Open Control Center.
+  - Go to Tests & Logs.
+  - Confirm Real Test Phase is Phase 1 - Lansweeper only.
+  - Confirm Action Output is visible.
+  - Confirm Events tab / Power Boot Event Log is available.
+  - Watch Lansweeper.
+  - Confirm GitHub backup is current.
+  - Confirm you have the real Real Test passphrase.
+  - Do not select Phase 2 or Phase 3.
+
+Password-lock proof:
+  Enter a fake password such as fake-test-only.
+  Expected result:
+    Real Test blocked: invalid passphrase
+
+Live test:
+  Only when ready:
+    1. Click Run Test.
+    2. Enter the real Real Test passphrase.
+    3. Submit.
+    4. Watch Action Output.
+    5. Watch Events / Power Boot Event Log.
+    6. Confirm Lansweeper behavior.
+
+After test:
+  - Review Action Output.
+  - Review Power / Boot Event Log.
+  - Back up to GitHub.
