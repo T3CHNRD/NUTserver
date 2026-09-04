@@ -411,3 +411,66 @@ code and should have appropriately restricted access.
 ## Copyright
 
 Copyright (c) 2026 T3CHNRD. All rights reserved.
+
+## Control Center, Notifications, Recovery, and Help
+
+This project adds a full web-based management layer on top of a traditional
+NUT installation.
+
+Most NUT servers are operated headless from the command line. This project
+includes a browser-based **NUT Control Center** that provides a central place
+to view UPS status, system health, protected-system state, configuration,
+notifications, backup and recovery functions, and operational information
+without requiring routine terminal access.
+
+### Web-Based Control Center
+
+The Control Center provides a graphical interface for day-to-day operation of
+the NUT server, including status monitoring, configuration access, notification
+controls, backup and restore functions, health information, event history, and
+other administrative tools.
+
+The underlying NUT services remain usable independently of the web interface,
+so the server can continue to operate as a normal headless NUT system.
+
+### Telegram Notifications
+
+Optional Telegram integration can send UPS and system notifications directly
+to a phone or other Telegram client.
+
+Telegram support can be used for routine status information as well as
+important power-event and shutdown-related notifications. Bot tokens and
+recipient-specific values are intentionally kept out of the public repository
+and are supplied locally during configuration.
+
+### Email Notifications and Health Reports
+
+The project also includes email notification support for UPS events, system
+status, failures, recovery events, and scheduled health reporting.
+
+SMTP credentials and installation-specific recipients are not stored in the
+public repository. Public configuration templates and documentation describe
+the values that must be supplied by each installation.
+
+### Built-In Backup, Rollback, and Recovery
+
+The Control Center includes backup and recovery tooling designed to protect the
+NUT server configuration and application stack.
+
+The project supports repository-based backup, controlled rollback, selected-file
+restore, and full managed-system recovery workflows. Recovery tooling is being
+designed so the same public source can also be used to rebuild the NUT Server
+software stack on a fresh supported Ubuntu installation.
+
+Site-specific configuration and secrets remain local and are restored or
+re-entered separately.
+
+### Built-In Help and Operator Documentation
+
+The Control Center includes searchable built-in Help and operator
+documentation.
+
+Help content covers configuration, operations, troubleshooting, shutdown
+behavior, recovery procedures, and individual system components. Search is
+designed to locate relevant documentation and open the appropriate section
+rather than forcing operators to manually browse long documents.

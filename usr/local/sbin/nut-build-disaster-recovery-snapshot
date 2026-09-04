@@ -145,6 +145,13 @@ def project_relevant(path):
     return False
 
 def should_include(path):
+    # PUBLIC REPO SITE-LOCAL HYPERVISOR EXCLUSION
+    # Keep the installation-specific hypervisor host/IP/topology
+    # configuration out of the public GitHub repository.
+    if str(path) == "/etc/nut/hypervisors/hypervisor-ssh-fallback.conf":
+        manifest(f"SKIP site-local-public-template-only {path}")
+        return False
+
     if not path.is_file():
         return False
 

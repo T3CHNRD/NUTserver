@@ -16,6 +16,15 @@ fi
 is_secret_path() {
   local src="$1"
 
+  # PUBLIC REPO SITE-LOCAL HYPERVISOR CONFIG
+  # Keep the real installation-specific host/IP/topology configuration
+  # private. GitHub carries the .template file instead.
+  case "$src" in
+    /etc/nut/hypervisors/hypervisor-ssh-fallback.conf)
+      return 0
+      ;;
+  esac
+
   # AUTHORITATIVE HELP DOCUMENTATION OVERRIDE
   # Help articles may legitimately contain words such as password,
   # secret, credential, token, or key in their filenames/content.

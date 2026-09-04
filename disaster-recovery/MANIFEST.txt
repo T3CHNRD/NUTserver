@@ -66,7 +66,7 @@ SKIP temp-development-artifact /etc/nut/hypervisors/hypervisor-ssh-fallback.conf
 SKIP temp-development-artifact /etc/nut/hypervisors/hypervisor-ssh-fallback.conf.pre-rsa-esxi-map-20260610-151819
 SKIP temp-development-artifact /etc/nut/hypervisors/hypervisor-ssh-fallback.conf.pre-protecting-esxi-ready-20260611-154101
 SKIP temp-development-artifact /etc/nut/hypervisors/hypervisor-ssh-fallback.conf.pre-priority6-enable-esxi-fallback-20260623-144842
-FILE /etc/nut/hypervisors/hypervisor-ssh-fallback.conf -> files/etc/nut/hypervisors/hypervisor-ssh-fallback.conf mode=0640
+SKIP site-local-public-template-only /etc/nut/hypervisors/hypervisor-ssh-fallback.conf
 FILE /etc/nut/config.d/approved-targets.yml -> files/etc/nut/config.d/approved-targets.yml mode=0640
 SKIP temp-development-artifact /etc/nut/config.d/shutdown-verification-targets.conf.pre-synology-dsm-api-20260526-125519
 FILE /etc/nut/config.d/shutdown-verification-targets.conf -> files/etc/nut/config.d/shutdown-verification-targets.conf mode=0640
