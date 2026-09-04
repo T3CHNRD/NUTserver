@@ -59,6 +59,22 @@ for rel in files:
 
     text = private_ip.sub("<INTERNAL_IP>", text)
 
+    # PUBLIC CREDENTIAL-TEMPLATE FILENAME SANITIZATION
+    #
+    # Some historical inventories contain a site-specific IP embedded
+    # directly in a credential-template filename. Normalize the entire
+    # filename to a generic reusable public name.
+    text = re.sub(
+        r'win2003-(?:'
+        r'10\.(?:\d{1,3}\.){2}\d{1,3}|'
+        r'192\.168\.(?:\d{1,3}\.)\d{1,3}|'
+        r'172\.(?:1[6-9]|2\d|3[01])\.(?:\d{1,3}\.)\d{1,3}'
+        r')\.creds\.template',
+        'windows-rpc.creds.template',
+        text,
+        flags=re.I,
+    )
+
     for pattern, replacement in company_patterns:
         text = pattern.sub(replacement, text)
 
