@@ -126,14 +126,13 @@ def sanitize(text):
 
     # ROBUST RFC1918 FINAL SWEEP
     #
-    # Parse every IPv4-looking token and replace only actual RFC1918
-    # addresses. This catches addresses embedded in filenames, comments,
-    # confirmation strings, and other forms that simpler regex boundaries
-    # can miss.
+    # Match IPv4-looking tokens and replace actual RFC1918 addresses.
+    # TEST-NET-2 addresses are used in the public repository so scripts
+    # remain syntactically valid without exposing installation addresses.
     import ipaddress
 
     ipv4_token = [REDACTED]
-        r'(?<![0-9])(?:[0-9]{1,3}\\.){3}[0-9]{1,3}(?![0-9])'
+        r'(?<![0-9])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![0-9])'
     )
 
     private_networks = (
