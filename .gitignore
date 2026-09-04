@@ -70,3 +70,5 @@ telegram-alerts.env.*
 *.backup
 *.candidate
 *.working-*
+!etc/nut/hypervisors/
+!etc/nut/hypervisors/hypervisor-ssh-fallback.conf

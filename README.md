@@ -182,29 +182,28 @@ shutdown commands merely because the software has been installed.
 Production protection should only be enabled after the restored environment
 has been validated.
 
-## Protected Systems and Shutdown Orchestration
+## Supported Integrations
 
-The repository contains the non-secret configuration and code necessary to
-reproduce the protected-system shutdown architecture.
+The project is designed to support multiple types of protected systems and
+shutdown workflows through configurable integrations.
 
-This includes integrations and workflows for systems such as:
+Examples include:
 
-- DB01
-- DB02
-- Sun Fire V240 systems
-- VMware / ESXi
-- vCenter
-- Blue Iris
-- Lansweeper
-- Synology
-- NetApp
-- VOIP infrastructure
-- local final NUT Server shutdown
+- virtualization platforms
+- Linux and Unix servers
+- Windows systems
+- network-attached storage
+- monitoring servers
+- application servers
+- database servers
+- other network-managed infrastructure
 
-Environment-specific non-secret target information required for proper
-reconstruction belongs in this repository.
+Site-specific hostnames, IP addresses, credentials, and protected-system
+mappings are intentionally kept out of the public repository.
 
-Authentication credentials used to reach those systems do not.
+The repository provides reusable code, configuration templates, examples,
+and recovery tooling so each installation can supply its own environment-
+specific settings safely.
 
 ## Notifications and Health Reporting
 
