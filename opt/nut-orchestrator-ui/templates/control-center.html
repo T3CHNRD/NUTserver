@@ -8631,11 +8631,13 @@ function init(){
 
     "events":[
       "04_EVENTS_HOWTOS.md",
+      "21_NOTIFICATION_EVENT_REFERENCE.md",
       "REF_03_EVENTS_TAB.md"
     ],
 
     "notification settings":[
-      "05_NOTIFICATION_SETTINGS.md"
+      "05_NOTIFICATION_SETTINGS.md",
+      "21_NOTIFICATION_EVENT_REFERENCE.md"
     ],
 
     "telegram":[
@@ -8745,6 +8747,152 @@ function init(){
     ]
   };
 
+  /*
+   * Automatic Help Index documentation library.
+   *
+   * Current Help / How-To Markdown files are discovered automatically
+   * through /api/help/articles and appear in the Help Index without
+   * requiring a categoryMap edit.
+   *
+   * REF_* runbooks are intentionally more restrictive:
+   * a reference appears in this generated library only when it is
+   * already explicitly assigned in categoryMap. This prevents a newly
+   * dropped credential/security reference from being surfaced
+   * automatically.
+   */
+  function helpIndexAutoLibraryHtml(){
+
+    var mappedRefs={};
+    var category;
+
+    for(category in categoryMap){
+      if(!Object.prototype.hasOwnProperty.call(categoryMap,category)){
+        continue;
+      }
+
+      var mappedList=categoryMap[category]||[];
+
+      for(var mi=0;mi<mappedList.length;mi++){
+        var mappedFile=String(mappedList[mi]||"");
+
+        if(mappedFile.indexOf("REF_")===0){
+          mappedRefs[mappedFile]=true;
+        }
+      }
+    }
+
+    var current=[];
+    var references=[];
+
+    for(var i=0;i<articles.length;i++){
+
+      var article=articles[i]||{};
+      var file=String(article.file||"");
+
+      if(!file || !/\.md$/i.test(file)){
+        continue;
+      }
+
+      if(file==="00_HELP_INDEX.md"){
+        continue;
+      }
+
+      if(file.indexOf("REF_")===0){
+
+        /*
+         * Reference documentation requires explicit category approval
+         * before it is surfaced by the automatic Index library.
+         */
+        if(mappedRefs[file]){
+          references.push(article);
+        }
+
+      }else{
+        /*
+         * Normal/current Help documentation is automatically surfaced.
+         */
+        current.push(article);
+      }
+    }
+
+    function sortArticles(a,b){
+      return String(a.file||"").localeCompare(
+        String(b.file||""),
+        undefined,
+        {numeric:true,sensitivity:"base"}
+      );
+    }
+
+    current.sort(sortArticles);
+    references.sort(sortArticles);
+
+    function groupHtml(label,items){
+
+      var out=[];
+
+      out.push("<h3>"+esc(label)+"</h3>");
+
+      if(!items.length){
+        out.push("<p>No documentation is currently available.</p>");
+        return out.join("");
+      }
+
+      out.push("<ul>");
+
+      for(var j=0;j<items.length;j++){
+
+        var item=items[j]||{};
+        var file=String(item.file||"");
+
+        out.push(
+          "<li>"+
+          "<a href=\"#\" "+
+          "class=\"cc-help-internal-link\" "+
+          "data-help-file=\""+esc(file)+"\">"+
+          esc(title(file))+
+          "</a>"+
+          "</li>"
+        );
+      }
+
+      out.push("</ul>");
+
+      return out.join("");
+    }
+
+    var html=[];
+
+    html.push("<hr>");
+    html.push("<h2>Complete Documentation Library</h2>");
+
+    html.push(
+      "<p>"+
+      "This section is generated automatically from the current Help "+
+      "library. New Current Help / How-To Markdown documents placed in "+
+      "the approved Help directory appear here automatically. "+
+      "Reference Runbooks appear only after they have been explicitly "+
+      "approved in a Help category."+
+      "</p>"
+    );
+
+    html.push(
+      groupHtml(
+        "Current Help / How-To Documentation",
+        current
+      )
+    );
+
+    html.push(
+      groupHtml(
+        "Approved Reference Runbooks",
+        references
+      )
+    );
+
+    return html.join("");
+  }
+
+
   function findArticle(file){
     var i;
     for(i=0;i<articles.length;i++){
@@ -8756,18 +8904,35 @@ function init(){
   var openHelpFile="";
   var openHelpAnchor="";
 
+  function helpHeadingSlug(s){
+    return String(s||"")
+      .toLowerCase()
+      .replace(/[`*_~]/g,"")
+      .replace(/[^a-z0-9]+/g,"-")
+      .replace(/^-+|-+$/g,"");
+  }
+
+
   function helpInline(s){
     s=esc(String(s||""));
     s=s.replace(/`([^`]+)`/g,"<code>$1</code>");
     s=s.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
 
     // Internal Help article links:
+    //
+    // Whole article:
     // [Monitoring](03_MONITORING_HOWTOS.md)
+    //
+    // Specific section:
+    // [Save](09_CONFIGURATION_HOWTOS.md#how-to-save-a-configuration-change)
     s=s.replace(
-      /\[([^\]]+)\]\(([A-Za-z0-9_.-]+\.md)\)/g,
-      function(match,label,file){
-        return "<a href=\"#\" class=\"cc-help-internal-link\" data-help-file=\""+
+      /\[([^\]]+)\]\(([A-Za-z0-9_.-]+\.md)(?:#([A-Za-z0-9_.~-]+))?\)/g,
+      function(match,label,file,anchor){
+        return "<a href=\"#\" class=\"cc-help-internal-link\" "+
+          "data-help-file=\""+
           file+
+          "\" data-help-anchor=\""+
+          (anchor||"")+
           "\">"+
           label+
           "</a>";
@@ -8795,7 +8960,22 @@ function init(){
     function headingTag(level,text,raw){
       closeList();
 
-      var id=(anchor&&raw===anchor) ? " id=\""+markerId+"\"" : "";
+      var anchorMatch=false;
+
+      if(anchor){
+        if(raw===anchor){
+          // Existing search-result behavior.
+          anchorMatch=true;
+        }else if(
+          helpHeadingSlug(text)===
+          String(anchor).replace(/^#/,"")
+        ){
+          // Human-authored FILE.md#section link.
+          anchorMatch=true;
+        }
+      }
+
+      var id=anchorMatch ? " id=\""+markerId+"\"" : "";
       var t=String(text||"").toLowerCase();
       var cls="";
 
@@ -8980,6 +9160,10 @@ function init(){
         var markerId="cc-help-match-anchor";
         var rendered=helpRenderMarkdown(content,anchor);
 
+        if(file==="00_HELP_INDEX.md"){
+          rendered+=helpIndexAutoLibraryHtml();
+        }
+
         pane.innerHTML=
           "<div id=\"cc-help-article-top\" style=\"display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;\">"+
             "<div>"+badge+"</div>"+
@@ -9003,6 +9187,7 @@ function init(){
             if(ev)ev.preventDefault();
 
             var target=this.getAttribute("data-help-file")||"";
+            var targetAnchor=this.getAttribute("data-help-anchor")||"";
 
             if(target){
               // Preserve the currently open Help article as the
@@ -9022,13 +9207,13 @@ function init(){
                 {
                   ccHelp:true,
                   file:target,
-                  anchor:""
+                  anchor:targetAnchor
                 },
                 "",
                 "#cc-help-section"
               );
 
-              openArticle(target,"");
+              openArticle(target,targetAnchor);
             }
 
             return false;

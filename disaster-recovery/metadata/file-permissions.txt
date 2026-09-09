@@ -163,6 +163,7 @@
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-live-test-locked-polish-20260529-080909|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-nav-readable-safe-password-test-20260529-101924|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-power-events-20260528-130639|644|root|root
+/opt/nut-orchestrator-ui/templates/control-center.html.pre-index-links-20260909-081110|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-scroll-offset-20260902_090246|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-help-tab-20260827-105105|644|root|root
 /opt/nut-orchestrator-ui/templates/restore-github.html.pre-restore-selected-anchor-20260604-111606|644|root|root
@@ -284,6 +285,8 @@
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-top-refresh-page-reload-20260615-141450|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.broken-after-fluid-restore-ui-20260604-122754|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-load-history-store-fix-20260612-131948|644|root|root
+/opt/nut-orchestrator-ui/templates/control-center.html.pre-section-links-20260909-080356|644|root|root
+/opt/nut-orchestrator-ui/templates/control-center.html.pre-help-index-auto-20260909-074352|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-article-focus-20260902_094823|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center-restore-lab.html.broken-duplicate-live-restore-20260604-131005|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-ups-rotation-picker-fixed-20260528-140936|644|root|root
@@ -298,6 +301,7 @@
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-ups-rotation-picker-20260528-140317|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-search-ui-20260827-135922|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-restore-menu-20260604-085626|644|root|root
+/opt/nut-orchestrator-ui/templates/control-center.html.pre-help-index-auto-20260909-075020|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-remove-top-header-esxi-only-20260612-142440|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-selected-restore-full-list-custom-confirm-20260604-095900|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-help-renderer-20260902_093911|644|root|root
@@ -436,7 +440,9 @@
 /opt/nut-orchestrator-ui/docs/control-center-editable-config-runbook.txt|644|root|root
 /opt/nut-orchestrator-ui/docs/GITHUB_PROJECT_README.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help-sources/HELP_REMAINING_WORK.md|644|root|root
+/opt/nut-orchestrator-ui/docs/help-sources/UNLINKED_INDEX_AUDIT.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help-sources/HELP_FORMAL_COVERAGE_AUDIT.md|644|root|root
+/opt/nut-orchestrator-ui/docs/help-sources/DOCUMENTATION_GAPS.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help-sources/nested_runbooks/39_nut_orchestrator_sh.txt|644|root|root
 /opt/nut-orchestrator-ui/docs/help-sources/nested_runbooks/07_SAFE_EDITING_RULES.txt|644|root|root
 /opt/nut-orchestrator-ui/docs/help-sources/nested_runbooks/03_EVENTS_TAB.txt|644|root|root
@@ -519,6 +525,7 @@
 /opt/nut-orchestrator-ui/docs/help-sources/HOWTO_PRODUCTION_CHECKLIST.tsv|644|root|root
 /opt/nut-orchestrator-ui/docs/help-sources/HELP_CATEGORY_GAP_MATRIX.txt|644|root|root
 /opt/nut-orchestrator-ui/docs/emergency-cheat-sheet.md|644|root|root
+/opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.pre-index-links-20260909-081110|644|root|root
 /opt/nut-orchestrator-ui/docs/help/06_TELEGRAM_HOWTOS.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md.pre-upsconf-20260902_142738|644|root|root
 /opt/nut-orchestrator-ui/docs/help/REF_12_upsmon_conf.md|644|root|root
@@ -560,6 +567,7 @@
 /opt/nut-orchestrator-ui/docs/help/REF_00_INDEX.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md.bak-weather-cache-20260902_073854|644|root|root
 /opt/nut-orchestrator-ui/docs/help/15_SERVICES_AND_TIMERS_HOWTOS.md|644|root|root
+/opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.pre-section-links-20260909-080356|644|root|root
 /opt/nut-orchestrator-ui/docs/help/REF_34_nut_blueiris_shutdown.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help/02_PROTECTION_MODES.md.pre-ht001-006-20260902_105534|644|root|root
 /opt/nut-orchestrator-ui/docs/help/01_GETTING_STARTED.md.pre-ht001-006-20260902_105534|644|root|root
