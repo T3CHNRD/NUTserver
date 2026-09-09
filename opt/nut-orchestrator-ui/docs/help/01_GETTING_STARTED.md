@@ -289,3 +289,7 @@ A healthy normal operating state should show:
 Do not create a real UPS event or perform a live shutdown merely to prove that the NUT server is healthy.
 
 
+
+## Clock and Date Display
+
+The Control Center clock/date is an informational operator display. It does not set system time, change NUT timers, or affect shutdown countdowns. If it appears wrong, verify system time separately before treating it as a NUT timing problem.

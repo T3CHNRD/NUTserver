@@ -313,3 +313,7 @@ These inputs are combined to produce the overall health and maintenance recommen
 
 Weather information is advisory context only. A weather condition by itself does not create a UPS power event or initiate a protected-system shutdown.
 
+
+## Maintenance Mode Shutdown Suppression
+
+The current orchestrator checks UPS Maintenance Mode before a shutdown commit. When suppression is active, the shutdown commit is blocked, no protected-system shutdown actions are performed, and `UPS_MAINTENANCE_SHUTDOWN_SUPPRESSED` is logged. COMMBAD warnings and notifications can still occur. Older COMMBAD text saying shutdown suppression is not implemented is stale wording and does not describe the current commit-suppression behavior.

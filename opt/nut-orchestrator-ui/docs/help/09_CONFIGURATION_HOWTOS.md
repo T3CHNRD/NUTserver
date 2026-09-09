@@ -26,6 +26,29 @@ Not every configuration has the same operational risk.
 
 ---
 
+
+## How the Config Loader Works
+
+The Control Center Config Loader is the operator interface for selecting approved configuration and reference items.
+
+Opening or selecting an item does **not** itself save or apply a configuration change.
+
+The loader works with the Control Center's approved configuration/reference registry. Files that are not approved by that registry are not intended to be exposed as arbitrary editable files.
+
+Depending on the selected item, the Control Center may present:
+
+- an approved editable configuration
+- an approved read-only reference
+- a sensitive configuration using protected/masked handling
+
+After loading an editable configuration, use the documented procedures for [Validate](09_CONFIGURATION_HOWTOS.md#how-to-validate-a-configuration), [Save](09_CONFIGURATION_HOWTOS.md#how-to-save-a-configuration-change), and [Revert](09_CONFIGURATION_HOWTOS.md#how-to-revert-a-configuration-change).
+
+Do not assume that seeing a file in the loader means it is safe to change during production hours. Review the file-specific guidance in the [Editable Live Config File Guide](09_CONFIGURATION_HOWTOS.md#editable-live-config-file-guide) first.
+
+Sensitive values are handled separately as described in [Control Center Secret Masking](18_SECURITY_HOWTOS.md#control-center-secret-masking).
+
+---
+
 ## How to Safely Review a Configuration
 
 1. Open Configuration.

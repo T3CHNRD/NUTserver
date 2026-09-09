@@ -177,3 +177,7 @@ Do not disable or alter timers/services involved in outage processing without ap
 - nut-monitor.service
 - nut-orchestrator-ui.service
 - systemctl list-timers --all
+
+## Systemd Path Units
+
+Current project-related path units are `nut-driver-enumerator.path`, `nut-telegram-dispatch.path`, and `nut-telegram-final.path`. Systemd path units watch filesystem conditions and activate their associated service when the configured condition occurs. Review them with `systemctl status UNIT.path` before changing or disabling them.

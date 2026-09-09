@@ -178,3 +178,7 @@ However, operators may not receive important warning messages.
 - /etc/nut/nut-email-alerts.conf
 - /usr/local/sbin/nut-notification-recipients
 
+
+## Rebuild Stale SMTP Configuration
+
+The generated SMTP configuration is `/etc/msmtprc`. If it is missing or stale, run `sudo /usr/local/sbin/nut-rebuild-msmtp-from-email-config` from an administrative shell outside `nut-monitor.service`. A successful Control Center Save of the approved email configuration also runs this rebuild. Do not display `/etc/msmtprc` because it may contain authentication information.

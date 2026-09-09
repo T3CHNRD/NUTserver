@@ -181,6 +181,61 @@ Search phrases:
 
 ---
 
+
+## How the Refresh Countdown Works
+
+The Control Center refresh countdown is an operator display showing the time remaining until the next normal monitoring refresh.
+
+The countdown is **not** a UPS shutdown timer and does not change shutdown protection, ONBATT delays, or orchestration timing.
+
+If monitoring information appears stale:
+
+1. Use [Refresh UPS](03_MONITORING_HOWTOS.md#how-to-refresh-ups-data).
+2. Confirm the selected UPS updates.
+3. If the display still does not update, follow [Monitoring Troubleshooting](03_MONITORING_HOWTOS.md#troubleshooting).
+
+A manual refresh requests current monitoring information immediately rather than requiring the operator to wait for the normal refresh cycle.
+
+---
+
+## How the Load Graph Works
+
+The Load Graph is a short-term visual history of UPS load values displayed by the Control Center.
+
+The current UI:
+
+- keeps load history separately for each UPS
+- converts the reported load value to a numeric percentage
+- limits displayed values to the expected `0` through `100` percent range
+- keeps up to the most recent **60 samples** for each UPS in the browser-side history
+- redraws the graph as monitoring samples are collected
+
+The graph is an operator visualization. It does **not** change UPS configuration, shutdown timers, or protection behavior.
+
+For the current numerical load value and its interpretation, see [How to Interpret UPS Load](03_MONITORING_HOWTOS.md#how-to-interpret-ups-load).
+
+If the graph appears empty after opening/reloading the page, allow monitoring samples to accumulate and confirm the selected UPS is reporting a valid load value.
+
+---
+
+## UPS Trivia and Legend
+
+The UPS Trivia / Legend area is informational.
+
+The rotating `Did you know?` information is intended to help operators understand the dashboard and does not control monitoring, notifications, shutdown timers, or protected-system actions.
+
+For operational interpretation, use the documented monitoring sections instead:
+
+- [UPS Status](03_MONITORING_HOWTOS.md#how-to-interpret-ups-status)
+- [Battery Charge](03_MONITORING_HOWTOS.md#how-to-interpret-battery-charge)
+- [UPS Load](03_MONITORING_HOWTOS.md#how-to-interpret-ups-load)
+- [Runtime](03_MONITORING_HOWTOS.md#how-to-interpret-runtime)
+- [Voltage Values](03_MONITORING_HOWTOS.md#how-to-interpret-voltage-values)
+
+When informational text and live UPS monitoring appear inconsistent, treat the live UPS data and current operator documentation as authoritative.
+
+---
+
 ## How to Determine Whether Monitoring Is Healthy
 
 Check all of the following:

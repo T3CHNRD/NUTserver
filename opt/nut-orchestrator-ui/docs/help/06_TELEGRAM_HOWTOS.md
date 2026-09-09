@@ -207,3 +207,7 @@ USE CAUTION:
 - /var/lib/nut-telegram-alerts/access.json
 - /etc/nut/config.d/notification-controls.json
 
+
+## Telegram Access Status
+
+The live Telegram implementation uses access states rather than separate operator roles. Requests may be pending or approved/authorized. The Help Index therefore describes Telegram access status instead of implying a role hierarchy that is not present in the current implementation.

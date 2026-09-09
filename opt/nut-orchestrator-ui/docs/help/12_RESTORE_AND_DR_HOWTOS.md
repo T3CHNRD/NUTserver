@@ -372,3 +372,7 @@ Therefore, shutdown protection must be revalidated after an applied restore.
 - Verify secret-file ownership and permissions.
 - Never publish recovered passwords in documentation or logs.
 
+
+## Restore Lab Selected-File Workflow
+
+The Restore Lab interface uses the approved restore-target list and the selected-file live-restore backend. A selected-file restore requires the exact confirmation phrase `RESTORE SELECTED FILE`. The Lab label does not make the operation automatically isolated: an approved selected-file restore can change a live file. This workflow is different from full managed rollback and bare-metal disaster recovery.

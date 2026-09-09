@@ -119,3 +119,11 @@ Log review should not:
 - Troubleshooting
 - Services and Timers
 - Security
+
+## Maintenance-Specific Logs
+
+UPS Maintenance Mode has a dedicated log at `/var/log/nut-ups-maintenance.log`. Related orchestration decisions also appear in `/var/log/nut-orchestrator.log`. Current maintenance state is stored separately in `/var/www/html/nut-state/ups-maintenance.json`. Do not modify or truncate these while troubleshooting.
+
+## Disaster Recovery and Restore Logs
+
+The verified dedicated backup log is `/var/log/nut-orchestrator-ui/backup.log`. The current live inspection did not identify a separate dedicated restore-only log, so operators should not assume that one combined DR log contains every restore or rollback result. Use the Control Center result together with the relevant system and application logs when reviewing restore activity.

@@ -45,19 +45,19 @@ Every applicable article must explain:
 - [Health](01_GETTING_STARTED.md#how-to-determine-whether-the-nut-server-is-healthy)
 - [Selected UPS](03_MONITORING_HOWTOS.md#how-to-select-a-different-ups)
 - [Latest event](04_EVENTS_HOWTOS.md#how-the-latest-event-card-works)
-- Clock/date **(Documentation needed)**
+- [Clock/date](01_GETTING_STARTED.md#clock-and-date-display)
 - [Weather](08_MAINTENANCE_AND_WEATHER_HOWTOS.md#how-to-read-the-weather-summary)
 - [Maintenance status](08_MAINTENANCE_AND_WEATHER_HOWTOS.md#how-to-verify-maintenance-status)
-- [Refresh](01_GETTING_STARTED.md#how-to-use-the-main-refresh-button) / refresh countdown **(countdown documentation needs expansion)**
+- [Refresh](01_GETTING_STARTED.md#how-to-use-the-main-refresh-button) / [refresh countdown](03_MONITORING_HOWTOS.md#how-the-refresh-countdown-works)
 - [Backup](11_BACKUP_HOWTOS.md#how-to-run-backup-all-from-the-control-center) / [Refresh](01_GETTING_STARTED.md#how-to-use-the-main-refresh-button) / [Restore](12_RESTORE_AND_DR_HOWTOS.md#how-to-use-the-restore-button-safely)
 
 ### 03 - Monitoring
 - [UPS selector](03_MONITORING_HOWTOS.md#how-to-select-a-different-ups)
 - [UPS metrics](03_MONITORING_HOWTOS.md#how-to-check-the-status-of-a-ups)
 - [UPS status](03_MONITORING_HOWTOS.md#how-to-interpret-ups-status)
-- Load graph **(Documentation needed)**
+- [Load graph](03_MONITORING_HOWTOS.md#how-the-load-graph-works)
 - [UPS Rack Overview](03_MONITORING_HOWTOS.md#how-to-use-ups-rack-overview)
-- UPS Trivia / Legend **(Documentation needed)**
+- [UPS Trivia / Legend](03_MONITORING_HOWTOS.md#ups-trivia-and-legend)
 - [Refresh UPS](03_MONITORING_HOWTOS.md#how-to-refresh-ups-data)
 
 ### 04 - Events
@@ -81,7 +81,7 @@ Every applicable article must explain:
 - [Access request](06_TELEGRAM_HOWTOS.md#how-a-new-telegram-user-requests-access)
 - [Approval](05_NOTIFICATION_SETTINGS.md#how-to-approve-a-pending-telegram-user)
 - [Removal](05_NOTIFICATION_SETTINGS.md#how-to-remove-a-telegram-recipient)
-- Roles **(Documentation needs dedicated coverage/verification)**
+- [Telegram access status](06_TELEGRAM_HOWTOS.md#telegram-access-status)
 - [Slash commands](06_TELEGRAM_HOWTOS.md)
 - [Schedule](06_TELEGRAM_HOWTOS.md#how-to-use-schedule)
 - [Security](06_TELEGRAM_HOWTOS.md#security-rules)
@@ -91,7 +91,7 @@ Every applicable article must explain:
 - [Daily Health](21_NOTIFICATION_EVENT_REFERENCE.md#daily-health-email)
 - [Power-event email types](21_NOTIFICATION_EVENT_REFERENCE.md)
 - [Recipient management](07_EMAIL_HOWTOS.md#how-to-add-or-remove-email-recipients)
-- SMTP rebuild / stale generated SMTP configuration recovery **(Documentation needed)**
+- [SMTP rebuild / stale generated SMTP configuration recovery](07_EMAIL_HOWTOS.md#rebuild-stale-smtp-configuration)
 - [Testing](07_EMAIL_HOWTOS.md#how-to-validate-email-delivery-without-causing-a-ups-event)
 - [EMAIL_NOTIFY_FAILED troubleshooting](07_EMAIL_HOWTOS.md#how-to-troubleshoot-email-notify-failed)
 
@@ -101,10 +101,10 @@ Every applicable article must explain:
 - [Grid-risk rules](08_MAINTENANCE_AND_WEATHER_HOWTOS.md#weather-risk-thresholds)
 - [UPS Maintenance status](08_MAINTENANCE_AND_WEATHER_HOWTOS.md#how-to-verify-maintenance-status)
 - [UPS identity / inventory](20_UPS_INVENTORY_AND_ACTIONS.md#current-ups-locations)
-- Maintenance Mode suppression behavior **(Documentation expansion needed)**
+- [Maintenance Mode suppression behavior](08_MAINTENANCE_AND_WEATHER_HOWTOS.md#maintenance-mode-shutdown-suppression)
 
 ### 09 - Configuration
-- Config Loader **(Documentation needed)**
+- [Config Loader](09_CONFIGURATION_HOWTOS.md#how-the-config-loader-works)
 - [Editable configs](09_CONFIGURATION_HOWTOS.md#editable-live-config-file-guide)
 - [Read-only configuration review](09_CONFIGURATION_HOWTOS.md#how-to-safely-review-a-configuration)
 - [Reload](09_CONFIGURATION_HOWTOS.md#how-to-reload-a-configuration)
@@ -112,7 +112,7 @@ Every applicable article must explain:
 - [Save](09_CONFIGURATION_HOWTOS.md#how-to-save-a-configuration-change)
 - [Revert](09_CONFIGURATION_HOWTOS.md#how-to-revert-a-configuration-change)
 - [Safe editing](REF_07_SAFE_EDITING_RULES.md)
-- [Security rules](09_CONFIGURATION_HOWTOS.md#security-rules) / secret masking **(masking behavior needs dedicated coverage)**
+- [Security rules](09_CONFIGURATION_HOWTOS.md#security-rules) / [secret masking](18_SECURITY_HOWTOS.md#control-center-secret-masking)
 
 ### 10 - Tests and Logs
 - [Simulated Test](10_TESTS_AND_LOGS_HOWTOS.md#how-to-run-a-safe-simulated-test)
@@ -133,7 +133,7 @@ Every applicable article must explain:
 - [Repository sync](12_RESTORE_AND_DR_HOWTOS.md#how-to-sync-the-backup-repository-from-github)
 - [Dry run](12_RESTORE_AND_DR_HOWTOS.md#how-to-run-a-restore-dry-run)
 - [Selected restore](12_RESTORE_AND_DR_HOWTOS.md#how-to-restore-one-approved-selected-file)
-- Lab restore workflow **(Documentation needs dedicated coverage/clarification)**
+- [Restore Lab selected-file workflow](12_RESTORE_AND_DR_HOWTOS.md#restore-lab-selected-file-workflow)
 - [Rollback](12_RESTORE_AND_DR_HOWTOS.md#how-to-roll-back-a-bad-change)
 - [Disaster recovery](12_RESTORE_AND_DR_HOWTOS.md#how-to-rebuild-nut-after-a-server-failure)
 
@@ -160,16 +160,16 @@ Every applicable article must explain:
 ### 15 - Services and Timers
 - [NUT services](15_SERVICES_AND_TIMERS_HOWTOS.md#how-to-check-the-health-of-core-nut-services)
 - [NUT timers](15_SERVICES_AND_TIMERS_HOWTOS.md#how-to-check-nut-systemd-timers)
-- Systemd path units **(Documentation needed)**
+- [Systemd path units](15_SERVICES_AND_TIMERS_HOWTOS.md#systemd-path-units)
 - [Service restart/troubleshooting rules](15_SERVICES_AND_TIMERS_HOWTOS.md#when-not-to-restart-services)
 
 ### 16 - Logs
 - [Event / NUT problem logs](16_LOGS_HOWTOS.md#how-to-find-the-correct-log-for-a-nut-problem)
 - [Shutdown logs](16_LOGS_HOWTOS.md#protected-system-shutdown-problem)
 - [Notification logs](16_LOGS_HOWTOS.md#how-to-find-the-correct-log-for-a-nut-problem)
-- Maintenance-specific logs **(Documentation needs dedicated coverage)**
+- [Maintenance-specific logs](16_LOGS_HOWTOS.md#maintenance-specific-logs)
 - [Test logs](10_TESTS_AND_LOGS_HOWTOS.md#how-to-find-the-correct-log-for-a-problem)
-- DR-specific logs **(Documentation needs dedicated coverage)**
+- [DR-specific logs](16_LOGS_HOWTOS.md#disaster-recovery-and-restore-logs)
 
 ### 17 - Troubleshooting
 - [Control Center](17_TROUBLESHOOTING_HOWTOS.md#how-to-troubleshoot-a-stale-control-center-display)
@@ -186,15 +186,15 @@ Every applicable article must explain:
 ### 18 - Security
 - [Credential handling](18_SECURITY_HOWTOS.md#credential-handling-rules)
 - [Secrets](18_SECURITY_HOWTOS.md#what-to-do-if-a-secret-is-exposed)
-- General file/credential permissions model **(Documentation needs expansion)**
+- [General file / credential permissions model](18_SECURITY_HOWTOS.md#file-and-credential-permission-model)
 - [Git exclusions / sanitized GitHub secret checks](18_SECURITY_HOWTOS.md#how-to-verify-secrets-are-excluded-from-the-sanitized-github-backup)
-- Access control model **(Documentation needed)**
+- [Access control model](18_SECURITY_HOWTOS.md#control-center-access-control-model)
 - [Credential / secret rotation procedures](18_CREDENTIAL_AND_PASSWORD_CHANGES.md#general-credential-change-procedure)
 
 ### 19 - Technical Reference
 - [Architecture / feature-to-component map](19_TECHNICAL_REFERENCE_HOWTOS.md#how-to-identify-which-component-controls-a-feature)
-- Flask routes **(Documentation needed)**
-- APIs / Help API endpoints **(Documentation needed)**
+- [Flask routes](19_TECHNICAL_REFERENCE_HOWTOS.md#flask-route-inventory)
+- [APIs / Help API endpoints](19_TECHNICAL_REFERENCE_HOWTOS.md#control-center-and-help-api-endpoints)
 - [Scripts / component map](19_TECHNICAL_REFERENCE_HOWTOS.md#how-to-identify-which-component-controls-a-feature)
 - [Config files](09_CONFIGURATION_HOWTOS.md#editable-live-config-file-guide)
 - [Services](15_SERVICES_AND_TIMERS_HOWTOS.md)
