@@ -5,7 +5,7 @@
   "scope": "alert_only",
   "countdown_seconds": 0,
   "commit_seconds": 0,
-  "updated_epoch": 1786760382,
-  "updated_at": "2026-08-14 22:19:42",
+  "updated_epoch": 1789179421,
+  "updated_at": "2026-09-11 22:17:01",
   "note": "Power restored; alert-only UPS returned online"
 }

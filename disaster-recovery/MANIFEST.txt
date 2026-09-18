@@ -28,6 +28,7 @@ SKIP temp-development-artifact /etc/nut/ups.conf.working-3ups
 SKIP temp-development-artifact /etc/nut/upssched.conf.pre-orchestrator
 SKIP temp-development-artifact /etc/nut/nut-orchestrator.conf.pre-priority3-20260416-152137
 SKIP temp-development-artifact /etc/nut/nut-orchestrator.conf.pre-cred-fix-20260416-135659
+SKIP temp-development-artifact /etc/nut/upssched.conf.pre-blueiris-315-20260917-091913
 SKIP temp-development-artifact /etc/nut/upsmon.conf.pre-orchestrator
 SKIP temp-development-artifact /etc/nut/nut-orchestrator.conf.pre-vcsa-name-case-fix-20260522-094732
 FILE /etc/nut/upsstats.html -> files/etc/nut/upsstats.html mode=0644
@@ -686,6 +687,7 @@ SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-three-mode
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-alert-only-145-20260810-082400
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.bak.2026-05-08-171508
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-email-identity-20260903-134412
+SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-blueiris-315-state-20260917-092436
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-nutserver-final-step-20260526-085600
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-restore-github.bak-20260428-152142
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-streamlined-restore-test-probe-20260604-094801

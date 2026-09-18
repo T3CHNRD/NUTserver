@@ -777,10 +777,10 @@ case "${1:-}" in
     ;;
 
   ups2-onbatt)
-    log_line "UPS_ONBATT_DETECTED ups2 runtime='30m' countdown='420s'"
+    log_line "UPS_ONBATT_DETECTED ups2 runtime='30m' countdown='315s'"
     send_outage_email "onbatt" "ups2 on battery / grid power lost"
-    log_line "UPS_COUNTDOWN_STARTED ups2 scope='targeted shutdown' countdown='420s'"
-    write_state "ups2" "ups2" "on_battery_pending" "targeted shutdown" 420 420 "Blue Iris pending graceful shutdown"
+    log_line "UPS_COUNTDOWN_STARTED ups2 scope='targeted shutdown' countdown='315s'"
+    write_state "ups2" "ups2" "on_battery_pending" "targeted shutdown" 315 315 "Blue Iris pending graceful shutdown"
     ;;
 
   ups2-online)

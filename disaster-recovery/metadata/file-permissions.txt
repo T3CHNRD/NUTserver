@@ -41,6 +41,7 @@
 /etc/nut/upssched.conf.pre-orchestrator|640|root|nut
 /etc/nut/nut-orchestrator.conf.pre-priority3-20260416-152137|600|root|root
 /etc/nut/nut-orchestrator.conf.pre-cred-fix-20260416-135659|600|root|root
+/etc/nut/upssched.conf.pre-blueiris-315-20260917-091913|640|root|nut
 /etc/nut/upsmon.conf.pre-orchestrator|640|root|nut
 /etc/nut/nut-orchestrator.conf.pre-vcsa-name-case-fix-20260522-094732|600|root|root
 /etc/nut/upsstats.html|644|root|nut
@@ -704,6 +705,7 @@
 /usr/local/bin/nut-orchestrator.sh.pre-alert-only-145-20260810-082400|750|root|nut
 /usr/local/bin/nut-orchestrator.sh.bak.2026-05-08-171508|755|root|root
 /usr/local/bin/nut-orchestrator.sh.pre-email-identity-20260903-134412|750|root|nut
+/usr/local/bin/nut-orchestrator.sh.pre-blueiris-315-state-20260917-092436|750|root|nut
 /usr/local/bin/nut-orchestrator.sh.pre-nutserver-final-step-20260526-085600|750|root|nut
 /usr/local/sbin/nut-ui-restore-github.bak-20260428-152142|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-streamlined-restore-test-probe-20260604-094801|755|root|root
@@ -774,7 +776,7 @@
 /usr/local/sbin/nut-ups-identity-snapshot|755|root|root
 /usr/local/sbin/nut-ui-run-test.bak.2026-05-08-180010|755|root|root
 /usr/local/sbin/nut-voip-shutdown.sh|750|root|nut
-/usr/local/sbin/nut-classify-shutdown-result|750|root|root
+/usr/local/sbin/nut-classify-shutdown-result|750|root|nut
 /usr/local/sbin/nut-vmware-shutdown.sh|750|root|nut
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-euid-fix-20260421-085534|750|root|root
 /usr/local/sbin/nut-ui-apply-config.pre-force-msmtp-rebuild-20260622-093509|750|root|root
@@ -916,7 +918,7 @@
 /usr/local/sbin/nut-verify-target-down.sh|750|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-telegram-production-20260817-123730|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-142422|755|root|root
-/usr/local/sbin/nut-classify-target-shutdown|750|root|root
+/usr/local/sbin/nut-classify-target-shutdown|750|root|nut
 /usr/local/sbin/nut-apc-idf-event-monitor.sh.pre-dedup-fix-20260805-095152|755|root|root
 /usr/local/sbin/nut-sanitize-public-site-docs|755|root|root
 /usr/local/sbin/nut-v240-test-shutdown.sh.pre-solaris-auth-fix-20260825-093420|750|root|nut
@@ -1039,7 +1041,7 @@
 /etc/systemd/system/nut-driver@ups8.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups8.service.d/nut-driver-enumerator-generated.conf|644|root|root
 /etc/systemd/system/nut-daily-health-email.service.pre-telegram-production-20260817-123346|644|root|root
-/etc/systemd/system/snap-firefox-8803.mount|644|root|root
+/etc/systemd/system/snap-core24-2124.mount|644|root|root
 /etc/systemd/system/nut-boot-event-log.service|644|root|root
 /etc/systemd/system/snap-cups-1229.mount|644|root|root
 /etc/systemd/system/nut-telegram-heartbeat.timer|644|root|root
@@ -1053,10 +1055,12 @@
 /etc/systemd/system/nut-driver@ups4.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups4.service.d/nut-driver-enumerator-generated.conf|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service|644|root|root
+/etc/systemd/system/snap-chromium-3525.mount|644|root|root
 /etc/systemd/system/x11vnc.service|644|root|root
 /etc/systemd/system/nut-apc-idf-event-monitor.timer.d/override.conf|644|root|root
 /etc/systemd/system/var-snap-firefox-common-host\x2dhunspell.mount|644|root|root
 /etc/systemd/system/nut-telegram-heartbeat.service|644|root|root
+/etc/systemd/system/snap-firefox-8863.mount|644|root|root
 /etc/systemd/system/nut-driver@ups1.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups1.service.d/nut-driver-enumerator-generated.conf|644|root|root
 /etc/systemd/system/nut-power-events-refresh.service.pre-doc-warning-cleanup-20260522-090629|644|root|root
@@ -1075,11 +1079,9 @@
 /etc/systemd/system/nut-telegram-dispatch.service|644|root|root
 /etc/systemd/system/snap.chromium.daemon.service|644|root|root
 /etc/systemd/system/snap-gtk\x2dcommon\x2dthemes-1535.mount|644|root|root
-/etc/systemd/system/snap-chromium-3520.mount|644|root|root
 /etc/systemd/system/nut-telegram-final.path|644|root|root
 /etc/systemd/system/nut-telegram-heartbeat.timer.d/telegram-schedule.conf|644|root|root
-/etc/systemd/system/snap-chromium-3507.mount|644|root|root
-/etc/systemd/system/snap-firefox-8819.mount|644|root|root
+/etc/systemd/system/snap-chromium-3529.mount|644|root|root
 /etc/systemd/system/snap-mesa\x2d2404-1839.mount|644|root|root
 /etc/systemd/system/sshd-keygen@.service.d/disable-sshd-keygen-if-cloud-init-active.conf|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service.pre-nnp-fix-20260417-154813|644|root|root
@@ -1090,13 +1092,12 @@
 /etc/systemd/system/nut-driver@ups2.service.d/nut-driver-enumerator-generated.conf|644|root|root
 /etc/systemd/system/snap-firmware\x2dupdater-224.mount|644|root|root
 /etc/systemd/system/nut-apc-idf-event-monitor.timer|644|root|root
-/etc/systemd/system/snap-core24-1587.mount|644|root|root
-/etc/systemd/system/snap-core22-2411.mount|644|root|root
 /etc/systemd/system/snap-gnome\x2d46\x2d2404-153.mount|644|root|root
 /etc/systemd/system/nut-daily-health-email.service.pre-telegram-final-20260817-124128|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service.pre-nnp-fix-20260417-154456|644|root|root
 /etc/systemd/system/snap-icon\x2dtheme\x2dbreeze-5.mount|644|root|root
 /etc/systemd/system/snap-snap\x2dstore-1216.mount|644|root|root
+/etc/systemd/system/snap-firefox-8929.mount|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service.d/override.conf|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service.d/export-logs-timeout.conf|644|root|root
 /etc/systemd/system/tigervnc-backup.service|644|root|root
@@ -1104,6 +1105,7 @@
 /etc/systemd/system/snap-gnome\x2d42\x2d2204-263.mount|644|root|root
 /etc/systemd/system/snap-cups-1238.mount|644|root|root
 /etc/systemd/system/nut-telegram-final.service|644|root|root
+/etc/systemd/system/snap-core22-2955.mount|644|root|root
 /etc/systemd/system/snap.mesa-2404.component-monitor.service|644|root|root
 /etc/systemd/system/snap.cups.cups-browsed.service|644|root|root
 /etc/systemd/system/nut-driver@ups3.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
