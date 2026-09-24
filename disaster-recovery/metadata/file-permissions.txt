@@ -849,6 +849,7 @@
 /usr/local/sbin/nut-email-alert-test-send.pre-health-off-order-20260827-095324|755|root|root
 /usr/local/sbin/nut-hypervisor-ssh-readonly-preflight.sh|750|root|root
 /usr/local/sbin/nut-email-alert-test-send.pre-storm-guard-20260903-111818|755|root|root
+/usr/local/sbin/nut-apc-idf-event-monitor.sh.bak-20260918-172801|755|root|root
 /usr/local/sbin/nut-ui-backup-now.pre-stable-path-20260421-084924|750|root|root
 /usr/local/sbin/nut-ui-backup-now.pre-run-as-root-20260421-085548|750|root|root
 /usr/local/sbin/nut-email-alert-test-send.pre-friendly-runtime-format-20260624-104308|755|root|root
@@ -1028,7 +1029,6 @@
 /usr/local/sbin/nut-ui-read-config|750|root|root
 /etc/systemd/system/nut-weather-cache-refresh.timer|644|root|root
 /etc/systemd/system/nut-daily-health-email.service.pre-telegram-production-20260817-123730|644|root|root
-/etc/systemd/system/snap-snap\x2dstore-1218.mount|644|root|root
 /etc/systemd/system/nut-daily-health-email.service|644|root|root
 /etc/systemd/system/snap-snapd\x2ddesktop\x2dintegration-387.mount|644|root|root
 /etc/systemd/system/snap-bare-5.mount|644|root|root
@@ -1055,14 +1055,15 @@
 /etc/systemd/system/nut-driver@ups4.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups4.service.d/nut-driver-enumerator-generated.conf|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service|644|root|root
-/etc/systemd/system/snap-chromium-3525.mount|644|root|root
 /etc/systemd/system/x11vnc.service|644|root|root
 /etc/systemd/system/nut-apc-idf-event-monitor.timer.d/override.conf|644|root|root
 /etc/systemd/system/var-snap-firefox-common-host\x2dhunspell.mount|644|root|root
+/etc/systemd/system/snap-chromium-3530.mount|644|root|root
 /etc/systemd/system/nut-telegram-heartbeat.service|644|root|root
 /etc/systemd/system/snap-firefox-8863.mount|644|root|root
 /etc/systemd/system/nut-driver@ups1.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups1.service.d/nut-driver-enumerator-generated.conf|644|root|root
+/etc/systemd/system/snap-snap\x2dstore-1419.mount|644|root|root
 /etc/systemd/system/nut-power-events-refresh.service.pre-doc-warning-cleanup-20260522-090629|644|root|root
 /etc/systemd/system/nut-driver@.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups9.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root

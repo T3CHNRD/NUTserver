@@ -3,8 +3,26 @@
   "feature": "UPS Maintenance Mode",
   "implemented_phase": "phase5-active-session-tracking",
   "status": "initialized",
-  "active_sessions": [],
-  "unresolved_items": [],
+  "active_sessions": [
+    {
+      "ups": "ups4",
+      "started_at": "2026-09-18T17:14:38-04:00",
+      "last_event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "mode": "commbad",
+      "status": "active",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    }
+  ],
+  "unresolved_items": [
+    {
+      "ups": "ups4",
+      "started_at": "2026-09-18T17:14:38-04:00",
+      "last_event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "mode": "commbad",
+      "status": "active",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    }
+  ],
   "recent_records": [
     {
       "timestamp": "2026-07-21T08:17:46-04:00",
@@ -113,9 +131,378 @@
       "status": "initialized",
       "operator": "",
       "message": "Phase 5 shutdown suppression test completed and cleared."
+    },
+    {
+      "timestamp": "2026-09-18T16:34:29-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups1",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T16:34:34-04:00",
+      "event": "UPS_MAINTENANCE_REAL_OUTAGE_DETECTED",
+      "ups": "ups2",
+      "mode": "commbad",
+      "status": "warning",
+      "operator": "",
+      "message": "UPS communication lost but grid witness confidence was not sufficient for maintenance classification."
+    },
+    {
+      "timestamp": "2026-09-18T16:44:02-04:00",
+      "event": "UPS_MAINTENANCE_REAL_OUTAGE_DETECTED",
+      "ups": "ups4",
+      "mode": "commbad",
+      "status": "warning",
+      "operator": "",
+      "message": "UPS communication lost but grid witness confidence was not sufficient for maintenance classification."
+    },
+    {
+      "timestamp": "2026-09-18T16:57:13-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups2",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T16:57:13-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups8",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:01:53-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups3",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:01:53-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups2",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:01:53-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups8",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:01:58-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups3",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:01:58-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups8",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:01:58-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups2",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:07:58-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups2",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:07:58-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups3",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:08:03-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups3",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:08:03-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups8",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:13:38-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups3",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:13:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups9",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:13:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups3",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:13:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups4",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:13:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups8",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:13:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups2",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:13:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups7",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:13:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups6",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:13:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups5",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:38-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups9",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:38-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups4",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:38-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups3",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:38-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups1",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:38-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups6",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:38-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups8",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:38-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups5",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:38-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups2",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:38-04:00",
+      "event": "UPS_MAINTENANCE_UPS_OFFLINE",
+      "ups": "ups7",
+      "mode": "commbad",
+      "status": "active",
+      "operator": "",
+      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups7",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups6",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups3",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups9",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups2",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups8",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups5",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-09-18T17:14:43-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups1",
+      "mode": "commok",
+      "status": "initialized",
+      "operator": "",
+      "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
     }
   ],
   "created_at": "2026-07-17T10:43:36.329668-04:00",
-  "updated_at": "2026-07-21T09:03:04-04:00",
+  "updated_at": "2026-09-18T17:14:43-04:00",
   "note": "State foundation only. Automatic detection and UI workflows are not implemented yet."
 }

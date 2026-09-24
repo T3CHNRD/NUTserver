@@ -48,7 +48,7 @@ send_idf_power_email() {
   local source_path="$7"
 
   local email_cmd="/usr/local/sbin/nut-email-alert-test-send"
-  local rc
+  local rc=0
 
   idf_should_email_event "$message" || return 0
 
@@ -64,8 +64,7 @@ send_idf_power_email() {
   NUT_IDF_EVENT_TIME="$event_time" \
   NUT_IDF_MESSAGE="$message" \
   NUT_IDF_SOURCE_PATH="$source_path" \
-    "$email_cmd" --send idf_power >/dev/null 2>&1
-  rc=$?
+    "$email_cmd" --send idf_power >/dev/null 2>&1 || rc=$?
 
   if [ "$rc" -eq 0 ]; then
     log_event "APC_IDF_EMAIL_SENT source=\"$name\" type=\"idf_power\" message=\"$message\""

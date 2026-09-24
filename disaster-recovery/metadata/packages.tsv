@@ -615,7 +615,7 @@ libbz2-1.0:amd64	1.0.8-5.1build0.1
 libc-bin	2.39-0ubuntu8.7
 libc-dev-bin	2.39-0ubuntu8.8
 libc-devtools	2.39-0ubuntu8.8
-libc6:amd64	2.39-0ubuntu8.7
+libc6:amd64	2.39-0ubuntu8.8
 libc6-dbg:amd64	2.39-0ubuntu8.8
 libc6-dev:amd64	2.39-0ubuntu8.8
 libcaca0:amd64	0.99.beta20-4ubuntu0.2

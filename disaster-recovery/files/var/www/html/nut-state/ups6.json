@@ -1,11 +1,11 @@
 {
   "ups_name": "ups6",
   "display_name": "ups6",
-  "state": "power_restored_canceled",
+  "state": "shutdown_committed",
   "scope": "targeted shutdown",
   "countdown_seconds": 0,
   "commit_seconds": 0,
-  "updated_epoch": 1788454010,
-  "updated_at": "2026-09-03 12:46:50",
-  "note": "Shutdown canceled / power restored"
+  "updated_epoch": 1789762897,
+  "updated_at": "2026-09-18 16:21:37",
+  "note": "Committed; Lansweeper wrapper executed, network gear alert only"
 }

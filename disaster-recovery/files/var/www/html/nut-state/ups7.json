@@ -1,11 +1,11 @@
 {
   "ups_name": "ups7",
   "display_name": "ups7",
-  "state": "power_restored_canceled",
-  "scope": "targeted shutdown",
+  "state": "shutdown_blocked_by_production_mode",
+  "scope": "production mode gate",
   "countdown_seconds": 0,
   "commit_seconds": 0,
-  "updated_epoch": 1788454010,
-  "updated_at": "2026-09-03 12:46:50",
-  "note": "Shutdown canceled / power restored"
+  "updated_epoch": 1789762441,
+  "updated_at": "2026-09-18 16:14:01",
+  "note": "Blocked by production mode: disarmed"
 }

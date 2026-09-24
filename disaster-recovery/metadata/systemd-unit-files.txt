@@ -6,8 +6,8 @@ dev-hugepages.mount                            static          -
 dev-mqueue.mount                               static          -
 proc-sys-fs-binfmt_misc.mount                  disabled        disabled
 snap-bare-5.mount                              enabled         enabled
-snap-chromium-3525.mount                       enabled         enabled
 snap-chromium-3529.mount                       enabled         enabled
+snap-chromium-3530.mount                       enabled         enabled
 snap-core22-2437.mount                         enabled         enabled
 snap-core22-2955.mount                         enabled         enabled
 snap-core24-1643.mount                         enabled         enabled
@@ -27,7 +27,7 @@ snap-icon\x2dtheme\x2dbreeze-5.mount           enabled         enabled
 snap-mesa\x2d2404-1165.mount                   enabled         enabled
 snap-mesa\x2d2404-1839.mount                   enabled         enabled
 snap-snap\x2dstore-1216.mount                  enabled         enabled
-snap-snap\x2dstore-1218.mount                  enabled         enabled
+snap-snap\x2dstore-1419.mount                  enabled         enabled
 snap-snapd-27710.mount                         enabled         enabled
 snap-snapd-27738.mount                         enabled         enabled
 snap-snapd\x2ddesktop\x2dintegration-387.mount enabled         enabled
