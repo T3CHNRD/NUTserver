@@ -1286,6 +1286,53 @@ def backup_now():
 # =========================
 # RESTORE FROM GITHUB
 # =========================
+@app.route("/api/restore/kde-xrdp", methods=["GET"])
+def check_kde_xrdp():
+    try:
+        result = subprocess.run(
+            ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-kde-xrdp-recover", "--check"],
+            capture_output=True, text=True, timeout=30, check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return jsonify({"ok": False, "error": "KDE snapshot check timed out."}), 504
+    return jsonify({
+        "ok": result.returncode == 0,
+        "output": result.stdout + result.stderr,
+        "returncode": result.returncode,
+    }), (200 if result.returncode == 0 else 500)
+
+
+@app.route("/api/restore/kde-xrdp", methods=["POST"])
+def restore_kde_xrdp():
+    blocked = block_if_protecting("KDE XRDP recovery")
+    if blocked:
+        return blocked
+
+    payload = request.get_json(silent=True) or {}
+    if payload.get("confirmation") != "RESTORE KDE XRDP":
+        return jsonify({
+            "ok": False,
+            "error": "Enter RESTORE KDE XRDP to close XRDP sessions and restore KDE.",
+        }), 403
+
+    try:
+        result = subprocess.run(
+            ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-kde-xrdp-recover"],
+            capture_output=True, text=True, timeout=90, check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return jsonify({
+            "ok": False,
+            "error": "Recovery timed out. Check the server log before retrying.",
+        }), 504
+
+    return jsonify({
+        "ok": result.returncode == 0,
+        "output": result.stdout + result.stderr,
+        "returncode": result.returncode,
+    }), (200 if result.returncode == 0 else 500)
+
+
 @app.route("/api/restore/branches", methods=["GET"])
 def restore_branches():
     cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-restore-github", "--list"]

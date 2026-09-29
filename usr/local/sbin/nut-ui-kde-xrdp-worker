@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SNAP=/var/lib/nut-orchestrator-ui/xrdp-kde-known-good
+BACKUPS=/var/backups/nut-admin/xrdp-kde
+case "${1:-}" in
+  live|check) action=$1 ;;
+  *) echo "Invalid action" >&2; exit 2 ;;
+esac
+
+exec 9>/run/lock/nut-ui-kde-xrdp.lock
+flock -n 9 || { echo "Recovery already running" >&2; exit 1; }
+
+mode=$(/usr/local/sbin/nut-production-status | python3 -c 'import json,sys; print(json.load(sys.stdin).get("mode","unknown"))')
+
+check_source() {
+  local path=$1 expected=$2 owner
+  [ -f "$path" ] && [ ! -L "$path" ] || { echo "Missing or linked snapshot: $path" >&2; exit 1; }
+  owner=$(stat -c %u "$path")
+  [ "$owner" = 0 ] || { echo "Snapshot must be root-owned: $path" >&2; exit 1; }
+  [ "$(git hash-object "$path")" = "$expected" ] || {
+    echo "Snapshot integrity failure: $path" >&2
+    exit 1
+  }
+}
+
+check_source "$SNAP/.xsession" 9e9eb0883f09321c85e05236490140935d9389e3
+check_source "$SNAP/.xsessionrc" 301676b6d6350ab12a1911af55dd0abf05c20741
+check_source "$SNAP/startwm.sh" a72dd73336c4f5b7014f68b661231f8a6b24c1a3
+if [ "$action" = check ]; then
+  echo "PASS: KDE snapshot verified; NUT mode is $mode"
+  exit 0
+fi
+case "$mode" in
+  disarmed|off) ;;
+  *) echo "Blocked: NUT protection mode is $mode" >&2; exit 1 ;;
+esac
+
+stamp=$(date +%Y%m%d-%H%M%S)
+backup="$BACKUPS/$stamp-$$"
+install -d -o root -g root -m 700 "$backup"
+cp -a /home/nutserver/.xsession /home/nutserver/.xsessionrc /etc/xrdp/startwm.sh "$backup/"
+echo "Before-restore backup: $backup"
+
+install -o nutserver -g nutserver -m 755 "$SNAP/.xsession" /home/nutserver/.xsession
+install -o nutserver -g nutserver -m 644 "$SNAP/.xsessionrc" /home/nutserver/.xsessionrc
+install -o root -g root -m 755 "$SNAP/startwm.sh" /etc/xrdp/startwm.sh
+
+test "$(git hash-object /home/nutserver/.xsession)" = 9e9eb0883f09321c85e05236490140935d9389e3
+test "$(git hash-object /home/nutserver/.xsessionrc)" = 301676b6d6350ab12a1911af55dd0abf05c20741
+test "$(git hash-object /etc/xrdp/startwm.sh)" = a72dd73336c4f5b7014f68b661231f8a6b24c1a3
+
+count=0
+while read -r session uid user rest; do
+  [ "$user" = nutserver ] || continue
+  service=$(loginctl show-session "$session" -p Service --value 2>/dev/null || true)
+  [ "$service" = xrdp-sesman ] || continue
+  loginctl terminate-session "$session"
+  echo "Closed XRDP session $session"
+  count=$((count + 1))
+done < <(loginctl list-sessions --no-legend)
+
+systemctl restart xrdp-sesman xrdp
+systemctl is-active --quiet xrdp-sesman xrdp
+echo "PASS: KDE files restored; $count XRDP session(s) closed; XRDP services active"

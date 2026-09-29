@@ -3188,6 +3188,41 @@
       }
     }
 
+    async function recoverKdeXrdp() {
+      closeRestoreOptionsModal();
+      try {
+        const preflight = await ccApiJson("/nut-ui/api/restore/kde-xrdp");
+        if (!preflight.ok) {
+          setControlCenterOutput("KDE/XRDP recovery", preflight, true);
+          return;
+        }
+      } catch (err) {
+        setControlCenterOutput("KDE/XRDP recovery", String(err), true);
+        return;
+      }
+      const confirmation = prompt(
+        "Restore the saved KDE/XRDP settings and close all nutserver XRDP desktop sessions. " +
+        "Unsaved work in those desktops will be lost. SSH and NUT services are unaffected.\n\n" +
+        "Type RESTORE KDE XRDP to continue:"
+      );
+      if (confirmation !== "RESTORE KDE XRDP") {
+        setControlCenterOutput("KDE/XRDP recovery", "Cancelled. No changes made.");
+        return;
+      }
+      setButtonRunning("cc-restore-github", true, "Recovering KDE...");
+      try {
+        const data = await ccApiJson("/nut-ui/api/restore/kde-xrdp", {
+          method: "POST",
+          body: JSON.stringify({ confirmation })
+        });
+        setControlCenterOutput("KDE/XRDP recovery", data, !data.ok);
+      } catch (err) {
+        setControlCenterOutput("KDE/XRDP recovery", String(err), true);
+      } finally {
+        setButtonRunning("cc-restore-github", false);
+      }
+    }
+
     async function runRestoreDryRunPreview(category) {
       const title = "Restore from GitHub";
       closeRestoreOptionsModal();
@@ -4048,6 +4083,8 @@
           const action = button.getAttribute("data-restore-action");
           if (action === "sync-repo") {
             syncBackupRepoFromGithub();
+          } else if (action === "kde-xrdp") {
+            recoverKdeXrdp();
           } else if (action === "open-selected-restore") {
             openSelectedRestoreModal();
           }
@@ -4248,6 +4285,11 @@
         <button class="cc-restore-option" type="button" data-restore-action="sync-repo">
           Sync backup repo from GitHub
           <small>Updates /opt/nut-admin/repo-template only. Does not restore live files.</small>
+        </button>
+
+        <button class="cc-restore-option" type="button" data-restore-action="kde-xrdp">
+          Recover KDE/XRDP desktop
+          <small>Restore the verified KDE settings and close XRDP desktop sessions. Does not change NUT monitoring or SSH.</small>
         </button>
 
         <button class="cc-restore-option" type="button" data-restore-dry-run="all">

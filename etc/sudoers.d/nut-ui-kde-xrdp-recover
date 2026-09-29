@@ -1,0 +1,2 @@
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-kde-xrdp-recover
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/nut-ui-kde-xrdp-recover --check

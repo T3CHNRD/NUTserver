@@ -833,6 +833,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-sto
 SKIP temp-development-artifact /usr/local/sbin/nut-apc-idf-event-monitor.sh.bak-20260918-172801
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-backup-now.pre-stable-path-20260421-084924
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-backup-now.pre-run-as-root-20260421-085548
+FILE /usr/local/sbin/nut-ui-kde-xrdp-recover -> files/usr/local/sbin/nut-ui-kde-xrdp-recover mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-friendly-runtime-format-20260624-104308
 FILE /usr/local/sbin/nut-build-disaster-recovery-snapshot -> files/usr/local/sbin/nut-build-disaster-recovery-snapshot mode=0755
 FILE /usr/local/sbin/nut-get-power-events-json -> files/usr/local/sbin/nut-get-power-events-json mode=0755
@@ -945,6 +946,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-sync-live-to-repo-for-backup.
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-ups-maintenance-20260721-081125
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-apply-config.pre-clean-duplicate-msmtp-rebuild-20260622-093959
 SKIP temp-development-artifact /usr/local/sbin/nut-lansweeper-shutdown.sh.bak.2026-05-11-101402
+FILE /usr/local/sbin/nut-ui-kde-xrdp-worker -> files/usr/local/sbin/nut-ui-kde-xrdp-worker mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-explicit-ssh-key-20260421-091741
 FILE /usr/local/sbin/nut-ups-locator-beep.sh -> files/usr/local/sbin/nut-ups-locator-beep.sh mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-vmware-shutdown.sh.pre-esxi-config-host-list-20260611-151604

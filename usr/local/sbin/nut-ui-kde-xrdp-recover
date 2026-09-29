@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+case "$#" in
+  0) mode=live ;;
+  1)
+    [ "$1" = --check ] || { echo "Invalid argument" >&2; exit 2; }
+    mode=check
+    ;;
+  *) echo "Invalid arguments" >&2; exit 2 ;;
+esac
+
+# Start outside the Control Center service's ProtectHome mount namespace.
+# The worker contains the fixed allowlist and rechecks NUT mode.
+exec /usr/bin/systemd-run --quiet --wait --pipe --collect \
+  --unit="nut-kde-xrdp-recover-$(date +%s)-$$" \
+  --property=Type=exec \
+  /usr/local/sbin/nut-ui-kde-xrdp-worker "$mode"

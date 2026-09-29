@@ -5,7 +5,7 @@
   anacron.service                                                                           loaded    inactive   dead          Run anacron jobs
   apache2.service                                                                           loaded    active     running       The Apache HTTP Server
   apparmor.service                                                                          loaded    active     exited        Load AppArmor profiles
-● apport-autoreport.service                                                                 loaded    failed     failed        Process error reports when automatic reporting is enabled
+  apport-autoreport.service                                                                 loaded    inactive   dead          Process error reports when automatic reporting is enabled
   apport.service                                                                            loaded    active     exited        automatic crash report generation
   apt-daily-upgrade.service                                                                 loaded    inactive   dead          Daily apt upgrade and clean activities
   apt-daily.service                                                                         loaded    inactive   dead          Daily apt download activities
@@ -98,7 +98,6 @@
 ● oem-config.service                                                                        not-found inactive   dead          oem-config.service
   openvpn.service                                                                           loaded    active     exited        OpenVPN service
 ● ovsdb-server.service                                                                      not-found inactive   dead          ovsdb-server.service
-  packagekit.service                                                                        loaded    active     running       PackageKit Daemon
   plymouth-quit-wait.service                                                                loaded    activating start   start Hold until boot process finishes up
   plymouth-quit.service                                                                     loaded    inactive   dead          Terminate Plymouth Boot Screen
   plymouth-read-write.service                                                               loaded    active     exited        Tell Plymouth To Write Out Runtime Data
@@ -218,7 +217,7 @@
   user@1000.service                                                                         loaded    active     running       User Manager for UID 1000
   user@120.service                                                                          loaded    active     running       User Manager for UID 120
   uuidd.service                                                                             loaded    inactive   dead          Daemon for generating UUIDs
-  whoopsie.service                                                                          loaded    active     running       crash report submission
+  whoopsie.service                                                                          loaded    inactive   dead          crash report submission
   wpa_supplicant.service                                                                    loaded    active     running       WPA supplicant
   xrdp-sesman.service                                                                       loaded    active     running       xrdp session manager
   xrdp.service                                                                              loaded    active     running       xrdp daemon
@@ -229,5 +228,5 @@ Legend: LOAD   → Reflects whether the unit definition was properly loaded.
         SUB    → The low-level unit activation state, values depend on unit type.
         JOB    → Pending job for the unit.
 
-224 loaded units listed.
+223 loaded units listed.
 To show all installed unit files use 'systemctl list-unit-files'.
