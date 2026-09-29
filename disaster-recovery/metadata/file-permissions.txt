@@ -1060,7 +1060,6 @@
 /etc/systemd/system/var-snap-firefox-common-host\x2dhunspell.mount|644|root|root
 /etc/systemd/system/snap-chromium-3530.mount|644|root|root
 /etc/systemd/system/nut-telegram-heartbeat.service|644|root|root
-/etc/systemd/system/snap-firefox-8863.mount|644|root|root
 /etc/systemd/system/nut-driver@ups1.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups1.service.d/nut-driver-enumerator-generated.conf|644|root|root
 /etc/systemd/system/snap-snap\x2dstore-1419.mount|644|root|root
@@ -1076,11 +1075,13 @@
 /etc/systemd/system/nut-weather-cache-refresh.service|644|root|root
 /etc/systemd/system/nut-daily-health-email.timer|644|root|root
 /etc/systemd/system/snap-snapd\x2ddesktop\x2dintegration-391.mount|644|root|root
+/etc/systemd/system/snap-firmware\x2dupdater-258.mount|644|root|root
 /etc/systemd/system/snap-firmware\x2dupdater-226.mount|644|root|root
 /etc/systemd/system/nut-telegram-dispatch.service|644|root|root
 /etc/systemd/system/snap.chromium.daemon.service|644|root|root
 /etc/systemd/system/snap-gtk\x2dcommon\x2dthemes-1535.mount|644|root|root
 /etc/systemd/system/nut-telegram-final.path|644|root|root
+/etc/systemd/system/snap-firefox-8969.mount|644|root|root
 /etc/systemd/system/nut-telegram-heartbeat.timer.d/telegram-schedule.conf|644|root|root
 /etc/systemd/system/snap-chromium-3529.mount|644|root|root
 /etc/systemd/system/snap-mesa\x2d2404-1839.mount|644|root|root
@@ -1091,7 +1092,6 @@
 /etc/systemd/system/snap-gnome\x2d42\x2d2204-247.mount|644|root|root
 /etc/systemd/system/nut-driver@ups2.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups2.service.d/nut-driver-enumerator-generated.conf|644|root|root
-/etc/systemd/system/snap-firmware\x2dupdater-224.mount|644|root|root
 /etc/systemd/system/nut-apc-idf-event-monitor.timer|644|root|root
 /etc/systemd/system/snap-gnome\x2d46\x2d2404-153.mount|644|root|root
 /etc/systemd/system/nut-daily-health-email.service.pre-telegram-final-20260817-124128|644|root|root

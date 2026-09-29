@@ -14,10 +14,10 @@ snap-core24-1643.mount                         enabled         enabled
 snap-core24-2124.mount                         enabled         enabled
 snap-cups-1229.mount                           enabled         enabled
 snap-cups-1238.mount                           enabled         enabled
-snap-firefox-8863.mount                        enabled         enabled
 snap-firefox-8929.mount                        enabled         enabled
-snap-firmware\x2dupdater-224.mount             enabled         enabled
+snap-firefox-8969.mount                        enabled         enabled
 snap-firmware\x2dupdater-226.mount             enabled         enabled
+snap-firmware\x2dupdater-258.mount             enabled         enabled
 snap-gnome\x2d42\x2d2204-247.mount             enabled         enabled
 snap-gnome\x2d42\x2d2204-263.mount             enabled         enabled
 snap-gnome\x2d46\x2d2404-153.mount             enabled         enabled
@@ -47,8 +47,9 @@ systemd-ask-password-plymouth.path             static          -
 systemd-ask-password-wall.path                 static          -
 tpm-udev.path                                  enabled         enabled
 whoopsie.path                                  enabled         enabled
+session-2004.scope                             transient       -
 session-c1.scope                               transient       -
-session-c2.scope                               transient       -
+session-c4.scope                               transient       -
 accounts-daemon.service                        enabled         enabled
 alsa-restore.service                           static          -
 alsa-state.service                             static          -
@@ -514,4 +515,4 @@ ua-timer.timer                                 enabled         enabled
 update-notifier-download.timer                 enabled         enabled
 update-notifier-motd.timer                     enabled         enabled
 
-514 unit files listed.
+515 unit files listed.
