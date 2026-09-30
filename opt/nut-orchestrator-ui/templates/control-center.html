@@ -4808,6 +4808,41 @@ async function ccApiJson(url, options = {}) {
       }
     }
 
+    async function recoverKdeXrdp() {
+      closeRestoreOptionsModal();
+      try {
+        const preflight = await ccApiJson("/nut-ui/api/restore/kde-xrdp");
+        if (!preflight.ok) {
+          setControlCenterOutput("KDE/XRDP recovery", preflight, true);
+          return;
+        }
+      } catch (err) {
+        setControlCenterOutput("KDE/XRDP recovery", String(err), true);
+        return;
+      }
+      const confirmation = prompt(
+        "Restore the saved KDE/XRDP settings and close all nutserver XRDP desktop sessions. " +
+        "Unsaved work in those desktops will be lost. SSH and NUT services are unaffected.\n\n" +
+        "Type RESTORE KDE XRDP to continue:"
+      );
+      if (confirmation !== "RESTORE KDE XRDP") {
+        setControlCenterOutput("KDE/XRDP recovery", "Cancelled. No changes made.");
+        return;
+      }
+      setButtonRunning("cc-restore-github", true, "Recovering KDE...");
+      try {
+        const data = await ccApiJson("/nut-ui/api/restore/kde-xrdp", {
+          method: "POST",
+          body: JSON.stringify({ confirmation })
+        });
+        setControlCenterOutput("KDE/XRDP recovery", data, !data.ok);
+      } catch (err) {
+        setControlCenterOutput("KDE/XRDP recovery", String(err), true);
+      } finally {
+        setButtonRunning("cc-restore-github", false);
+      }
+    }
+
     async function runRestoreDryRunPreview(category) {
       const title = "Restore from GitHub";
       closeRestoreOptionsModal();
@@ -6286,6 +6321,8 @@ function closeLabSelectedRestoreScreen() {
           const action = button.getAttribute("data-restore-action");
           if (action === "sync-repo") {
             syncBackupRepoFromGithub();
+          } else if (action === "kde-xrdp") {
+            recoverKdeXrdp();
           } else if (action === "open-selected-restore") {
             openSelectedRestoreModal();
           }
@@ -6483,7 +6520,7 @@ function closeLabSelectedRestoreScreen() {
           </div>
           <div class="cc-restore-modal-subtitle">
             Choose how much of the NUT server you want to restore.
-            All restore levels use the existing GitHub backup structure.
+            The NUT restore levels use GitHub backups. KDE/XRDP recovery uses the verified local snapshot.
           </div>
         </div>
 
@@ -6557,6 +6594,21 @@ function closeLabSelectedRestoreScreen() {
             Restore the approved NUT application/configuration stack.
             Current secrets and protection mode are preserved. Preflight,
             backup, validation and rollback protection are required.
+          </small>
+        </button>
+
+        <button
+          class="cc-restore-option"
+          type="button"
+          data-restore-action="kde-xrdp"
+        >
+          <span style="display:block;font-size:.72rem;opacity:.65;margin-bottom:.35rem;">
+            REMOTE ACCESS
+          </span>
+          Recover KDE/XRDP desktop
+          <small>
+            Restore the verified local KDE snapshot and close XRDP desktop sessions.
+            NUT monitoring and SSH are unchanged.
           </small>
         </button>
 

@@ -1078,6 +1078,7 @@
 /etc/systemd/system/nut-daily-health-email.timer|644|root|root
 /etc/systemd/system/snap-snapd\x2ddesktop\x2dintegration-391.mount|644|root|root
 /etc/systemd/system/snap-firmware\x2dupdater-258.mount|644|root|root
+/etc/systemd/system/snap-snapd-28254.mount|644|root|root
 /etc/systemd/system/snap-firmware\x2dupdater-226.mount|644|root|root
 /etc/systemd/system/nut-telegram-dispatch.service|644|root|root
 /etc/systemd/system/snap.chromium.daemon.service|644|root|root
@@ -1089,7 +1090,6 @@
 /etc/systemd/system/snap-mesa\x2d2404-1839.mount|644|root|root
 /etc/systemd/system/sshd-keygen@.service.d/disable-sshd-keygen-if-cloud-init-active.conf|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service.pre-nnp-fix-20260417-154813|644|root|root
-/etc/systemd/system/snap-snapd-27710.mount|644|root|root
 /etc/systemd/system/nut-telegram-dispatch.path|644|root|root
 /etc/systemd/system/snap-gnome\x2d42\x2d2204-247.mount|644|root|root
 /etc/systemd/system/nut-driver@ups2.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
