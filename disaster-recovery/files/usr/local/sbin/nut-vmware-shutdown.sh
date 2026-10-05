@@ -51,10 +51,15 @@ ACTION="${1:-shutdown_domain}"
 
 PHASE1=(
 "WebServer-1"
+"albl-Webserver-2"
+"Maint-VM2"
+"Cisco IQ-Link"
 )
 
 PHASE2=(
 "Albl-exch2019"
+"ALBL-Exch"
+"OEL-DB01"
 "albl-SageSQL"
 "alblvvsaa"
 )

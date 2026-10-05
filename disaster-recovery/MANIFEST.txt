@@ -799,6 +799,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-lansweeper-shutdown.sh.bak.20
 SKIP temp-development-artifact /usr/local/sbin/nut-apc-idf-event-monitor.sh.pre-current-state-logging-20260629-143230
 FILE /usr/local/sbin/nut-power-event-log -> files/usr/local/sbin/nut-power-event-log mode=0750
 SKIP temp-development-artifact /usr/local/sbin/nut-classify-target-shutdown.bak.2026-05-11-124008
+SKIP temp-development-artifact /usr/local/sbin/nut-vmware-shutdown.sh.pre-T04-fix-20260930
 SKIP temp-development-artifact /usr/local/sbin/nut-ups-maintenance-state.pre-permission-fix-20260721-081946
 FILE /usr/local/sbin/nut-ui-restore-github -> files/usr/local/sbin/nut-ui-restore-github mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-classify-shutdown-result.bak.2026-05-11-091453
