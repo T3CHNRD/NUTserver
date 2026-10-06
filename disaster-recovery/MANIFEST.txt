@@ -1,3 +1,4 @@
+SKIP temp-development-artifact /etc/nut/nut-email-alerts.secret.before-restore-20261005
 FILE /etc/nut/synology-api.conf -> files/etc/nut/synology-api.conf mode=0640
 SKIP temp-development-artifact /etc/nut/ups.conf.backup
 FILE /etc/nut/upsset.conf -> files/etc/nut/upsset.conf mode=0644
@@ -761,6 +762,7 @@ FILE /usr/local/sbin/nut-classify-shutdown-result -> files/usr/local/sbin/nut-cl
 FILE /usr/local/sbin/nut-vmware-shutdown.sh -> files/usr/local/sbin/nut-vmware-shutdown.sh mode=0750
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-euid-fix-20260421-085534
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-apply-config.pre-force-msmtp-rebuild-20260622-093509
+SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.before-test-mode-gate-20261005
 SKIP temp-development-artifact /usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-telegram-secret-hardening-20260817-103544
 SKIP temp-development-artifact /usr/local/sbin/nut-notification-controls.pre-6c1-20260827-090720
 SKIP temp-development-artifact /usr/local/sbin/nut-production-mode.pre-protecting-esxi-ready-20260611-154101

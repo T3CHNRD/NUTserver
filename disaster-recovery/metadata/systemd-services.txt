@@ -74,7 +74,7 @@
   NetworkManager.service                                                                    loaded    active     running       Network Manager
 ● nslcd.service                                                                             not-found inactive   dead          nslcd.service
 ● nut-apc-idf-event-monitor.service                                                         loaded    failed     failed        Logging-only APC IDF2/IDF3 web event monitor for NUT dashboard
-● nut-daily-health-email.service                                                            loaded    failed     failed        NUT Daily UPS Health Email and Telegram Report
+  nut-daily-health-email.service                                                            loaded    inactive   dead          NUT Daily UPS Health Email and Telegram Report
   nut-driver-enumerator.service                                                             loaded    inactive   dead          Network UPS Tools - enumeration of configure-file devices into systemd unit instances
   nut-driver@ups1.service                                                                   loaded    active     running       Network UPS Tools - device driver for NUT device 'ups1'
   nut-driver@ups2.service                                                                   loaded    active     running       Network UPS Tools - device driver for NUT device 'ups2'

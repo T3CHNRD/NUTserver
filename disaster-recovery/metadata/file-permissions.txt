@@ -1,3 +1,4 @@
+/etc/nut/nut-email-alerts.secret.before-restore-20261005|600|root|root
 /etc/nut/synology-api.conf|640|root|nut
 /etc/nut/ups.conf.backup|640|root|nut
 /etc/nut/upsset.conf|644|root|nut
@@ -780,6 +781,7 @@
 /usr/local/sbin/nut-vmware-shutdown.sh|750|root|nut
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-euid-fix-20260421-085534|750|root|root
 /usr/local/sbin/nut-ui-apply-config.pre-force-msmtp-rebuild-20260622-093509|750|root|root
+/usr/local/sbin/nut-email-alert-test-send.before-test-mode-gate-20261005|755|root|root
 /usr/local/sbin/nut-build-disaster-recovery-snapshot.pre-telegram-secret-hardening-20260817-103544|755|root|root
 /usr/local/sbin/nut-notification-controls.pre-6c1-20260827-090720|750|root|root
 /usr/local/sbin/nut-production-mode.pre-protecting-esxi-ready-20260611-154101|750|root|root

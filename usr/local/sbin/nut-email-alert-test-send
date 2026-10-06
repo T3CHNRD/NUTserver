@@ -303,6 +303,7 @@ def enforce_email_mode_policy(action, kind, mode, mode_label):
     )
 
     allowed = allowed_by_mode.get(mode, set())
+    if action == "--send" and os.environ.get("NUT_EMAIL_TEST", "").strip() == "1" and mode == "disarmed" and kind in {"shutdown", "cancelled", "final"}: return
 
     if kind in allowed:
         return
