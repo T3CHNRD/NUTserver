@@ -6,13 +6,13 @@ COMMON_EXPECT="$SCRIPT_DIR/solaris-v240-common.exp"
 
 TARGET="${1:-}"
 
+CONFIG_FILE="/etc/nut/db-shutdown.conf"
 V24013_HOST="198.51.100.10"
 
 DB01_PROD="198.51.100.11"
 DB02_PROD="198.51.100.12"
 V240_TEMP_TEST_IP="198.51.100.13"
 
-SECRET_FILE="/etc/nut/secrets/solaris-server-shutdown.env"
 
 SIMULATE="${SIMULATE:-1}"
 ALLOW_REAL_TEST="${ALLOW_REAL_TEST:-0}"
@@ -109,13 +109,14 @@ if [ "$LIVE_ALLOWED" != "1" ]; then
     die "production mode does not allow live actions"
 fi
 
-if [ ! -r "$SECRET_FILE" ]; then
-    die "protected SOLARIS_SERVER credential file is unavailable"
+if [ ! -r "$CONFIG_FILE" ]; then
+    die "DB shutdown config is unavailable"
 fi
 
 # shellcheck disable=SC1090
-. "$SECRET_FILE"
+. "$CONFIG_FILE"
 
+V24013_HOST="${V24013_HOST:-198.51.100.10}"
 V24013_USERNAME="${V24013_USERNAME:-}"
 V24013_PASSWORD="${V24013_PASSWORD:-}"
 

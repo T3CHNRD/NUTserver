@@ -54,6 +54,7 @@
 /etc/nut/upssched.conf.next|644|root|root
 /etc/nut/real-test-passphrase.sha256|640|root|www-data
 /etc/nut/nut-orchestrator.conf.pre-vcsa-name-case-fix-20260522-094154|600|root|root
+/etc/nut/db-shutdown.conf.before-v24013-unify-20261007-122713|640|root|nut
 /etc/nut/production-mode.conf.pre-mode-command-20260611-133813|644|root|root
 /etc/nut/config.d/approved-targets.yml|640|root|root
 /etc/nut/config.d/shutdown-verification-targets.conf.pre-synology-dsm-api-20260526-125519|640|root|nut
@@ -67,6 +68,7 @@
 /etc/nut/config.d/dashboard-ui.json|640|root|root
 /etc/nut/config.d/shutdown-verification-targets.conf.bak.2026-05-11-125833|640|root|nut
 /etc/nut/vcenter.pass|640|root|nut
+/etc/nut/db-shutdown.conf.before-root-fix-20261007-122134|640|root|nut
 /etc/nut/upsmon.conf.pre-monitor-145-20260810-081654|644|root|root
 /etc/nut/upssched.conf.pre-ups-maint-comm-live-fix-20260721-084004|640|root|nut
 /etc/nut/win2003-198.51.100.10.creds|640|root|nut
@@ -998,6 +1000,7 @@
 /usr/local/sbin/nut-ups-locator-beep.sh|755|root|root
 /usr/local/sbin/nut-vmware-shutdown.sh.pre-esxi-config-host-list-20260611-151604|750|root|root
 /usr/local/sbin/nut-apc-idf-event-monitor.sh.pre-final-dedup-20260805-095431|755|root|root
+/usr/local/sbin/nut-v24013-shutdown.sh.before-v24013-unify-20261007-122713|750|root|nut
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-sync-helper-self-backup-20260611-140533|755|root|root
 /usr/local/sbin/nut-email-alert-test-send.pre-retry-fix-20260903-103100|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-rungit-20260421-093355|750|root|root

@@ -34,8 +34,10 @@ SKIP temp-development-artifact /etc/nut/upsmon.conf.pre-orchestrator
 SKIP temp-development-artifact /etc/nut/nut-orchestrator.conf.pre-vcsa-name-case-fix-20260522-094732
 FILE /etc/nut/upsstats.html -> files/etc/nut/upsstats.html mode=0644
 SKIP temp-development-artifact /etc/nut/nut-orchestrator.conf.pre-vcsa-name-case-fix-20260522-094154
+SKIP temp-development-artifact /etc/nut/db-shutdown.conf.before-v24013-unify-20261007-122713
 SKIP temp-development-artifact /etc/nut/production-mode.conf.pre-mode-command-20260611-133813
 SKIP secret-file /etc/nut/vcenter.pass
+SKIP temp-development-artifact /etc/nut/db-shutdown.conf.before-root-fix-20261007-122134
 SKIP temp-development-artifact /etc/nut/upsmon.conf.pre-monitor-145-20260810-081654
 SKIP temp-development-artifact /etc/nut/upssched.conf.pre-ups-maint-comm-live-fix-20260721-084004
 FILE /etc/nut/ups.conf -> files/etc/nut/ups.conf mode=0640
@@ -955,6 +957,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-ex
 FILE /usr/local/sbin/nut-ups-locator-beep.sh -> files/usr/local/sbin/nut-ups-locator-beep.sh mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-vmware-shutdown.sh.pre-esxi-config-host-list-20260611-151604
 SKIP temp-development-artifact /usr/local/sbin/nut-apc-idf-event-monitor.sh.pre-final-dedup-20260805-095431
+SKIP temp-development-artifact /usr/local/sbin/nut-v24013-shutdown.sh.before-v24013-unify-20261007-122713
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-sync-helper-self-backup-20260611-140533
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-retry-fix-20260903-103100
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-rungit-20260421-093355
