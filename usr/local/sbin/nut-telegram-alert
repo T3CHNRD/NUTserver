@@ -1133,7 +1133,7 @@ def health():
         total-online_n
     )
 
-    if "Status: NOT RECOMMENDED" in pre:
+    if "Status: BLOCK" in pre:
 
         maint="BLOCK"
 

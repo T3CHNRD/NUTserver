@@ -17,8 +17,8 @@ snap-cups-1238.mount                           enabled         enabled
 snap-cups-1262.mount                           enabled         enabled
 snap-firefox-8969.mount                        enabled         enabled
 snap-firefox-8995.mount                        enabled         enabled
-snap-firmware\x2dupdater-226.mount             enabled         enabled
 snap-firmware\x2dupdater-258.mount             enabled         enabled
+snap-firmware\x2dupdater-262.mount             enabled         enabled
 snap-gnome\x2d42\x2d2204-247.mount             enabled         enabled
 snap-gnome\x2d42\x2d2204-263.mount             enabled         enabled
 snap-gnome\x2d46\x2d2404-153.mount             enabled         enabled

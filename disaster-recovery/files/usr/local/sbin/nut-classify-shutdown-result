@@ -44,11 +44,15 @@ case "$VERIFY_RC" in
     exit 2
     ;;
   64)
-    echo "WARN target=\"$TARGET_NAME\" reason=\"verification_usage_error_command_was_sent\""
-    exit 3
+    echo "UNKNOWN target=\"$TARGET_NAME\" reason=\"verification_usage_error_after_command_submission\""
+    exit 2
+    ;;
+  99)
+    echo "FAIL target=\"$TARGET_NAME\" reason=\"verification_helper_unavailable\""
+    exit 1
     ;;
   *)
-    echo "WARN target=\"$TARGET_NAME\" reason=\"command_sent_but_not_verified\" verify_rc=${VERIFY_RC}"
-    exit 3
+    echo "UNKNOWN target=\"$TARGET_NAME\" reason=\"command_sent_but_not_verified\" verify_rc=${VERIFY_RC}"
+    exit 2
     ;;
 esac

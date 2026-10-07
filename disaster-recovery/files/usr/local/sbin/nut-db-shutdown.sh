@@ -1,6 +1,8 @@
 #!/bin/bash
 # Copyright (c) 2026 T3CHNRD. All rights reserved.
 set -u
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+COMMON_EXPECT="$SCRIPT_DIR/solaris-v240-common.exp"
 
 TARGET="${1:-}"
 
@@ -42,44 +44,29 @@ load_db_config() {
   DB_SHUTDOWN_METHOD="${DB_SHUTDOWN_METHOD:-telnet}"
   DB01_HOST="${DB01_HOST:-198.51.100.10}"
   DB02_HOST="${DB02_HOST:-198.51.100.11}"
-  DB_USERNAME="${DB_USERNAME:-}"
-  DB_PASSWORD="${DB_PASSWORD:-}"
+  DB01_USERNAME="${DB01_USERNAME:-}"
+  DB01_PASSWORD="${DB01_PASSWORD:-}"
+  DB02_USERNAME="${DB02_USERNAME:-}"
+  DB02_PASSWORD="${DB02_PASSWORD:-}"
   DB_TELNET_LOGIN_TIMEOUT="${DB_TELNET_LOGIN_TIMEOUT:-20}"
   DB_TELNET_COMMAND_TIMEOUT="${DB_TELNET_COMMAND_TIMEOUT:-30}"
-  DB_TELNET_SHUTDOWN_COMMAND="${DB_TELNET_SHUTDOWN_COMMAND:-/usr/sbin/shutdown -i5 -g0 -y 'UPS power event'}"
-  DB_SSH_SHUTDOWN_COMMAND="${DB_SSH_SHUTDOWN_COMMAND:-sudo /usr/sbin/poweroff}"
+  DB_TELNET_SHUTDOWN_COMMAND="/usr/sbin/shutdown -i5 -g0 -y"
 }
 
 validate_common_config() {
-  if [ -z "${DB_USERNAME:-}" ]; then
-    log "ERROR DB_USERNAME is missing in $CONFIG_FILE"
-    exit 11
+  if [ "$DB_SHUTDOWN_METHOD" != "telnet" ]; then
+    log "ERROR DB_SERVER_1/DB_SERVER_2 Solaris V240 targets require the common Telnet method"
+    exit 12
   fi
 
-  case "$DB_SHUTDOWN_METHOD" in
-    telnet|ssh)
-      ;;
-    *)
-      log "ERROR unsupported DB_SHUTDOWN_METHOD='$DB_SHUTDOWN_METHOD' in $CONFIG_FILE"
-      exit 12
-      ;;
-  esac
+  if ! command -v expect >/dev/null 2>&1; then
+    log "ERROR expect is required for DB Telnet automation but is not installed"
+    exit 14
+  fi
 
-  if [ "$DB_SHUTDOWN_METHOD" = "telnet" ]; then
-    if [ -z "${DB_PASSWORD:-}" ] || [ "$DB_PASSWORD" = "CHANGE_IN_CONTROL_CENTER" ]; then
-      log "ERROR DB_PASSWORD is missing or still set to placeholder in $CONFIG_FILE"
-      exit 13
-    fi
-
-    if ! command -v expect >/dev/null 2>&1; then
-      log "ERROR expect is required for DB Telnet automation but is not installed"
-      exit 14
-    fi
-
-    if ! command -v telnet >/dev/null 2>&1; then
-      log "ERROR telnet is required for DB Telnet automation but is not installed"
-      exit 15
-    fi
+  if ! command -v telnet >/dev/null 2>&1; then
+    log "ERROR telnet is required for DB Telnet automation but is not installed"
+    exit 15
   fi
 }
 
@@ -87,9 +74,13 @@ resolve_target_host() {
   case "$TARGET" in
     DB_SERVER_1)
       HOST="${DB01_HOST:-}"
+      DB_USERNAME="${DB01_USERNAME:-}"
+      DB_PASSWORD="${DB01_PASSWORD:-}"
       ;;
     DB_SERVER_2)
       HOST="${DB02_HOST:-}"
+      DB_USERNAME="${DB02_USERNAME:-}"
+      DB_PASSWORD="${DB02_PASSWORD:-}"
       ;;
     *)
       log "ERROR unknown target '$TARGET'"
@@ -101,85 +92,27 @@ resolve_target_host() {
     log "ERROR host is missing for target '$TARGET' in $CONFIG_FILE"
     exit 16
   fi
+
+  if [ "$DB_SHUTDOWN_METHOD" = "telnet" ]; then
+    if [ -z "$DB_USERNAME" ] || [ -z "$DB_PASSWORD" ] || [ "$DB_PASSWORD" = "CHANGE_IN_CONTROL_CENTER" ]; then
+      log "ERROR target-specific root credentials are missing for '$TARGET'"
+      exit 17
+    fi
+    if [ "$DB_USERNAME" != "root" ]; then
+      log "ERROR Solaris V240 target '$TARGET' requires direct root Telnet login"
+      exit 25
+    fi
+  fi
 }
 
 run_telnet_shutdown() {
-  export DB_HOST="$HOST"
-  export DB_USERNAME
-  export DB_PASSWORD
-  export DB_TELNET_LOGIN_TIMEOUT
-  export DB_TELNET_COMMAND_TIMEOUT
-  export DB_TELNET_SHUTDOWN_COMMAND
-
-  /usr/bin/expect <<'EXPECT'
-set timeout $env(DB_TELNET_LOGIN_TIMEOUT)
-set host $env(DB_HOST)
-set username $env(DB_USERNAME)
-set password $env(DB_PASSWORD)
-set shutdown_cmd $env(DB_TELNET_SHUTDOWN_COMMAND)
-
-spawn telnet $host
-
-expect {
-  -nocase -re {login:[[:space:]]*$} {
-    send -- "$username\r"
-  }
-  timeout {
-    puts "ERROR telnet login prompt timeout"
-    exit 40
-  }
-  eof {
-    puts "ERROR telnet ended before login prompt"
-    exit 41
-  }
-}
-
-expect {
-  -nocase -re {password:[[:space:]]*$} {
-    log_user 0
-    send -- "$password\r"
-    log_user 1
-  }
-  timeout {
-    puts "ERROR telnet password prompt timeout"
-    exit 42
-  }
-  eof {
-    puts "ERROR telnet ended before password prompt"
-    exit 43
-  }
-}
-
-set timeout $env(DB_TELNET_COMMAND_TIMEOUT)
-
-expect {
-  -re {[$#%>] *$} {
-    send -- "$shutdown_cmd\r"
-  }
-  timeout {
-    puts "ERROR shell prompt timeout after login"
-    exit 44
-  }
-  eof {
-    puts "ERROR telnet ended before shell prompt"
-    exit 45
-  }
-}
-
-expect {
-  eof {
-    exit 0
-  }
-  timeout {
-    puts "INFO command sent; telnet session did not close before timeout"
-    exit 0
-  }
-}
-EXPECT
-}
-
-run_ssh_shutdown() {
-  ssh -o BatchMode=yes -o ConnectTimeout=10 "${DB_USERNAME}@${HOST}" "$DB_SSH_SHUTDOWN_COMMAND"
+  export V240_HOST="$HOST"
+  export V240_USERNAME="$DB_USERNAME"
+  export V240_PASSWORD="$DB_PASSWORD"
+  export V240_LOGIN_TIMEOUT="$DB_TELNET_LOGIN_TIMEOUT"
+  export V240_COMMAND_TIMEOUT="$DB_TELNET_COMMAND_TIMEOUT"
+  export V240_SHUTDOWN_COMMAND="$DB_TELNET_SHUTDOWN_COMMAND"
+  /usr/bin/expect "$COMMON_EXPECT"
 }
 
 if [ -z "$TARGET" ]; then
@@ -198,14 +131,7 @@ log "ALLOW_REAL_TEST=$ALLOW_REAL_TEST"
 log "REAL_TEST_PHASE=$REAL_TEST_PHASE"
 log "DB_LIVE_APPROVED=$DB_LIVE_APPROVED"
 
-case "$DB_SHUTDOWN_METHOD" in
-  telnet)
-    log "COMMAND PREVIEW: telnet ${HOST}; login user from ${CONFIG_FILE}; send DB_TELNET_SHUTDOWN_COMMAND"
-    ;;
-  ssh)
-    log "COMMAND PREVIEW: ssh ${DB_USERNAME}@${HOST} DB_SSH_SHUTDOWN_COMMAND"
-    ;;
-esac
+log "COMMAND PREVIEW: telnet ${HOST}; login user from ${CONFIG_FILE}; send DB_TELNET_SHUTDOWN_COMMAND"
 
 if [ "$SIMULATE" != "0" ]; then
   log "SIMULATION ONLY: no DB shutdown command sent for $TARGET"
@@ -237,25 +163,34 @@ fi
 
 log "LIVE APPROVED: sending DB shutdown command for $TARGET using method=$DB_SHUTDOWN_METHOD"
 
-case "$DB_SHUTDOWN_METHOD" in
-  telnet)
-    run_telnet_shutdown >> "$LOG_FILE" 2>&1
-    RC=$?
-    ;;
-  ssh)
-    run_ssh_shutdown >> "$LOG_FILE" 2>&1
-    RC=$?
-    ;;
-  *)
-    log "ERROR unsupported DB_SHUTDOWN_METHOD='$DB_SHUTDOWN_METHOD'"
-    exit 24
-    ;;
-esac
+run_telnet_shutdown >> "$LOG_FILE" 2>&1
+RC=$?
 
 if [ "$RC" -ne 0 ]; then
-  log "ERROR shutdown command failed for $TARGET rc=$RC"
-  exit "$RC"
+  log "FAIL shutdown dialogue or command rejected for $TARGET rc=$RC"
+  exit 1
 fi
 
-log "SUCCESS shutdown command sent to $TARGET"
-exit 0
+log "COMMAND SENT to $TARGET; independent shutdown verification required"
+VERIFY_TIMEOUT="${DB_TELNET_VERIFY_TIMEOUT:-300}"
+VERIFY_RC=99
+CLASSIFY_RC=3
+if [ -x /usr/local/sbin/nut-verify-target-down.sh ]; then
+  /usr/local/sbin/nut-verify-target-down.sh "$TARGET" "$HOST" "$VERIFY_TIMEOUT" >> "$LOG_FILE" 2>&1
+  VERIFY_RC=$?
+else
+  log "WARN shutdown verification helper unavailable"
+fi
+if [ -x /usr/local/sbin/nut-classify-shutdown-result ]; then
+  /usr/local/sbin/nut-classify-shutdown-result "$TARGET" "$RC" "$VERIFY_RC" >> "$LOG_FILE" 2>&1
+  CLASSIFY_RC=$?
+else
+  log "WARN shutdown result classifier unavailable"
+fi
+case "$CLASSIFY_RC" in
+  0) log "PASS shutdown confirmed for $TARGET" ;;
+  1) log "FAIL $TARGET remained online or command failed" ;;
+  2) log "UNKNOWN shutdown could not be verified for $TARGET" ;;
+  *) log "UNKNOWN shutdown result for $TARGET" ;;
+esac
+exit "$CLASSIFY_RC"

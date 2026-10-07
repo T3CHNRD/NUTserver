@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 set -u
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+COMMON_EXPECT="$SCRIPT_DIR/solaris-v240-common.exp"
 
 TARGET="${1:-}"
 
@@ -8,7 +10,7 @@ V24013_HOST="198.51.100.10"
 
 DB01_PROD="198.51.100.11"
 DB02_PROD="198.51.100.12"
-TESTV240_OLD="198.51.100.13"
+V240_TEMP_TEST_IP="198.51.100.13"
 
 SECRET_FILE="/etc/nut/secrets/solaris-server-shutdown.env"
 
@@ -19,7 +21,7 @@ V24013_LIVE_APPROVED="${V24013_LIVE_APPROVED:-0}"
 
 COMMAND_TIMEOUT="${V24013_COMMAND_TIMEOUT:-30}"
 
-SHUTDOWN_COMMAND="/usr/sbin/shutdown -i5 -g0 -y 'UPS power event'"
+SHUTDOWN_COMMAND="/usr/sbin/shutdown -i5 -g0 -y"
 
 LOG_FILE="/var/log/nut-solaris-server-shutdown.log"
 
@@ -64,8 +66,8 @@ case "$HOST" in
     "$DB02_PROD")
         die "DB_SERVER_2 production address is prohibited"
         ;;
-    "$TESTV240_OLD")
-        die "old TEST_SOLARIS address is prohibited"
+    "$V240_TEMP_TEST_IP")
+        die "temporary test address of this same V240 is prohibited in the final .13 wrapper"
         ;;
 esac
 
@@ -125,6 +127,10 @@ if [ -z "$V24013_PASSWORD" ]; then
     die "V24013_PASSWORD is missing"
 fi
 
+if [ "$V24013_USERNAME" != "root" ]; then
+    die "SOLARIS_SERVER requires direct root Telnet login"
+fi
+
 if ! ping -c 2 -W 2 "$HOST" >/dev/null 2>&1; then
     die "SOLARIS_SERVER is not reachable before shutdown attempt"
 fi
@@ -135,85 +141,37 @@ fi
 
 log "PRECHECK PASS: SOLARIS_SERVER responds to ping and Telnet port 23"
 
-export V24013_HOST
-export V24013_USERNAME
-export V24013_PASSWORD
-export V24013_SHUTDOWN_COMMAND="$SHUTDOWN_COMMAND"
-export V24013_COMMAND_TIMEOUT="$COMMAND_TIMEOUT"
+export V240_HOST="$HOST"
+export V240_USERNAME="$V24013_USERNAME"
+export V240_PASSWORD="$V24013_PASSWORD"
+export V240_LOGIN_TIMEOUT="${V24013_LOGIN_TIMEOUT:-15}"
+export V240_COMMAND_TIMEOUT="$COMMAND_TIMEOUT"
+export V240_SHUTDOWN_COMMAND="$SHUTDOWN_COMMAND"
 
-expect <<'EXPECT'
-set timeout 15
-
-set host $env(V24013_HOST)
-set username $env(V24013_USERNAME)
-set password $env(V24013_PASSWORD)
-set shutdown_cmd $env(V24013_SHUTDOWN_COMMAND)
-
-spawn telnet $host
-
-expect {
-    -nocase -re {login:[[:space:]]*$} {
-        send -- "$username\r"
-    }
-    timeout {
-        puts "ERROR: Telnet login prompt timeout"
-        exit 40
-    }
-    eof {
-        puts "ERROR: Telnet ended before login prompt"
-        exit 41
-    }
-}
-
-expect {
-    -nocase -re {password:[[:space:]]*$} {
-        log_user 0
-        send -- "$password\r"
-        log_user 1
-    }
-    timeout {
-        puts "ERROR: password prompt timeout"
-        exit 42
-    }
-    eof {
-        puts "ERROR: Telnet ended before password prompt"
-        exit 43
-    }
-}
-
-set timeout $env(V24013_COMMAND_TIMEOUT)
-
-expect {
-    -re {[$#%>] *$} {
-        send -- "$shutdown_cmd\r"
-    }
-    timeout {
-        puts "ERROR: shell prompt timeout after login"
-        exit 44
-    }
-    eof {
-        puts "ERROR: Telnet ended before shell prompt"
-        exit 45
-    }
-}
-
-expect {
-    eof {
-        exit 0
-    }
-    timeout {
-        puts "INFO: shutdown command sent; Telnet session remained open through command timeout"
-        exit 0
-    }
-}
-EXPECT
+expect "$COMMON_EXPECT"
 
 COMMAND_RC=$?
 
 if [ "$COMMAND_RC" -ne 0 ]; then
-    log "FAIL: SOLARIS_SERVER Telnet shutdown command failed rc=$COMMAND_RC"
-    exit "$COMMAND_RC"
+    log "FAIL: SOLARIS_SERVER Telnet dialogue or shutdown command rejected rc=$COMMAND_RC"
+    exit 1
 fi
 
-log "COMMAND SENT: SOLARIS_SERVER Solaris shutdown command accepted"
-exit 0
+log "COMMAND SENT: SOLARIS_SERVER; independent shutdown verification required"
+VERIFY_RC=99
+CLASSIFY_RC=3
+if [ -x /usr/local/sbin/nut-verify-target-down.sh ]; then
+    /usr/local/sbin/nut-verify-target-down.sh SOLARIS_SERVER "$HOST" "${V24013_VERIFY_TIMEOUT:-300}" >> "$LOG_FILE" 2>&1
+    VERIFY_RC=$?
+fi
+if [ -x /usr/local/sbin/nut-classify-shutdown-result ]; then
+    /usr/local/sbin/nut-classify-shutdown-result SOLARIS_SERVER "$COMMAND_RC" "$VERIFY_RC" >> "$LOG_FILE" 2>&1
+    CLASSIFY_RC=$?
+fi
+case "$CLASSIFY_RC" in
+    0) log "PASS: SOLARIS_SERVER shutdown confirmed" ;;
+    1) log "FAIL: SOLARIS_SERVER remained online or command failed" ;;
+    2) log "UNKNOWN: SOLARIS_SERVER shutdown could not be verified" ;;
+    *) log "UNKNOWN: SOLARIS_SERVER shutdown result unavailable" ;;
+esac
+exit "$CLASSIFY_RC"

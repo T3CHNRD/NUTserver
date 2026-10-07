@@ -919,6 +919,7 @@
 /usr/local/sbin/nut-ui-live-restore-selected-dry-run|750|root|root
 /usr/local/sbin/nut-ui-run-test.pre-full-production-approvals-20260429-084726|755|root|root
 /usr/local/sbin/nut-vmware-tools-status-report.py.pre-ssl-shim-20260603-093125|750|root|root
+/usr/local/sbin/solaris-v240-common.exp|750|root|nut
 /usr/local/sbin/nut-rebuild-msmtp-from-email-config.pre-reports-relay-health-format-20260623-153201|750|root|root
 /usr/local/sbin/nut-verify-target-down.sh|750|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-telegram-production-20260817-123730|755|root|root
@@ -982,6 +983,7 @@
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-self-backup-20260526-084709|755|root|root
 /usr/local/sbin/nut-ui-apply-config.pre-dedicated-msmtp-rebuild-20260622-092934|750|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-all-commands-20260817-132208|755|root|root
+/usr/local/sbin/nut-telegram-alert.before-health-block-fix-20261007|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-add-ups-conf-backup-20260604-154604|755|root|root
 /usr/local/sbin/nut-email-alert-test-send.pre-dynamic-weekly-ups-count-20260622-113121|750|root|root
 /usr/local/sbin/nut-vmware-shutdown.sh.pre-readonly-placement-detect-20260522-110635|750|root|root
@@ -1084,7 +1086,6 @@
 /etc/systemd/system/snap-snapd\x2ddesktop\x2dintegration-391.mount|644|root|root
 /etc/systemd/system/snap-firmware\x2dupdater-258.mount|644|root|root
 /etc/systemd/system/snap-snapd-28254.mount|644|root|root
-/etc/systemd/system/snap-firmware\x2dupdater-226.mount|644|root|root
 /etc/systemd/system/nut-telegram-dispatch.service|644|root|root
 /etc/systemd/system/snap.chromium.daemon.service|644|root|root
 /etc/systemd/system/snap-gtk\x2dcommon\x2dthemes-1535.mount|644|root|root
@@ -1115,6 +1116,7 @@
 /etc/systemd/system/snap-core22-2955.mount|644|root|root
 /etc/systemd/system/snap.mesa-2404.component-monitor.service|644|root|root
 /etc/systemd/system/snap.cups.cups-browsed.service|644|root|root
+/etc/systemd/system/snap-firmware\x2dupdater-262.mount|644|root|root
 /etc/systemd/system/nut-driver@ups3.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups3.service.d/nut-driver-enumerator-generated.conf|644|root|root
 /etc/sudoers.d/nut-ui-full-managed-restore|440|root|root

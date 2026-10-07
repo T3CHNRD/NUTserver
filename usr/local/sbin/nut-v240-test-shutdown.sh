@@ -5,9 +5,12 @@
 #
 # SAFETY:
 #   This test wrapper may ONLY target TEST_SOLARIS at 198.51.100.100.
-#   It must never target DB_SERVER_1, DB_SERVER_2, or the future production .13 address.
+#   It must never target DB_SERVER_1, DB_SERVER_2, or the future/final .13 address of this
+#   same physical V240; controlled testing is locked to its temporary .85 IP.
 
 set -u
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+COMMON_EXPECT="$SCRIPT_DIR/solaris-v240-common.exp"
 
 TARGET="${1:-}"
 
@@ -29,7 +32,7 @@ LOGIN_TIMEOUT="${V240_TEST_LOGIN_TIMEOUT:-20}"
 COMMAND_TIMEOUT="${V240_TEST_COMMAND_TIMEOUT:-30}"
 VERIFY_TIMEOUT="${V240_TEST_VERIFY_TIMEOUT:-300}"
 
-SHUTDOWN_COMMAND="/usr/sbin/shutdown -i5 -g0 -y 'UPS power event test'"
+SHUTDOWN_COMMAND="/usr/sbin/shutdown -i5 -g0 -y"
 
 ts() {
     date '+%Y-%m-%d %H:%M:%S'
@@ -115,6 +118,10 @@ if [ -z "$V240_TEST_PASSWORD" ]; then
     die "V240_TEST_PASSWORD is missing"
 fi
 
+if [ "$V240_TEST_USERNAME" != "root" ]; then
+    die "TEST_SOLARIS requires direct root Telnet login"
+fi
+
 if ! command -v expect >/dev/null 2>&1; then
     die "expect is not installed"
 fi
@@ -141,79 +148,14 @@ fi
 
 log "PRECHECK PASS: TEST_SOLARIS responds to ping and Telnet port 23"
 
-export V240_TEST_HOST="$HOST"
-export V240_TEST_USERNAME
-export V240_TEST_PASSWORD
-export V240_TEST_LOGIN_TIMEOUT="$LOGIN_TIMEOUT"
-export V240_TEST_COMMAND_TIMEOUT="$COMMAND_TIMEOUT"
-export V240_TEST_SHUTDOWN_COMMAND="$SHUTDOWN_COMMAND"
+export V240_HOST="$HOST"
+export V240_USERNAME="$V240_TEST_USERNAME"
+export V240_PASSWORD="$V240_TEST_PASSWORD"
+export V240_LOGIN_TIMEOUT="$LOGIN_TIMEOUT"
+export V240_COMMAND_TIMEOUT="$COMMAND_TIMEOUT"
+export V240_SHUTDOWN_COMMAND="$SHUTDOWN_COMMAND"
 
-/usr/bin/expect <<'EXPECT'
-set timeout $env(V240_TEST_LOGIN_TIMEOUT)
-
-set host $env(V240_TEST_HOST)
-set username $env(V240_TEST_USERNAME)
-set password $env(V240_TEST_PASSWORD)
-set shutdown_cmd $env(V240_TEST_SHUTDOWN_COMMAND)
-
-spawn telnet $host
-
-expect {
-    -nocase -re {login:[[:space:]]*$} {
-        send -- "$username\r"
-    }
-    timeout {
-        puts "ERROR: Telnet login prompt timeout"
-        exit 40
-    }
-    eof {
-        puts "ERROR: Telnet ended before login prompt"
-        exit 41
-    }
-}
-
-expect {
-    -nocase -re {password:[[:space:]]*$} {
-        log_user 0
-        send -- "$password\r"
-        log_user 1
-    }
-    timeout {
-        puts "ERROR: password prompt timeout"
-        exit 42
-    }
-    eof {
-        puts "ERROR: Telnet ended before password prompt"
-        exit 43
-    }
-}
-
-set timeout $env(V240_TEST_COMMAND_TIMEOUT)
-
-expect {
-    -re {[$#%>] *$} {
-        send -- "$shutdown_cmd\r"
-    }
-    timeout {
-        puts "ERROR: shell prompt timeout after login"
-        exit 44
-    }
-    eof {
-        puts "ERROR: Telnet ended before shell prompt"
-        exit 45
-    }
-}
-
-expect {
-    eof {
-        exit 0
-    }
-    timeout {
-        puts "INFO: shutdown command sent; Telnet session remained open through command timeout"
-        exit 0
-    }
-}
-EXPECT
+/usr/bin/expect "$COMMON_EXPECT" >> "$LOG_FILE" 2>&1
 
 COMMAND_RC=$?
 

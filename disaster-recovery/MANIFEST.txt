@@ -940,6 +940,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-ups-locator-beep.sh.pre-enabl
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-self-backup-20260526-084709
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-apply-config.pre-dedicated-msmtp-rebuild-20260622-092934
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-all-commands-20260817-132208
+SKIP temp-development-artifact /usr/local/sbin/nut-telegram-alert.before-health-block-fix-20261007
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-add-ups-conf-backup-20260604-154604
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-dynamic-weekly-ups-count-20260622-113121
 SKIP temp-development-artifact /usr/local/sbin/nut-vmware-shutdown.sh.pre-readonly-placement-detect-20260522-110635
