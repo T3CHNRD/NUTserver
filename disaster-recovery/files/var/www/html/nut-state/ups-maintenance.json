@@ -1,28 +1,10 @@
 {
   "schema_version": 1,
   "feature": "UPS Maintenance Mode",
-  "implemented_phase": "phase5-active-session-tracking",
+  "implemented_phase": "phase6-reconciled-session-tracking",
   "status": "initialized",
-  "active_sessions": [
-    {
-      "ups": "ups4",
-      "started_at": "2026-09-18T17:14:38-04:00",
-      "last_event": "UPS_MAINTENANCE_UPS_OFFLINE",
-      "mode": "commbad",
-      "status": "active",
-      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
-    }
-  ],
-  "unresolved_items": [
-    {
-      "ups": "ups4",
-      "started_at": "2026-09-18T17:14:38-04:00",
-      "last_event": "UPS_MAINTENANCE_UPS_OFFLINE",
-      "mode": "commbad",
-      "status": "active",
-      "message": "UPS communication lost while grid power appears present. Automatic shutdown suppression not implemented yet."
-    }
-  ],
+  "active_sessions": [],
+  "unresolved_items": [],
   "recent_records": [
     {
       "timestamp": "2026-07-21T08:17:46-04:00",
@@ -500,9 +482,18 @@
       "status": "initialized",
       "operator": "",
       "message": "UPS communication restored. Replacement/consolidation identity review is not implemented yet."
+    },
+    {
+      "timestamp": "2026-10-07T13:39:18-04:00",
+      "event": "UPS_MAINTENANCE_UPS_RETURNED",
+      "ups": "ups4",
+      "mode": "reconciliation",
+      "status": "initialized",
+      "operator": "",
+      "message": "Active automatic session cleared: later return evidence at 2026-09-18T17:14:43-04:00."
     }
   ],
   "created_at": "2026-07-17T10:43:36.329668-04:00",
-  "updated_at": "2026-09-18T17:14:43-04:00",
+  "updated_at": "2026-10-07T13:39:18-04:00",
   "note": "State foundation only. Automatic detection and UI workflows are not implemented yet."
 }

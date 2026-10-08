@@ -2,6 +2,7 @@
 import json, os, re, subprocess, sys, time, urllib.parse, urllib.request
 from datetime import datetime
 from pathlib import Path
+from nut_health_consistency import classify_preview_status
 
 SECRET=Path("/etc/nut/secrets/telegram-alerts.env")
 BASE=Path("/var/lib/nut-telegram-alerts")
@@ -1134,6 +1135,11 @@ def health():
     )
 
     if "Status: BLOCK" in pre:
+        maint="BLOCK"
+    else:
+        maint=classify_preview_status(pre)
+
+    if maint=="BLOCK":
 
         maint="BLOCK"
 
@@ -1147,7 +1153,7 @@ def health():
             "- BLOCKER:"
         )
 
-    elif "Status: CAUTION" in pre:
+    elif maint=="CAUTION":
 
         maint="CAUTION"
 
@@ -1163,7 +1169,7 @@ def health():
             "- CAUTION:"
         )
 
-    else:
+    elif maint=="CLEAR":
 
         maint="CLEAR"
 
@@ -1173,6 +1179,15 @@ def health():
         )
 
         why=""
+
+    else:
+
+        desc=(
+            "The email health preview is missing or ambiguous; "
+            "review is required."
+        )
+
+        why="Health preview status could not be determined."
 
     idf=(
         "IDF2 last known power source "

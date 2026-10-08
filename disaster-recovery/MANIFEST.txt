@@ -830,6 +830,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-pe
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-control-center-backup-20260528-140238
 FILE /usr/local/sbin/nut-synology-shutdown.sh -> files/usr/local/sbin/nut-synology-shutdown.sh mode=0750
 FILE /usr/local/sbin/nut-ui-read-reference -> files/usr/local/sbin/nut-ui-read-reference mode=0750
+FILE /usr/local/sbin/nut_health_consistency.py -> files/usr/local/sbin/nut_health_consistency.py mode=0644
 SKIP temp-development-artifact /usr/local/sbin/nut-blueiris-shutdown.sh.bak.2026-05-11-130832
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-hypervisor-fallback-robust-20260603-131921
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-health-off-order-20260827-095324
@@ -1142,7 +1143,7 @@ FILE /var/www/html/nut-state/ups8.json -> files/var/www/html/nut-state/ups8.json
 FILE /var/www/html/nut-state/production-mode.json -> files/var/www/html/nut-state/production-mode.json mode=0664
 FILE /var/www/html/nut-state/ups3.json -> files/var/www/html/nut-state/ups3.json mode=0664
 FILE /var/www/html/nut-state/ups1.json -> files/var/www/html/nut-state/ups1.json mode=0664
-FILE /var/www/html/nut-state/ups-maintenance.json -> files/var/www/html/nut-state/ups-maintenance.json mode=0600
+FILE /var/www/html/nut-state/ups-maintenance.json -> files/var/www/html/nut-state/ups-maintenance.json mode=0664
 FILE /var/www/html/nut-state/ups9.json -> files/var/www/html/nut-state/ups9.json mode=0664
 FILE /var/www/html/nut-state/ups6.json -> files/var/www/html/nut-state/ups6.json mode=0664
 FILE /var/www/html/nut-state/ups4.json -> files/var/www/html/nut-state/ups4.json mode=0664

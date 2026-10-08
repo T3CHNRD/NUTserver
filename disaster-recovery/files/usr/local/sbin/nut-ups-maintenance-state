@@ -3,6 +3,7 @@
 
 import argparse
 import datetime
+import fcntl
 import json
 import os
 import tempfile
@@ -10,11 +11,16 @@ from pathlib import Path
 
 STATE_PATH = Path("/var/www/html/nut-state/ups-maintenance.json")
 LOG_PATH = Path("/var/log/nut-ups-maintenance.log")
+POWER_EVENTS_PATH = Path("/var/log/nut-orchestrator-ui/power-events.log")
+
+from nut_health_consistency import EvidenceError, parse_timestamp, reconcile_maintenance_state
 
 VALID_EVENTS = {
     "UPS_MAINTENANCE_FOUNDATION_CREATED",
     "UPS_MAINTENANCE_STARTED",
     "UPS_MAINTENANCE_UPS_OFFLINE",
+    "UPS_MAINTENANCE_COMM_BAD",
+    "UPS_MAINTENANCE_COMM_OK",
     "UPS_MAINTENANCE_UPS_RETURNED",
     "UPS_MAINTENANCE_TIMEOUT_WARNING",
     "UPS_MAINTENANCE_TIMEOUT_EXPIRED",
@@ -30,9 +36,9 @@ VALID_EVENTS = {
 def now_iso():
     return datetime.datetime.now().astimezone().isoformat(timespec="seconds")
 
-def load_state():
-    if STATE_PATH.exists():
-        data = json.loads(STATE_PATH.read_text() or "{}")
+def load_state(state_path):
+    if state_path.exists():
+        data = json.loads(state_path.read_text() or "{}")
         if not isinstance(data, dict):
             raise SystemExit("State file is not a JSON object")
     else:
@@ -49,30 +55,134 @@ def load_state():
     data.setdefault("updated_at", now_iso())
     return data
 
-def write_state(data):
-    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=".ups-maintenance.", dir=str(STATE_PATH.parent))
+def write_state(data, state_path):
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=".ups-maintenance.", dir=str(state_path.parent))
     with os.fdopen(fd, "w") as fh:
         json.dump(data, fh, indent=2)
         fh.write("\n")
-    os.replace(tmp, STATE_PATH)
-    os.chown(STATE_PATH, 0, 124)
-    os.chmod(STATE_PATH, 0o664)
+    os.replace(tmp, state_path)
+    if state_path == STATE_PATH:
+        # Keep historical root ownership when invoked as root. The proven
+        # upssched caller may run as nut, in which case the atomic replacement
+        # is caller-owned and chmod remains available without CAP_CHOWN.
+        if os.geteuid() == 0:
+            os.chown(state_path, 0, 124)
+        os.chmod(state_path, 0o664)
 
-def append_log(record):
-    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    line = (
+def log_line(record):
+    return (
         f"{record['timestamp']} {record['event']} "
         f"ups={record.get('ups') or '-'} "
         f"mode={record.get('mode') or '-'} "
         f"message={record.get('message') or ''}"
+    ).rstrip()
+
+def sync_log_from_state(data, log_path):
+    """Repair the audit mirror from JSON's bounded canonical event records."""
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        existing = set(log_path.read_text().splitlines())
+    except FileNotFoundError:
+        existing = set()
+    missing = []
+    for record in data.get("recent_records", []):
+        rendered = log_line(record)
+        if rendered not in existing:
+            missing.append(rendered)
+            existing.add(rendered)
+    if missing:
+        with log_path.open("a", encoding="utf-8") as fh:
+            for line in missing:
+                fh.write(line + "\n")
+
+def parse_status_args(values):
+    statuses = {}
+    for value in values:
+        if "=" not in value:
+            raise ValueError("--current-status must be UPS=STATUS")
+        ups, status = value.split("=", 1)
+        ups = ups.strip()
+        if not ups or not status.strip():
+            raise ValueError("--current-status must include UPS and status")
+        if ups in statuses and statuses[ups] != status.strip():
+            raise ValueError(f"conflicting current statuses for {ups}")
+        statuses[ups] = status.strip()
+    return statuses
+
+def add_record(state, event, ups, mode, status, operator, message):
+    record = {
+        "timestamp": now_iso(),
+        "event": event,
+        "ups": ups,
+        "mode": mode,
+        "status": status,
+        "operator": operator,
+        "message": message,
+    }
+    records = state.setdefault("recent_records", [])
+    records.append(record)
+    del records[:-200]
+    active_sessions = state.setdefault("active_sessions", [])
+    unresolved_items = state.setdefault("unresolved_items", [])
+
+    if event in ("UPS_MAINTENANCE_UPS_OFFLINE", "UPS_MAINTENANCE_COMM_BAD", "UPS_MAINTENANCE_STARTED") and ups:
+        active_sessions[:] = [item for item in active_sessions if item.get("ups") != ups]
+        unresolved_items[:] = [item for item in unresolved_items if item.get("ups") != ups]
+        session = {
+            "ups": ups,
+            "started_at": record["timestamp"],
+            "last_event": "UPS_MAINTENANCE_UPS_OFFLINE" if event == "UPS_MAINTENANCE_COMM_BAD" else event,
+            "mode": mode,
+            "status": status or "active",
+            "message": message,
+        }
+        active_sessions.append(session)
+        unresolved_items.append(session.copy())
+    elif event in ("UPS_MAINTENANCE_COMM_OK", "UPS_MAINTENANCE_UPS_RETURNED", "UPS_MAINTENANCE_COMPLETED", "UPS_MAINTENANCE_RETIREMENT_COMPLETED") and ups:
+        active_sessions[:] = [item for item in active_sessions if item.get("ups") != ups]
+        unresolved_items[:] = [item for item in unresolved_items if item.get("ups") != ups]
+
+    state["implemented_phase"] = "phase6-reconciled-session-tracking"
+    state["status"] = status or state.get("status", "initialized")
+    state["updated_at"] = record["timestamp"]
+    return record
+
+def power_event_lines(path):
+    try:
+        return path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except FileNotFoundError:
+        return []
+
+def reconcile(state, event_path, statuses):
+    reconciled, cleared = reconcile_maintenance_state(
+        state,
+        power_event_lines=power_event_lines(event_path),
+        current_statuses=statuses,
     )
-    with LOG_PATH.open("a") as fh:
-        fh.write(line.rstrip() + "\n")
+    for ups, evidence in cleared.items():
+        add_record(
+            reconciled,
+            "UPS_MAINTENANCE_UPS_RETURNED",
+            ups,
+            "reconciliation",
+            "initialized",
+            "",
+            f"Active automatic session cleared: {evidence}.",
+        )
+    return reconciled, cleared
+
+def apply_event(state, args):
+    return add_record(state, args.event, args.ups, args.mode, args.status, args.operator, args.message)
 
 def main():
-    parser = argparse.ArgumentParser(description="Record a UPS Maintenance Mode event")
-    parser.add_argument("--event", required=True, choices=sorted(VALID_EVENTS))
+    parser = argparse.ArgumentParser(description="Record or reconcile UPS Maintenance Mode state")
+    parser.add_argument("--event", choices=sorted(VALID_EVENTS))
+    parser.add_argument("--reconcile", action="store_true")
+    parser.add_argument("--state-file", default=str(STATE_PATH))
+    parser.add_argument("--log-file", default=str(LOG_PATH))
+    parser.add_argument("--power-events-file", default=str(POWER_EVENTS_PATH))
+    parser.add_argument("--current-status", action="append", default=[], metavar="UPS=STATUS")
     parser.add_argument("--ups", default="")
     parser.add_argument("--mode", default="")
     parser.add_argument("--status", default="")
@@ -81,51 +191,38 @@ def main():
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
-    state = load_state()
-    record = {
-        "timestamp": now_iso(),
-        "event": args.event,
-        "ups": args.ups,
-        "mode": args.mode,
-        "status": args.status,
-        "operator": args.operator,
-        "message": args.message,
-    }
+    if args.reconcile == bool(args.event):
+        parser.error("provide exactly one of --reconcile or --event")
+    state_path = Path(args.state_file)
+    log_path = Path(args.log_file)
+    event_path = Path(args.power_events_file)
+    try:
+        statuses = parse_status_args(args.current_status)
+    except ValueError as exc:
+        parser.error(str(exc))
 
-    records = state.setdefault("recent_records", [])
-    records.append(record)
-    del records[:-200]
-
-    active_sessions = state.setdefault("active_sessions", [])
-    unresolved_items = state.setdefault("unresolved_items", [])
-
-    if args.event == "UPS_MAINTENANCE_UPS_OFFLINE" and args.ups:
-        active_sessions[:] = [item for item in active_sessions if item.get("ups") != args.ups]
-        unresolved_items[:] = [item for item in unresolved_items if item.get("ups") != args.ups]
-        session = {
-            "ups": args.ups,
-            "started_at": record["timestamp"],
-            "last_event": args.event,
-            "mode": args.mode,
-            "status": args.status or "active",
-            "message": args.message,
-        }
-        active_sessions.append(session)
-        unresolved_items.append(session.copy())
-
-    elif args.event in ("UPS_MAINTENANCE_UPS_RETURNED", "UPS_MAINTENANCE_COMPLETED", "UPS_MAINTENANCE_RETIREMENT_COMPLETED") and args.ups:
-        active_sessions[:] = [item for item in active_sessions if item.get("ups") != args.ups]
-        unresolved_items[:] = [item for item in unresolved_items if item.get("ups") != args.ups]
-
-    state["implemented_phase"] = "phase5-active-session-tracking"
-    state["status"] = args.status or state.get("status", "initialized")
-    state["updated_at"] = record["timestamp"]
-
-    write_state(state)
-    append_log(record)
+    lock_path = state_path.with_name(state_path.name + ".lock")
+    try:
+        with lock_path.open("a+") as lock:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+            state = load_state(state_path)
+            state, cleared = reconcile(state, event_path, statuses)
+            if args.event:
+                apply_event(state, args)
+            if args.event or cleared:
+                state["updated_at"] = now_iso()
+            write_state(state, state_path)
+            sync_log_from_state(state, log_path)
+    except (OSError, json.JSONDecodeError, EvidenceError) as exc:
+        raise SystemExit(f"FAIL maintenance state reconciliation: {type(exc).__name__}: {exc}")
 
     if args.json:
         print(json.dumps(state, indent=2))
+    elif args.reconcile:
+        if cleared:
+            print("PASS reconciled returned UPS: " + ",".join(sorted(cleared)))
+        else:
+            print("PASS no maintenance sessions were reconciled")
     else:
         print(f"PASS recorded {args.event}")
 

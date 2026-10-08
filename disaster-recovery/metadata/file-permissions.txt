@@ -849,6 +849,7 @@
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-control-center-backup-20260528-140238|755|root|root
 /usr/local/sbin/nut-synology-shutdown.sh|750|root|nut
 /usr/local/sbin/nut-ui-read-reference|750|root|root
+/usr/local/sbin/nut_health_consistency.py|644|root|root
 /usr/local/sbin/nut-blueiris-shutdown.sh.bak.2026-05-11-130832|750|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-hypervisor-fallback-robust-20260603-131921|755|root|root
 /usr/local/sbin/nut-email-alert-test-send.pre-health-off-order-20260827-095324|755|root|root
@@ -960,6 +961,7 @@
 /usr/local/sbin/__pycache__/nut-vmware-tools-status-report.cpython-312.pyc|640|root|root
 /usr/local/sbin/__pycache__/nut-notification-recipientscpython-312.pyc|640|root|root
 /usr/local/sbin/__pycache__/nut-ui-restore-statuscpython-312.pyc|640|root|root
+/usr/local/sbin/__pycache__/nut_health_consistency.cpython-312.pyc|644|root|root
 /usr/local/sbin/__pycache__/nut-ui-full-managed-restore-preflightcpython-312.pyc|640|root|root
 /usr/local/sbin/__pycache__/nut-ui-full-managed-restore-livecpython-312.pyc|640|root|root
 /usr/local/sbin/__pycache__/nut-ups-identity-comparecpython-312.pyc|644|root|root
