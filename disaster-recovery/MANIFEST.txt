@@ -572,6 +572,7 @@ SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_16_
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/03_MONITORING_HOWTOS.md.before-inline-links-20260904-082000
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/18_CREDENTIAL_AND_PASSWORD_CHANGES.md
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.pre-gap-five-20260909-091233
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_12_upsmon_conf.md.before-fsd-docs-20261008
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md.before-inline-links-20260904-082314
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/11_BACKUP_HOWTOS.md
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.before-ups-link-20260904-073425
@@ -625,6 +626,7 @@ SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_32_
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/18_SECURITY_HOWTOS.md.pre-gap-five-20260909-091233
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.before-inline-links-20260904-085750
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_15_hosts_conf.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md.before-fsd-docs-20261008
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md.before-ups-link-20260904-073425
 FILE /opt/nut-orchestrator-ui/docs/runbooks/39_nut_orchestrator_sh.txt -> files/opt/nut-orchestrator-ui/docs/runbooks/39_nut_orchestrator_sh.txt mode=0644
 FILE /opt/nut-orchestrator-ui/docs/runbooks/07_SAFE_EDITING_RULES.txt -> files/opt/nut-orchestrator-ui/docs/runbooks/07_SAFE_EDITING_RULES.txt mode=0644
@@ -964,6 +966,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-ret
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-rungit-20260421-093355
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-live-restore-selected-dry-run.pre-streamlined-restore-test-probe-20260604-094801
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-live-restore-selected-dry-run.pre-test-probe-20260604-094257
+SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.before-idf-current-state-fix-20261008
 SKIP temp-development-artifact /usr/local/sbin/nut-telegram-command-bot.bak-health-unify-20260831_090204
 SKIP temp-development-artifact /usr/local/sbin/nut-vmware-export-inventory.sh.pre-placement-merge-20260522-105048
 SKIP temp-development-artifact /usr/local/sbin/nut-export-test-logs.pre-secret-sanitize-20260903-132812

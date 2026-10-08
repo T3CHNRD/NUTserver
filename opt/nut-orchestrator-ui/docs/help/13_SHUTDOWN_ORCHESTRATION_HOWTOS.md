@@ -103,7 +103,7 @@ Verify the NUT event state and logs.
 ## Current Documented Shutdown Timer Baseline
 
 - UPS7: 240 seconds
-- UPS2: 420 seconds
+- UPS2: 315 seconds
 - UPS8: 180 seconds
 - UPS6: 300 seconds
 - UPS9: 360 seconds

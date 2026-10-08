@@ -515,6 +515,26 @@ def latest_idf_event(source):
 
     return latest_idf_event_from_lines(source, lines)
 
+def current_idf_power_state(source):
+    state_file = Path(f"/var/lib/nut-apc-idf-monitor/{source.lower()}.current-power.state")
+
+    if not state_file.exists():
+        return "unknown", "current state file not found"
+
+    try:
+        message = state_file.read_text(errors="replace").strip()
+    except Exception as e:
+        return "unknown", f"could not read current state: {type(e).__name__}"
+
+    if "No longer on battery power" in message:
+        return "line/grid", message
+
+    if "On battery power" in message:
+        return "battery", message
+
+    return "unknown", message or "current state empty"
+
+
 def idf_status_lines():
     targets = [
         ("IDF 2", "IDF2", "198.51.100.10", "APC-IDF2.example.com"),
@@ -527,7 +547,8 @@ def idf_status_lines():
 
     for label, source, ip, dns in targets:
         reachability, ping_summary = ping_target(ip)
-        power_source, event_time, message = latest_idf_event(source)
+        power_source, message = current_idf_power_state(source)
+        event_time = "current"
 
         lines.append("")
         lines.append(f"- {label}")
@@ -960,7 +981,8 @@ def ups_maintenance_recommendation_lines():
         blockers.append(f"UPS identity comparison could not run: {exc}")
 
     for source in ("IDF2", "IDF3"):
-        power_source, event_time, message = latest_idf_event(source)
+        power_source, message = current_idf_power_state(source)
+        event_time = "current"
         if power_source == "battery":
             blockers.append(f"{source} last known power source is battery at {event_time}: {message}")
         elif power_source == "line/grid":
