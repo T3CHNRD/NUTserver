@@ -1,18 +1,18 @@
 NEXT                            LEFT LAST                                    PASSED UNIT                            ACTIVATES
-Thu 2026-10-08 15:30:00 EDT     8min Thu 2026-10-08 15:20:00 EDT       1min 40s ago sysstat-collect.timer           sysstat-collect.service
-Thu 2026-10-08 15:34:30 EDT    12min Thu 2026-10-08 14:33:06 EDT          48min ago anacron.timer                   anacron.service
-Thu 2026-10-08 16:00:00 EDT    38min Thu 2026-10-08 06:00:00 EDT             9h ago nut-daily-health-email.timer    nut-daily-health-email.service
-Thu 2026-10-08 16:09:56 EDT    48min Thu 2026-10-08 15:03:55 EDT          17min ago fwupd-refresh.timer             fwupd-refresh.service
-Thu 2026-10-08 16:39:28 EDT 1h 17min Thu 2026-10-08 13:39:28 EDT       1h 42min ago apport-autoreport.timer         apport-autoreport.service
-Thu 2026-10-08 16:48:24 EDT 1h 26min Wed 2026-10-07 16:48:24 EDT            22h ago update-notifier-download.timer  update-notifier-download.service
-Thu 2026-10-08 16:58:19 EDT 1h 36min Wed 2026-10-07 16:58:19 EDT            22h ago systemd-tmpfiles-clean.timer    systemd-tmpfiles-clean.service
+Thu 2026-10-08 15:50:00 EDT     6min Thu 2026-10-08 15:40:00 EDT       3min 57s ago sysstat-collect.timer           sysstat-collect.service
+Thu 2026-10-08 16:00:00 EDT    16min Thu 2026-10-08 06:00:00 EDT             9h ago nut-daily-health-email.timer    nut-daily-health-email.service
+Thu 2026-10-08 16:09:56 EDT    25min Thu 2026-10-08 15:03:55 EDT          40min ago fwupd-refresh.timer             fwupd-refresh.service
+Thu 2026-10-08 16:33:24 EDT    49min Thu 2026-10-08 15:34:30 EDT           9min ago anacron.timer                   anacron.service
+Thu 2026-10-08 16:39:28 EDT    55min Thu 2026-10-08 13:39:28 EDT        2h 4min ago apport-autoreport.timer         apport-autoreport.service
+Thu 2026-10-08 16:48:24 EDT  1h 4min Wed 2026-10-07 16:48:24 EDT            22h ago update-notifier-download.timer  update-notifier-download.service
+Thu 2026-10-08 16:58:19 EDT 1h 14min Wed 2026-10-07 16:58:19 EDT            22h ago systemd-tmpfiles-clean.timer    systemd-tmpfiles-clean.service
 Fri 2026-10-09 00:00:00 EDT       8h Thu 2026-10-08 00:00:00 EDT            15h ago dpkg-db-backup.timer            dpkg-db-backup.service
 Fri 2026-10-09 00:00:00 EDT       8h Thu 2026-10-08 00:00:00 EDT            15h ago logrotate.timer                 logrotate.service
 Fri 2026-10-09 00:07:00 EDT       8h Thu 2026-10-08 00:07:00 EDT            15h ago sysstat-summary.timer           sysstat-summary.service
-Fri 2026-10-09 01:57:21 EDT      10h Thu 2026-10-08 14:27:40 EDT          54min ago motd-news.timer                 motd-news.service
-Fri 2026-10-09 04:00:00 EDT      12h Thu 2026-10-08 12:00:00 EDT       3h 21min ago nut-weather-cache-refresh.timer nut-weather-cache-refresh.service
+Fri 2026-10-09 01:57:21 EDT      10h Thu 2026-10-08 14:27:40 EDT       1h 16min ago motd-news.timer                 motd-news.service
+Fri 2026-10-09 04:00:00 EDT      12h Thu 2026-10-08 12:00:00 EDT       3h 43min ago nut-weather-cache-refresh.timer nut-weather-cache-refresh.service
 Fri 2026-10-09 05:51:55 EDT      14h Thu 2026-10-08 06:06:46 EDT             9h ago apt-daily.timer                 apt-daily.service
-Fri 2026-10-09 06:43:05 EDT      15h Thu 2026-10-08 06:06:05 EDT             9h ago apt-daily-upgrade.timer         apt-daily-upgrade.service
+Fri 2026-10-09 06:43:05 EDT      14h Thu 2026-10-08 06:06:05 EDT             9h ago apt-daily-upgrade.timer         apt-daily-upgrade.service
 Fri 2026-10-09 06:54:20 EDT      15h Thu 2026-10-08 06:46:51 EDT             8h ago man-db.timer                    man-db.service
 Fri 2026-10-09 08:00:00 EDT      16h Thu 2026-10-08 08:00:00 EDT             7h ago nut-telegram-heartbeat.timer    nut-telegram-heartbeat.service
 Sun 2026-10-11 03:10:15 EDT   2 days Sun 2026-10-04 03:10:39 EDT         4 days ago e2scrub_all.timer               e2scrub_all.service
