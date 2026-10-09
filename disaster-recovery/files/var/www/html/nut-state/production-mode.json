@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-10-09T15:14:34-04:00",
-  "mode": "disarmed",
-  "mode_label": "STANDBY FOR MAINTENANCE",
+  "generated_at": "2026-10-09T15:43:39-04:00",
+  "mode": "armed",
+  "mode_label": "PROTECTING",
   "valid_modes": {
     "off": "OFF",
     "disarmed": "STANDBY FOR MAINTENANCE",
@@ -61,10 +61,10 @@
     }
   ],
   "esxi_ssh_access": "verified_read_only",
-  "esxi_ssh_fallback_enabled": "0",
+  "esxi_ssh_fallback_enabled": "1",
   "esxi_ssh_key": "/root/.ssh/nut_hypervisor_shutdown_rsa",
-  "allow_live_actions": "0",
-  "allow_esxi_ssh_fallback": "0",
+  "allow_live_actions": "1",
+  "allow_esxi_ssh_fallback": "1",
   "live_shutdown_test_completed": "no",
-  "note": "STANDBY FOR MAINTENANCE: Monitoring active. Live protection actions are blocked for maintenance."
+  "note": "PROTECTING: Monitoring active. Live protection actions are allowed for qualifying UPS power events."
 }
