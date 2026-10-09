@@ -289,3 +289,21 @@ Use that article when answering questions such as:
 - which UPS devices are alert only
 
 Remember that physical power connection and automatic shutdown behavior are separate facts.
+
+
+## Implementation evidence update — 2026-10-09
+
+Revision date: 2026-10-09. Source review recorded; publication tracked separately.
+
+Captured delays: UPS7 240 seconds, UPS2 315, UPS8 180, UPS6 300, UPS9 360 and UPS3 300. UPS1, UPS4 and UPS5 are alert-only in the captured handler. UPS9 source order is VMware, Synology, NetApp01, NetApp02, then local final wrapper. The local final wrapper calls the local shutdown command behind gates; the reviewed path contains no Observium call.
+
+Maintenance suppression applies per UPS only when a matching active-session record has status `active` or `warning`. An unavailable/malformed state returns an error that the orchestrator logs, then proceeds without suppression; normal production-mode/action gates still apply. Do not describe maintenance mode as a global lock.
+
+This source review does not include current `upsmon.conf` or `upssched.conf`; FSD, SHUTDOWNCMD and POWERDOWNFLAG details need current config verification before publication.
+
+
+## Source confirmed operating boundaries
+
+The inspected helper suppresses a shutdown commit only for a matching UPS entry in `active_sessions` whose status is `active` or `warning`. No matching entry means normal handling continues. If the state is unreadable or invalid, the orchestrator logs the helper error and does not suppress; ordinary mode gates and the commit path continue. Maintenance is therefore not a universal shutdown lock. This is source-inspected behavior, not a live suppression test. COMMBAD/COMMOK state handling and notification behavior must not be confused with this commit check.
+
+See [Save and rollback](35_SAVE_AND_ROLL_BACK_CONFIGURATION.md), [Restore and recovery](36_RESTORE_AND_RECOVERY.md), and [Shutdown and maintenance](37_SHUTDOWN_AND_MAINTENANCE.md).

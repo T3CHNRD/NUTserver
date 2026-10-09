@@ -1,32 +1,21 @@
-# Documentation Verification Gaps
+# Documentation Completion Register
 
-Base revision 2026-10-08 | Evidence update 2026-10-09
+## 1 Evidence incorporated
 
-This register lists work that remains before the entire documentation set can be released as complete production instructions. Verified reference topics can be used within their stated scope; unresolved actions must not be presented as tested procedures.
+The October 9 manual timer check, 25-entry restore catalog, 26-entry editor registry capture, setting-name report, credential-wrapper review and 116-file source review have been reconciled. Source absence from one bundle does not invalidate evidence collected separately. Source-inspected operating behavior is distinct from live testing.
 
-## 1 Open items
+## 2 Remaining documentation work
 
-| ID | Area | Completion requirement |
-| --- | --- | --- |
-| G01 | Configuration settings | Exact fields, active reads and precedence; include VOIP and final wrapper. |
-| G02 | Password changes | Shared consumers, supported update method, activation and read-only check. |
-| G03 | Shutdown flow | Timer handlers, maintenance suppression and current final order including Observium. |
-| G04 | Save and restore | Actual validation, reload/restart, eligibility and recovery behavior. |
-| G05 | Unused files | Broader consumer review before any removal. |
-| G06 | Original documents | The 63 Help-matched Word documents are generated. Complete reconciliation of unique content in the original 52 sources; conversion alone does not complete that audit. |
-| G07 | Help publication | Publish matching articles and verify authenticated display, search and navigation. |
-| G08 | Word layout | Render and inspect the individual documents before final production release. |
+| Item | Remaining requirement |
+| --- | --- |
+| Original 52 sources | Complete reconciliation of unique content; the disposition register is still a proposal. Help-to-Word conversion does not prove nothing was lost from historical originals. |
+| Word layout | Render and review individual pages; the local renderer is unavailable. File integrity checks alone do not establish layout quality. |
+| Final publication | Install this reconciled set and check authenticated Help display and navigation. File checksum success alone is not browser verification. |
+| Exact VMware map rows | Confirm the current row schema before an operator follows a VM-edit procedure; do not invent column order. |
+| Validator implementation | Registry names/metadata were captured, but detailed validator source was absent from the broader bundle. |
+| Full restore policy | Current policy flags must be checked before a live restore; catalog fields have already been captured separately. |
+| VOIP and email | Resolve external SSH identity and generated-email consumer details before claiming complete per-system activation instructions. |
 
-## 2 Configuration cleanup
+## 3 Tests and improvements kept separate
 
-Review /etc/nut/config.d/nut-orchestrator.conf, /etc/nut/config.d/approved-targets.yml and /etc/nut/config.d/shutdown-verification-targets.conf across application loaders, indirect helpers, services, scheduled jobs and recovery procedures. No file is confirmed unused by the nine-script scan.
-
-For each confirmed unused file, add a removal task for the file and obsolete editor, restore, Help and Word references. Keep rollback material. No deletion is performed by this package.
-
-## 3 Publication status
-
-The previously reported 13-article server candidate was staged but not published. This package includes the transferred 56-article candidate and the seven installed topics, with additional reconciliation. Its installation updates existing articles as well as the index. Publication is only confirmed by installer output and authenticated UI checks. A successful installer run still needs authenticated UI review.
-
-## 4 Evidence dates
-
-Base documentation revision is 2026-10-08. Timer, restore and path-reference evidence was received on 2026-10-09. Operational tests are separate from file inspection.
+Remote credential agreement is an operator prerequisite. No live authentication, shutdown, notification or restore test was performed in this review. These limitations do not invalidate observed file-loading behavior. See the [safe test plan](38_NON_DISRUPTIVE_TEST_PLAN.md) and [project backlog](39_NUT_PROJECT_BACKLOG.md). Do not label the whole production-documentation project complete while the remaining documentation items above are open.

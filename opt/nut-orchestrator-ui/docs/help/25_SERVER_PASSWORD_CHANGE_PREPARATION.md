@@ -21,3 +21,17 @@ Before proceeding, establish the exact setting, whether any generated file or ca
 Enter passwords only through the approved credential process. Do not copy them into Help, Word documents, screenshots or reports. Do not run a shutdown script just to test a password.
 
 Verification: this is a preparation checklist based on the current reference findings. The exact password-change procedures remain an open item in the Documentation Verification Gaps topic.
+
+
+## Implementation evidence update — 2026-10-09
+
+Revision date: 2026-10-09. Source review recorded; publication tracked separately.
+
+Credential files are read by wrappers at invocation unless a consumer explicitly generates a dependent file. Blue Iris and Lansweeper share `/etc/nut/lansweeper.creds`; Synology reads `/etc/nut/synology-api.conf`; VMware and NetApp share `/etc/nut/nut-orchestrator.conf`, with vCenter password in `/etc/nut/vcenter.pass`; DB targets use `/etc/nut/db-shutdown.conf`. Email uses a config plus secret file and a generated msmtp artifact.
+
+Coordinate local and remote account changes. The reviewed RPC wrappers have no authentication-only test. Synology’s simulation performs login and local event handling, so it is not a side-effect-free credential check. Do not test credentials by invoking a shutdown wrapper. Exact live values are intentionally omitted.
+
+
+## Detailed procedures now available
+
+Use the dedicated [Blue Iris](29_BLUE_IRIS_PASSWORD_CHANGE.md), [Lansweeper](30_LANSWEEPER_PASSWORD_CHANGE.md) and [Synology](31_SYNOLOGY_PASSWORD_CHANGE.md) procedures, and the [remaining systems credential matrix](34_PROTECTED_SYSTEM_CREDENTIALS.md). These source-backed procedures distinguish file editing from successful remote authentication.

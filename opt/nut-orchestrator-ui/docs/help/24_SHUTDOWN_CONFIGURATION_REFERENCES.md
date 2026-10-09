@@ -31,3 +31,8 @@ VMware and NetApp reference /etc/nut/nut-orchestrator.conf. Do not confuse this 
 No complete literal /etc/nut/ path was detected in the VOIP or local final shutdown wrapper. They may use constructed paths, another location or an indirect helper. This finding does not mean they use no configuration.
 
 Verification: operator-supplied path-only scan of nine scripts received 2026-10-09; full-line comments were excluded. No script was executed.
+
+
+## Loading confirmed by the broader source review
+
+VMware and NetApp source `/etc/nut/nut-orchestrator.conf`. The main orchestrator reads `/etc/nut/production-mode.conf`. The verification-target helper reads `/etc/nut/config.d/shutdown-verification-targets.conf`, and VMware reads `/etc/nut/config.d/vmware-vm-map.conf`. These mapping files must not be treated as unused. No operational reader for the sibling `config.d/nut-orchestrator.conf` was found in the bounded source snapshot; this is a cleanup candidate, not removal approval. See [credential sources](34_PROTECTED_SYSTEM_CREDENTIALS.md).

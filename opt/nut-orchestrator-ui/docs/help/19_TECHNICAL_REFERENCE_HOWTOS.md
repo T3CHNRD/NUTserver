@@ -302,3 +302,10 @@ See the [Help Index](00_HELP_INDEX.md) for operator documentation and the [Contr
 - Services and Timers
 - Logs
 - Security
+
+
+## Testing and open work
+
+- [Non disruptive test plan](38_NON_DISRUPTIVE_TEST_PLAN.md)
+- [Project backlog](39_NUT_PROJECT_BACKLOG.md)
+- [Documentation completion register](27_DOCUMENTATION_VERIFICATION_GAPS.md)

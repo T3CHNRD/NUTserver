@@ -227,3 +227,24 @@ Physical power connection and automatic NUT shutdown action are documented separ
 - [Preparing to Add a Server](26_NEW_SERVER_PREPARATION.md)
 - [Documentation Verification Gaps](27_DOCUMENTATION_VERIFICATION_GAPS.md)
 - [Original Document Review Register](28_ORIGINAL_DOCUMENT_REVIEW.md)
+
+
+## Per system password change procedures
+
+- [Changing the Blue Iris Automation Password](29_BLUE_IRIS_PASSWORD_CHANGE.md)
+- [Changing the Lansweeper Automation Password](30_LANSWEEPER_PASSWORD_CHANGE.md)
+- [Changing the Synology Automation Password](31_SYNOLOGY_PASSWORD_CHANGE.md)
+
+These procedures identify source-confirmed fields and activation behavior. They explicitly distinguish syntax checks from authentication and list the verification methods not yet established.
+
+
+## Server changes recovery and project follow up
+
+- [Add a Physical Server to UPS Shutdown Orchestration](32_ADD_PHYSICAL_SERVER.md)
+- [Add a VMware VM to Shutdown Orchestration](33_ADD_VMWARE_VM.md)
+- [Change Protected-System Credentials](34_PROTECTED_SYSTEM_CREDENTIALS.md)
+- [Save, Apply and Roll Back an Editable Configuration](35_SAVE_AND_ROLL_BACK_CONFIGURATION.md)
+- [Restore and Recovery Procedures](36_RESTORE_AND_RECOVERY.md)
+- [Shutdown Sequencing and UPS Maintenance Suppression](37_SHUTDOWN_AND_MAINTENANCE.md)
+- [Non Disruptive NUT Test Plan](38_NON_DISRUPTIVE_TEST_PLAN.md)
+- [NUT Project Backlog](39_NUT_PROJECT_BACKLOG.md)

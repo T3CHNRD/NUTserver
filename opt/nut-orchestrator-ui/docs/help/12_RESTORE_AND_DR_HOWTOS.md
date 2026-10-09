@@ -389,3 +389,12 @@ The Restore Lab interface uses the approved restore-target list and the selected
 ## Current restore catalog
 
 The manual catalog check lists 25 entries, not the earlier 21-item inventory. Twenty entries are marked enabled with a source; DB Telnet Username is enabled but its source is marked missing. Four entries are disabled and sensitive. See the [Configuration Restore Catalog](23_RESTORE_CATALOG.md) before selecting a file. Catalog flags do not prove a restore was tested.
+
+
+## Implementation evidence update — 2026-10-09
+
+Revision date: 2026-10-09. Source review recorded; publication tracked separately.
+
+Selected restore dry-run produces a plan. Live selected restore requires an eligible catalog entry, approved path checks and explicit confirmation, then backs up the current target and installs the selected source. Catalog membership alone is not eligibility. Full managed restore preflight is separate from live restore. The live path is policy/mode gated, backs up touched files and protected secrets, stages and installs files, restores prior service states, validates activation and attempts rollback on failure.
+
+Do not use a restore action as a test. Check the current catalog and policy before any operator-approved restore.

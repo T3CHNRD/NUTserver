@@ -1,5 +1,14 @@
 # Credential and Password Changes - Complete How-To
 
+## Per system password change procedures
+
+- [Changing the Blue Iris Automation Password](29_BLUE_IRIS_PASSWORD_CHANGE.md)
+- [Changing the Lansweeper Automation Password](30_LANSWEEPER_PASSWORD_CHANGE.md)
+- [Changing the Synology Automation Password](31_SYNOLOGY_PASSWORD_CHANGE.md)
+
+These procedures identify source-confirmed fields and activation behavior. They explicitly distinguish syntax checks from authentication and list the verification methods not yet established.
+
+
 ## Purpose
 
 Use this Help article when a password, username, API credential, or protected-system login used by NUT has changed.
@@ -297,3 +306,12 @@ For that reason, every credential change requires a safe authentication verifica
 - /etc/nut/synology-api.conf
 - /usr/local/sbin/nut-vmware-shutdown.sh
 - /usr/local/sbin/nut-synology-shutdown.sh
+
+
+## Implementation evidence update — 2026-10-09
+
+Revision date: 2026-10-09. Source review recorded; publication tracked separately.
+
+Use the dedicated password-change articles for Blue Iris/Lansweeper and Synology, plus the credential matrix in this package. Blue Iris and Lansweeper use one shared protected credential file; rotations must account for both consumers. Synology wrapper login occurs before its simulation branch, which also records local event state. No authentication-only check was identified for these wrappers.
+
+Keep credential values out of Help. Confirm remote/local agreement with the system owner and use only an approved non-disruptive authentication check. Where none exists, record validation as deferred.

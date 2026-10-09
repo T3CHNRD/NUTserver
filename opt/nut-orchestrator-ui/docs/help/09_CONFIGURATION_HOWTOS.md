@@ -877,3 +877,19 @@ The captured direct SHUTDOWNCMD is /sbin/shutdown -h now and bypasses nut-local-
 - [nut.conf](https://networkupstools.org/historic/v2.8.1/docs/man/nut.conf.html)
 - [hosts.conf](https://networkupstools.org/historic/v2.8.1/docs/man/hosts.conf.html)
 - [upsd.users](https://networkupstools.org/historic/v2.8.1/docs/man/upsd.users.html)
+
+
+## Implementation evidence update — 2026-10-09
+
+Revision date: 2026-10-09. Source review recorded; publication tracked separately.
+
+Use the Control Center’s registered configuration entry and its displayed target path/validator. Validate/Dry Run checks staged content without writing. Apply creates a backup, writes the file and applies registered ownership/mode. Email configuration additionally rebuilds msmtp output. The apply helper does not restart or reload services. A successful save therefore proves a file update, not that every consumer has reloaded it.
+
+Rollback restores the latest backup for the config ID and reapplies metadata; it does not rebuild dependent output or restart consumers. The registry and validator files were not in the reviewed source bundle, so exact editable entries and per-entry fields must be confirmed from the current UI before use.
+
+
+## Source confirmed operating boundaries
+
+The inspected helper suppresses a shutdown commit only for a matching UPS entry in `active_sessions` whose status is `active` or `warning`. No matching entry means normal handling continues. If the state is unreadable or invalid, the orchestrator logs the helper error and does not suppress; ordinary mode gates and the commit path continue. Maintenance is therefore not a universal shutdown lock. This is source-inspected behavior, not a live suppression test. COMMBAD/COMMOK state handling and notification behavior must not be confused with this commit check.
+
+See [Save and rollback](35_SAVE_AND_ROLL_BACK_CONFIGURATION.md), [Restore and recovery](36_RESTORE_AND_RECOVERY.md), and [Shutdown and maintenance](37_SHUTDOWN_AND_MAINTENANCE.md).
