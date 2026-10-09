@@ -95,8 +95,8 @@
       ],
       "apply_mode": "local",
       "owner": "root",
-      "group": "root",
-      "file_mode": "600"
+      "group": "nut",
+      "file_mode": "640"
     },
     {
       "id": "nut_orchestrator_conf",

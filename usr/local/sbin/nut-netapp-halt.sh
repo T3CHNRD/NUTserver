@@ -160,7 +160,7 @@ log "APPROVED: executing NetApp node-by-node ONTAP halt sequence"
 log "APPROVED: target=$TARGET cluster_mgmt=$HOST node_a=$NODE_A node_b=$NODE_B"
 
 log "APPROVED: halting NetApp node $NODE_A"
-printf '%s\n' y | ssh -o BatchMode=yes -o ConnectTimeout=10 "${NETAPP_USERNAME}@${HOST}" "halt -node ${NODE_A} -inhibit-takeover true -skip-lif-migration true" >> "$LOG_FILE" 2>&1
+printf '%s\n' y | SSHPASS="$NETAPP_PASSWORD" /usr/bin/sshpass -e ssh -o BatchMode=no -o PreferredAuthentications=password,keyboard-interactive -o PubkeyAuthentication=no -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/nut/netapp_known_hosts -o ConnectTimeout=10 "${NETAPP_USERNAME}@${HOST}" "halt -node ${NODE_A} -inhibit-takeover true -skip-lif-migration true" >> "$LOG_FILE" 2>&1
 RC_A=$?
 
 if [ "$RC_A" -ne 0 ]; then
@@ -172,7 +172,7 @@ fi
 log "SUCCESS NetApp halt command sent for $TARGET node=$NODE_A"
 
 log "APPROVED: halting NetApp node $NODE_B"
-printf '%s\n' y | ssh -o BatchMode=yes -o ConnectTimeout=10 "${NETAPP_USERNAME}@${HOST}" "halt -node ${NODE_B} -inhibit-takeover true -skip-lif-migration true" >> "$LOG_FILE" 2>&1
+printf '%s\n' y | SSHPASS="$NETAPP_PASSWORD" /usr/bin/sshpass -e ssh -o BatchMode=no -o PreferredAuthentications=password,keyboard-interactive -o PubkeyAuthentication=no -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/nut/netapp_known_hosts -o ConnectTimeout=10 "${NETAPP_USERNAME}@${HOST}" "halt -node ${NODE_B} -inhibit-takeover true -skip-lif-migration true" >> "$LOG_FILE" 2>&1
 RC_B=$?
 
 if [ "$RC_B" -ne 0 ]; then
