@@ -149,8 +149,8 @@ Every applicable article must explain:
 - [ESXi](14_PROTECTED_SYSTEMS_HOWTOS.md#vmware-vcenter-esxi-shutdown-architecture)
 - [Synology](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-synology-shutdown)
 - [NetApp](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-netapp-shutdown)
-- [<DATABASE_SERVER_1>](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-db01-shutdown-integration)
-- [<DATABASE_SERVER_2>](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-db02-shutdown-integration)
+- [DB01](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-db01-shutdown-integration)
+- [DB02](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-db02-shutdown-integration)
 - [V240](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-the-sun-fire-v240-integration)
 - [Blue Iris](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-blue-iris-shutdown)
 - [Lansweeper](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-lansweeper-shutdown)
@@ -213,15 +213,3 @@ Every applicable article must explain:
 Important:
 
 Physical power connection and automatic NUT shutdown action are documented separately.
-
-<!-- NUT individual topics 2026-10-09 start -->
-## Configuration runbooks and documentation status
-
-- [UPS Shutdown Timers](22_UPS_SHUTDOWN_TIMERS.md)
-- [Configuration Restore Catalog](23_RESTORE_CATALOG.md)
-- [Shutdown Script Configuration References](24_SHUTDOWN_CONFIGURATION_REFERENCES.md)
-- [Preparing for a Server Password Change](25_SERVER_PASSWORD_CHANGE_PREPARATION.md)
-- [Preparing to Add a Server](26_NEW_SERVER_PREPARATION.md)
-- [Documentation Verification Gaps](27_DOCUMENTATION_VERIFICATION_GAPS.md)
-- [Original Document Review Register](28_ORIGINAL_DOCUMENT_REVIEW.md)
-<!-- NUT individual topics 2026-10-09 end -->

@@ -48,6 +48,7 @@ systemd-ask-password-plymouth.path             static          -
 systemd-ask-password-wall.path                 static          -
 tpm-udev.path                                  enabled         enabled
 whoopsie.path                                  enabled         enabled
+session-3911.scope                             transient       -
 session-c1.scope                               transient       -
 session-c4.scope                               transient       -
 accounts-daemon.service                        enabled         enabled
@@ -515,4 +516,4 @@ ua-timer.timer                                 enabled         enabled
 update-notifier-download.timer                 enabled         enabled
 update-notifier-motd.timer                     enabled         enabled
 
-515 unit files listed.
+516 unit files listed.
