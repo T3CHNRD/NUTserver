@@ -1,5 +1,7 @@
 # Technical Reference - Feature to Component Map
 
+Revision date: 2026-10-08
+
 ## Purpose
 
 Use this section when you need to determine which configuration file, script, service, or API controls a NUT feature.
@@ -47,6 +49,8 @@ Primary components:
 ---
 
 ## UPS Definitions and Monitoring
+
+Captured platform baseline (2026-10-08): Ubuntu 24.04.4 LTS, NUT 2.8.1, and nine UPS drivers. These are version/inventory facts, not proof that every UPS mapping or driver path has been functionally tested.
 
 Primary references:
 
@@ -105,8 +109,8 @@ Primary reference:
 
 Production addresses currently documented:
 
-- <DATABASE_SERVER_1>: <INTERNAL_IP>
-- <DATABASE_SERVER_2>: <INTERNAL_IP>
+- <DATABASE_SERVER_1>: <site address>
+- <DATABASE_SERVER_2>: <site address>
 
 ---
 
@@ -118,7 +122,7 @@ Primary reference:
 
 Current planned production address:
 
-- <INTERNAL_IP>
+- <site address>
 
 ---
 

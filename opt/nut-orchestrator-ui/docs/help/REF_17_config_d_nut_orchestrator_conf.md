@@ -18,16 +18,8 @@ EDITABLE LIVE CONFIG - config.d nut-orchestrator.conf
 Path:
   /etc/nut/config.d/nut-orchestrator.conf
 
-Purpose:
-  Additional orchestrator configuration under /etc/nut/config.d.
+## What the evidence establishes
 
-Controls:
-  - Modularized orchestrator settings.
-  - Configuration values used by shutdown/test scripts.
+This file is present in the project references. Its exact supported settings and active loading behavior have not been established by the supplied inspection. Do not assume that a target entry alone enables shutdown or that this file takes precedence over another file.
 
-Risk:
-  High. Incorrect changes can affect target selection, credentials, or shutdown behavior.
-
-Use only when:
-  - Updating orchestrator modular config.
-  - Confirming or changing shutdown target configuration.
+See [Configuration guidance](09_CONFIGURATION_HOWTOS.md), [script path references](24_SHUTDOWN_CONFIGURATION_REFERENCES.md), and [remaining checks](27_DOCUMENTATION_VERIFICATION_GAPS.md).

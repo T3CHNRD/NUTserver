@@ -113,7 +113,7 @@ Search phrases:
 
 ## Cancelled Shutdown
 
-A cancelled-shutdown notification means a pending shutdown was cancelled before the committed shutdown action occurred.
+A cancelled-shutdown notification means an eligible pending per-UPS timer workflow was cancelled before its commit action occurred. It does not prove that an upsmon FSD condition was cleared or that every shutdown path was cancelled; see [FSD / Forced Shutdown](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md#fsd-and-forced-shutdown-are-a-separate-path).
 
 The most common reason is utility power returning before the shutdown timer expires.
 

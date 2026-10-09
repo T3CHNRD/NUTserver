@@ -1,5 +1,7 @@
 # NUT Control Center Help & Runbook
 
+Revision date: 2026-10-08
+
 ## Purpose
 
 This Help & Runbook is the operator and administrator knowledge base for the
@@ -93,7 +95,7 @@ Every applicable article must explain:
 - [Recipient management](07_EMAIL_HOWTOS.md#how-to-add-or-remove-email-recipients)
 - [SMTP rebuild / stale generated SMTP configuration recovery](07_EMAIL_HOWTOS.md#rebuild-stale-smtp-configuration)
 - [Testing](07_EMAIL_HOWTOS.md#how-to-validate-email-delivery-without-causing-a-ups-event)
-- [EMAIL_NOTIFY_FAILED troubleshooting](07_EMAIL_HOWTOS.md#how-to-troubleshoot-email-notify-failed)
+- [EMAIL_NOTIFY_FAILED troubleshooting](07_EMAIL_HOWTOS.md#how-to-troubleshoot-emailnotifyfailed)
 
 ### 08 - Maintenance and Weather
 - [CLEAR](08_MAINTENANCE_AND_WEATHER_HOWTOS.md#how-to-interpret-clear) / [CAUTION](08_MAINTENANCE_AND_WEATHER_HOWTOS.md#how-to-interpret-caution) / [BLOCK](08_MAINTENANCE_AND_WEATHER_HOWTOS.md#how-to-interpret-block)
@@ -141,6 +143,7 @@ Every applicable article must explain:
 - [UPS event flow](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md#current-event-chain)
 - [Timers](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md#current-documented-shutdown-timer-baseline)
 - [Cancellation](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md#how-shutdown-cancellation-works)
+- [FSD / Forced Shutdown](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md#fsd-and-forced-shutdown-are-a-separate-path)
 - [Verification](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md#how-to-verify-shutdown-logic-without-shutting-anything-down)
 - [Final shutdown](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md#ups9-shutdown-sequence)
 
@@ -214,8 +217,8 @@ Important:
 
 Physical power connection and automatic NUT shutdown action are documented separately.
 
-<!-- NUT individual topics 2026-10-09 start -->
-## Configuration runbooks and documentation status
+
+## Individual configuration and operating references
 
 - [UPS Shutdown Timers](22_UPS_SHUTDOWN_TIMERS.md)
 - [Configuration Restore Catalog](23_RESTORE_CATALOG.md)
@@ -224,4 +227,3 @@ Physical power connection and automatic NUT shutdown action are documented separ
 - [Preparing to Add a Server](26_NEW_SERVER_PREPARATION.md)
 - [Documentation Verification Gaps](27_DOCUMENTATION_VERIFICATION_GAPS.md)
 - [Original Document Review Register](28_ORIGINAL_DOCUMENT_REVIEW.md)
-<!-- NUT individual topics 2026-10-09 end -->

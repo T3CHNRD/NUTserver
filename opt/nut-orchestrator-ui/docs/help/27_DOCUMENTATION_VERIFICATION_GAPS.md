@@ -13,7 +13,7 @@ This register lists work that remains before the entire documentation set can be
 | G03 | Shutdown flow | Timer handlers, maintenance suppression and current final order including Observium. |
 | G04 | Save and restore | Actual validation, reload/restart, eligibility and recovery behavior. |
 | G05 | Unused files | Broader consumer review before any removal. |
-| G06 | Original documents | Complete individual revision and reconcile unique historical content. |
+| G06 | Original documents | The 63 Help-matched Word documents are generated. Complete reconciliation of unique content in the original 52 sources; conversion alone does not complete that audit. |
 | G07 | Help publication | Publish matching articles and verify authenticated display, search and navigation. |
 | G08 | Word layout | Render and inspect the individual documents before final production release. |
 
@@ -25,7 +25,7 @@ For each confirmed unused file, add a removal task for the file and obsolete edi
 
 ## 3 Publication status
 
-The previously reported 13-article server candidate was staged but not published. This individual-topic package adds separate articles and index links; it does not apply that earlier diff or claim its stale-article corrections are complete. A successful installer run still needs authenticated UI review.
+The previously reported 13-article server candidate was staged but not published. This package includes the transferred 56-article candidate and the seven installed topics, with additional reconciliation. Its installation updates existing articles as well as the index. Publication is only confirmed by installer output and authenticated UI checks. A successful installer run still needs authenticated UI review.
 
 ## 4 Evidence dates
 

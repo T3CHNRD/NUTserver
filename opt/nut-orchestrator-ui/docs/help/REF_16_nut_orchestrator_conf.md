@@ -18,21 +18,8 @@ EDITABLE LIVE CONFIG - nut-orchestrator.conf
 Path:
   /etc/nut/nut-orchestrator.conf
 
-Purpose:
-  Primary live orchestration configuration.
+## What the evidence establishes
 
-Controls:
-  - Integration settings for orchestrated shutdown behavior.
-  - External system connection details.
-  - Hostnames and IPs for targets.
-  - Credentials or credential-file references.
-  - VMware, NetApp, Lansweeper, Blue Iris, Synology, VOIP, DB, or other integration settings.
+This file is present in the project references. Its exact supported settings and active loading behavior have not been established by the supplied inspection. Do not assume that a target entry alone enables shutdown or that this file takes precedence over another file.
 
-Risk:
-  High. Incorrect changes can affect shutdown orchestration and integrations.
-
-Use only when:
-  - Updating target IPs or hostnames.
-  - Updating integration settings.
-  - Updating controlled test scope.
-  - Correcting orchestration variables.
+See [Configuration guidance](09_CONFIGURATION_HOWTOS.md), [script path references](24_SHUTDOWN_CONFIGURATION_REFERENCES.md), and [remaining checks](27_DOCUMENTATION_VERIFICATION_GAPS.md).

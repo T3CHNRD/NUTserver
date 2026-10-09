@@ -32,7 +32,7 @@ Current known state:
   - Fake-password proof returned: Real Test blocked: invalid passphrase.
   - Phase 1 - Lansweeper only is the intended live-test scope.
   - Phase 2 and Phase 3 are deferred unless intentionally approved.
-  - Save remains disabled.
+  - The main Configuration editor has Save enabled in the inspected template. Restore Lab has a separate disabled Save control.
 
 Recommended reading order:
   01_CONTROL_CENTER_OVERVIEW.txt

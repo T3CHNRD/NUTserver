@@ -1,5 +1,7 @@
 # Reference Runbook - 05 CONFIGURATION TAB
 
+Revision date: 2026-10-08
+
 > **REFERENCE RUNBOOK**
 >
 > This material was imported from existing NUT project documentation.
@@ -26,18 +28,18 @@ Includes:
   - Reload
   - Validate
   - Revert
-  - Save Disabled
+  - Save (enabled for approved editable live configurations after validation)
 
 Current safety state:
   - Reload is available.
   - Validate is available.
   - Revert is available.
-  - Save is disabled.
+  - Main Configuration editor Save is enabled for approved editable live configurations; Validate first.
+  - Restore Lab is a separate interface. Its captured dashboard-ui.json Save control remains disabled pending a controlled save test.
 
 Important:
-  Save should remain disabled until a controlled dashboard-ui.json save test is approved.
+The older blanket statement that Save is disabled is stale for the main Configuration editor. The disabled Save state applies to the separate Restore Lab dashboard-ui.json control only.
 
 Risk:
   Configuration viewing is safe.
-  Editing without Save is reversible using Revert.
-  Save remains disabled to prevent accidental live config changes.
+  Saving an approved live config is a production change; use the required review and validation controls.

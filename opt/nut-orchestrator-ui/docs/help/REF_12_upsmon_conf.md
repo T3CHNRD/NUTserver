@@ -1,5 +1,7 @@
 # Reference Runbook - 12 upsmon conf
 
+Revision date: 2026-10-08
+
 > **REFERENCE RUNBOOK**
 >
 > This material was imported from existing NUT project documentation.
@@ -28,6 +30,15 @@ Controls:
   - NOTIFYFLAG behavior.
   - Final shutdown coordination.
   - Interaction with upssched.
+
+Current captured shutdown directives:
+
+  SHUTDOWNCMD "/sbin/shutdown -h now"
+  POWERDOWNFLAG /etc/killpower
+
+FSD means Forced Shutdown. It is a separate upsmon state/path from the cancelable per-UPS timers handled by upssched and the custom orchestrator. Utility power returning or an ONLINE event does not simply clear FSD. The configured SHUTDOWNCMD directly invokes `/sbin/shutdown -h now` and bypasses `nut-local-final-shutdown.sh`.
+
+Changing either SHUTDOWNCMD or POWERDOWNFLAG requires a full upsmon stop/start. A reload alone is not sufficient. Do not perform a service stop/start as part of documentation review.
 
 Risk:
   Critical shutdown-behavior file. Incorrect changes can affect whether outage

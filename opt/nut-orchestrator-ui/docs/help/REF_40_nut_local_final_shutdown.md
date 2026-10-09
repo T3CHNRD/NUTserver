@@ -33,3 +33,7 @@ Use only when:
   - Updating final local shutdown behavior.
   - Troubleshooting final shutdown sequence.
   - Preparing production cutover.
+
+## Direct shutdown is a separate path
+
+The captured SHUTDOWNCMD invokes /sbin/shutdown -h now directly and bypasses this wrapper. Observium final-order integration was recorded as pending credentials; no new evidence establishes completion. See [Shutdown Orchestration](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md).

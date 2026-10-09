@@ -13,23 +13,13 @@ SOURCE FILE: runbooks/20_shutdown_verification_targets_conf.txt
 SECURITY: Sanitized copy; credential-like values are redacted.
 ==============================================================================
 
-EDITABLE LIVE CONFIG - shutdown-verification-targets.conf
+CONFIGURATION REFERENCE - shutdown-verification-targets.conf
 
 Path:
   /etc/nut/config.d/shutdown-verification-targets.conf
 
-Purpose:
-  Defines shutdown verification targets and expected verification behavior.
+## What the evidence establishes
 
-Controls:
-  - Which systems are checked after shutdown actions.
-  - Verification method such as ping/API/other script behavior depending on current config.
-  - Result classification such as confirmed down, unknown, failed, or similar logic depending on scripts.
+This file is present in the project references. Its exact supported settings and active loading behavior have not been established by the supplied inspection. Do not assume that a target entry alone enables shutdown or that this file takes precedence over another file.
 
-Risk:
-  High. Incorrect changes can cause shutdown verification results to be misleading.
-
-Use only when:
-  - Adding or removing verification targets.
-  - Changing how shutdown success is classified.
-  - Correcting target IPs, names, or expected behavior.
+See [Configuration guidance](09_CONFIGURATION_HOWTOS.md), [script path references](24_SHUTDOWN_CONFIGURATION_REFERENCES.md), and [remaining checks](27_DOCUMENTATION_VERIFICATION_GAPS.md).

@@ -18,17 +18,8 @@ EDITABLE LIVE CONFIG - approved-targets.yml
 Path:
   /etc/nut/config.d/approved-targets.yml
 
-Purpose:
-  Defines approved or recognized targets for orchestrated actions.
+## What the evidence establishes
 
-Controls:
-  - Which targets are approved for orchestration.
-  - Target metadata used by scripts or UI validation.
+This file is present in the project references. Its exact supported settings and active loading behavior have not been established by the supplied inspection. Do not assume that a target entry alone enables shutdown or that this file takes precedence over another file.
 
-Risk:
-  High. Incorrect changes can authorize the wrong target or remove an expected target.
-
-Use only when:
-  - Adding approved shutdown targets.
-  - Removing decommissioned targets.
-  - Correcting target names or metadata.
+See [Configuration guidance](09_CONFIGURATION_HOWTOS.md), [script path references](24_SHUTDOWN_CONFIGURATION_REFERENCES.md), and [remaining checks](27_DOCUMENTATION_VERIFICATION_GAPS.md).

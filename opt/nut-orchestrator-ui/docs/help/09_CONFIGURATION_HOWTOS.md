@@ -1,5 +1,7 @@
 # Configuration - Complete Operator How-Tos
 
+Revision date: 2026-10-08
+
 ## Purpose
 
 Use this section when you need to review or change a NUT Control Center configuration.
@@ -21,6 +23,8 @@ Editable configuration items provide controls such as:
 - Validate
 - Save
 - Revert
+
+In the captured main Control Center Configuration editor, Save is enabled for approved editable live configurations; Validate before saving. The separate Restore Lab uses a different interface and currently displays its dashboard-ui.json Save control as disabled. Do not generalize that Restore Lab restriction to the main Configuration editor.
 
 Not every configuration has the same operational risk.
 
@@ -167,7 +171,7 @@ This is a HIGH-IMPACT configuration change.
 Current documented timer baseline:
 
 - UPS7: 240 seconds
-- UPS2: 420 seconds
+- UPS2: 315 seconds
 - UPS8: 180 seconds
 - UPS6: 300 seconds
 - UPS9: 360 seconds
@@ -351,6 +355,8 @@ Path: `/etc/nut/upsmon.conf`
 Controls UPS monitoring behavior and participates directly in power-event handling.
 
 Changes can affect monitoring and shutdown orchestration. Validate carefully and do not perform a live outage merely to test a change.
+
+The currently captured directives are `SHUTDOWNCMD "/sbin/shutdown -h now"` and `POWERDOWNFLAG /etc/killpower`. FSD (Forced Shutdown) is separate from cancelable per-UPS timer workflows. Changing either directive requires a full upsmon stop/start; reload alone is insufficient. See [FSD / Forced Shutdown](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md#fsd-and-forced-shutdown-are-a-separate-path). Do not restart services as part of documentation review.
 
 Search phrases:
 
@@ -546,3 +552,328 @@ If a protected-system verification fails after a successful Save:
 - Preserve restrictive permissions on secret files.
 - Treat accidentally exposed credentials as compromised.
 
+
+## Choose the change before choosing the file
+
+This section answers two practical questions: which file controls the thing you want to change, and what else must be checked before the change will work. A server plugged into a UPS does not automatically become an approved shutdown target. A credential file is useful only if the active wrapper actually reads it.
+
+Evidence labels: CURRENT means a path, registry entry or behavior is supported by the captured server evidence S01–S06. STANDARD NUT means the version 2.8.1 manual defines a directive, but its local value may not have been captured. CHECK CONSUMER means the active script or configuration loader must be inspected before editing. These checks are particularly important for the two different nut-orchestrator.conf files.
+
+| What changed | Start here | Other checks |
+| --- | --- | --- |
+| A physical server was added to an existing UPS | /etc/nut/config.d/approved-targets.yml, then the actual UPS handler/wrapper | Physical UPS mapping; supported shutdown method; secure credential store; verification target; order; backup and Help. Do not add an ordinary server to ups.conf. |
+| A VM was added to VMware | Approved-target mapping and the active VMware wrapper; inspect /etc/nut/config.d/vmware-vm-map.conf | Confirm the VM identity and phase/exclusion rules. This map exists but its exact consumer/schema must be verified. No new UPS driver merely for a new VM. |
+| A new UPS was installed | /etc/nut/ups.conf | Driver/device identity, monitoring in upsmon.conf, event routing in upssched.conf, orchestration, UI inventory and physical mapping. |
+| A server account password changed | The credential source read by that server’s shutdown wrapper | Confirm this is the automation account, not an unrelated human account; check shared consumers and test authentication without shutdown. |
+| The vCenter automation password changed | /etc/nut/vcenter.pass, after tracing the active consumer | Also inspect references to /etc/nut/vmware.creds and any fallback credential source; file existence does not prove which path is active. |
+| A NUT monitoring account password changed | /etc/nut/upsd.users and every affected client MONITOR entry | This is NUT client authentication, not a protected server’s OS password. upsd.users is intentionally blocked from raw editor access. |
+| The outage countdown needs changing | /etc/nut/upssched.conf | Inspect corresponding orchestrator countdown/state/notification text; keep all values aligned. Do not change timers for a password rotation. |
+| A display label or notification setting changed | Relevant UI settings or notification control | A cosmetic mapping does not register an executable shutdown action. SMTP secrets are separate from ordinary email settings. |
+
+## What you can change in each configuration entry
+
+The entries below describe change categories, not blanket permission to edit. Use current syntax already supported by the consumer. The registry’s validator checks the configured validation function; it does not establish every allowed key or a safe value range. For custom files whose body/parser was not supplied, exact key names are deliberately not invented.
+
+### ups.conf
+
+File: /etc/nut/ups.conf
+
+What it controls: Defines UPS devices and the driver used to communicate with each device. It does not list ordinary servers powered by those UPSes. [STANDARD NUT; current path S03]
+
+What can be changed: A UPS section name, driver, port and optional desc; supported hardware-specific connection/identity options. Select options from the installed driver manual. Driver and port are required by standard NUT.
+
+When to change it: Use for a new/replaced UPS, a driver/device connection change or a UPS description. Do not put a Windows/Linux server password here. Renaming a UPS can break monitoring and event references.
+
+Apply and verify: Plan affected driver reconfiguration and verify the same physical UPS identity and current readings. The UI Save/restart behavior is not established; do not assume Save restarts a driver.
+
+### upsd.conf
+
+File: /etc/nut/upsd.conf
+
+What it controls: Configures the NUT data server that makes UPS information available to clients. [STANDARD NUT; S03]
+
+What can be changed: Standard directives include LISTEN address/port and MAXAGE for stale-data handling. Other transport/TLS settings require the installed manual and current network design.
+
+When to change it: Use when NUT listening/network access changes, not merely when a server is plugged into a UPS. NUT users/passwords belong in upsd.users, not here.
+
+Apply and verify: Verify intended client connectivity and ensure the service is not exposed beyond approved networks. Determine the activation method for the changed directive before applying.
+
+### upsmon.conf
+
+File: /etc/nut/upsmon.conf
+
+What it controls: Controls what this host monitors, power-value shutdown decisions, notifications and local shutdown command. [S05; STANDARD NUT]
+
+What can be changed: MONITOR entries specify UPS connection, power value, monitoring account and role. Other directives include MINSUPPLIES, NOTIFYCMD/NOTIFYFLAG and polling/synchronization settings. See the Shutdown Orchestration Help article for captured directives.
+
+When to change it: Edit when monitored UPS relationships or NUT authentication change. A remotely commanded protected server is not automatically a new MONITOR line. MINSUPPLIES is not a server-count field.
+
+Apply and verify: SHUTDOWNCMD and POWERDOWNFLAG require a full upsmon stop/start when changed. Other activation details need installed-manual/consumer verification. The current direct command bypass remains unresolved.
+
+### upssched.conf
+
+File: /etc/nut/upssched.conf
+
+What it controls: Routes UPS events to the orchestrator and defines the current cancelable countdowns. [S05]
+
+What can be changed: AT ONBATT START-TIMER delays in seconds; matching ONLINE CANCEL-TIMER; EXECUTE handler names; CMDSCRIPT, PIPEFN and LOCKFN wiring.
+
+When to change it: For a timer change, inspect both START-TIMER and matching cancel route. For a new event/UPS, an EXECUTE name must have an implemented handler. Preserve UPS3 validation and UPS1/4/5 alert-only scope unless separately redesigned.
+
+Apply and verify: Check syntax, handler spelling and state/notification timing together. Do not assume an existing running timer adopts an edited value; inspect timer state and use a controlled activation plan.
+
+### nut.conf
+
+File: /etc/nut/nut.conf
+
+What it controls: Selects the host’s NUT service/deployment mode; packaging/startup integration consumes it. [STANDARD NUT; S03]
+
+What can be changed: MODE supports none, standalone, netserver and netclient in standard NUT. The current captured registry does not establish this file’s live MODE value.
+
+When to change it: Change only when changing NUT architecture/service role. Do not switch to netclient merely because another ordinary server was added to the room.
+
+Apply and verify: Mode changes affect which NUT components start. Review package/service integration and dependent clients before an approved service change.
+
+### hosts.conf
+
+File: /etc/nut/hosts.conf
+
+What it controls: Lists UPS monitoring targets and descriptions for standard NUT CGI pages such as upsstats, using MONITOR system description. It is not the server-room equipment inventory. [STANDARD NUT; S03]
+
+What can be changed: UPS connection strings and display descriptions in the supported CGI syntax.
+
+When to change it: Use if a standard CGI UPS list/label needs changing. Confirm whether the custom Control Center consumes this file before expecting its display to change.
+
+Apply and verify: Verify the actual CGI consumer; this is not a shutdown action registration or credential rotation file.
+
+### Live nut-orchestrator.conf
+
+File: /etc/nut/nut-orchestrator.conf
+
+What it controls: The live orchestration configuration path exposed by the registry. Full settings and precedence were not supplied. [S03; CHECK CONSUMER]
+
+What can be changed: Only existing keys actually read by the active orchestrator/wrappers. Identify their meanings, types and precedence in the source before changing them.
+
+When to change it: Inspect when target connection, approval or execution settings may live here. Do not assume every new target can be added here or that this file mirrors config.d.
+
+Apply and verify: Trace the file load from /usr/local/bin/nut-orchestrator.sh and called wrappers. Confirm whether settings are read per invocation or cached; preserve actual permissions.
+
+### config.d nut-orchestrator.conf
+
+File: /etc/nut/config.d/nut-orchestrator.conf
+
+What it controls: A separate config.d orchestration file. Similar names do not prove the same purpose or active precedence. [S03; CHECK CONSUMER]
+
+What can be changed: Only parser-supported keys present in this file. Registry metadata alone cannot identify a supported target schema.
+
+When to change it: Use only after identifying the caller. Do not update both orchestrator files blindly to keep them looking alike; one may override or serve a different consumer.
+
+Apply and verify: Record the active read path and resolved setting. Verify the consumer, not just the saved text.
+
+### Approved Targets
+
+File: /etc/nut/config.d/approved-targets.yml
+
+What it controls: The registry’s Approved Targets YAML. It is the first mapping to inspect when a protected system is added or removed. [S03; CHECK CONSUMER]
+
+What can be changed: Target records and their supported fields, using the exact existing YAML schema. Candidate information includes identity and approved action scope; the actual key names were not captured.
+
+When to change it: Adding a row does not prove that an UPS handler or test runner will execute it. Trace the target through the orchestrator and wrapper; verify all relevant allowlists.
+
+Apply and verify: Use YAML validation, read back the parsed record and confirm selection by the actual consumer. Registry apply_mode local_or_ssh is not permission to run a remote shutdown.
+
+### Dashboard UI Settings
+
+File: /etc/nut/config.d/dashboard-ui.json
+
+What it controls: Dashboard UI settings registered as JSON. Exact keys and defaults require the current UI loader. [S03; CHECK CONSUMER]
+
+What can be changed: Only existing, consumer-supported display/behavior settings. Valid JSON is not proof that a key is recognized.
+
+When to change it: Use for UI settings, not as a substitute for protected-target registration. A server label appearing in the UI does not establish shutdown coverage.
+
+Apply and verify: Verify the intended screen after Save/readback. Reload/caching behavior needs current UI evidence.
+
+### DB Shutdown Config
+
+File: /etc/nut/db-shutdown.conf
+
+What it controls: Shell-format DB Shutdown Config associated with the DB shutdown area. Detailed keys/consumer precedence were not captured. [S03; CHECK CONSUMER]
+
+What can be changed: Supported non-secret connection/target settings only after reading nut-db-shutdown.sh and its config loads.
+
+When to change it: For DB account rotation, inspect db-telnet.user and db-telnet.pass and any db-telnet.conf references; do not assume the password is stored in db-shutdown.conf.
+
+Apply and verify: Because shell-format files may be sourced, treat edits as potentially executable input. Validate syntax and perform supported non-shutdown authentication checks.
+
+### Hypervisor SSH Fallback Config
+
+File: /etc/nut/hypervisors/hypervisor-ssh-fallback.conf
+
+What it controls: Configuration for the hypervisor SSH fallback path. [S03]
+
+What can be changed: Supported host/account/key-reference/fallback settings as defined by the current helper. Exact keys must be read from that implementation.
+
+When to change it: Inspect for added/replaced ESXi hosts or changed SSH identities. A vCenter password rotation does not necessarily rotate SSH keys/accounts.
+
+Apply and verify: Use the established read-only preflight after inspecting its supported inputs. Do not enable live fallback/host-action approval gates as an authentication test.
+
+### vCenter Password
+
+File: /etc/nut/vcenter.pass
+
+What it controls: A sensitive password entry at /etc/nut/vcenter.pass, registered with type password. [S04]
+
+What can be changed: The stored password value in the exact format expected by its consumer; no arbitrary configuration keys.
+
+When to change it: For a vCenter password change, first confirm the active wrapper reads this file and whether other VMware/fallback consumers share the account.
+
+Apply and verify: Use the secure credential workflow; never paste the value into output. Verify an authenticated read-only inventory query and current file permissions; no shutdown is needed.
+
+### NUT Email Alert Settings
+
+File: /etc/nut/nut-email-alerts.conf
+
+What it controls: Shell-format NUT Email Alert Settings with dedicated validate_nut_email_alerts_conf validator. [S04]
+
+What can be changed: Only supported mail/report settings in the live parser. Recipients/category controls may also be exposed by separate notification APIs.
+
+When to change it: For SMTP password changes, inspect the separate nut-email-alerts.secret source and SMTP rebuild helper; do not place a secret in an ordinary setting without consumer evidence.
+
+Apply and verify: Validate, read back and reconcile any generated SMTP configuration. Delivery testing sends a message and needs its own authorized scope.
+
+### Synology API Config
+
+File: /etc/nut/synology-api.conf
+
+What it controls: Sensitive Synology API configuration. Historical evidence describes a DSM API shutdown path replacing old SSH. [S04; historical S09]
+
+What can be changed: Consumer-supported API connection/account settings, including secret values only through the secure workflow. Exact key names and TLS policy require the current wrapper.
+
+When to change it: Inspect for a DSM automation-account password, API endpoint or target change. Do not assume changing a personal DSM account affects the automation account.
+
+Apply and verify: Validate using an approved non-shutdown API authentication/query/logout path after checking implementation; do not invoke the shutdown method to test login.
+
+## Executable entries are code changes
+
+Eleven of the 26 editable registry entries are executable scripts/helpers. They appear in the same selector but are not ordinary configuration files. Change them only when the implemented behavior must change; store routine credential rotations in the credential source they read. A generic text validator does not prove script correctness.
+
+| Editable script | What a change means |
+| --- | --- |
+| nut-synology-shutdown.sh<br>/usr/local/sbin/nut-synology-shutdown.sh | Synology action/API workflow. Change for a new supported API/method or behavior; use Synology API Config for supported account/connection changes. |
+| nut-voip-shutdown.sh<br>/usr/local/sbin/nut-voip-shutdown.sh | VOIP target action. Inspect current credential source and target identity; neither a new server nor a password change justifies guessing its variables. |
+| nut-db-shutdown.sh<br>/usr/local/sbin/nut-db-shutdown.sh | <DATABASE_SERVER_1>/<DATABASE_SERVER_2> action implementation. Existing DB settings/credential consumers must be traced before adding a third target. |
+| nut-blueiris-shutdown.sh<br>/usr/local/sbin/nut-blueiris-shutdown.sh | Blue Iris action implementation. The 2026-10-09 scan found a reference to /etc/nut/lansweeper.creds. Lansweeper references the same file. Exact fields and active reading still require confirmation. |
+| nut-ui-run-test<br>/usr/local/sbin/nut-ui-run-test | Simulation dispatch/validation. Update only if a newly supported target must be included in the test workflow; simulation is not target shutdown proof. |
+| nut-ui-run-real-test-approved<br>/usr/local/sbin/nut-ui-run-real-test-approved | Real-test approval/dispatch. Preserve authorization gates; adding a target must not silently broaden an existing live test. |
+| nut-lansweeper-shutdown.sh<br>/usr/local/sbin/nut-lansweeper-shutdown.sh | Lansweeper action. A lansweeper.creds file exists, but verify the active wrapper consumes it before rotation. |
+| nut-vmware-shutdown.sh<br>/usr/local/sbin/nut-vmware-shutdown.sh | VMware guest/host shutdown sequencing and fallback. Target inventories, phases and credential sources must match its implementation. |
+| nut-netapp-halt.sh<br>/usr/local/sbin/nut-netapp-halt.sh | NetApp halt workflow. A netapp.creds file exists; confirm consumer, account and per-node scope before changes. |
+| nut-orchestrator.sh (main orchestration)<br>/usr/local/bin/nut-orchestrator.sh | UPS event handlers and wrapper call order. Adding a YAML target does not automatically create a handler. Required code changes belong in a separately reviewed implementation change. |
+| nut-local-final-shutdown.sh<br>/usr/local/sbin/nut-local-final-shutdown.sh | Final local shutdown with explicit real-mode gates. Observium is still absent; do not insert a new server here merely to make it run last. |
+
+## Files outside the editor that may also need attention
+
+These paths exist in the captured inventory, but are not all editable registry entries. File existence is verified; the exact active consumer must still be traced before changing a value. Do not bypass the editor’s blocked-file protections by exposing secret contents elsewhere.
+
+| Situation | Path to inspect | What to confirm |
+| --- | --- | --- |
+| Shutdown success checks | /etc/nut/config.d/shutdown-verification-targets.conf | Target identity/address and supported verification/timeout fields; a new action must also be verifiable. |
+| VMware guest identity | /etc/nut/config.d/vmware-vm-map.conf | Whether the current VMware workflow loads it, expected identity format, phases and exclusions. |
+| Lansweeper account | /etc/nut/lansweeper.creds | Current wrapper reference, file format and whether account is shared. |
+| NetApp account | /etc/nut/netapp.creds | Current wrapper reference, node scope and all consumers sharing the account. |
+| VMware account | /etc/nut/vmware.creds and /etc/nut/vcenter.pass | Which active paths use which source. Do not rotate one and assume both consumers changed. |
+| DB automation account | /etc/nut/db-telnet.user; /etc/nut/db-telnet.pass; /etc/nut/db-telnet.conf | Username/password source and target scope used by the current DB wrapper. No secret values are shown. |
+| SMTP authentication | /etc/nut/nut-email-alerts.secret | The active settings/rebuild/helper source, generated transport configuration and secret propagation. |
+| NUT client authentication | /etc/nut/upsd.users | NUT accounts and privileges. Coordinate each affected client MONITOR credential. |
+| Third V240 account | /etc/nut/secrets/v24013-shutdown.env | Correct intended target and consumer; live test remains deferred. |
+| Telegram bot credentials | /etc/nut/secrets/telegram-alerts.env | Bot transport credential source, not a protected server password. |
+| Restore coverage | /etc/nut/restore/restore-targets.json; /etc/nut/restore/full-managed-restore-policy.json | Whether a newly required non-secret file is included in supported recovery. No new target schema is inferred. |
+
+Blue Iris and VOIP credential-source paths are not established by the provided registry. Inspect their active wrappers before selecting a secret file. A path named in an old document or an unused backup does not establish the current credential source.
+
+## Example a new physical server on an existing UPS
+
+Example: a new application server is installed on an already monitored UPS. The names and values below describe the workflow only; no production target, address, YAML key or shutdown command is invented.
+
+1. Record physical identity, operating system, power feeds, UPS association, dependencies and whether automatic shutdown is actually required. An alert-only UPS does not become shutdown-enabled by adding equipment.
+
+2. Decide the supported shutdown method and automation account with the system owner. Identify an existing suitable wrapper or the need for a new implementation; do not point an unrelated wrapper at the new server.
+
+3. Inspect /etc/nut/config.d/approved-targets.yml and its actual loader. Add the target only using the verified schema and intended approval scope. Confirm that the consumer will select it.
+
+4. Trace the affected UPS handler in /usr/local/bin/nut-orchestrator.sh. If the handler names targets explicitly, a reviewed code change is required to call the new target in the correct order; YAML alone is insufficient.
+
+5. Configure the supported target settings in the file actually read by that wrapper. Establish credentials securely in its intended source. Do not duplicate passwords across unrelated config files.
+
+6. Inspect /etc/nut/config.d/shutdown-verification-targets.conf and add the supported verification record if required. Confirm network dependencies so a lost switch is not mistaken for a confirmed shutdown.
+
+7. Check whether adding the target changes shutdown duration enough to require a separate timer/dependency review. Do not change the UPS countdown automatically.
+
+8. Update the physical inventory, supported UI display mapping, sanitized backup/restore coverage and Help action matrix. ups.conf normally remains unchanged because no new UPS was installed.
+
+9. Run syntax/schema checks and supported non-disruptive connectivity/authentication/simulation checks. Confirm target identity, selection, order and unchanged existing targets.
+
+10. Record the implementation status and leave real shutdown/recovery validation DEFERRED until the separately approved live test succeeds.
+
+Rollback must cover the whole change set: target mapping, handler/wrapper, verification record and related display/backup changes. Removing only the YAML row may leave another explicit call active. Keep the current production configuration intact until the reviewed change can be applied and recovered coherently.
+
+## Example a new VMware virtual machine
+
+1. Confirm the VM’s current unique identity, owner, cluster placement and dependency order. A display name alone may be ambiguous.
+
+2. Inspect the current VMware wrapper’s inventory and selection logic, then /etc/nut/config.d/vmware-vm-map.conf and Approved Targets where those files are actually consumed.
+
+3. Add the VM using the supported identity/phase schema and confirm exclusions. Do not claim every discovered VM is automatically approved for shutdown.
+
+4. Check guest shutdown readiness and the actual credentials/permissions used by the control path. A VM addition does not normally require editing UPS device definitions or changing the vCenter password.
+
+5. Validate with supported read-only inventory and simulation; record the VM’s planned phase and preserve the deferred T04 live-validation status.
+
+## Example a server password changed
+
+First determine which password changed. A human login password may have no effect on automation if the wrapper uses a separate service account or SSH key. Conversely, one shared automation account may affect several wrappers. The correct file is the one loaded by the active consumer, not the file with the most familiar name.
+
+1. Identify the changed account, affected server and wrapper. Confirm whether it uses a password, SSH key, API credential or a NUT monitoring account.
+
+2. Trace the credential reference from the live wrapper/config loader without printing the secret. Record the file path, account scope and all consumers; use the table in 4.4 as starting points, not proof of active use.
+
+3. Prepare a secure rotation/recovery plan with the account owner. Update the authoritative credential source using the expected format and preserve required ownership/permissions. Do not copy the value into documentation, chat, logs or a public backup.
+
+4. Check for a generated configuration, cached credential or long-running process that must pick up the change. Perform only the activation established by its implementation; there is no universal NUT restart for target password changes.
+
+5. Use a supported non-shutdown authentication/read-only query. Successful TCP reachability does not prove authentication, and authenticated login alone does not prove shutdown privileges.
+
+6. Run the supported simulation/preflight to check the intended consumer and target selection. Do not use Real Test, FSD or a shutdown command merely to test the password.
+
+7. Record the rotation date, credential-source path and successful checks without the value. Update documentation only if the source/account/method changed; do not document the new password.
+
+Specific examples: a vCenter automation password may be in vcenter.pass, but inspect any vmware.creds/fallback consumers too. A Lansweeper automation password may use lansweeper.creds, subject to wrapper confirmation. For DB targets, inspect db-telnet.pass and db-telnet.user. For Synology, inspect the sensitive API configuration. For an upsd account, coordinate upsd.users with the affected client MONITOR entries. These are different authentication relationships.
+
+Credential rollback is not simply restoring an old local file: the old secret may no longer be accepted by the remote system. Recovery must coordinate the remote account and each affected consumer securely. Never print the old or new value as proof.
+
+## Apply verify and revert checklist
+
+| Stage | Required result |
+| --- | --- |
+| Before editing | Exact consumer, target, file and supported syntax identified; rollback/recovery access retained. |
+| Validate | Registry validator plus appropriate parser/syntax and target-selection checks pass. Generic text validation alone is insufficient. |
+| Save and activate | Read back intended content and actual permissions; use the consumer-specific activation rule. |
+| Verify | Supported non-destructive authentication, identity, mapping and simulation checks pass. Existing target coverage remains unchanged except for the intended change. |
+| Record | Capture non-secret evidence, changed paths and remaining live-test status. No unsupported claim of end-to-end success. |
+| Revert | Restore the coherent configuration/code set and repeat checks; credential recovery also needs remote account coordination. |
+
+## Evidence and verification limits
+
+CURRENT refers to the supplied server captures: S01 operating system, packages, services and file metadata; S02 routes and Help inventory; S03 UI controls and registry; S04 remaining registry and Help index; S05 shutdown wiring; S06 final shutdown wrapper. S09 denotes historical documentation and is lower authority. These labels do not mean that the live server was rechecked for this Help revision. CHECK CONSUMER means the active loader, supported keys or precedence remain to be verified.
+
+The captured direct SHUTDOWNCMD is /sbin/shutdown -h now and bypasses nut-local-final-shutdown.sh. Observium final-order integration remains PARTIAL pending credentials. Authentication checks and live shutdown tests described here have not been performed as part of this documentation update.
+
+## Standard NUT 2.8.1 references
+
+- [ups.conf](https://networkupstools.org/historic/v2.8.1/docs/man/ups.conf.html)
+- [upsd.conf](https://networkupstools.org/historic/v2.8.1/docs/man/upsd.conf.html)
+- [upsmon.conf](https://networkupstools.org/historic/v2.8.1/docs/man/upsmon.conf.html)
+- [nut.conf](https://networkupstools.org/historic/v2.8.1/docs/man/nut.conf.html)
+- [hosts.conf](https://networkupstools.org/historic/v2.8.1/docs/man/hosts.conf.html)
+- [upsd.users](https://networkupstools.org/historic/v2.8.1/docs/man/upsd.users.html)

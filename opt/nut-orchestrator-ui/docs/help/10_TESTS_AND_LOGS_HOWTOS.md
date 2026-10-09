@@ -261,8 +261,8 @@ Production <DATABASE_SERVER_1> and <DATABASE_SERVER_2> must not be used for live
 
 Current production references:
 
-- <DATABASE_SERVER_1>: <INTERNAL_IP>
-- <DATABASE_SERVER_2>: <INTERNAL_IP>
+- <DATABASE_SERVER_1>: <site address>
+- <DATABASE_SERVER_2>: <site address>
 
 Use non-destructive validation for these systems.
 

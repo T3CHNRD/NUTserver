@@ -1,5 +1,8 @@
 # NUT Protection Modes
 
+> Operating limit: exact mode transitions and shutdown-suppression conditions remain an open source-verification item. Do not treat a mode label as proof that every shutdown path is blocked. See [Documentation Verification Gaps](27_DOCUMENTATION_VERIFICATION_GAPS.md).
+
+
 ## Purpose
 
 NUT Protection Mode controls whether the NUT server is actively monitoring power events and whether live protected-system shutdown actions are allowed.

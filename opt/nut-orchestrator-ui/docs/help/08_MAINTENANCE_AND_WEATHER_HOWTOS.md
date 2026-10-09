@@ -1,5 +1,10 @@
 # Maintenance and Weather - Complete Operator How-Tos
 
+> Operating limit: exact mode transitions and shutdown-suppression conditions remain an open source-verification item. Do not treat a mode label as proof that every shutdown path is blocked. See [Documentation Verification Gaps](27_DOCUMENTATION_VERIFICATION_GAPS.md).
+
+
+Revision date: 2026-10-08
+
 ## Purpose
 
 Maintenance and Weather guidance helps determine whether current/forecast conditions are acceptable for planned maintenance that could reduce power resilience.
@@ -316,4 +321,4 @@ Weather information is advisory context only. A weather condition by itself does
 
 ## Maintenance Mode Shutdown Suppression
 
-The current orchestrator checks UPS Maintenance Mode before a shutdown commit. When suppression is active, the shutdown commit is blocked, no protected-system shutdown actions are performed, and `UPS_MAINTENANCE_SHUTDOWN_SUPPRESSED` is logged. COMMBAD warnings and notifications can still occur. Older COMMBAD text saying shutdown suppression is not implemented is stale wording and does not describe the current commit-suppression behavior.
+Captured implementation evidence establishes a UPS Maintenance Mode shutdown-commit suppression path and the `UPS_MAINTENANCE_SHUTDOWN_SUPPRESSED` log event. The exact live predicate and every condition that activates suppression were not independently verified for this documentation revision because the current orchestrator source was not readable. Do not infer that every COMMBAD is suppressed, that all notifications are suppressed, or that an active maintenance label alone guarantees suppression. Treat the exact scope as unresolved until the complete current implementation is reviewed. COMMBAD warnings/notifications may be handled separately from the shutdown-commit guard.

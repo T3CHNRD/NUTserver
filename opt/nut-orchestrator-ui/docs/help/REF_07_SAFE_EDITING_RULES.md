@@ -1,5 +1,7 @@
 # Reference Runbook - 07 SAFE EDITING RULES
 
+Revision date: 2026-10-08
+
 > **REFERENCE RUNBOOK**
 >
 > This material was imported from existing NUT project documentation.
@@ -18,7 +20,8 @@ SAFE EDITING RULES
 General rules:
   - Do not edit live shutdown scripts casually.
   - Prefer Reload and Validate before any Save.
-  - Keep Save disabled until the controlled dashboard-ui.json test is approved.
+  - Validate before saving approved editable live configurations in the main Configuration editor.
+  - The separate Restore Lab dashboard-ui.json Save control remains disabled in its captured template pending its controlled save test.
   - Do not paste real passwords into chat.
   - Do not use Phase 2 or Phase 3 unless the live-test scope is intentionally expanded.
   - Back up to GitHub after meaningful changes.

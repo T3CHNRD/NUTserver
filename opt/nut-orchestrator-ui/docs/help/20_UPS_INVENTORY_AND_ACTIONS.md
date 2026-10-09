@@ -1,5 +1,7 @@
 # UPS Inventory and Automatic Actions
 
+Revision date: 2026-10-08
+
 ## Purpose
 
 This article identifies what each UPS protects and, separately, what the NUT server is currently configured to shut down automatically.
@@ -59,7 +61,7 @@ Search phrases:
 
 UPS2 protects the Blue Iris shutdown domain.
 
-ONBATT starts a 420-second shutdown timer.
+ONBATT starts a 315-second shutdown timer.
 
 If utility power returns before commit, ONLINE cancels the pending shutdown timer.
 
@@ -104,7 +106,7 @@ ONBATT starts a 300-second timer.
 
 UPS3 currently uses a validation-only commit path.
 
-When the timer reaches commit, the orchestrator records that the Phase 2 UPS3 validation timer expired.
+When the timer reaches commit, the captured Phase 2 UPS3 validation handler records that its validation timer expired; the captured handler has no production shutdown target.
 
 It does not currently issue production shutdown commands to the Cisco 3850, Video Server, or Dell 1950.
 
@@ -365,7 +367,7 @@ A physically connected device can intentionally be alert-only.
 | UPS | Timer | Current Automatic Action |
 |---|---:|---|
 | UPS1 | None | Alert only |
-| UPS2 | 420 seconds | Blue Iris |
+| UPS2 | 315 seconds | Blue Iris |
 | UPS3 | 300 seconds | Validation-only commit |
 | UPS4 | None | Alert only |
 | UPS5 | None | Alert only |

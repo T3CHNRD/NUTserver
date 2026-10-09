@@ -1,10 +1,16 @@
 # Restore and Disaster Recovery - Complete Operator How-Tos
 
+Revision date: 2026-10-08
+
 ## Purpose
 
 Use Restore and Disaster Recovery procedures when recovering NUT configuration or rebuilding the NUT server.
 
 Restore operations are higher risk than Backup operations because they can replace working configuration.
+
+### Configuration Save State Is Not the Restore Lab Save State
+
+The main Control Center Configuration editor enables Save for approved editable live configurations after validation. Restore Lab is separate; its captured dashboard-ui.json Save button remains disabled pending a controlled save test. Historical “Save Disabled” wording applies to that Restore Lab control, not to the main Configuration editor.
 
 ---
 
@@ -92,6 +98,8 @@ A full managed-system rollback assumes there is already a working operating syst
 It is **not** the same as rebuilding a completely lost Ubuntu server from scratch.
 
 Bare-metal / replacement-server disaster recovery starts with a fresh supported Ubuntu system and then reconstructs the NUT environment from the sanitized backup plus separately restored credentials/secrets.
+
+Startup/reverse-start automation for protected systems is not established as implemented. Do not assume NUT automatically powers protected systems on or enforces a reverse shutdown order; use an approved manual recovery procedure and verify each system independently.
 
 Search phrases:
 
@@ -376,3 +384,8 @@ Therefore, shutdown protection must be revalidated after an applied restore.
 ## Restore Lab Selected-File Workflow
 
 The Restore Lab interface uses the approved restore-target list and the selected-file live-restore backend. A selected-file restore requires the exact confirmation phrase `RESTORE SELECTED FILE`. The Lab label does not make the operation automatically isolated: an approved selected-file restore can change a live file. This workflow is different from full managed rollback and bare-metal disaster recovery.
+
+
+## Current restore catalog
+
+The manual catalog check lists 25 entries, not the earlier 21-item inventory. Twenty entries are marked enabled with a source; DB Telnet Username is enabled but its source is marked missing. Four entries are disabled and sensitive. See the [Configuration Restore Catalog](23_RESTORE_CATALOG.md) before selecting a file. Catalog flags do not prove a restore was tested.

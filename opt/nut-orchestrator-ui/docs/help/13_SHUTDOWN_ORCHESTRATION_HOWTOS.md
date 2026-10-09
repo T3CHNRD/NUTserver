@@ -1,5 +1,7 @@
 # Shutdown Orchestration - Complete Operator How-Tos
 
+Revision date: 2026-10-08
+
 ## Purpose
 
 Shutdown orchestration is the logic NUT uses to respond to UPS power events, wait the configured amount of time, cancel actions when power returns in time, and execute approved protected-system shutdown workflows when required.
@@ -13,7 +15,7 @@ This is one of the highest-impact areas of the NUT server.
 
 The current shutdown-event path is:
 
-`upsmon -> upssched -> custom NUT orchestrator -> protected-system wrapper`
+`upsmon -> upssched -> /usr/local/bin/nut-orchestrator.sh -> target wrapper`
 
 This allows each UPS to have its own:
 
@@ -31,13 +33,13 @@ For the meaning of ONBATT, ONLINE, LOWBATT, COMMBAD, COMMOK, shutdown, and cance
 
 ## How the Shutdown Flow Works
 
-At a high level:
+The normal per-UPS event path is:
 
 1. NUT detects the UPS power event.
 2. The event is passed through upsmon/upssched.
 3. The configured timer for that UPS begins when applicable.
 4. NUT records the event and performs configured notification actions.
-5. If utility power returns before the shutdown threshold, the pending workflow is cancelled when the configuration allows cancellation.
+5. If utility power returns before the shutdown threshold, the eligible pending per-UPS timer workflow is cancelled when the configuration allows cancellation.
 6. If the threshold expires, the orchestrator begins the approved shutdown sequence for systems mapped to that UPS.
 7. The NUT server itself is intended to remain available long enough to coordinate the protected-system shutdown process.
 
@@ -72,7 +74,7 @@ Search phrases:
 
 ONLINE means the UPS reports that utility/input power has returned.
 
-When power returns before a pending shutdown workflow reaches its execution point, NUT can cancel the outstanding timed shutdown action according to the configured orchestration logic.
+When power returns before a pending per-UPS timer workflow reaches its execution point, the configured restoration handler can cancel that pending workflow. ONLINE does not by itself prove that every shutdown path was cancelled, and it does not clear an upsmon FSD state.
 
 Search phrases:
 
@@ -91,12 +93,29 @@ Search phrases:
 3. Utility power returns.
 4. UPS reports ONLINE.
 5. NUT processes the restoration event.
-6. Eligible pending shutdown actions are cancelled.
+6. Eligible pending per-UPS timer actions are cancelled.
 7. Cancellation/restoration is recorded and notification behavior runs according to configuration.
 
 Never assume a shutdown was cancelled merely because building power appears to be back.
 
 Verify the NUT event state and logs.
+
+## FSD and Forced Shutdown Are a Separate Path
+
+FSD means **Forced Shutdown**. It is distinct from the normal per-UPS timers scheduled through `upssched` and the custom orchestrator. An ONLINE event may cancel an eligible pending timer before its commit point; utility power returning does not simply clear an FSD condition. Do not treat a timer-cancellation notification as proof that FSD or the system shutdown path was cancelled.
+
+The currently captured `/etc/nut/upsmon.conf` directives are:
+
+- `SHUTDOWNCMD "/sbin/shutdown -h now"`
+- `POWERDOWNFLAG /etc/killpower`
+
+The configured `SHUTDOWNCMD` invokes the operating-system shutdown command directly. This direct path bypasses `nut-local-final-shutdown.sh`; the existence of that wrapper does not mean it is called by `SHUTDOWNCMD`. The UPS9 orchestrator's local-final-wrapper step and upsmon's direct shutdown command are separate paths, and the intended Observium step is not yet implemented (see below).
+
+Changing `SHUTDOWNCMD` or `POWERDOWNFLAG` requires a full `upsmon` stop/start; a reload alone is insufficient. This is operational guidance only. Do not perform service actions as part of Help review.
+
+## Observium Integration Status
+
+Observium shutdown integration is **PARTIAL** pending credential completion. The intended order is local final wrapper → Observium → NUT poweroff, but this sequence is not established as implemented. Do not describe Observium shutdown as active or verified.
 
 ---
 

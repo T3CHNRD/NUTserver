@@ -1,5 +1,7 @@
 # Protected Systems - Complete Operator How-Tos
 
+Revision date: 2026-10-08
+
 ## Purpose
 
 This section explains how to review, update, validate, and troubleshoot each system that NUT may control during a protected shutdown workflow.
@@ -30,7 +32,7 @@ Before changing any protected-system integration:
 
 Production <DATABASE_SERVER_1>:
 
-- IP: <INTERNAL_IP>
+- IP: <site address>
 
 Current integration reference:
 
@@ -63,7 +65,7 @@ Search phrases:
 
 Production <DATABASE_SERVER_2>:
 
-- IP: <INTERNAL_IP>
+- IP: <site address>
 
 Current integration reference:
 
@@ -97,13 +99,13 @@ The V24013 integration is a **future-use deployment path**. It is not currently 
 
 Current planned production V240 address:
 
-- <INTERNAL_IP>
+- <site address>
 
 Dedicated wrapper reference:
 
 - /usr/local/sbin/nut-v24013-shutdown.sh
 
-A separate temporary recovery/test address <INTERNAL_IP> has previously been used to validate the Solaris shutdown process.
+<site address> is the temporary/test address for the same physical V240 whose future/final address is 192.168.1.13. The prior validation used the temporary address; it does not authorize a future live test automatically.
 
 That previous validation does not authorize future live shutdown tests automatically.
 
@@ -122,7 +124,7 @@ Search phrases:
 - V240 shutdown
 - Sun Fire shutdown
 - Solaris shutdown
-- <INTERNAL_IP>
+- <site address>
 - V240 NUT
 
 ---
@@ -130,11 +132,11 @@ Search phrases:
 
 ## VMware / vCenter / ESXi Shutdown Architecture
 
-The primary VMware shutdown method is the approved **vCenter API** path.
+**T04 development status (2026-10-08):** non-live VMware/ESXi development is complete; future controlled live validation is deferred. This status does not by itself prove that the development candidate has been deployed or that a live shutdown path has been validated.
 
-An **ESXi SSH fallback** also exists for supported failure scenarios, but it is gated by configuration, approval, outage confirmation, and fallback enablement.
+The T04 development candidate uses the **vCenter API** as its primary host path and includes a gated **ESXi SSH fallback** for supported failure scenarios. Candidate development is complete, but deployment and live operation have not been established by this Help evidence; live validation is deferred. Keep SSH fallback disabled unless separately approved.
 
-The VMware wrapper:
+The T04 candidate's intended VMware sequence:
 
 1. processes configured VM shutdown phases
 2. detects VCSA placement

@@ -18,6 +18,10 @@ Never place an actual password, token, secret, or API key in Help documentation,
 
 ---
 
+## Read this before changing a credential
+
+The procedures below describe the required workflow, but the exact active fields and non-shutdown test commands have not been established for every integration. Do not guess a password field or run a shutdown wrapper as an authentication test. Start with [the configuration path map](24_SHUTDOWN_CONFIGURATION_REFERENCES.md) and complete the relevant open check before editing. Blue Iris and Lansweeper both reference /etc/nut/lansweeper.creds.
+
 ## General Credential Change Procedure
 
 1. Confirm which protected system credential changed.
@@ -37,7 +41,7 @@ Use this procedure after the password for <DATABASE_SERVER_1> has changed.
 
 <DATABASE_SERVER_1> production address:
 
-- <INTERNAL_IP>
+- <site address>
 
 ### Step 1 - Open the Control Center Configuration area
 
@@ -112,7 +116,7 @@ Use this procedure after the production <DATABASE_SERVER_2> Telnet password chan
 
 <DATABASE_SERVER_2> production address:
 
-- <INTERNAL_IP>
+- <site address>
 
 Follow the same safe process used for <DATABASE_SERVER_1>:
 
@@ -220,7 +224,7 @@ If the new credential does not work:
 
 1. Confirm the new credential is correct on the protected system.
 2. Review the NUT-side file for spelling or formatting mistakes.
-3. If necessary, restore the local pre-change backup.
+3. Restore the local pre-change credential only if it is still valid on the remote system or the remote account has been deliberately reverted. A local rollback alone cannot undo a remote password change.
 4. Preserve the correct permissions after restoration.
 5. Repeat only the non-disruptive authentication test.
 
