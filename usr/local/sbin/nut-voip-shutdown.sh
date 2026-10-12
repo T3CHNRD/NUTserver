@@ -46,7 +46,7 @@ power_classification() {
   fi
 }
 
-CMD_PREVIEW="ssh -o BatchMode=yes -o ConnectTimeout=10 ${USER_NAME}@${HOST} \"sudo /usr/bin/systemctl poweroff\""
+CMD_PREVIEW="sshpass -e ssh -o BatchMode=no -o PreferredAuthentications=password,keyboard-interactive -o PubkeyAuthentication=no -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/nut/voip_known_hosts -o ConnectTimeout=10 ${USER_NAME}@${HOST} \"sudo /usr/bin/systemctl poweroff\""
 
 log "Starting VOIP shutdown for $HOST"
 log "SIMULATE=$SIMULATE"
