@@ -3816,11 +3816,13 @@ function updateNutProductionButtons(mode) {
       // the authoritative power-state event.
       if (
         text.includes("EMAIL_NOTIFY_SENT") ||
+        text.includes("APC_IDF_EMAIL_SENT") ||
         text.includes("TELEGRAM_ENQUEUE") ||
         text.includes("TELEGRAM_SENT")
       ) {
         return "";
       }
+      if (text.includes("NO LONGER ON BATTERY POWER")) return "ONLINE";
 
       if (
         text.includes("ONBATT") ||

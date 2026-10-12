@@ -417,7 +417,7 @@ monitor_target() {
   local dns="$5"
 
   local state_name state_file fail_file tmp_dir event_txt detected_file new_file
-  local event_date event_time event_user event_msg event_code event_severity event_time_combined
+  local event_date event_time event_user event_msg event_code event_severity event_time_combined event_epoch event_age
   local matching_events status fetch_rc
 
   state_name="$(safe_name "$name")"
@@ -490,6 +490,14 @@ monitor_target() {
       event_severity="$(event_severity_for_message "$event_msg")"
       event_time_combined="$event_date $event_time"
 
+      event_epoch="$(date -d "$event_time_combined" +%s 2>/dev/null || true)"
+      if [ -n "$event_epoch" ]; then
+        event_age=$(( $(date +%s) - event_epoch ))
+        if [ "$event_age" -gt 900 ]; then
+          continue
+        fi
+      fi
+
       log_event "APC_IDF_EVENT source=\"$name\" device=\"$name\" ip=\"$ip\" dns=\"$dns\" severity=\"$event_severity\" code=\"$event_code\" event_time=\"$event_time_combined\" status=\"$event_msg\" message=\"$event_msg\" source_path=\"authenticated_event_txt_v2\""
       send_idf_power_email "$name" "$ip" "$dns" "$event_severity" "$event_time_combined" "$event_msg" "authenticated_event_txt_v2"
     done < "$new_file"
@@ -504,7 +512,10 @@ monitor_target() {
     return 0
   fi
 
-  cp "$detected_file" "$state_file"
+  {
+    cat "$state_file" "$detected_file"
+  } | sort -u > "${state_file}.tmp"
+  mv "${state_file}.tmp" "$state_file"
   chmod 0644 "$state_file" 2>/dev/null || true
   record_success "$name" "$ip" "$dns" "$fail_file" "$matching_events" "ok"
   return 0

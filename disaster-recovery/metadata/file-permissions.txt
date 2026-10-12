@@ -112,6 +112,7 @@
 /opt/nut-orchestrator-ui/app.py.pre-full-restore-api-20260903-150611|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-restore-branch-select-20260428-152359|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-flask-config-redaction-safe-20260624-073739|644|root|root
+/opt/nut-orchestrator-ui/app.py.before-idf-power-fix-20261012|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-fluid-in-modal-live-restore-20260604-112503|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-latest-event-fix-v2-20260825-081857|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html|644|root|root
@@ -189,6 +190,7 @@
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-combine-tests-logs-live-20260528-134958|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-pontiac-temp-clock-20260529-141623|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-add-live-restore-link-card-20260604-111606|644|root|root
+/opt/nut-orchestrator-ui/templates/control-center.html.before-idf-power-fix-20261012|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-step8n-20260827-131020|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center-restore-lab.html.pre-exact-restore-card-size-20260604-153542|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-find-ups-route-fix-20260626-112826|644|root|root
@@ -1227,6 +1229,7 @@
 /usr/local/sbin/nut-blueiris-shutdown.sh.bak.2026-05-11-132223|750|root|root
 /usr/local/sbin/nut-netapp-halt.sh.pre-gated-live-20260429-083854|755|root|root
 /usr/local/sbin/nut-ups-locator-beep.sh.pre-beeper-on-off-test-20260624-125333|755|root|root
+/usr/local/sbin/nut-apc-idf-event-monitor.sh.before-state-memory-fix-20261012|755|root|root
 /usr/local/sbin/phase2-power-restore-abort.bak.2026-05-08-174019|750|root|root
 /usr/local/sbin/nut-email-alert-test-send.pre-event-msmtp-fix-20260825-080000|755|root|root
 /usr/local/sbin/nut-ui-live-restore-selected.pre-test-probe-20260604-094257|750|root|root
@@ -1258,6 +1261,7 @@
 /usr/local/sbin/nut-fix-sockets.sh|755|root|root
 /usr/local/sbin/nut-db-shutdown.sh.pre-db-safety-gates|644|root|root
 /usr/local/sbin/nut-production-mode.pre-mode-change-power-log-20260623-104319|750|root|root
+/usr/local/sbin/nut-apc-idf-event-monitor.sh.before-stale-age-fix-20261012|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-shutdown-verification-targets-backup-corrected-20260526-130404|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-nutserver-final-wrapper-20260526-085754|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-shutdown-verification-targets-backup-20260526-130250|755|root|root

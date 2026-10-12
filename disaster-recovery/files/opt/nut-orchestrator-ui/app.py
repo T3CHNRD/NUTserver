@@ -2039,7 +2039,7 @@ def power_events_table():
         if "SUMMARY" in upper:
             event = "test summary"
             summary = msg
-        elif "POWER RESTORE" in upper or "ONLINE" in upper or "UTILITY POWER RETURNS" in upper:
+        elif "NO LONGER ON BATTERY POWER" in upper or "POWER RESTORE" in upper or "ONLINE" in upper or "UTILITY POWER RETURNS" in upper:
             event = "power restored"
         elif "POWER OUTAGE" in upper or "ON BATTERY" in upper or " ONBATT" in upper or " OB" in upper:
             event = "power outage"

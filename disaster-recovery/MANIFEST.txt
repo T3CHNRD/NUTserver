@@ -96,6 +96,7 @@ SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-help-search-2
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-full-restore-api-20260903-150611
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-restore-branch-select-20260428-152359
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-flask-config-redaction-safe-20260624-073739
+SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.before-idf-power-fix-20261012
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-natural-search-20260902_084658
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-export-cache-20260630-130613
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-help-search-20260827-132609
@@ -221,6 +222,7 @@ SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/index.html.pre
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-combine-tests-logs-live-20260528-134958
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-pontiac-temp-clock-20260529-141623
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-add-live-restore-link-card-20260604-111606
+SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.before-idf-power-fix-20261012
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-step8n-20260827-131020
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center-restore-lab.html.pre-exact-restore-card-size-20260604-153542
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-find-ups-route-fix-20260626-112826
@@ -1207,6 +1209,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-ui-backup-now.pre-stable-path
 SKIP temp-development-artifact /usr/local/sbin/nut-blueiris-shutdown.sh.bak.2026-05-11-132223
 SKIP temp-development-artifact /usr/local/sbin/nut-netapp-halt.sh.pre-gated-live-20260429-083854
 SKIP temp-development-artifact /usr/local/sbin/nut-ups-locator-beep.sh.pre-beeper-on-off-test-20260624-125333
+SKIP temp-development-artifact /usr/local/sbin/nut-apc-idf-event-monitor.sh.before-state-memory-fix-20261012
 SKIP temp-development-artifact /usr/local/sbin/phase2-power-restore-abort.bak.2026-05-08-174019
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-event-msmtp-fix-20260825-080000
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-live-restore-selected.pre-test-probe-20260604-094257
@@ -1238,6 +1241,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-sync-live-to-repo-for-backup.
 FILE /usr/local/sbin/nut-fix-sockets.sh -> files/usr/local/sbin/nut-fix-sockets.sh mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-db-shutdown.sh.pre-db-safety-gates
 SKIP temp-development-artifact /usr/local/sbin/nut-production-mode.pre-mode-change-power-log-20260623-104319
+SKIP temp-development-artifact /usr/local/sbin/nut-apc-idf-event-monitor.sh.before-stale-age-fix-20261012
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-shutdown-verification-targets-backup-corrected-20260526-130404
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-nutserver-final-wrapper-20260526-085754
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-shutdown-verification-targets-backup-20260526-130250
