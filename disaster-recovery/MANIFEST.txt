@@ -1317,6 +1317,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-vmware-shutdown.sh.pre-T04-fi
 SKIP temp-development-artifact /usr/local/sbin/nut-ups-maintenance-state.pre-permission-fix-20260721-081946
 FILE /usr/local/sbin/nut-ui-restore-github -> files/usr/local/sbin/nut-ui-restore-github mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-classify-shutdown-result.bak.2026-05-11-091453
+SKIP temp-development-artifact /usr/local/sbin/nut-voip-shutdown.sh.before-config-auth-fix-20261012
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-vmware-readonly-placement-helper-20260522-130430
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-test-label-20260805-094207
 FILE /usr/local/sbin/nut-vmware-hybrid-dry-run-plan.py -> files/usr/local/sbin/nut-vmware-hybrid-dry-run-plan.py mode=0750

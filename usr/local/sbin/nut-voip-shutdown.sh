@@ -3,8 +3,21 @@
 set -u
 
 LOG_FILE="/var/log/nut-voip-shutdown.log"
-HOST="192.168.1.14"
-USER_NAME="root"
+CONFIG_FILE="/etc/nut/nut-orchestrator.conf"
+
+if [ ! -r "$CONFIG_FILE" ]; then
+  echo "ERROR: cannot read $CONFIG_FILE" >&2
+  exit 2
+fi
+
+. "$CONFIG_FILE"
+
+if [ -z "${VOIP_HOST:-}" ] || [ -z "${VOIP_USERNAME:-}" ] || [ -z "${VOIP_PASSWORD:-}" ]; then
+  echo "ERROR: VOIP_HOST, VOIP_USERNAME, or VOIP_PASSWORD is not set" >&2
+  exit 2
+fi
+HOST="$VOIP_HOST"
+USER_NAME="$VOIP_USERNAME"
 SIMULATE="${SIMULATE:-1}"
 
 ts() {
@@ -76,7 +89,7 @@ if [ "${VOIP_LIVE_APPROVED:-0}" != "1" ]; then
   exit 2
 fi
 
-ssh -o BatchMode=yes -o ConnectTimeout=10 "${USER_NAME}@${HOST}" "sudo /usr/bin/systemctl poweroff" >> "$LOG_FILE" 2>&1
+SSHPASS="$VOIP_PASSWORD" /usr/bin/sshpass -e ssh -o BatchMode=no -o PreferredAuthentications=password,keyboard-interactive -o PubkeyAuthentication=no -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/nut/voip_known_hosts -o ConnectTimeout=10 "${USER_NAME}@${HOST}" "sudo /usr/bin/systemctl poweroff" >> "$LOG_FILE" 2>&1
 RC=$?
 
 if [ "$RC" -ne 0 ]; then
