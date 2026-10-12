@@ -126,6 +126,7 @@
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-ups-load-graph-panel-20260528-150956|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-restore-options-modal-20260604-090246|644|root|root
 /opt/nut-orchestrator-ui/templates/index.html.pre-ref-header-fix-20260421-074920|644|root|root
+/opt/nut-orchestrator-ui/templates/control-center.html.before-idf-separation-20261012|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-three-level-restore-ui-20260903-150554|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-find-ups-wording-restore-20260626-112515|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-ups-monitoring-cards-20260528-132808|644|root|root

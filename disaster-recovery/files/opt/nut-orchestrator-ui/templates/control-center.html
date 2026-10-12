@@ -3221,6 +3221,16 @@ function updateNutProductionButtons(mode) {
             <div class="cc-metric-note" id="cc-latest-event-time">Waiting for event feed.</div>
           </div>
           <div class="cc-metric">
+            <div class="cc-metric-label">IDF2 Status</div>
+            <div class="cc-metric-value" id="cc-idf2-status">Clear</div>
+            <div class="cc-metric-note" id="cc-idf2-time">No recent IDF2 event.</div>
+          </div>
+          <div class="cc-metric">
+            <div class="cc-metric-label">IDF3 Status</div>
+            <div class="cc-metric-value" id="cc-idf3-status">Clear</div>
+            <div class="cc-metric-note" id="cc-idf3-time">No recent IDF3 event.</div>
+          </div>
+            <div class="cc-metric">
             <div class="cc-metric-label">Backup State</div>
             <div class="cc-metric-value">Ready</div>
             <div class="cc-metric-note">Backup action will be wired after monitoring.</div>
@@ -3805,6 +3815,7 @@ function updateNutProductionButtons(mode) {
     }
 
     function ccPowerStateForEvent(row) {
+      if (row && row.type === "APC_IDF_EVENT") return "";
       if (!row) return "";
 
       const text = (
@@ -3874,6 +3885,10 @@ function updateNutProductionButtons(mode) {
       const health = document.getElementById("cc-health-text");
       const latestType = document.getElementById("cc-latest-event-type");
       const latestTime = document.getElementById("cc-latest-event-time");
+      const idf2Status = document.getElementById("cc-idf2-status");
+      const idf2Time = document.getElementById("cc-idf2-time");
+      const idf3Status = document.getElementById("cc-idf3-status");
+      const idf3Time = document.getElementById("cc-idf3-time");
 
       try {
         summary.textContent = "Refreshing event log...";
@@ -3895,6 +3910,22 @@ function updateNutProductionButtons(mode) {
         }
 
         const rows = events.slice(0, 100).map(item => parseEventLine(item.line || String(item)));
+
+        for (const cfg of [
+          ["IDF2", idf2Status, idf2Time],
+          ["IDF3", idf3Status, idf3Time]
+        ]) {
+          const idfRow = rows.find(r => r.type === "APC_IDF_EVENT" && String(r.source || "").toUpperCase() === cfg[0]);
+
+          if (!idfRow || ccLatestEventAgeMs(idfRow) > CC_LATEST_EVENT_MAX_AGE_MS) {
+            cfg[1].textContent = "Clear";
+            cfg[2].textContent = "No recent " + cfg[0] + " event.";
+          } else {
+            const status = getQuotedValue(idfRow.message || "", "status") || idfRow.message || "Event";
+            cfg[1].textContent = status;
+            cfg[2].textContent = idfRow.time || "Recent " + cfg[0] + " event.";
+          }
+        }
         const latest = rows[0];
         const newestPowerState =
           ccFindNewestPowerState(rows);
