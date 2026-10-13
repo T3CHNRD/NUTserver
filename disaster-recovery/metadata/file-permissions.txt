@@ -59,6 +59,7 @@
 /etc/nut/db-shutdown.conf.before-v24013-unify-20261007-122713|640|root|nut
 /etc/nut/production-mode.conf.pre-mode-command-20260611-133813|644|root|root
 /etc/nut/config.d/approved-targets.yml|640|root|root
+/etc/nut/config.d/shutdown-verification-targets.conf.before-note-cleanup-20261012|640|root|nut
 /etc/nut/config.d/shutdown-verification-targets.conf.pre-synology-dsm-api-20260526-125519|640|root|nut
 /etc/nut/config.d/shutdown-verification-targets.conf|640|root|nut
 /etc/nut/config.d/shutdown-verification-targets.conf.pre-voip-ssh-target-20260526-142658|640|root|nut
@@ -67,6 +68,7 @@
 /etc/nut/config.d/nut-orchestrator.conf|640|root|root
 /etc/nut/config.d/notification-controls.json|640|root|nut
 /etc/nut/config.d/vmware-vm-map.conf|640|root|root
+/etc/nut/config.d/vmware-vm-map.conf.before-id-hardening-20261012|640|root|root
 /etc/nut/config.d/dashboard-ui.json|640|root|root
 /etc/nut/config.d/shutdown-verification-targets.conf.bak.2026-05-11-125833|640|root|nut
 /etc/nut/vcenter.pass|640|root|nut
@@ -86,6 +88,7 @@
 /etc/nut/nut-email-alerts.conf.pre-m365-align-20260622-100123|640|root|root
 /etc/nut/upssched.conf.bak.2026-05-08-171826|644|root|root
 /etc/nut/nut-email-alerts.conf.pre-internal-exchange-auth-20260624-070440|640|root|root
+/etc/nut/nut-orchestrator.conf.before-final-host-placeholder-cleanup-20261012|640|root|nut
 /etc/nut/nut-email-alerts.conf.pre-password-in-config-20260622-084333|640|root|root
 /etc/nut/upssched.conf.pre-online-fix-20260903-104051|640|root|nut
 /etc/nut/nut-email-alerts.conf.pre-auto-redact-save-20260622-092121|640|root|root
@@ -149,6 +152,7 @@
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-config-management-ui-20260528-144103|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-purge-old-selected-restore-path-20260604-122550|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center-restore-lab.html.pre-catalog-card-list-20260604-134831|644|root|root
+/opt/nut-orchestrator-ui/templates/control-center.html.before-3x2-order-20261012|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-legacy-style-single-real-test-20260529-102813|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-cc-ups-data-store-fix-20260612-131121|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-step8r-20260827-132017|644|root|root
@@ -230,6 +234,7 @@
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-find-ups-active-state-20260624-112254|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-notification-ui-fix-20260827-091736|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-active-events-ups-wording-20260623-104703|644|root|root
+/opt/nut-orchestrator-ui/templates/control-center.html.before-idf-stack-20261012|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-clean-layout-20260528-131727|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-structured-mode-status-fields-20260612-151401|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-equal-restore-card-height-20260604-153142|644|root|root

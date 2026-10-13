@@ -418,8 +418,14 @@
 
     .cc-metrics {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
+    }
+
+    .cc-idf-stack {
+      display: grid;
+      gap: 12px;
+      align-content: start;
     }
 
     .cc-metric,
@@ -516,7 +522,7 @@
 
     .cc-action-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }
 
@@ -1053,7 +1059,7 @@
 
     .cc-live-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }
 
@@ -3220,26 +3226,26 @@ function updateNutProductionButtons(mode) {
             <div class="cc-metric-value" id="cc-latest-event-type">Loading</div>
             <div class="cc-metric-note" id="cc-latest-event-time">Waiting for event feed.</div>
           </div>
-          <div class="cc-metric">
-            <div class="cc-metric-label">IDF2 Status</div>
-            <div class="cc-metric-value" id="cc-idf2-status">Clear</div>
-            <div class="cc-metric-note" id="cc-idf2-time">No recent IDF2 event.</div>
-          </div>
-          <div class="cc-metric">
-            <div class="cc-metric-label">IDF3 Status</div>
-            <div class="cc-metric-value" id="cc-idf3-status">Clear</div>
-            <div class="cc-metric-note" id="cc-idf3-time">No recent IDF3 event.</div>
-          </div>
             <div class="cc-metric">
-            <div class="cc-metric-label">Backup State</div>
-            <div class="cc-metric-value">Ready</div>
-            <div class="cc-metric-note">Backup action will be wired after monitoring.</div>
-          </div>
+              <div class="cc-metric-label">IDF2 Status</div>
+              <div class="cc-metric-value" id="cc-idf2-status">Clear</div>
+              <div class="cc-metric-note" id="cc-idf2-time">No recent IDF2 event.</div>
+            </div>
           <div class="cc-metric">
             <div class="cc-metric-label">Live Test</div>
             <div class="cc-metric-value">Locked</div>
             <div class="cc-metric-note">Advanced controls stay separated.</div>
           </div>
+          <div class="cc-metric">
+            <div class="cc-metric-label">Backup State</div>
+            <div class="cc-metric-value">Ready</div>
+            <div class="cc-metric-note">Backup action will be wired after monitoring.</div>
+          </div>
+            <div class="cc-metric">
+              <div class="cc-metric-label">IDF3 Status</div>
+              <div class="cc-metric-value" id="cc-idf3-status">Clear</div>
+              <div class="cc-metric-note" id="cc-idf3-time">No recent IDF3 event.</div>
+            </div>
         </div>
       </div>
     </section>
