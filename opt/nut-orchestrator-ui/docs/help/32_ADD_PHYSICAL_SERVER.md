@@ -8,11 +8,11 @@ This task requires a reviewed implementation change, not just filling in a dashb
 
 **Procedure:**
 
-1. Identify the UPS event that owns the server and its required shutdown position. Record the target name, address, operating system, command protocol, credential source, timeout, independent down-verifier, and recovery owner.
-2. Confirm whether an existing wrapper already supports the target class. If not, prepare a target-specific wrapper that uses protected credentials, explicit action gates, clear rejection detection, and a positive down verifier. Do not embed credentials in the wrapper.
+1. Identify the UPS event that owns the server and its required shutdown position using [UPS Inventory and Automatic Actions](20_UPS_INVENTORY_AND_ACTIONS.md) and [Shutdown Orchestration](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md). Record the target name, address, operating system, command protocol, credential source, timeout, independent down-verifier, and recovery owner.
+2. Confirm whether an existing wrapper already supports the target class using [Protected Systems](14_PROTECTED_SYSTEMS_HOWTOS.md). If not, prepare a target-specific wrapper that uses protected credentials, explicit action gates, clear rejection detection, and a positive down verifier. Do not embed credentials in the wrapper; follow [Credential and Password Changes](18_CREDENTIAL_AND_PASSWORD_CHANGES.md) and [Security](18_SECURITY_HOWTOS.md) for credential handling.
 3. Add the wrapper invocation to the correct event branch in the orchestrator. The captured source uses explicit wrapper calls; target registration by itself is not an orchestration change. Add event-level ordering and “do not continue on failed/unknown” handling.
 4. Add/update target verification metadata only when the wrapper’s verifier consumes it. The staged source proves the shared verifier-map helper is used by some wrappers, but the map alone does not dispatch shutdown.
-5. Use the project’s isolated test approach: mock command and verifier executables and assert target, order, failure and unknown handling. Do not invoke the wrapper or authenticate to the target as a documentation check.
+5. Use the project's isolated test approach described in [Tests and Logs](10_TESTS_AND_LOGS_HOWTOS.md): mock command and verifier executables and assert target, order, failure and unknown handling. Do not invoke the wrapper or authenticate to the target as a documentation check.
 6. Review the development diff, owner/mode, helper dependencies and active caller context. Production activation, credential agreement and any live test are separate operator-controlled steps.
 
 **Expected result:** the event branch invokes the wrapper at the intended point and blocks later progression when required verification fails.

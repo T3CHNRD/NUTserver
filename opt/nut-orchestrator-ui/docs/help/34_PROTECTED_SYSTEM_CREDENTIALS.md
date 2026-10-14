@@ -17,11 +17,11 @@
 
 **Procedure:**
 
-1. Confirm the credential owner, remote account, each local consumer, protected backup/recovery location and maintenance window. Do not expose values in tickets or chat.
+1. Confirm the credential owner, remote account, each local consumer, protected backup/recovery location and maintenance window. Do not expose values in tickets or chat; follow [Security](18_SECURITY_HOWTOS.md) and [Credential and Password Changes](18_CREDENTIAL_AND_PASSWORD_CHANGES.md).
 2. Rotate the remote password with the system owner. Stage the new local value in the protected file using the established secure operator method. Preserve required owner/mode; values are not documented here.
-3. For shared Blue Iris/Lansweeper credentials, coordinate both services’ remote account acceptance before declaring rotation complete.
-4. Run only an existing authentication-only check if the owner has verified one is non-disruptive. The reviewed RPC wrappers do not provide one; Synology’s wrapper simulation logs in but also writes event state, so it is not a clean credential check. Do not invent a command.
-5. Review protected logs for authentication status without copying secrets. If no safe check exists, mark verification deferred until an operator-controlled service-specific test is approved.
+3. For shared Blue Iris/Lansweeper credentials, coordinate both services' remote account acceptance before declaring rotation complete; review the applicable guidance in [Protected Systems](14_PROTECTED_SYSTEMS_HOWTOS.md).
+4. Run only an existing authentication-only check if the owner has verified one is non-disruptive. The reviewed RPC wrappers do not provide one; Synology’s wrapper simulation logs in but also writes event state, so it is not a clean credential check. Do not invent a command; use only approved non-disruptive validation from [Tests and Logs](10_TESTS_AND_LOGS_HOWTOS.md).
+5. Review protected [Logs](16_LOGS_HOWTOS.md) for authentication status without copying secrets. If no safe check exists, mark verification deferred until an operator-controlled service-specific test is approved.
 
 **Recovery:** if remote and local values disagree, use the system’s approved console/admin channel to restore agreement. Revert the local protected file from its approved backup or coordinate a remote reset; do not roll back only one side and assume recovery.
 

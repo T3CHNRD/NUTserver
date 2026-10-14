@@ -61,7 +61,7 @@ Search phrases:
 
 UPS2 protects the Blue Iris shutdown domain.
 
-ONBATT starts a 315-second shutdown timer.
+ONBATT starts a 315-second shutdown timer. See [UPS Shutdown Timers](22_UPS_SHUTDOWN_TIMERS.md) for the current countdown values.
 
 If utility power returns before commit, ONLINE cancels the pending shutdown timer.
 
@@ -222,7 +222,7 @@ UPS7 uses a 240-second shutdown timer.
 
 Both Solaris shutdown commands are attempted before post-shutdown verification begins.
 
-The current shutdown integration uses the dedicated Solaris/Telnet DB shutdown wrapper.
+The current shutdown integration uses the dedicated Solaris/Telnet DB shutdown wrapper; see [Protected Systems](14_PROTECTED_SYSTEMS_HOWTOS.md) for <DATABASE_SERVER_1>/<DATABASE_SERVER_2> shutdown guidance.
 
 ### Shutdown Wrapper
 
@@ -285,7 +285,7 @@ Search phrases:
 
 ### Current NUT Behavior
 
-UPS9 is the broader VMware/storage shutdown domain.
+UPS9 is the broader VMware/storage shutdown domain. See [Shutdown Orchestration](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md) for the full sequence and [Protected Systems](14_PROTECTED_SYSTEMS_HOWTOS.md) for target-specific behavior.
 
 ONBATT starts a 360-second timer.
 
@@ -349,7 +349,7 @@ Use current rack documentation and physical verification.
 
 ### What will NUT automatically shut down?
 
-This is determined by:
+This is determined by the current NUT configuration and orchestration paths; see [Configuration](09_CONFIGURATION_HOWTOS.md) and [Shutdown Orchestration](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md):
 
 - `upsmon`
 - `upssched`
@@ -382,7 +382,7 @@ A physically connected device can intentionally be alert-only.
 
 Do not intentionally create a real ONBATT condition merely to determine what a UPS controls.
 
-Verify software mappings read-only and verify physical power wiring separately.
+Verify software mappings read-only using [Tests and Logs](10_TESTS_AND_LOGS_HOWTOS.md) and verify physical power wiring separately.
 
 ---
 

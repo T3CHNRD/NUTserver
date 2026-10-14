@@ -4,7 +4,7 @@ Revision 2026-10-09. Procedure basis: wrapper source inspection; remote authenti
 
 ## 1 When to use this procedure
 
-Use this when the password for the account used by Synology shutdown automation changes. A change to an unrelated personal login does not require this update. Plan the local and remote changes together so automatic shutdown is not left using an invalid password during the change window.
+Use this when the password for the account used by Synology shutdown automation changes. For the Synology shutdown integration, see [Protected Systems](14_PROTECTED_SYSTEMS_HOWTOS.md). A change to an unrelated personal login does not require this update. Plan the local and remote changes together so automatic shutdown is not left using an invalid password during the change window.
 
 ## 2 Which file and field to change
 
@@ -38,7 +38,7 @@ backup_file="/root/nut-credential-backups/synology-api.conf.$(date +%Y%m%d-%H%M%
 sudo cp -a -- /etc/nut/synology-api.conf "$backup_file"
 ```
 
-Continue only if the backup succeeds. Keep the backup path for recovery and never include the backup contents in Help, tickets or Git.
+Continue only if the backup succeeds. Keep the backup path for recovery and never include the backup contents in Help, tickets or Git; follow [Security](18_SECURITY_HOWTOS.md) for secret-handling rules.
 
 ## 5 Edit only the intended credential
 
@@ -73,13 +73,13 @@ The wrapper reads the file again on its next invocation. No wrapper restart is n
 
 ## 8 Verify without shutting down the system
 
-The inspected Synology wrapper logs in, obtains a session ID, then checks its simulation branch. That branch logs out and exits before the shutdown request, but it also updates local event/classification records. It is not a side-effect-free check, and the reviewed report does not establish an operator invocation that can safely be copied here. Do not guess simulation arguments or change the live approval gate. Obtain the reviewed verification invocation before using that path. A Configuration dry-run does not establish DSM authentication.
+The inspected Synology wrapper logs in, obtains a session ID, then checks its simulation branch. That branch logs out and exits before the shutdown request, but it also updates local event/classification records. It is not a side-effect-free check, and the reviewed report does not establish an operator invocation that can safely be copied here. Do not guess simulation arguments or change the live approval gate. Obtain the reviewed verification invocation before using that path. A Configuration dry-run does not establish DSM authentication. Review [Tests and Logs](10_TESTS_AND_LOGS_HOWTOS.md) for approved non-disruptive validation guidance, but do not treat that as a Synology authentication test.
 
 Record the syntax result and account coordination separately from authentication evidence. Do not mark the credential change fully verified solely because the file saved successfully.
 
 ## 9 Recover if the change is unsuccessful
 
-Stop further tests to avoid account lockout. Recheck the intended account and assignment privately. If rollback is required, coordinate the remote account and the local file so they agree. Restoring an old local password does not undo a remote password change. For the shared RPC file, coordinate both destinations before rollback.
+Stop further tests to avoid account lockout. Recheck the intended account and assignment privately. If rollback is required, coordinate the remote account and the local file so they agree; use [Credential and Password Changes](18_CREDENTIAL_AND_PASSWORD_CHANGES.md) for the broader credential-change process. Restoring an old local password does not undo a remote password change. For the shared RPC file, coordinate both destinations before rollback.
 
 Use the recorded protected backup to recover only the intended settings through `sudoedit`, preserving any unrelated later changes. Restore the whole backup only after checking that no later edits would be lost. Repeat the syntax and permission checks. Do not use a shutdown action as recovery verification.
 

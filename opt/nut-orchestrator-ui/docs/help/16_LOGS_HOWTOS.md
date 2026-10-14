@@ -25,6 +25,9 @@ Examples:
 
 ### UPS monitoring problem
 
+For UPS status and refresh behavior, see [Monitoring](03_MONITORING_HOWTOS.md).
+
+
 Check:
 
 journalctl -u nut-monitor.service --since today
@@ -39,6 +42,9 @@ journalctl -u nut-server.service --since today
 
 ### Email problem
 
+For email delivery and safe testing procedures, see [Email](07_EMAIL_HOWTOS.md).
+
+
 Review:
 
 - EMAIL_NOTIFY_FAILED output
@@ -47,6 +53,9 @@ Review:
 
 ### Telegram problem
 
+For Telegram delivery, recipient, and safe-test procedures, see [Telegram](06_TELEGRAM_HOWTOS.md).
+
+
 Review:
 
 - Telegram helper/bot output
@@ -54,6 +63,9 @@ Review:
 - relevant service journal
 
 ### Protected-system shutdown problem
+
+Identify the affected target using [Protected Systems](14_PROTECTED_SYSTEMS_HOWTOS.md) and review the expected sequence in [Shutdown Orchestration](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md).
+
 
 Review:
 
@@ -93,8 +105,8 @@ Use live-follow mode only while actively troubleshooting and exit with Ctrl+C.
 1. Identify the affected component.
 2. Capture only the relevant time range.
 3. Review output before sharing.
-4. Mask passwords, secrets, tokens, and sensitive identifiers.
-5. Use Export Logs when the Control Center provides an approved export.
+4. Mask passwords, secrets, tokens, and sensitive identifiers according to [Security](18_SECURITY_HOWTOS.md).
+5. Use [Tests and Logs](10_TESTS_AND_LOGS_HOWTOS.md) when the Control Center provides an approved Export Logs function.
 
 Never paste raw secret-bearing logs into Help, chat, email, or tickets.
 

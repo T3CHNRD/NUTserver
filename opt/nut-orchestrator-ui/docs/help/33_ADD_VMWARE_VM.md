@@ -8,16 +8,16 @@ The active VM map is read by the wrapper, but its exact current row format was n
 
 **Procedure:**
 
-1. Confirm exact vCenter VM name and intended wave. Match the VM to the role using current vCenter read-only identity evidence before editing a mapping.
-2. Add its exact identity to the appropriate phase collection and add the name-to-identity fields expected by the map reader. The map helper selects record columns for identity fields; its current data file is absent from the bundle, so use the existing local schema reference before editing and do not guess field order.
+1. Confirm exact vCenter VM name and intended wave using the VMware guidance in [Protected Systems](14_PROTECTED_SYSTEMS_HOWTOS.md). Match the VM to the role using current vCenter read-only identity evidence before editing a mapping.
+2. Add its exact identity to the appropriate phase collection and add the name-to-identity fields expected by the map reader. Review [Configuration](09_CONFIGURATION_HOWTOS.md) before editing live configuration. The map helper selects record columns for identity fields; its current data file is absent from the bundle, so use the existing local schema reference before editing and do not guess field order.
 3. Preserve one row/entry per VM. Do not merge VMs or substitute a peer. Leave stored MoRef blank only where the approved dynamic exact-name path is designed for that target; the exact current schema is not staged.
-4. Review ordering and ensure that required guests are independently checked POWERED_OFF before host progression. VCSA placement is handled through a separate detection path; do not add VCSA to a normal guest wave.
-5. Use mocks/fixtures for map parsing, name ambiguity, stale identity, placement changes, and guest verification. Do not run the shutdown wrapper or call live vCenter during documentation work.
+4. Review ordering and ensure that required guests are independently checked POWERED_OFF before host progression; see [Shutdown Orchestration](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md) for the broader sequence. VCSA placement is handled through a separate detection path; do not add VCSA to a normal guest wave.
+5. Use mocks/fixtures for map parsing, name ambiguity, stale identity, placement changes, and guest verification as part of the approved non-disruptive validation process in [Tests and Logs](10_TESTS_AND_LOGS_HOWTOS.md). Do not run the shutdown wrapper or call live vCenter during documentation work.
 
 **Expected result:** the wrapper resolves exactly one intended VM and its phase includes it without replacing another target. Failure/unknown must block later progression.
 
 **Verification:** the wrapper reads the main VMware config, map, and optional SSH fallback file at invocation; source review does not establish current rows or live credentials. A live test is separate and not performed.
 
-**Recovery:** restore the previous mapping/config from the approved backup path; verify the target remains a required entry and remove the candidate from the phase only with operator approval.
+**Recovery:** restore the previous mapping/config from the approved backup path using [Restore and Disaster Recovery](12_RESTORE_AND_DR_HOWTOS.md); verify the target remains a required entry and remove the candidate from the phase only with operator approval.
 
 **Evidence:** `nut-vmware-shutdown.sh` lines 41-89 (loaders and phase inputs), 158-180 (map lookup), 302-340 (guest handling), 443-507 (domain order and gates).

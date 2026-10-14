@@ -13,6 +13,7 @@ snap-core22-2955.mount                         enabled         enabled
 snap-core24-1643.mount                         enabled         enabled
 snap-core24-2124.mount                         enabled         enabled
 snap-core26-462.mount                          enabled         enabled
+snap-core26-646.mount                          enabled         enabled
 snap-cups-1238.mount                           enabled         enabled
 snap-cups-1262.mount                           enabled         enabled
 snap-firefox-8995.mount                        enabled         enabled
@@ -27,8 +28,8 @@ snap-gtk\x2dcommon\x2dthemes-1535.mount        enabled         enabled
 snap-icon\x2dtheme\x2dbreeze-5.mount           enabled         enabled
 snap-mesa\x2d2404-1165.mount                   enabled         enabled
 snap-mesa\x2d2404-1839.mount                   enabled         enabled
-snap-snap\x2dstore-1419.mount                  enabled         enabled
 snap-snap\x2dstore-1427.mount                  enabled         enabled
+snap-snap\x2dstore-1447.mount                  enabled         enabled
 snap-snapd-27738.mount                         enabled         enabled
 snap-snapd-28254.mount                         enabled         enabled
 snap-snapd\x2ddesktop\x2dintegration-387.mount enabled         enabled
@@ -515,4 +516,4 @@ ua-timer.timer                                 enabled         enabled
 update-notifier-download.timer                 enabled         enabled
 update-notifier-motd.timer                     enabled         enabled
 
-515 unit files listed.
+516 unit files listed.

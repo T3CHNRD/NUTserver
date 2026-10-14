@@ -4,7 +4,7 @@ Revision 2026-10-09. Procedure basis: wrapper source inspection; remote authenti
 
 ## 1 When to use this procedure
 
-Use this when the password for the account used by Lansweeper shutdown automation changes. A change to an unrelated personal login does not require this update. Plan the local and remote changes together so automatic shutdown is not left using an invalid password during the change window.
+Use this when the password for the account used by Lansweeper shutdown automation changes. For the Lansweeper shutdown integration, see [Protected Systems](14_PROTECTED_SYSTEMS_HOWTOS.md). A change to an unrelated personal login does not require this update. Plan the local and remote changes together so automatic shutdown is not left using an invalid password during the change window.
 
 ## 2 Which file and field to change
 
@@ -38,7 +38,7 @@ backup_file="/root/nut-credential-backups/lansweeper.creds.$(date +%Y%m%d-%H%M%S
 sudo cp -a -- /etc/nut/lansweeper.creds "$backup_file"
 ```
 
-Continue only if the backup succeeds. Keep the backup path for recovery and never include the backup contents in Help, tickets or Git.
+Continue only if the backup succeeds. Keep the backup path for recovery and never include the backup contents in Help, tickets or Git; follow [Security](18_SECURITY_HOWTOS.md) for secret-handling rules.
 
 ## 5 Edit only the intended credential
 
@@ -73,13 +73,13 @@ The wrapper reads the file again on its next invocation. No wrapper restart is n
 
 ## 8 Verify without shutting down the system
 
-Blue Iris and Lansweeper simulations exit before the RPC request and do not authenticate. Their shutdown-result checks are not password tests. No standalone authentication-only RPC method was established from the inspected scripts. Do not run either shutdown wrapper to test the password. Coordinate account confirmation with the administrators of both systems, and record NUT-side RPC authentication as not tested until an approved non-shutdown method is available.
+Blue Iris and Lansweeper simulations exit before the RPC request and do not authenticate. Their shutdown-result checks are not password tests. No standalone authentication-only RPC method was established from the inspected scripts. Do not run either shutdown wrapper to test the password. Use only approved non-disruptive validation described in [Tests and Logs](10_TESTS_AND_LOGS_HOWTOS.md). Coordinate account confirmation with the administrators of both systems, and record NUT-side RPC authentication as not tested until an approved non-shutdown method is available.
 
 Record the syntax result and account coordination separately from authentication evidence. Do not mark the credential change fully verified solely because the file saved successfully.
 
 ## 9 Recover if the change is unsuccessful
 
-Stop further tests to avoid account lockout. Recheck the intended account and assignment privately. If rollback is required, coordinate the remote account and the local file so they agree. Restoring an old local password does not undo a remote password change. For the shared RPC file, coordinate both destinations before rollback.
+Stop further tests to avoid account lockout. Recheck the intended account and assignment privately. If rollback is required, coordinate the remote account and the local file so they agree; use [Credential and Password Changes](18_CREDENTIAL_AND_PASSWORD_CHANGES.md) for the broader credential-change process. Restoring an old local password does not undo a remote password change. For the shared RPC file, coordinate both destinations before rollback.
 
 Use the recorded protected backup to recover only the intended settings through `sudoedit`, preserving any unrelated later changes. Restore the whole backup only after checking that no later edits would be lost. Repeat the syntax and permission checks. Do not use a shutdown action as recovery verification.
 

@@ -40,7 +40,7 @@ Search phrases:
 
 NUT mode OFF means everything is intentionally off, including monitoring and logging.
 
-Do not diagnose expected OFF-mode behavior as a failed monitoring service without first checking the selected NUT operating mode.
+Do not diagnose expected OFF-mode behavior as a failed monitoring service without first checking the selected [Protection Mode](02_PROTECTION_MODES.md).
 
 ---
 
@@ -79,7 +79,7 @@ Search phrases:
 
 ## How to Safely Restart Only the Control Center UI
 
-Use this when the web interface has been changed or the UI service requires a controlled restart.
+Use this when the web interface has been changed or the UI service requires a controlled restart. If the problem is only a stale or incorrect display, follow [Troubleshooting](17_TROUBLESHOOTING_HOWTOS.md) before restarting anything.
 
 Command:
 
@@ -113,7 +113,7 @@ Search phrases:
 
 ## When NOT to Restart Services
 
-Do not restart multiple NUT services merely because one page or feature looks wrong.
+Do not restart multiple NUT services merely because one page or feature looks wrong. Start with [Troubleshooting](17_TROUBLESHOOTING_HOWTOS.md) and identify the affected component first.
 
 First identify:
 
@@ -155,11 +155,11 @@ Restarting NUT monitoring/server components may interrupt monitoring and must be
 
 ## Notification Impact
 
-Some notification workflows may depend on scheduled services/timers.
+Some notification workflows may depend on scheduled services/timers; review [Notification Settings](05_NOTIFICATION_SETTINGS.md) before changing their scheduling behavior.
 
 ## Shutdown-Protection Impact
 
-Do not disable or alter timers/services involved in outage processing without approval.
+Do not disable or alter timers/services involved in outage processing without approval; review [Shutdown Orchestration](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md) first.
 
 ---
 

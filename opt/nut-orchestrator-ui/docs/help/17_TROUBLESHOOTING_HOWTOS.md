@@ -11,12 +11,12 @@ The goal is to identify the fault without creating a second problem.
 ## How to Troubleshoot a UPS That Shows Offline or Missing
 
 1. Confirm which UPS is affected.
-2. Click Refresh UPS once.
+2. Click Refresh UPS once; see [Monitoring](03_MONITORING_HOWTOS.md) for UPS refresh and status behavior.
 3. Confirm other UPS systems are still reporting normally.
-4. Check the Events page.
+4. Check the [Events](04_EVENTS_HOWTOS.md) page.
 5. Check nut-server.service.
 6. Check nut-monitor.service.
-7. Review the relevant logs.
+7. Review the relevant [Logs](16_LOGS_HOWTOS.md).
 8. Review the UPS configuration only if the service/log evidence points there.
 9. Do not restart multiple services without identifying the failing component.
 
@@ -39,7 +39,7 @@ Search phrases:
 1. Click the appropriate Refresh control once.
 2. Confirm whether the page itself is responsive.
 3. Refresh the browser.
-4. Check nut-orchestrator-ui.service.
+4. Check nut-orchestrator-ui.service using [Services and Timers](15_SERVICES_AND_TIMERS_HOWTOS.md).
 5. Check whether the underlying NUT data is current.
 6. Compare Monitoring with Events.
 7. Review the UI journal.
@@ -58,14 +58,14 @@ Search phrases:
 
 ## How to Troubleshoot Telegram Notifications Not Arriving
 
-1. Confirm Telegram Push Notifications is ON.
+1. Confirm Telegram Push Notifications is ON in [Notification Settings](05_NOTIFICATION_SETTINGS.md).
 2. Confirm the relevant child notification setting is ON.
 3. Confirm the intended recipient is approved.
 4. Confirm NUT is not in OFF mode.
-5. Review Telegram-related logs/helper output.
+5. Review Telegram-related output using [Logs](16_LOGS_HOWTOS.md).
 6. Confirm the token file exists without displaying the token.
 7. Confirm outbound network access.
-8. Use only the approved safe Telegram test.
+8. Use only the approved safe Telegram test documented in [Telegram](06_TELEGRAM_HOWTOS.md).
 
 Do not create a real ONBATT event merely to test Telegram.
 
@@ -82,7 +82,7 @@ Search phrases:
 
 1. Confirm the intended email recipient is configured.
 2. Confirm the relevant notification path is enabled.
-3. Check for EMAIL_NOTIFY_FAILED.
+3. Check for EMAIL_NOTIFY_FAILED and follow the [Email](07_EMAIL_HOWTOS.md) troubleshooting procedure.
 4. Review sender/helper output.
 5. Check SMTP connectivity.
 6. Check authentication without displaying credentials.
@@ -107,9 +107,9 @@ Use this order whenever possible:
 1. Identify the exact symptom.
 2. Identify the affected component.
 3. Check current status.
-4. Check logs.
+4. Check [Logs](16_LOGS_HOWTOS.md).
 5. Check configuration.
-6. Perform a non-disruptive validation.
+6. Perform a non-disruptive validation using [Tests and Logs](10_TESTS_AND_LOGS_HOWTOS.md).
 7. Change only the verified cause.
 8. Verify the fix.
 

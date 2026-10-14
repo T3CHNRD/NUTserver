@@ -2,7 +2,7 @@
 
 Base revision 2026-10-08 | Evidence update 2026-10-09
 
-Use this reference to understand which files the current restore catalog lists. It is not a restore execution procedure. Catalog flags describe recorded settings, not a successful restore test.
+Use this reference to understand which files the current restore catalog lists. It is not a restore execution procedure; use [Restore and Disaster Recovery](12_RESTORE_AND_DR_HOWTOS.md) for the actual restore workflow. Catalog flags describe recorded settings, not a successful restore test.
 
 ## 1 What the catalog says
 
@@ -40,7 +40,7 @@ There are 25 entries. Twenty are marked enabled, non-sensitive and backed by a r
 
 ## 3 Before using restore
 
-Confirm the intended file and the current backup source. Do not rely on the DB Telnet Username entry until its missing source is resolved. Do not assume the disabled entries can be restored through the ordinary selected-file workflow.
+Confirm the intended file and the current backup source using [Configuration](09_CONFIGURATION_HOWTOS.md) and [Backup](11_BACKUP_HOWTOS.md) as needed. Do not rely on the DB Telnet Username entry until its missing source is resolved. Do not assume the disabled entries can be restored through the ordinary selected-file workflow; review [Restore and Disaster Recovery](12_RESTORE_AND_DR_HOWTOS.md) first.
 
 The catalog is /etc/nut/restore/restore-targets.json. It is separate from the 26-entry configuration editor registry. The earlier 21-item inventory included a test probe and was not the same list.
 

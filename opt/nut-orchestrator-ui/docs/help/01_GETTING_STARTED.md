@@ -76,7 +76,7 @@ Do not expose the administrative Control Center directly to the public Internet.
 
 ### Step 2 - Check NUT Protection Mode
 
-At the top of the Control Center, locate the protection-mode controls.
+At the top of the Control Center, locate the protection-mode controls. See [Protection Modes](02_PROTECTION_MODES.md) for the meaning and operational effect of each mode.
 
 The three modes are:
 
@@ -97,12 +97,12 @@ Confirm:
 - The health/status area does not show an unexpected failure.
 - The expected number of UPS units is available.
 - The latest event does not indicate an unresolved power problem.
-- Weather and maintenance information is reasonable.
+- Weather and maintenance information is reasonable; see [Maintenance and Weather](08_MAINTENANCE_AND_WEATHER_HOWTOS.md) when clarification is needed.
 - The refresh countdown is updating.
 
 ### Step 4 - Review UPS Monitoring
 
-Open the Monitoring tab.
+Open the [Monitoring](03_MONITORING_HOWTOS.md) tab.
 
 Check the selected UPS for:
 
@@ -120,7 +120,7 @@ Use the UPS selector to review another UPS when needed.
 
 ### Step 5 - Review Recent Events
 
-Open the Events tab.
+Open the [Events](04_EVENTS_HOWTOS.md) tab.
 
 Review the Power / Boot Event Log for unexpected:
 
@@ -133,7 +133,7 @@ Review the Power / Boot Event Log for unexpected:
 
 ### Step 6 - Review Notifications if Needed
 
-Open Configuration and locate Notification Settings.
+Open Configuration and locate [Notification Settings](05_NOTIFICATION_SETTINGS.md).
 
 Review:
 
@@ -153,7 +153,7 @@ Do not assume a child Telegram preference means delivery is active when the Tele
 
 Use the main Refresh button or the section-specific refresh control.
 
-Do not restart NUT services merely because the browser display looks stale.
+Do not restart NUT services merely because the browser display looks stale; use [Troubleshooting](17_TROUBLESHOOTING_HOWTOS.md) first.
 
 Refresh the page or use the Control Center refresh functions first.
 
