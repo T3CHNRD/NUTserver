@@ -1121,6 +1121,7 @@
 /opt/nut-orchestrator-ui/docs/help/REF_51_db_telnet_pass.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md.before-notification-reference-20260904-075248|644|root|root
 /opt/nut-orchestrator-ui/docs/help/REF_17_config_d_nut_orchestrator_conf.md|644|root|root
+/opt/nut-orchestrator-ui/docs/help/38_NON_DISRUPTIVE_TEST_PLAN.md.before-inline-links-20261014|644|root|root
 /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md.pre-gap-five-20260909-091233|644|root|root
 /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.pre-gap-pass-20260909-084330|644|root|root
 /opt/nut-orchestrator-ui/docs/help/35_SAVE_AND_ROLL_BACK_CONFIGURATION.md|644|root|root
