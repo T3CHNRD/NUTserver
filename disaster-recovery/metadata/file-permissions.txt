@@ -1033,6 +1033,7 @@
 /opt/nut-orchestrator-ui/docs/help/06_TELEGRAM_HOWTOS.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help/15_SERVICES_AND_TIMERS_HOWTOS.md.before-inline-links-20261013|644|root|root
 /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md.pre-upsconf-20260902_142738|644|root|root
+/opt/nut-orchestrator-ui/docs/help/40_MOBILE_CONTROL_CENTER_ACCESS.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help/REF_12_upsmon_conf.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help/08_MAINTENANCE_AND_WEATHER_HOWTOS.md.bak-weather-help-20260902_074604|644|root|root
 /opt/nut-orchestrator-ui/docs/help/34_PROTECTED_SYSTEM_CREDENTIALS.md|644|root|root
@@ -1117,6 +1118,7 @@
 /opt/nut-orchestrator-ui/docs/help/15_SERVICES_AND_TIMERS_HOWTOS.md.pre-index-final-20260909-103823|644|root|root
 /opt/nut-orchestrator-ui/docs/help/03_MONITORING_HOWTOS.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help/11_BACKUP_HOWTOS.md.before-inline-links-20260904-085340|644|root|root
+/opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.before-task5-20261015|644|root|root
 /opt/nut-orchestrator-ui/docs/help/REF_14_nut_conf.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help/REF_51_db_telnet_pass.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md.before-notification-reference-20260904-075248|644|root|root
@@ -1594,7 +1596,6 @@
 /etc/systemd/system/snap-core24-2124.mount|644|root|root
 /etc/systemd/system/nut-boot-event-log.service|644|root|root
 /etc/systemd/system/nut-telegram-heartbeat.timer|644|root|root
-/etc/systemd/system/snap-chromium-3537.mount|644|root|root
 /etc/systemd/system/snap-core24-1643.mount|644|root|root
 /etc/systemd/system/snap-firefox-8995.mount|644|root|root
 /etc/systemd/system/nut-driver@ups7.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
@@ -1639,6 +1640,7 @@
 /etc/systemd/system/snap-mesa\x2d2404-1839.mount|644|root|root
 /etc/systemd/system/sshd-keygen@.service.d/disable-sshd-keygen-if-cloud-init-active.conf|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service.pre-nnp-fix-20260417-154813|644|root|root
+/etc/systemd/system/snap-chromium-3559.mount|644|root|root
 /etc/systemd/system/nut-telegram-dispatch.path|644|root|root
 /etc/systemd/system/snap-gnome\x2d42\x2d2204-247.mount|644|root|root
 /etc/systemd/system/nut-driver@ups2.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
