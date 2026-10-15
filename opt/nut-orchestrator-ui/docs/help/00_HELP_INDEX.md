@@ -42,6 +42,7 @@ Every applicable article must explain:
 - [Daily operator checklist](01_GETTING_STARTED.md#how-to-begin-a-normal-nut-control-center-operator-session)
 - [System status](01_GETTING_STARTED.md#how-to-determine-whether-the-nut-server-is-healthy)
 - [Protection modes](02_PROTECTION_MODES.md#quick-reference)
+- [Mobile Control Center access](40_MOBILE_CONTROL_CENTER_ACCESS.md#purpose)
 
 ### 02 - System Overview
 - [Health](01_GETTING_STARTED.md#how-to-determine-whether-the-nut-server-is-healthy)

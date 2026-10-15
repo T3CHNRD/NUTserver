@@ -3,7 +3,7 @@
 Description=Run NUT power events JSON refresh every minute
 
 [Timer]
-OnBootSec=30sec
+OnActiveSec=30sec
 OnUnitActiveSec=60sec
 AccuracySec=10sec
 Unit=nut-power-events-refresh.service

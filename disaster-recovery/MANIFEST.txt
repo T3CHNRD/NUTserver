@@ -1543,6 +1543,7 @@ FILE /etc/systemd/system/nut-telegram-heartbeat.timer -> files/etc/systemd/syste
 FILE /etc/systemd/system/nut-power-events-refresh.service -> files/etc/systemd/system/nut-power-events-refresh.service mode=0644
 FILE /etc/systemd/system/nut-power-events-refresh.timer -> files/etc/systemd/system/nut-power-events-refresh.timer mode=0644
 FILE /etc/systemd/system/nut-orchestrator-ui.service -> files/etc/systemd/system/nut-orchestrator-ui.service mode=0644
+SKIP temp-development-artifact /etc/systemd/system/nut-power-events-refresh.timer.before-task22-20261015
 FILE /etc/systemd/system/nut-telegram-heartbeat.service -> files/etc/systemd/system/nut-telegram-heartbeat.service mode=0644
 SKIP temp-development-artifact /etc/systemd/system/nut-power-events-refresh.service.pre-doc-warning-cleanup-20260522-090629
 FILE /etc/systemd/system/snap.cups.cupsd.service -> files/etc/systemd/system/snap.cups.cupsd.service mode=0644
@@ -1628,7 +1629,7 @@ SKIP temp-development-artifact /var/www/html/nutserver-dashboard.priority1.html.
 SKIP temp-development-artifact /var/www/html/nutserver-dashboard.priority1.html.pre-power-log-text-wrap-20260526-083003
 SKIP temp-development-artifact /var/www/html/nutserver-dashboard.priority1.html.pre-equal-mid-grid-20260526-082834
 FILE /var/www/html/nut-outage-log.json -> files/var/www/html/nut-outage-log.json mode=0644
-FILE /var/www/html/nut-power-events.json -> files/var/www/html/nut-power-events.json mode=0644
+FILE /var/www/html/nut-power-events.json -> files/var/www/html/nut-power-events.json mode=0664
 SKIP temp-development-artifact /var/www/html/nutserver-dashboard.html.pre-ui-20260417-141041
 SKIP temp-development-artifact /var/www/html/nutserver-dashboard.priority1.html.pre-normalized-power-table-20260508-111909
 FILE /var/www/html/nutserver-dashboard.priority1.html -> files/var/www/html/nutserver-dashboard.priority1.html mode=0644

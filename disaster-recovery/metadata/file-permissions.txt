@@ -1609,6 +1609,7 @@
 /etc/systemd/system/snap-chromium-3554.mount|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service|644|root|root
 /etc/systemd/system/x11vnc.service|644|root|root
+/etc/systemd/system/nut-power-events-refresh.timer.before-task22-20261015|644|root|root
 /etc/systemd/system/nut-apc-idf-event-monitor.timer.d/override.conf|644|root|root
 /etc/systemd/system/var-snap-firefox-common-host\x2dhunspell.mount|644|root|root
 /etc/systemd/system/snap-snap\x2dstore-1447.mount|644|root|root
