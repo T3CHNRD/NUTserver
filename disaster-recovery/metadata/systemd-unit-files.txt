@@ -6,30 +6,30 @@ dev-hugepages.mount                            static          -
 dev-mqueue.mount                               static          -
 proc-sys-fs-binfmt_misc.mount                  disabled        disabled
 snap-bare-5.mount                              enabled         enabled
-snap-chromium-3554.mount                       enabled         enabled
-snap-chromium-3559.mount                       enabled         enabled
+snap-chromium-3563.mount                       enabled         enabled
+snap-chromium-3569.mount                       enabled         enabled
 snap-core22-2437.mount                         enabled         enabled
 snap-core22-2955.mount                         enabled         enabled
 snap-core24-1643.mount                         enabled         enabled
 snap-core24-2124.mount                         enabled         enabled
 snap-core26-462.mount                          enabled         enabled
 snap-core26-646.mount                          enabled         enabled
-snap-cups-1262.mount                           enabled         enabled
-snap-cups-1266.mount                           enabled         enabled
+snap-cups-1268.mount                           enabled         enabled
+snap-cups-1272.mount                           enabled         enabled
 snap-firefox-9036.mount                        enabled         enabled
 snap-firefox-9057.mount                        enabled         enabled
 snap-firmware\x2dupdater-258.mount             enabled         enabled
 snap-firmware\x2dupdater-262.mount             enabled         enabled
 snap-gnome\x2d42\x2d2204-247.mount             enabled         enabled
 snap-gnome\x2d42\x2d2204-263.mount             enabled         enabled
-snap-gnome\x2d46\x2d2404-153.mount             enabled         enabled
 snap-gnome\x2d46\x2d2404-164.mount             enabled         enabled
+snap-gnome\x2d46\x2d2404-177.mount             enabled         enabled
 snap-gtk\x2dcommon\x2dthemes-1535.mount        enabled         enabled
 snap-icon\x2dtheme\x2dbreeze-5.mount           enabled         enabled
 snap-mesa\x2d2404-1165.mount                   enabled         enabled
 snap-mesa\x2d2404-1839.mount                   enabled         enabled
-snap-snap\x2dstore-1427.mount                  enabled         enabled
 snap-snap\x2dstore-1447.mount                  enabled         enabled
+snap-snap\x2dstore-1468.mount                  enabled         enabled
 snap-snapd-27738.mount                         enabled         enabled
 snap-snapd-28254.mount                         enabled         enabled
 snap-snapd\x2ddesktop\x2dintegration-387.mount enabled         enabled
@@ -49,6 +49,7 @@ systemd-ask-password-plymouth.path             static          -
 systemd-ask-password-wall.path                 static          -
 tpm-udev.path                                  enabled         enabled
 whoopsie.path                                  enabled         enabled
+session-7557.scope                             transient       -
 session-c1.scope                               transient       -
 session-c4.scope                               transient       -
 accounts-daemon.service                        enabled         enabled
@@ -516,4 +517,4 @@ ua-timer.timer                                 enabled         enabled
 update-notifier-download.timer                 enabled         enabled
 update-notifier-motd.timer                     enabled         enabled
 
-516 unit files listed.
+517 unit files listed.

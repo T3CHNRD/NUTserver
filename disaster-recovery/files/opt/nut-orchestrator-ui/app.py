@@ -330,18 +330,28 @@ def block_if_protecting(action_name):
     if normalized_action == "backup":
         return None
 
-    if current_mode == "armed":
+    if current_mode not in {"disarmed", "off"}:
+        known_mode = current_mode in {"armed", "disarmed", "off"}
+        response_mode = {
+            "armed": "PROTECTING",
+            "disarmed": "STANDBY FOR MAINTENANCE",
+            "off": "OFF",
+        }.get(current_mode, "UNKNOWN")
+        message = (
+            f"Blocked: NUT protection mode is {response_mode}. "
+            "Only STANDBY FOR MAINTENANCE or OFF permits this action."
+            if known_mode else
+            "Blocked: NUT protection mode could not be established. Retry after status is healthy."
+        )
+        code = 423 if current_mode == "armed" else 503
         return jsonify({
             "ok": False,
             "blocked": True,
-            "mode": "PROTECTING",
+            "mode": response_mode,
             "action": action_name,
-            "error": (
-                "Blocked: NUT is in PROTECTING mode. "
-                "Switch to STANDBY FOR MAINTENANCE before making UI, config, test, backup, or restore changes."
-            ),
-            "returncode": 423,
-        }), 423
+            "error": message,
+            "returncode": code,
+        }), code
     return None
 
 

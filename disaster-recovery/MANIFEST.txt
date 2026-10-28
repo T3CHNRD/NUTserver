@@ -118,6 +118,7 @@ SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-restore-test-
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-power-events-table-helper-20260508-111607
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-server-side-restore-page-20260604-105426
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-live-selected-restore-route-20260604-093100
+SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.before-task23-20261019
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-add-restore-github-routes-fixed-20260604-105855
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-6c1-20260827-090608
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-restore-catalog-backend-20260615-135249
