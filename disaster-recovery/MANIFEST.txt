@@ -1326,6 +1326,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-telegram-alert.pre-chunk6b-20
 FILE /usr/local/sbin/nut-ui-run-real-test-approved -> files/usr/local/sbin/nut-ui-run-real-test-approved mode=0755
 FILE /usr/local/sbin/nut-ui-live-restore-dry-run -> files/usr/local/sbin/nut-ui-live-restore-dry-run mode=0750
 FILE /usr/local/sbin/nut-vmware-tools-status-report.py -> files/usr/local/sbin/nut-vmware-tools-status-report.py mode=0750
+FILE /usr/local/sbin/nut-observium-shutdown.sh -> files/usr/local/sbin/nut-observium-shutdown.sh mode=0750
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-telegram-commands-20260817-125543
 SKIP temp-development-artifact /usr/local/sbin/nut-lansweeper-shutdown.sh.bak.2026-05-11-101456
 SKIP temp-development-artifact /usr/local/sbin/nut-sync-live-to-repo-for-backup.pre-email-sudoers-backup-20260810-083830

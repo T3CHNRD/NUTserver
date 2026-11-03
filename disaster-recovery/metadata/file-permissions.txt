@@ -1348,6 +1348,7 @@
 /usr/local/sbin/nut-ui-run-real-test-approved|755|root|root
 /usr/local/sbin/nut-ui-live-restore-dry-run|750|root|root
 /usr/local/sbin/nut-vmware-tools-status-report.py|750|root|root
+/usr/local/sbin/nut-observium-shutdown.sh|750|root|nut
 /usr/local/sbin/nut-email-alert-test-send.pre-telegram-commands-20260817-125543|755|root|root
 /usr/local/sbin/nut-lansweeper-shutdown.sh.bak.2026-05-11-101456|755|root|root
 /usr/local/sbin/nut-sync-live-to-repo-for-backup.pre-email-sudoers-backup-20260810-083830|755|root|root
