@@ -364,6 +364,7 @@
 /opt/nut-orchestrator-ui/lib/config_registry.json.pre-expand-20260417-154943|644|root|root
 /opt/nut-orchestrator-ui/lib/validators.sh.pre-mask-password-like-config-lines-20260624-071306|755|root|root
 /opt/nut-orchestrator-ui/lib/config_registry.json.pre-hypervisor-ssh-fallback-20260603-124937|644|root|root
+/opt/nut-orchestrator-ui/lib/config_registry.json.orig|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-power-events-table-helper-20260508-111607|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-server-side-restore-page-20260604-105426|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-live-selected-restore-route-20260604-093100|644|root|root

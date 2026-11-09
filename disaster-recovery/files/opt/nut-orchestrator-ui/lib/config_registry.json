@@ -99,6 +99,20 @@
       "file_mode": "640"
     },
     {
+      "id": "lansweeper_creds",
+      "name": "Lansweeper / Blue Iris Credentials",
+      "path": "/etc/nut/lansweeper.creds",
+      "type": "text",
+      "validator": "validate_text_generic",
+      "allowed_extensions": [
+        ".creds"
+      ],
+      "apply_mode": "local",
+      "owner": "root",
+      "group": "nut",
+      "file_mode": "640"
+    },
+    {
       "id": "nut_orchestrator_conf",
       "name": "config.d nut-orchestrator.conf",
       "path": "/etc/nut/config.d/nut-orchestrator.conf",
