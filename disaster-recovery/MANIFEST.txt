@@ -1198,6 +1198,7 @@ FILE /opt/nut-admin/bin/nut_protected_backup.sh -> files/opt/nut-admin/bin/nut_p
 FILE /etc/apache2/conf-available/nut-orchestrator-ui.conf -> files/etc/apache2/conf-available/nut-orchestrator-ui.conf mode=0644
 FILE /usr/local/bin/nut-test-logic.sh -> files/usr/local/bin/nut-test-logic.sh mode=0750
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-priority6-ups9-esxi-gates-20260623-145353
+SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-observium-task10
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-storm-email-fix-20260810-065744
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-priority6-timer-text-20260623-141339
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-ups-maint-comm-live-fix-20260721-084004
