@@ -1497,6 +1497,7 @@
 /usr/local/sbin/nut-telegram-alert.bak-health-unify-20260831_090204|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-fix-hypervisor-block-location-20260604-075333|755|root|root
 /usr/local/sbin/nut-ui-read-config.pre-secret-line-redaction-20260624-073217|750|root|root
+/usr/local/sbin/nut-ui-apply-config.orig|750|root|root
 /usr/local/sbin/nut-get-verification-target|750|root|root
 /usr/local/sbin/nut-local-final-shutdown.sh|750|root|nut
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-direct-runrun-fix-20260421-093659|750|root|root

@@ -39,6 +39,11 @@ BASENAME="$(basename "$TARGET_PATH")"
 
 for blocked in $(jq -r '.blocked_patterns[]' "$REGISTRY"); do
   if [[ "$BASENAME" == *"$blocked"* ]]; then
+    if [[ "$CONFIG_ID" == "lansweeper_creds" && \
+          "$TARGET_PATH" == "/etc/nut/lansweeper.creds" && \
+          "$blocked" == ".creds" ]]; then
+      continue
+    fi
     echo "Blocked filename pattern detected: $blocked"
     exit 1
   fi

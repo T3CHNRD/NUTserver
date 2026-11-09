@@ -1473,6 +1473,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-po
 SKIP temp-development-artifact /usr/local/sbin/nut-telegram-alert.bak-health-unify-20260831_090204
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-fix-hypervisor-block-location-20260604-075333
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-read-config.pre-secret-line-redaction-20260624-073217
+FILE /usr/local/sbin/nut-ui-apply-config.orig -> files/usr/local/sbin/nut-ui-apply-config.orig mode=0750
 FILE /usr/local/sbin/nut-get-verification-target -> files/usr/local/sbin/nut-get-verification-target mode=0750
 FILE /usr/local/sbin/nut-local-final-shutdown.sh -> files/usr/local/sbin/nut-local-final-shutdown.sh mode=0750
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-direct-runrun-fix-20260421-093659

@@ -33,7 +33,13 @@ def is_allowed_file(item):
     blocked_patterns = load_registry().get("blocked_patterns", [])
     for pattern in blocked_patterns:
         if pattern in basename:
-            return False
+            exact_lansweeper_credentials = (
+                item.get("id") == "lansweeper_creds"
+                and path == "/etc/nut/lansweeper.creds"
+                and pattern == ".creds"
+            )
+            if not exact_lansweeper_credentials:
+                return False
 
     allowed_extensions = item.get("allowed_extensions", [])
     return any(path.endswith(ext) for ext in allowed_extensions)
