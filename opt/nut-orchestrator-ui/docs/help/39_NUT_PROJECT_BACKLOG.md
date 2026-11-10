@@ -6,7 +6,7 @@ This is the known backlog from the documentation review, not a percentage-comple
 | --- | --- |
 | Documentation release | Reconciled Word/Help content is prepared; finish visual review, original-source reconciliation and final publication checks. |
 | Help search | Exact title should rank first; broad terms should return relevant related topics. Deferred until documentation work is closed. |
-| Observium final order | No Observium action in reviewed final path. Implement only as a separately approved behavior change; credentials and tests remain work. |
+| Observium final order | Operator reports the wrapper/helper, SSH trust and verification-registry entry installed and the UPS9 caller order verified on 2026-11-10. Actual shutdown remains untested; retain as a live-proof prerequisite, not a pending integration claim. |
 | VMware T04 and ESXi fallback | Source includes gated paths. Reconcile development/deployment state and arrange separately approved validation. Do not enable gates just for documentation. |
 | Third V240 | Confirm intended identity before deferred operational validation. |
 | Maintenance and protection | Documented suppression is per UPS; unreadable state does not suppress. Review whether that failure behavior meets the operator's requirements as a separate design decision. |

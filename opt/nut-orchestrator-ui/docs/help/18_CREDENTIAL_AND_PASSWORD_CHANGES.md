@@ -1,5 +1,7 @@
 # Credential and Password Changes - Complete How-To
 
+Revision date: 2026-11-10
+
 ## Per system password change procedures
 
 - [Changing the Blue Iris Automation Password](29_BLUE_IRIS_PASSWORD_CHANGE.md)
@@ -29,7 +31,7 @@ Never place an actual password, token, secret, or API key in Help documentation,
 
 ## Read this before changing a credential
 
-The procedures below describe the required workflow, but the exact active fields and non-shutdown test commands have not been established for every integration. Do not guess a password field or run a shutdown wrapper as an authentication test. Start with [the configuration path map](24_SHUTDOWN_CONFIGURATION_REFERENCES.md) and complete the relevant open check before editing. Blue Iris and Lansweeper both reference /etc/nut/lansweeper.creds.
+Use the exact field and file mapping in [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings). Password inputs are blank/masked; blank means keep the stored value. Blue Iris and Lansweeper share `/etc/nut/lansweeper.creds`; NetApp01 and NetApp02 share their NetApp account fields in `/etc/nut/nut-orchestrator.conf`. Coordinate shared-account changes with all consumers. Generic text validation does not test authentication. Never use a shutdown wrapper as a password test.
 
 ## General Credential Change Procedure
 
@@ -215,15 +217,7 @@ Current Synology API configuration reference:
 
 ## How to Verify a Credential Change Safely
 
-Credential verification should prove authentication without performing the disruptive action the credential ultimately authorizes.
-
-Examples:
-
-- DB credential: verify login/authentication without shutting down <DATABASE_SERVER_1> or <DATABASE_SERVER_2>.
-- vCenter credential: verify API/session access without shutting down VMs or ESXi hosts.
-- Synology credential: verify API access without halting the NAS.
-
-Use a live shutdown test only when the specific protected-system test has been formally approved.
+Credential verification should use an existing approved authentication-only method, if one has been established for that system. The compact UI's Validate action is text validation only; it performs no login. The reviewed Blue Iris/Lansweeper copies expose no authentication-only check. The reviewed Synology wrapper logs in before its simulation exit and records local event state, so that simulation is not a side-effect-free authentication check. Do not invent a command or run a shutdown wrapper for credential verification. Where an approved authentication-only method is not documented, record the credential change as not runtime-verified and ask the system owner for a safe method.
 
 ---
 
@@ -235,7 +229,7 @@ If the new credential does not work:
 2. Review the NUT-side file for spelling or formatting mistakes.
 3. Restore the local pre-change credential only if it is still valid on the remote system or the remote account has been deliberately reverted. A local rollback alone cannot undo a remote password change.
 4. Preserve the correct permissions after restoration.
-5. Repeat only the non-disruptive authentication test.
+5. Repeat only an already-established, approved authentication-only check. If none exists, do not substitute a shutdown action; leave runtime verification deferred.
 
 Do not repeatedly attempt authentication if the remote system may lock accounts after failed logins.
 

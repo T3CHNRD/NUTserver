@@ -1,6 +1,6 @@
 # Protected Systems - Complete Operator How-Tos
 
-Revision date: 2026-10-08
+Revision date: 2026-11-10
 
 ## Purpose
 
@@ -277,6 +277,40 @@ Search phrases:
 - Lansweeper shutdown
 - Lansweeper NUT
 - Lansweeper server
+
+---
+
+## How to Review or Troubleshoot Observium Shutdown Integration
+
+The configured Observium host is `<INTERNAL_IP>`; the SSH account is `observium`, not root. The operator reports that the restricted helper, sudo authorization, trusted SSH host key, NUT wrapper, and verification-registry entry were installed and checked on 2026-11-10. An actual shutdown has not been live-tested.
+
+| Side | Path | Role |
+| --- | --- | --- |
+| NUT server | `/usr/local/sbin/nut-observium-shutdown.sh` | Connection wrapper; strict host-key checking and existing simulation/live-approval gates remain required. |
+| NUT server | `/etc/nut/observium_known_hosts` | Trusted SSH host key. Unknown or changed host identity must block SSH; never bypass strict checking. |
+| NUT server | `/etc/nut/nut-orchestrator.conf` | `OBSERVIUM_HOST`, `OBSERVIUM_USERNAME`, and protected `OBSERVIUM_PASSWORD` consumed by the wrapper. Edit via [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings). |
+| NUT server | `/etc/nut/config.d/shutdown-verification-targets.conf` | Observium verification registry entry; membership does not prove physical power-off. |
+| Observium | `/usr/local/sbin/nut-observium-poweroff` | Root-owned, no-argument helper invoked as `sudo /usr/local/sbin/nut-observium-poweroff`; it accepts no caller-supplied arguments. |
+| Observium | `/etc/sudoers.d/nut-observium-shutdown` | Operator reports narrow passwordless authorization for the `observium` account to call only that helper; not general root SSH or unrestricted passwordless sudo. |
+
+The `observium` account avoids using root as the SSH login. Strict host-key checking binds the connection to the independently verified host identity. The wrapper defaults to simulation; the recorded live path requires `ALLOW_REAL_TEST=1`, `REAL_TEST_PHASE=full-production`, and `OBSERVIUM_LIVE_APPROVED=1`. The no-argument helper limits the permitted remote operation to the approved helper action and prevents caller-supplied command arguments. These controls do not prove that a shutdown command succeeds or that the physical server powers off.
+
+The operator-confirmed order is VMware → Synology → NetApp01 → NetApp02 → Observium → NUT server. Observium is second-to-last. The wrapper records the SSH command return status; the exact log destination is not established by the reviewed evidence. A returned command status is not independent physical-off verification. See [UPS9 shutdown sequence](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md#ups9-shutdown-sequence) and [Logs](16_LOGS_HOWTOS.md#protected-system-shutdown-problem).
+
+### Non-disruptive troubleshooting
+
+1. Review the Observium profile through [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings); never display or copy the password.
+2. Ask an administrator to review sanitized wrapper logs/return status, known-hosts file metadata, and helper/sudoers ownership and authorization. Do not print credential-bearing config lines.
+3. Treat an unknown or changed host-key result as a stop condition. Independently verify the fingerprint before changing trust.
+4. For permission failures, have an administrator compare the exact helper path and narrow sudoers rule. Do not grant general sudo.
+5. Do not invoke the NUT wrapper or remote helper, or issue an SSH command that invokes shutdown, as a troubleshooting test. This procedure does not establish an authentication-only test.
+
+Search phrases:
+
+- Observium SSH connection failure
+- Observium host key
+- Observium restricted sudo
+- Observium shutdown order
 
 ---
 

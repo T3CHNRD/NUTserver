@@ -36,4 +36,4 @@ Use only when:
 
 ## Direct shutdown is a separate path
 
-The captured SHUTDOWNCMD invokes /sbin/shutdown -h now directly and bypasses this wrapper. Observium final-order integration was recorded as pending credentials; no new evidence establishes completion. See [Shutdown Orchestration](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md).
+The captured SHUTDOWNCMD invokes `/sbin/shutdown -h now` directly and bypasses this wrapper. That direct upsmon path is separate from the operator-confirmed UPS9 sequence. The operator reports Observium installed between NetApp02 and the local NUT server on 2026-11-10; actual Observium shutdown remains untested. See [Shutdown Orchestration](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md) and [Observium protected-system guidance](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-review-or-troubleshoot-observium-shutdown-integration).

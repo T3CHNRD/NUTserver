@@ -1,6 +1,10 @@
 # Changing the Lansweeper Automation Password
 
-Revision 2026-10-09. Procedure basis: wrapper source inspection; remote authentication was not tested.
+Revision date: 2026-11-10. Procedure basis: wrapper source inspection; remote authentication was not tested.
+
+For the deployed compact editor, select **Lansweeper** in [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings). Its fields are in `/etc/nut/lansweeper.creds`; domain, username, and password are shared with Blue Iris, while `LANSWEEPER_IP` and `LANSWEEPER_METHOD` are Lansweeper-only. Coordinate shared-account changes with both systems. Leave the password blank to retain it. Validate checks text, not authentication.
+
+For the deployed compact editor, select **Lansweeper** in [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings). Its fields are in `/etc/nut/lansweeper.creds`; domain, username, and password are shared with Blue Iris, while `LANSWEEPER_IP` and `LANSWEEPER_METHOD` are Lansweeper-only. Coordinate shared-account changes with both systems. Leave the password blank to retain it. Validate checks text, not authentication.
 
 ## 1 When to use this procedure
 

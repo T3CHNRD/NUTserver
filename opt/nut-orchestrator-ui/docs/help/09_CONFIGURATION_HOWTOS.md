@@ -1,6 +1,6 @@
 # Configuration - Complete Operator How-Tos
 
-Revision date: 2026-10-08
+Revision date: 2026-11-10
 
 ## Purpose
 
@@ -763,14 +763,14 @@ Eleven of the 26 editable registry entries are executable scripts/helpers. They 
 | nut-synology-shutdown.sh<br>/usr/local/sbin/nut-synology-shutdown.sh | Synology action/API workflow. Change for a new supported API/method or behavior; use Synology API Config for supported account/connection changes. |
 | nut-voip-shutdown.sh<br>/usr/local/sbin/nut-voip-shutdown.sh | VOIP target action. Inspect current credential source and target identity; neither a new server nor a password change justifies guessing its variables. |
 | nut-db-shutdown.sh<br>/usr/local/sbin/nut-db-shutdown.sh | <DATABASE_SERVER_1>/<DATABASE_SERVER_2> action implementation. Existing DB settings/credential consumers must be traced before adding a third target. |
-| nut-blueiris-shutdown.sh<br>/usr/local/sbin/nut-blueiris-shutdown.sh | Blue Iris action implementation. The 2026-10-09 scan found a reference to /etc/nut/lansweeper.creds. Lansweeper references the same file. Exact fields and active reading still require confirmation. |
+| nut-blueiris-shutdown.sh<br>/usr/local/sbin/nut-blueiris-shutdown.sh | Blue Iris action implementation. The reviewed wrapper copy loads `/etc/nut/lansweeper.creds` and consumes the shared domain, username and password fields documented below. The live wrapper was not re-read during this Help update. |
 | nut-ui-run-test<br>/usr/local/sbin/nut-ui-run-test | Simulation dispatch/validation. Update only if a newly supported target must be included in the test workflow; simulation is not target shutdown proof. |
 | nut-ui-run-real-test-approved<br>/usr/local/sbin/nut-ui-run-real-test-approved | Real-test approval/dispatch. Preserve authorization gates; adding a target must not silently broaden an existing live test. |
-| nut-lansweeper-shutdown.sh<br>/usr/local/sbin/nut-lansweeper-shutdown.sh | Lansweeper action. A lansweeper.creds file exists, but verify the active wrapper consumes it before rotation. |
+| nut-lansweeper-shutdown.sh<br>/usr/local/sbin/nut-lansweeper-shutdown.sh | Lansweeper action. The reviewed wrapper copy loads `/etc/nut/lansweeper.creds`; see the compact field map below. The live wrapper was not re-read during this Help update. |
 | nut-vmware-shutdown.sh<br>/usr/local/sbin/nut-vmware-shutdown.sh | VMware guest/host shutdown sequencing and fallback. Target inventories, phases and credential sources must match its implementation. |
 | nut-netapp-halt.sh<br>/usr/local/sbin/nut-netapp-halt.sh | NetApp halt workflow. A netapp.creds file exists; confirm consumer, account and per-node scope before changes. |
 | nut-orchestrator.sh (main orchestration)<br>/usr/local/bin/nut-orchestrator.sh | UPS event handlers and wrapper call order. Adding a YAML target does not automatically create a handler. Required code changes belong in a separately reviewed implementation change. |
-| nut-local-final-shutdown.sh<br>/usr/local/sbin/nut-local-final-shutdown.sh | Final local shutdown with explicit real-mode gates. Observium is still absent; do not insert a new server here merely to make it run last. |
+| nut-local-final-shutdown.sh<br>/usr/local/sbin/nut-local-final-shutdown.sh | Final local shutdown with explicit real-mode gates. The operator-confirmed UPS9 caller places Observium before the final NUT server action; see the current sequence article. |
 
 ## Files outside the editor that may also need attention
 
@@ -790,7 +790,7 @@ These paths exist in the captured inventory, but are not all editable registry e
 | Telegram bot credentials | /etc/nut/secrets/telegram-alerts.env | Bot transport credential source, not a protected server password. |
 | Restore coverage | /etc/nut/restore/restore-targets.json; /etc/nut/restore/full-managed-restore-policy.json | Whether a newly required non-secret file is included in supported recovery. No new target schema is inferred. |
 
-Blue Iris and VOIP credential-source paths are not established by the provided registry. Inspect their active wrappers before selecting a secret file. A path named in an old document or an unused backup does not establish the current credential source.
+The compact UI maps Blue Iris to shared fields in `/etc/nut/lansweeper.creds`; its profile has no separate Blue Iris address field. This mapping is based on the deployed UI profile and reviewed wrapper copy, not a fresh read of the protected live wrapper. VOIP is not a compact Server Connection Settings profile; its credential source is not changed or confirmed here. Do not infer that it uses the Lansweeper file.
 
 ## Example a new physical server on an existing UPS
 
@@ -867,7 +867,7 @@ Credential rollback is not simply restoring an old local file: the old secret ma
 
 CURRENT refers to the supplied server captures: S01 operating system, packages, services and file metadata; S02 routes and Help inventory; S03 UI controls and registry; S04 remaining registry and Help index; S05 shutdown wiring; S06 final shutdown wrapper. S09 denotes historical documentation and is lower authority. These labels do not mean that the live server was rechecked for this Help revision. CHECK CONSUMER means the active loader, supported keys or precedence remain to be verified.
 
-The captured direct SHUTDOWNCMD is /sbin/shutdown -h now and bypasses nut-local-final-shutdown.sh. Observium final-order integration remains PARTIAL pending credentials. Authentication checks and live shutdown tests described here have not been performed as part of this documentation update.
+The 2026-10-09 capture recorded direct `SHUTDOWNCMD` behavior that bypasses `nut-local-final-shutdown.sh`; that path is separate from the operator-confirmed UPS9 sequence. The Observium connection/helper/host-trust installation was reported verified on 2026-11-10, but its shutdown has not been live-tested. No authentication or shutdown test was performed for this Help update.
 
 ## Standard NUT 2.8.1 references
 
@@ -893,3 +893,77 @@ Rollback restores the latest backup for the config ID and reapplies metadata; it
 The inspected helper suppresses a shutdown commit only for a matching UPS entry in `active_sessions` whose status is `active` or `warning`. No matching entry means normal handling continues. If the state is unreadable or invalid, the orchestrator logs the helper error and does not suppress; ordinary mode gates and the commit path continue. Maintenance is therefore not a universal shutdown lock. This is source-inspected behavior, not a live suppression test. COMMBAD/COMMOK state handling and notification behavior must not be confused with this commit check.
 
 See [Save and rollback](35_SAVE_AND_ROLL_BACK_CONFIGURATION.md), [Restore and recovery](36_RESTORE_AND_RECOVERY.md), and [Shutdown and maintenance](37_SHUTDOWN_AND_MAINTENANCE.md).
+
+---
+
+## Server Connection Settings
+
+Revision date: 2026-11-10. This is the field-level reference for the deployed compact panel and supersedes older uncertainty in this article about these five compact sources. It does not describe every entry in the separate Advanced Configuration editor.
+
+### Open and use the panel
+
+1. Open Control Center → **Configuration Management**.
+2. Open **Select Managed Server** and choose the intended system. Verify the selected name before editing.
+3. Only that profile's settings appear. Other profiles remain hidden until selected.
+4. Review the non-password values. Password inputs are blank/masked; the stored value is not displayed.
+5. Use the selected profile's **Help** control for its related article. The currently deployed profile map has no deep-link anchors, so Help opens the article at its top.
+6. Change only the intended supported values. A blank password field means keep the stored value; enter a value only to replace the password.
+7. **Validate** submits the proposed text in dry-run mode to the registered validator. The compact sources use `validate_text_generic`; it checks staged text only. It does not contact the target, authenticate, check reachability, or prove target permissions, and it does not save.
+8. **Save settings** fetches the current file again, rejects stale non-password values where applicable, preserves unrelated settings, runs the dry-run validator, then applies through the existing authorized helper after confirmation. That helper backs up the prior file and applies the registered path, owner, group and mode. The UI clears password inputs and reloads the saved profile after success.
+9. **Reload** fetches the saved file into the page and replaces unsaved browser edits. It does not reload a Linux service or change a running process.
+10. **Advanced Configuration** is separate and collapsed by default. It is for administrator-level registered files and scripts; do not edit a shutdown script to change an ordinary connection value.
+
+The existing save guard permits configuration apply only in Standby (`disarmed`) or Off. It rejects Protecting (`armed`) and missing/unknown mode. Do not change protection mode to make an edit. The panel does not change UPS assignments, timers, wrappers or sequence.
+
+### Complete managed-server field map
+
+The deployed profile map provides nine selectable profiles. It exposes 27 named configuration keys plus one virtual whole-file vCenter secret control; shared fields appear in more than one profile. Address/host/node/base-URL fields are **connection** settings, username/password controls are **authentication** settings, and `LANSWEEPER_METHOD` is a **transport/method** selector. None of these compact fields configures UPS monitoring. For each field below, the key/path and consumer are shown without any secret value. Registered file metadata for all five sources is `root:nut`, mode `0640`; preserve it.
+
+| Profile | Displayed field → key | File | Purpose / consumer | Shared effect and activation |
+| --- | --- | --- | --- | --- |
+| VMware / vCenter | vCenter address → `VCENTER_SERVER` | `/etc/nut/nut-orchestrator.conf` | vCenter API endpoint used by VMware shutdown integration. | VMware only; reviewed wrapper snapshot loads config at invocation. |
+| VMware / vCenter | vCenter username → `VCENTER_USERNAME` | `/etc/nut/nut-orchestrator.conf` | vCenter account name. | VMware only; password is separate. |
+| VMware / vCenter | vCenter password → whole-file secret (`__FILE_SECRET__` is UI-only) | `/etc/nut/vcenter.pass` | Protected password source read by VMware integration; no named key is exposed. Preserve existing file format. | VMware only. Blank means no change; never displayed. |
+| NetApp01 | management address → `NETAPP01_HOST` | `/etc/nut/nut-orchestrator.conf` | NetApp01 management endpoint used by NetApp wrapper. | NetApp01 only. |
+| NetApp01 | node A address → `NETAPP01_NODE_A` | `/etc/nut/nut-orchestrator.conf` | Node A identity/endpoint used by the per-node halt workflow. Exact accepted identifier format was not confirmed here; retain established format. | NetApp01 only. |
+| NetApp01 | node B address → `NETAPP01_NODE_B` | `/etc/nut/nut-orchestrator.conf` | Node B identity/endpoint used by the per-node halt workflow. Exact accepted identifier format was not confirmed here. | NetApp01 only. |
+| NetApp01 and NetApp02 | Shared NetApp username → `NETAPP_USERNAME` | `/etc/nut/nut-orchestrator.conf` | Common automation account used by NetApp wrapper. | Shared by both arrays; coordinate remote account changes on both. |
+| NetApp01 and NetApp02 | Shared NetApp password → `NETAPP_PASSWORD` | `/etc/nut/nut-orchestrator.conf` | Password for the common automation account. | Shared by both; blank preserves current value. |
+| NetApp02 | management address → `NETAPP02_HOST` | `/etc/nut/nut-orchestrator.conf` | NetApp02 management endpoint used by NetApp wrapper. | NetApp02 only. |
+| NetApp02 | node A address → `NETAPP02_NODE_A` | `/etc/nut/nut-orchestrator.conf` | Node A identity/endpoint used by the per-node halt workflow. Exact accepted identifier format was not confirmed here. | NetApp02 only. |
+| NetApp02 | node B address → `NETAPP02_NODE_B` | `/etc/nut/nut-orchestrator.conf` | Node B identity/endpoint used by the per-node halt workflow. Exact accepted identifier format was not confirmed here. | NetApp02 only. |
+| Observium | Observium address → `OBSERVIUM_HOST` | `/etc/nut/nut-orchestrator.conf` | NUT-side SSH target, configured as `<INTERNAL_IP>`. | Observium only. |
+| Observium | Observium username → `OBSERVIUM_USERNAME` | `/etc/nut/nut-orchestrator.conf` | SSH account; configured account is `observium`, not root. | Uses restricted helper authorization. |
+| Observium | Observium password → `OBSERVIUM_PASSWORD` | `/etc/nut/nut-orchestrator.conf` | SSH account password consumed by wrapper. | Observium only; blank preserves the stored value. |
+| Lansweeper | Lansweeper address → `LANSWEEPER_IP` | `/etc/nut/lansweeper.creds` | RPC target address used by Lansweeper wrapper. | Lansweeper only. |
+| Lansweeper and Blue Iris | Shared account domain → `LANSWEEPER_DOMAIN` | `/etc/nut/lansweeper.creds` | Domain for the shared RPC account. | Shared by both wrappers. |
+| Lansweeper and Blue Iris | Shared account username → `LANSWEEPER_USERNAME` | `/etc/nut/lansweeper.creds` | Shared username; Blue Iris maps it to its RPC username. | Shared by both; coordinate account changes. |
+| Lansweeper and Blue Iris | Shared account password → `LANSWEEPER_PASSWORD` | `/etc/nut/lansweeper.creds` | Shared RPC password consumed by both wrappers. | Shared by both; blank preserves the stored value. |
+| Lansweeper | connection method → `LANSWEEPER_METHOD` | `/etc/nut/lansweeper.creds` | Method selector used by Lansweeper wrapper; reviewed source snapshot supports `rpc`. | Lansweeper only; do not enter an unverified value. |
+| Synology | DSM API address → `SYNOLOGY_BASE_URL` | `/etc/nut/synology-api.conf` | DSM API base address used by Synology wrapper's login/session flow. | Synology only. |
+| Synology | DSM username → `SYNOLOGY_USERNAME` | `/etc/nut/synology-api.conf` | Account submitted for DSM API login. | Synology only. |
+| Synology | DSM password → `SYNOLOGY_PASSWORD` | `/etc/nut/synology-api.conf` | Secret submitted for DSM API login. | Synology only; blank preserves the stored value. |
+| <DATABASE_SERVER_1> | <DATABASE_SERVER_1> address → `<DATABASE_SERVER_1>_HOST` | `/etc/nut/db-shutdown.conf` | <DATABASE_SERVER_1> host selected by shared Solaris shutdown wrapper. | <DATABASE_SERVER_1> only. |
+| <DATABASE_SERVER_1> | <DATABASE_SERVER_1> username → `<DATABASE_SERVER_1>_USERNAME` | `/etc/nut/db-shutdown.conf` | Solaris login account for <DATABASE_SERVER_1>. | <DATABASE_SERVER_1> only. |
+| <DATABASE_SERVER_1> | <DATABASE_SERVER_1> password → `<DATABASE_SERVER_1>_PASSWORD` | `/etc/nut/db-shutdown.conf` | Solaris login credential for <DATABASE_SERVER_1>. | <DATABASE_SERVER_1> only; blank preserves the stored value. |
+| <DATABASE_SERVER_2> | <DATABASE_SERVER_2> address → `<DATABASE_SERVER_2>_HOST` | `/etc/nut/db-shutdown.conf` | <DATABASE_SERVER_2> host selected by shared Solaris shutdown wrapper. | <DATABASE_SERVER_2> only. |
+| <DATABASE_SERVER_2> | <DATABASE_SERVER_2> username → `<DATABASE_SERVER_2>_USERNAME` | `/etc/nut/db-shutdown.conf` | Solaris login account for <DATABASE_SERVER_2>. | <DATABASE_SERVER_2> only. |
+| <DATABASE_SERVER_2> | <DATABASE_SERVER_2> password → `<DATABASE_SERVER_2>_PASSWORD` | `/etc/nut/db-shutdown.conf` | Solaris login credential for <DATABASE_SERVER_2>. | <DATABASE_SERVER_2> only; blank preserves the stored value. |
+
+For non-Observium wrappers, consumer names and per-invocation reading above are supported by reviewed source copies dated 2026-10-09; those current live wrappers were not re-read during this Help pass. This is not proof of successful authentication or shutdown. The compact UI itself and its profile map were deployed/verified by the operator on 2026-11-10.
+
+### Configuration-file purpose, dependency, impact, and recovery
+
+| File | Owning consumer / purpose | Related settings and impact | Activation and recovery |
+| --- | --- | --- | --- |
+| `/etc/nut/nut-orchestrator.conf` | Shared connection configuration for VMware, NetApp01/02, and Observium wrappers. | Wrong endpoint/account can make its corresponding action fail. NetApp credentials affect both arrays. Registered `root:nut`, `0640`. | Editor does not restart services. Reviewed source copies read settings at invocation. Restore via the existing config-ID rollback described in [Save and rollback](35_SAVE_AND_ROLL_BACK_CONFIGURATION.md); remote credentials must agree. |
+| `/etc/nut/lansweeper.creds` | Lansweeper and Blue Iris shared RPC credentials; Lansweeper target/method also use this file. | Wrong shared account values can affect both consumers. Registered `root:nut`, `0640`. | No editor-triggered restart; next invocation per reviewed copies. Roll back the whole registry item and coordinate both remote accounts. |
+| `/etc/nut/synology-api.conf` | Synology DSM API address and login. | Incorrect endpoint/account prevents the API login. Registered `root:nut`, `0640`. | No editor-triggered restart; next wrapper invocation per reviewed copy. Restore the matching file backup and coordinate the remote account. |
+| `/etc/nut/db-shutdown.conf` | <DATABASE_SERVER_1>/02 host/login fields plus other common dialogue settings not displayed in compact profiles. | Wrong target-specific value affects that DB; compact save preserves unrelated/common lines. Registered `root:nut`, `0640`. | No editor-triggered restart; next wrapper invocation per reviewed copy. Roll back this file as one item and check both target entries. |
+| `/etc/nut/vcenter.pass` | Protected whole-file vCenter password, separate from username/address. | Wrong password prevents vCenter authentication. Registered `root:nut`, `0640`, sensitive. | Blank input retains it. Use the protected credential rollback path and coordinate the remote account. |
+
+### Recovery and scope boundaries
+
+If a value is wrong, identify the selected profile, field, and registry file ID. Stop further edits; use the existing supported rollback for that exact config ID, then Reload the panel and confirm the restored non-secret values. The apply helper's backup is a local file backup; it does not revert a remote password or address. Ask the system owner to coordinate local/remote account agreement. Do not copy unrelated settings or expose secrets. See [Save and rollback](35_SAVE_AND_ROLL_BACK_CONFIGURATION.md), [Restore and recovery](36_RESTORE_AND_RECOVERY.md), and [Credential and password changes](18_CREDENTIAL_AND_PASSWORD_CHANGES.md).
+
+These fields are for connection, authentication, and Lansweeper transport selection. They do not change UPS timer values, target assignments, wrapper code, or target order. The approved universal shutdown policy is tracked separately as Task 2; a successful Save does not establish that policy as implemented. See [UPS9 shutdown sequence](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md#ups9-shutdown-sequence).

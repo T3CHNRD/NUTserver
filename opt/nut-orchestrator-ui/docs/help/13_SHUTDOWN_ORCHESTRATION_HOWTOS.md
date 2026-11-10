@@ -1,6 +1,6 @@
 # Shutdown Orchestration - Complete Operator How-Tos
 
-Revision date: 2026-10-08
+Revision date: 2026-11-10
 
 ## Purpose
 
@@ -109,13 +109,13 @@ The currently captured `/etc/nut/upsmon.conf` directives are:
 - `SHUTDOWNCMD "/sbin/shutdown -h now"`
 - `POWERDOWNFLAG /etc/killpower`
 
-The configured `SHUTDOWNCMD` invokes the operating-system shutdown command directly. This direct path bypasses `nut-local-final-shutdown.sh`; the existence of that wrapper does not mean it is called by `SHUTDOWNCMD`. The UPS9 orchestrator's local-final-wrapper step and upsmon's direct shutdown command are separate paths, and the intended Observium step is not yet implemented (see below).
+The configured `SHUTDOWNCMD` invokes the operating-system shutdown command directly. This direct path bypasses `nut-local-final-shutdown.sh`; the existence of that wrapper does not mean it is called by `SHUTDOWNCMD`. The UPS9 orchestrator's local-final-wrapper step and upsmon's direct shutdown command are separate paths. The operator-confirmed UPS9 sequence includes Observium before the NUT server; that does not alter the separate direct upsmon path.
 
 Changing `SHUTDOWNCMD` or `POWERDOWNFLAG` requires a full `upsmon` stop/start; a reload alone is insufficient. This is operational guidance only. Do not perform service actions as part of Help review.
 
 ## Observium Integration Status
 
-Observium shutdown integration is **PARTIAL** pending credential completion. The intended order is local final wrapper → Observium → NUT poweroff, but this sequence is not established as implemented. Do not describe Observium shutdown as active or verified.
+The operator reports that the Observium connection/helper/host-trust configuration was installed and verified on 2026-11-10. The configured shutdown has **not** been live-tested. See [Observium protected-system guidance](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-review-or-troubleshoot-observium-shutdown-integration).
 
 ---
 
@@ -152,9 +152,10 @@ The current live sequence is:
 2. Synology
 3. NetApp01
 4. NetApp02
-5. local NUT server final shutdown
+5. Observium
+6. local NUT server final shutdown
 
-The NUT server runs last so it remains available to coordinate and log the earlier shutdown actions.
+The operator-confirmed order is VMware → Synology → NetApp01 → NetApp02 → Observium → NUT server. The NUT server runs last so it remains available to coordinate and log the earlier actions. This is the documented order, not proof of a successful live sequence. Task 2 separately owns the approved universal command-result policy; this article update does not certify that policy as implemented.
 
 For VMware-specific behavior, use [Protected Systems](14_PROTECTED_SYSTEMS_HOWTOS.md) and the [VMware shutdown wrapper reference](REF_35_nut_vmware_shutdown.md).
 
@@ -295,7 +296,7 @@ Remember that physical power connection and automatic shutdown behavior are sepa
 
 Revision date: 2026-10-09. Source review recorded; publication tracked separately.
 
-Captured delays: UPS7 240 seconds, UPS2 315, UPS8 180, UPS6 300, UPS9 360 and UPS3 300. UPS1, UPS4 and UPS5 are alert-only in the captured handler. UPS9 source order is VMware, Synology, NetApp01, NetApp02, then local final wrapper. The local final wrapper calls the local shutdown command behind gates; the reviewed path contains no Observium call.
+This paragraph records the historical 2026-10-09 source capture. Its UPS9 order predates the operator-confirmed Observium installation and must not be treated as the current order. The current operator-confirmed order is VMware, Synology, NetApp01, NetApp02, Observium, then the NUT server final action. The listed timer values remain historical capture values, not a new timer verification.
 
 Maintenance suppression applies per UPS only when a matching active-session record has status `active` or `warning`. An unavailable/malformed state returns an error that the orchestrator logs, then proceeds without suppression; normal production-mode/action gates still apply. Do not describe maintenance mode as a global lock.
 

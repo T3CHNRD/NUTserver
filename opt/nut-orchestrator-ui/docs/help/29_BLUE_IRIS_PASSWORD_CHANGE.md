@@ -1,6 +1,10 @@
 # Changing the Blue Iris Automation Password
 
-Revision 2026-10-09. Procedure basis: wrapper source inspection; remote authentication was not tested.
+Revision date: 2026-11-10. Procedure basis: wrapper source inspection; remote authentication was not tested.
+
+For the deployed compact editor, select **Blue Iris** in [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings). It uses shared fields in `/etc/nut/lansweeper.creds`; coordinate domain, username, and password changes with Lansweeper too. Blue Iris has no separate address field in this profile. Leave the password blank to retain it. Validate does not authenticate; no authentication-only check is established here.
+
+For the deployed compact editor, select **Blue Iris** in [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings). It uses the shared fields in `/etc/nut/lansweeper.creds`; coordinate domain, username, and password changes with Lansweeper as well. The Blue Iris profile has no separate address field. Leave the password blank to retain it. Validate does not authenticate; no authentication-only check is established here.
 
 ## 1 When to use this procedure
 

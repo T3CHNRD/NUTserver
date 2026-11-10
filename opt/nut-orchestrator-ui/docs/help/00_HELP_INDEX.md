@@ -1,6 +1,6 @@
 # NUT Control Center Help & Runbook
 
-Revision date: 2026-10-08
+Revision date: 2026-11-10
 
 ## Purpose
 
@@ -114,6 +114,7 @@ Every applicable article must explain:
 - [Validate](09_CONFIGURATION_HOWTOS.md#how-to-validate-a-configuration)
 - [Save](09_CONFIGURATION_HOWTOS.md#how-to-save-a-configuration-change)
 - [Revert](09_CONFIGURATION_HOWTOS.md#how-to-revert-a-configuration-change)
+- [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings)
 - [Safe editing](REF_07_SAFE_EDITING_RULES.md)
 - [Security rules](09_CONFIGURATION_HOWTOS.md#security-rules) / [secret masking](18_SECURITY_HOWTOS.md#control-center-secret-masking)
 
@@ -158,6 +159,7 @@ Every applicable article must explain:
 - [V240](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-the-sun-fire-v240-integration)
 - [Blue Iris](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-blue-iris-shutdown)
 - [Lansweeper](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-lansweeper-shutdown)
+- [Observium](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-review-or-troubleshoot-observium-shutdown-integration)
 - [VOIP](14_PROTECTED_SYSTEMS_HOWTOS.md#how-to-update-or-troubleshoot-voip-shutdown)
 - [Local NUT server final shutdown](REF_40_nut_local_final_shutdown.md)
 

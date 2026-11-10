@@ -1,5 +1,9 @@
 # Add a Physical Server to UPS Shutdown Orchestration
 
+For an existing <DATABASE_SERVER_1>/<DATABASE_SERVER_2> connection change, select that system in [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings). Adding a new physical server is a separate implementation and orchestration-wiring task; entering a connection value alone does not register a new UPS shutdown action.
+
+For an existing managed <DATABASE_SERVER_1>/<DATABASE_SERVER_2> connection change, use that system's profile in [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings). Adding a new physical server is a separate implementation/wiring task; entering a connection value alone does not register a new UPS shutdown action.
+
 **Use when:** a new physical system powered by an already-monitored UPS must join the automated shutdown sequence.
 
 **Where:** coordinate the target’s automation account with its wrapper configuration, the development-reviewed wrapper, and the matching UPS event branch in `/usr/local/bin/nut-orchestrator.sh`. A dashboard/approved-target entry alone does not wire an action.

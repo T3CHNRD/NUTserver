@@ -1,6 +1,10 @@
 # Changing the Synology Automation Password
 
-Revision 2026-10-09. Procedure basis: wrapper source inspection; remote authentication was not tested.
+Revision date: 2026-11-10. Procedure basis: wrapper source inspection; remote authentication was not tested.
+
+For the deployed compact editor, select **Synology** in [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings). Its address, username, and password map to `/etc/nut/synology-api.conf`. A blank password retains the saved value. Validate does not log in to DSM; do not run a shutdown wrapper to test a password.
+
+For the deployed compact editor, select **Synology** in [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings). The address, username, and password fields map to `/etc/nut/synology-api.conf`. A blank password retains the saved value. Validate does not log in to DSM; do not run a shutdown wrapper to test a password.
 
 ## 1 When to use this procedure
 

@@ -1,5 +1,9 @@
 # Add a VMware VM to Shutdown Orchestration
 
+For the existing VMware/vCenter connection address, username, or password, use [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings). Adding a VM mapping is a separate administrator configuration change; this profile does not edit VM identities or phases.
+
+For the existing VMware/vCenter connection address, username, or password, use [Server Connection Settings](09_CONFIGURATION_HOWTOS.md#server-connection-settings). Adding a VM mapping is a separate administrator configuration change; the connection profile does not edit VM identities or phases.
+
 **Use when:** a guest must be included in the VMware shutdown waves.
 
 **Where:** `/etc/nut/nut-orchestrator.conf` supplies VMware settings and phase arrays; `/etc/nut/config.d/vmware-vm-map.conf` is loaded as the identity map; `/etc/nut/vcenter.pass` is the wrapper’s password file. The Help source snapshot does not include their current contents.
