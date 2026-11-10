@@ -6,14 +6,14 @@ dev-hugepages.mount                            static          -
 dev-mqueue.mount                               static          -
 proc-sys-fs-binfmt_misc.mount                  disabled        disabled
 snap-bare-5.mount                              enabled         enabled
-snap-chromium-3569.mount                       enabled         enabled
 snap-chromium-3580.mount                       enabled         enabled
+snap-chromium-3583.mount                       enabled         enabled
 snap-core22-2437.mount                         enabled         enabled
 snap-core22-2955.mount                         enabled         enabled
-snap-core24-1643.mount                         enabled         enabled
 snap-core24-2124.mount                         enabled         enabled
-snap-core26-462.mount                          enabled         enabled
+snap-core24-2307.mount                         enabled         enabled
 snap-core26-646.mount                          enabled         enabled
+snap-core26-750.mount                          enabled         enabled
 snap-cups-1272.mount                           enabled         enabled
 snap-cups-1277.mount                           enabled         enabled
 snap-firefox-9057.mount                        enabled         enabled

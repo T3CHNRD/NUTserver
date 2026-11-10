@@ -2416,6 +2416,30 @@
       box-shadow: none;
     }
 
+    .nut-connection-source {
+      margin: 0 0 1rem;
+      padding: 1rem;
+    }
+    .nut-connection-system {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: .75rem;
+      margin: 1rem 0;
+      padding: 1rem;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 14px;
+    }
+    .nut-connection-system legend { padding: 0 .35rem; }
+    .nut-connection-system .cc-section-subtitle { grid-column: 1 / -1; }
+    .nut-connection-field { display: grid; gap: .35rem; min-width: 0; }
+    .nut-connection-field .cc-input { width: 100%; box-sizing: border-box; }
+    .nut-connection-status { margin: .5rem 0; }
+    .nut-connection-status[data-error="true"] { color: #fecaca; }
+    .nut-connection-note { padding: 1rem; }
+    @media (max-width: 680px) {
+      .nut-connection-system { grid-template-columns: 1fr; }
+    }
+
 </style>
 
 <style id="cc-help-link-contrast-fix">
@@ -3354,19 +3378,17 @@ function updateNutProductionButtons(mode) {
         <div class="cc-section-tag">Configuration</div>
         <div class="cc-config-launch-layout">
           <div>
-            <div class="cc-config-launch-title">Configuration Management</div>
+            <div class="cc-config-launch-title">Server Connection Settings</div>
             <div class="cc-config-launch-copy">
-              Configuration editing is available when needed, but it stays out of the main monitoring flow.
-              Save is enabled for approved editable live configs. Use Validate before Save.
+              Update managed-server connection addresses and account settings by system. Advanced configuration and shutdown-script editing remain separate for administrators.
             </div>
             <div class="cc-config-launch-badges">
-              <span class="cc-config-badge">Reload</span>
-              <span class="cc-config-badge">Validate</span>
-              <span class="cc-config-badge">Revert</span>
-              <span class="cc-config-badge">Save disabled</span>
+              <span class="cc-config-badge">Grouped by system</span>
+              <span class="cc-config-badge">Password masking</span>
+              <span class="cc-config-badge">Save requires STANDBY or OFF</span>
             </div>
           </div>
-          <button class="cc-btn cc-btn-primary" id="cc-open-config-management">Open Configuration Management</button>
+          <button class="cc-btn cc-btn-primary" id="cc-open-config-management">Open Server Connection Settings</button>
         </div>
       </div>
 
@@ -3394,8 +3416,13 @@ function updateNutProductionButtons(mode) {
 
 
         <div class="nut-settings-section-heading nut-configuration-heading">
-          Configuration
+          Server Connection Settings
         </div>
+        <div id="nut-server-connection-settings"></div>
+
+        <details class="cc-card cc-wide" style="margin-top:18px;">
+          <summary class="nut-settings-section-heading" style="cursor:pointer;">Advanced Configuration — administrator use</summary>
+          <p class="cc-section-subtitle">The original file editor remains available for approved configuration and shutdown-script maintenance.</p>
         
         <div class="cc-section-subtitle">
           Uses the same approved live-config and read-only reference registry as the current NUT Orchestrator UI.
@@ -3479,6 +3506,7 @@ function updateNutProductionButtons(mode) {
             </div>
           </div>
         </div>
+        </details>
       </div>
 
 
@@ -9613,5 +9641,7 @@ if(document.readyState==="loading"){
 })();
 </script>
 
+  <script src="/nut-ui/static/server-connection-settings-core.js"></script>
+  <script src="/nut-ui/static/server-connection-settings.js"></script>
 </body>
 </html>

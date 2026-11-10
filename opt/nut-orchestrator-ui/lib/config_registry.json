@@ -358,7 +358,7 @@
       "name": "Synology API Config",
       "path": "/etc/nut/synology-api.conf",
       "type": "shell",
-      "sensitive": true,
+      "sensitive": false,
       "validator": "validate_text_generic",
       "allowed_extensions": [
         ".conf"

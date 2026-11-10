@@ -27,7 +27,7 @@ fi
 # shellcheck disable=SC1090
 . "$CONFIG"
 
-if [[ "${OBSERVIUM_HOST:-}" != '192.168.3.230' || "${OBSERVIUM_USERNAME:-}" != 'root' || -z "${OBSERVIUM_PASSWORD:-}" ]]; then
+if [[ "${OBSERVIUM_HOST:-}" != '192.168.3.230' || "${OBSERVIUM_USERNAME:-}" != 'observium' || -z "${OBSERVIUM_PASSWORD:-}" ]]; then
   printf '%s\n' 'FAIL: Observium host, SSH username, or password invalid or missing' >&2
   exit 1
 fi
@@ -50,7 +50,7 @@ SSHPASS="$OBSERVIUM_PASSWORD" /usr/bin/sshpass -e /usr/bin/ssh \
   -o StrictHostKeyChecking=yes \
   -o UserKnownHostsFile="$KNOWN_HOSTS" \
   -o ConnectTimeout=10 \
-  -- "${OBSERVIUM_USERNAME}@${OBSERVIUM_HOST}" '/sbin/shutdown -h now'
+  -- "${OBSERVIUM_USERNAME}@${OBSERVIUM_HOST}" 'sudo -n /usr/local/sbin/nut-observium-poweroff'
 rc=$?
 printf 'RESULT: SSH command returned rc=%s; shutdown not independently verified\n' "$rc"
 exit "$rc"

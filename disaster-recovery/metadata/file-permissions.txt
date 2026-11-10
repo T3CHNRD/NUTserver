@@ -68,6 +68,7 @@
 /etc/nut/config.d/nut-orchestrator.conf|640|root|root
 /etc/nut/config.d/notification-controls.json|640|root|nut
 /etc/nut/config.d/vmware-vm-map.conf|640|root|root
+/etc/nut/config.d/shutdown-verification-targets.conf.pre-observium|640|root|nut
 /etc/nut/config.d/vmware-vm-map.conf.before-id-hardening-20261012|640|root|root
 /etc/nut/config.d/dashboard-ui.json|640|root|root
 /etc/nut/config.d/shutdown-verification-targets.conf.bak.2026-05-11-125833|640|root|nut
@@ -84,6 +85,7 @@
 /etc/nut/upssched.conf|640|root|nut
 /etc/nut/nut-email-alerts.conf.pre-exchange-hostname-20260624-074544|640|root|root
 /etc/nut/upsmon.conf.next|644|root|root
+/etc/nut/observium_known_hosts|640|root|nut
 /etc/nut/nut-email-alerts.conf.pre-reports-relay-health-format-20260623-153156|640|root|root
 /etc/nut/nut-email-alerts.conf.pre-m365-align-20260622-100123|640|root|root
 /etc/nut/upssched.conf.bak.2026-05-08-171826|644|root|root
@@ -372,6 +374,7 @@
 /opt/nut-orchestrator-ui/static/app.js.pre-orchestrator-ref-20260427-083207|664|nutserver|nutserver
 /opt/nut-orchestrator-ui/static/app.js.pre-test-buttons-20260417-153422|644|root|root
 /opt/nut-orchestrator-ui/static/app.js.pre-power-events-fallback-and-order-20260521-154301|664|nutserver|nutserver
+/opt/nut-orchestrator-ui/static/server-connection-settings.js|644|root|root
 /opt/nut-orchestrator-ui/static/app.js.pre-backup-guard-20260421-094807|644|root|root
 /opt/nut-orchestrator-ui/static/nut-ui-theme.css.pre-two-column-editors-20260417-160241|644|root|root
 /opt/nut-orchestrator-ui/static/nut-ui-theme.css.pre-header-stack-20260421-075337|644|root|root
@@ -395,6 +398,7 @@
 /opt/nut-orchestrator-ui/static/app.js.pre-backup-doubleclick-guard-20260421-095118|644|root|root
 /opt/nut-orchestrator-ui/static/app.js.pre-power-events-api-fetch-20260521-153757|664|nutserver|nutserver
 /opt/nut-orchestrator-ui/static/nut-ui-theme.css.pre-final-uniform-pane-20260421-075607|644|root|root
+/opt/nut-orchestrator-ui/static/server-connection-settings-core.js|644|root|root
 /opt/nut-orchestrator-ui/static/app.js.pre-power-events-panel-20260508-100715|664|nutserver|nutserver
 /opt/nut-orchestrator-ui/static/app.js|644|root|root
 /opt/nut-orchestrator-ui/static/app.js.pre-plain-ups-mode-log-20260623-104319|664|nutserver|nutserver
@@ -1352,6 +1356,7 @@
 /usr/local/sbin/nut-vmware-tools-status-report.py|750|root|root
 /usr/local/sbin/nut-observium-shutdown.sh|750|root|nut
 /usr/local/sbin/nut-email-alert-test-send.pre-telegram-commands-20260817-125543|755|root|root
+/usr/local/sbin/nut-observium-shutdown.sh.pre-observium-user|750|root|nut
 /usr/local/sbin/nut-lansweeper-shutdown.sh.bak.2026-05-11-101456|755|root|root
 /usr/local/sbin/nut-sync-live-to-repo-for-backup.pre-email-sudoers-backup-20260810-083830|755|root|root
 /usr/local/sbin/nut-netapp-halt.sh.pre-sim-20260416-145445|755|root|root
@@ -1589,6 +1594,7 @@
 /etc/systemd/system/nut-daily-health-email.service.pre-telegram-production-20260817-123730|644|root|root
 /etc/systemd/system/nut-daily-health-email.service|644|root|root
 /etc/systemd/system/snap-snapd\x2ddesktop\x2dintegration-387.mount|644|root|root
+/etc/systemd/system/snap-core26-750.mount|644|root|root
 /etc/systemd/system/snap-bare-5.mount|644|root|root
 /etc/systemd/system/nut-telegram-command-bot.service|644|root|root
 /etc/systemd/system/snap-mesa\x2d2404-1165.mount|644|root|root
@@ -1604,8 +1610,6 @@
 /etc/systemd/system/nut-boot-event-log.service|644|root|root
 /etc/systemd/system/nut-telegram-heartbeat.timer|644|root|root
 /etc/systemd/system/snap-snapd-28332.mount|644|root|root
-/etc/systemd/system/snap-chromium-3569.mount|644|root|root
-/etc/systemd/system/snap-core24-1643.mount|644|root|root
 /etc/systemd/system/nut-driver@ups7.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups7.service.d/nut-driver-enumerator-generated.conf|644|root|root
 /etc/systemd/system/nut-monitor.service.d/override.conf|644|root|root
@@ -1619,6 +1623,7 @@
 /etc/systemd/system/nut-power-events-refresh.timer.before-task22-20261015|644|root|root
 /etc/systemd/system/nut-apc-idf-event-monitor.timer.d/override.conf|644|root|root
 /etc/systemd/system/var-snap-firefox-common-host\x2dhunspell.mount|644|root|root
+/etc/systemd/system/snap-chromium-3583.mount|644|root|root
 /etc/systemd/system/snap-snap\x2dstore-1447.mount|644|root|root
 /etc/systemd/system/nut-telegram-heartbeat.service|644|root|root
 /etc/systemd/system/nut-driver@ups1.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
@@ -1630,6 +1635,7 @@
 /etc/systemd/system/snap.cups.cupsd.service|644|root|root
 /etc/systemd/system/nut-daily-health-email.timer.d/telegram-schedule.conf|644|root|root
 /etc/systemd/system/nut-apc-idf-event-monitor.service|644|root|root
+/etc/systemd/system/snap-core24-2307.mount|644|root|root
 /etc/systemd/system/nut-fix-sockets.service|644|root|root
 /etc/systemd/system/snap-gnome\x2d46\x2d2404-164.mount|644|root|root
 /etc/systemd/system/snap-firefox-9057.mount|644|root|root
@@ -1654,7 +1660,6 @@
 /etc/systemd/system/nut-driver@ups2.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups2.service.d/nut-driver-enumerator-generated.conf|644|root|root
 /etc/systemd/system/nut-apc-idf-event-monitor.timer|644|root|root
-/etc/systemd/system/snap-core26-462.mount|644|root|root
 /etc/systemd/system/nut-daily-health-email.service.pre-telegram-final-20260817-124128|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service.pre-nnp-fix-20260417-154456|644|root|root
 /etc/systemd/system/snap-icon\x2dtheme\x2dbreeze-5.mount|644|root|root
