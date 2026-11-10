@@ -1199,6 +1199,7 @@ FILE /opt/nut-orchestrator-ui/docs/runbooks/17_config_d_nut_orchestrator_conf.tx
 FILE /opt/nut-admin/bin/nut_inventory_and_stage.sh -> files/opt/nut-admin/bin/nut_inventory_and_stage.sh mode=0750
 FILE /opt/nut-admin/bin/nut_protected_backup.sh -> files/opt/nut-admin/bin/nut_protected_backup.sh mode=0750
 FILE /etc/apache2/conf-available/nut-orchestrator-ui.conf -> files/etc/apache2/conf-available/nut-orchestrator-ui.conf mode=0644
+SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-ups7-policy
 FILE /usr/local/bin/nut-test-logic.sh -> files/usr/local/bin/nut-test-logic.sh mode=0750
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-priority6-ups9-esxi-gates-20260623-145353
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-observium-task10

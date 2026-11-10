@@ -6,9 +6,8 @@
   const root = document.getElementById("nut-server-connection-settings");
   if (!core || !root) return;
 
-  const byId = new Map(core.SOURCES.map(source => [source.id, source]));
   const states = new Map();
-  const safeId = value => String(value).replace(/[^a-zA-Z0-9_-]/g, "-");
+  const cards = new WeakMap();
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -20,55 +19,87 @@
   function render() {
     root.replaceChildren();
     const intro = element("p", "cc-section-subtitle",
-      "Update a connection setting under the system that uses it. Passwords are never shown; leave a password blank to keep it unchanged. Each file is saved through the existing validation, backup, and access-control path.");
+      "Choose one managed server to show only its supported connection settings. Passwords are never shown; leave a password blank to keep it unchanged. Changes use the existing validation, backup, and access-control path.");
     root.append(intro);
+    const label = element("label", "nut-connection-picker");
+    label.htmlFor = "nut-managed-server-select";
+    label.append(element("span", "cc-label", "Select Managed Server"));
+    const select = document.createElement("select");
+    select.id = "nut-managed-server-select";
+    select.className = "cc-select";
+    const placeholder = element("option", "", "Choose a managed server…");
+    placeholder.value = "";
+    select.append(placeholder);
+    for (const server of core.MANAGED_SERVERS.filter(core.profileIsValid)) {
+      const option = element("option", "", server.label);
+      option.value = server.id;
+      select.append(option);
+    }
+    label.append(select);
+    root.append(label);
+    const panel = element("div", "nut-connection-selected-panel");
+    panel.id = "nut-connection-selected-panel";
+    panel.setAttribute("aria-live", "polite");
+    root.append(panel);
+    const note = element("p", "cc-section-subtitle nut-connection-note",
+      "Advanced Configuration remains available below for administrators. No verified connection-settings file is registered for VOIP, so no VOIP profile is offered.");
+    root.append(note);
+    select.addEventListener("change", () => renderProfile(select.value, panel));
+  }
 
-    for (const source of core.SOURCES) {
+  function renderProfile(serverId, panel) {
+    panel.replaceChildren();
+    const server = core.serverById(serverId);
+    if (!server) return;
+    const title = element("div", "nut-connection-profile-heading");
+    title.append(element("h3", "cc-pane-title", server.label));
+    const help = element("a", "cc-help-internal-link nut-connection-help", "Help for this server");
+    help.href = "#cc-help-section";
+    help.dataset.helpFile = server.helpFile;
+    help.dataset.helpAnchor = server.helpAnchor || "";
+    help.addEventListener("click", event => {
+      event.preventDefault();
+      if (typeof window.ccOpenHelpArticle === "function") window.ccOpenHelpArticle(server.helpFile, server.helpAnchor || "");
+    });
+    title.append(help);
+    panel.append(title);
+    for (const section of server.sections) {
+      const source = core.sourceById(section.sourceId);
+      if (!source) continue;
       const card = element("article", "cc-card cc-wide nut-connection-source");
       card.dataset.configId = source.id;
-      card.append(element("h3", "cc-pane-title", source.label));
+      card.append(element("h4", "nut-connection-source-title", source.label));
       card.append(element("div", "cc-mini nut-connection-status", "Loading settings…"));
-      for (const system of source.systems) {
-        const fieldset = element("fieldset", "nut-connection-system");
-        fieldset.append(element("legend", "cc-label", system.name));
-        if (system.note) fieldset.append(element("p", "cc-section-subtitle", system.note));
-        if (system.editable === false) {
-          fieldset.dataset.disabled = "true";
-          card.append(fieldset);
-          continue;
-        }
-        for (const field of system.fields) {
-          const wrap = element("label", "nut-connection-field");
-          wrap.append(element("span", "cc-label", field.label));
-          const input = document.createElement("input");
-          input.className = "cc-input";
-          input.type = field.kind === "password" ? "password" : "text";
-          input.autocomplete = field.kind === "password" ? "new-password" : "off";
-          input.spellcheck = false;
-          input.dataset.key = field.key;
-          input.placeholder = field.kind === "password" ? "Leave blank to keep current" : "";
-          wrap.append(input);
-          fieldset.append(wrap);
-        }
-        card.append(fieldset);
+      if (section.note) card.append(element("p", "cc-section-subtitle nut-connection-section-note", section.note));
+      const fields = core.fieldsForSection(section);
+      const fieldset = element("fieldset", "nut-connection-system");
+      fieldset.append(element("legend", "cc-label", server.label + " connection"));
+      for (const field of fields) {
+        const wrap = element("label", "nut-connection-field");
+        wrap.append(element("span", "cc-label", field.label));
+        const input = document.createElement("input");
+        input.className = "cc-input";
+        input.type = field.kind === "password" ? "password" : "text";
+        input.autocomplete = field.kind === "password" ? "new-password" : "off";
+        input.spellcheck = false;
+        input.dataset.key = field.key;
+        input.placeholder = field.kind === "password" ? "Leave blank to keep current" : "";
+        wrap.append(input);
+        fieldset.append(wrap);
       }
+      card.append(fieldset);
       const actions = element("div", "cc-config-toolbar-actions");
-      const reload = element("button", "cc-btn", "Reload");
-      reload.type = "button";
-      reload.dataset.action = "reload";
-      const validate = element("button", "cc-btn cc-btn-warn", "Validate");
-      validate.type = "button";
-      validate.dataset.action = "validate";
-      const save = element("button", "cc-btn cc-btn-primary", "Save settings");
-      save.type = "button";
-      save.dataset.action = "save";
-      actions.append(reload, validate, save);
+      for (const [action, text, klass] of [["reload", "Reload", "cc-btn"], ["validate", "Validate", "cc-btn cc-btn-warn"], ["save", "Save settings", "cc-btn cc-btn-primary"]]) {
+        const button = element("button", klass, text);
+        button.type = "button";
+        button.dataset.action = action;
+        actions.append(button);
+      }
       card.append(actions);
-      root.append(card);
+      panel.append(card);
+      cards.set(card, { server, section, source });
+      load(card);
     }
-
-    root.append(element("div", "cc-card cc-wide nut-connection-note",
-      "Administrator configuration only: VMware guest identity maps and shutdown scripts remain in Advanced Configuration. The VOIP wrapper does not have a verified connection-settings file in the reviewed source snapshot, so this screen does not offer VOIP credential editing."));
   }
 
   function status(card, message, isError = false) {
@@ -93,7 +124,9 @@
   }
 
   async function load(card) {
-    const source = byId.get(card.dataset.configId);
+    const meta = cards.get(card);
+    if (!meta) return;
+    const { source, section } = meta;
     status(card, "Loading settings…");
     try {
       const data = await request(source.id, "GET");
@@ -102,7 +135,7 @@
       if (inspected.error) throw new Error("A configured field is missing or duplicated: " + inspected.error);
       states.set(source.id, { content, values: inspected.values, path: data.path || "" });
       for (const input of card.querySelectorAll("input[data-key]")) {
-        const field = core.allFields(source).find(item => item.key === input.dataset.key);
+        const field = core.fieldsForSection(section).find(item => item.key === input.dataset.key);
         input.value = field && field.kind === "password" ? "" : (inspected.values[input.dataset.key] || "");
       }
       card.querySelectorAll("input, button[data-action='validate'], button[data-action='save']").forEach(node => { node.disabled = false; });
@@ -123,7 +156,9 @@
   }
 
   async function validate(card) {
-    const source = byId.get(card.dataset.configId);
+    const meta = cards.get(card);
+    if (!meta) return;
+    const { source, section } = meta;
     const state = states.get(source.id);
     if (!state) return status(card, "Reload settings before validating.", true);
     try {
@@ -138,10 +173,12 @@
   }
 
   async function save(card) {
-    const source = byId.get(card.dataset.configId);
+    const meta = cards.get(card);
+    if (!meta) return;
+    const { source, section } = meta;
     const state = states.get(source.id);
     if (!state) return status(card, "Reload settings before saving.", true);
-    const fields = core.allFields(source);
+    const fields = core.fieldsForSection(section);
     const updates = valuesFrom(card);
     const changed = source.wholeFileSecret
       ? Boolean(updates.__FILE_SECRET__)
@@ -179,5 +216,4 @@
     if (action === "validate") validate(card);
     if (action === "save") save(card);
   });
-  root.querySelectorAll(".nut-connection-source").forEach(load);
 })();

@@ -2418,8 +2418,17 @@
 
     .nut-connection-source {
       margin: 0 0 1rem;
-      padding: 1rem;
+      padding: .75rem 1rem;
     }
+    .nut-connection-picker { display: grid; grid-template-columns: minmax(10rem, 14rem) minmax(16rem, 28rem); align-items: center; gap: .65rem 1rem; margin: .6rem 0 1rem; }
+    .nut-connection-picker select { width: 100%; }
+    .nut-connection-profile-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: .35rem 0 .65rem; }
+    .nut-connection-profile-heading h3 { margin: 0; }
+    .nut-connection-help { white-space: nowrap; }
+    .nut-connection-source-title { margin: 0 0 .35rem; }
+    .nut-connection-section-note { margin: .25rem 0 .5rem; }
+    .nut-connection-selected-panel:empty { display: none; }
+    .nut-connection-note { margin-top: .6rem; }
     .nut-connection-system {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -2438,6 +2447,8 @@
     .nut-connection-note { padding: 1rem; }
     @media (max-width: 680px) {
       .nut-connection-system { grid-template-columns: 1fr; }
+      .nut-connection-picker { grid-template-columns: 1fr; gap: .35rem; }
+      .nut-connection-profile-heading { align-items: flex-start; flex-direction: column; }
     }
 
 </style>
@@ -3380,10 +3391,10 @@ function updateNutProductionButtons(mode) {
           <div>
             <div class="cc-config-launch-title">Server Connection Settings</div>
             <div class="cc-config-launch-copy">
-              Update managed-server connection addresses and account settings by system. Advanced configuration and shutdown-script editing remain separate for administrators.
+              Select one managed server to edit its supported connection settings. Advanced configuration and shutdown-script editing remain separate for administrators.
             </div>
             <div class="cc-config-launch-badges">
-              <span class="cc-config-badge">Grouped by system</span>
+              <span class="cc-config-badge">One selected server at a time</span>
               <span class="cc-config-badge">Password masking</span>
               <span class="cc-config-badge">Save requires STANDBY or OFF</span>
             </div>
@@ -9637,6 +9648,18 @@ if(document.readyState==="loading"){
 }else{
   init();
 }
+
+// Reuse the existing Help article renderer for contextual links in the
+// separately loaded Server Connection Settings module.
+window.ccOpenHelpArticle=function(file,anchor){
+  file=String(file||"");
+  anchor=String(anchor||"");
+  if(!/^[A-Za-z0-9_.-]+\.md$/.test(file))return;
+  var helpTab=document.querySelector('[data-cc-tab="cc-help-section"]');
+  if(helpTab)helpTab.click();
+  history.pushState({ccHelp:true,file:file,anchor:anchor},"","#cc-help-section");
+  openArticle(file,anchor);
+};
 
 })();
 </script>
