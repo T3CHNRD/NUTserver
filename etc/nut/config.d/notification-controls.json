@@ -3,6 +3,6 @@
   "telegram_critical_power_alerts": true,
   "telegram_daily_health_push": true,
   "telegram_heartbeat": true,
-  "telegram_push_notifications": true,
+  "telegram_push_notifications": false,
   "weather_based_closing_thoughts": true
 }
