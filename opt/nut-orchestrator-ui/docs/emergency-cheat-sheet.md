@@ -1,8 +1,8 @@
 # NUT Server Emergency Cheat Sheet
 
 ## UI Access
-- Orchestrator UI: http://192.168.3.251/nut-ui
-- Priority Dashboard: http://192.168.3.251/nutserver-dashboard.priority1.html
+- Orchestrator UI: http://<INTERNAL_IP>/nut-ui
+- Priority Dashboard: http://<INTERNAL_IP>/nutserver-dashboard.priority1.html
 
 ## Emergency Restore from GitHub
 1. Open the Orchestrator UI

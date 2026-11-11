@@ -7,11 +7,11 @@ COMMON_EXPECT="$SCRIPT_DIR/solaris-v240-common.exp"
 TARGET="${1:-}"
 
 CONFIG_FILE="/etc/nut/db-shutdown.conf"
-V24013_HOST="192.168.1.13"
+V24013_HOST="198.51.100.10"
 
-DB01_PROD="192.168.1.9"
-DB02_PROD="192.168.1.11"
-V240_TEMP_TEST_IP="192.168.10.85"
+DB01_PROD="198.51.100.11"
+DB02_PROD="198.51.100.12"
+V240_TEMP_TEST_IP="198.51.100.13"
 
 
 SIMULATE="${SIMULATE:-1}"
@@ -23,7 +23,7 @@ COMMAND_TIMEOUT="${V24013_COMMAND_TIMEOUT:-30}"
 
 SHUTDOWN_COMMAND="/usr/sbin/shutdown -i5 -g0 -y"
 
-LOG_FILE="/var/log/nut-v24013-shutdown.log"
+LOG_FILE="/var/log/nut-solaris-server-shutdown.log"
 
 log() {
     printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" \
@@ -53,29 +53,29 @@ except Exception:
     fi
 }
 
-if [ "$TARGET" != "V24013" ]; then
-    die "only target V24013 is permitted"
+if [ "$TARGET" != "SOLARIS_SERVER" ]; then
+    die "only target SOLARIS_SERVER is permitted"
 fi
 
 HOST="$V24013_HOST"
 
 case "$HOST" in
     "$DB01_PROD")
-        die "DB01 production address is prohibited"
+        die "DB_SERVER_1 production address is prohibited"
         ;;
     "$DB02_PROD")
-        die "DB02 production address is prohibited"
+        die "DB_SERVER_2 production address is prohibited"
         ;;
     "$V240_TEMP_TEST_IP")
         die "temporary test address of this same V240 is prohibited in the final .13 wrapper"
         ;;
 esac
 
-if [ "$HOST" != "192.168.1.13" ]; then
-    die "V24013 host does not exactly match 192.168.1.13"
+if [ "$HOST" != "198.51.100.10" ]; then
+    die "SOLARIS_SERVER host does not exactly match 198.51.100.10"
 fi
 
-log "V24013 shutdown wrapper starting"
+log "SOLARIS_SERVER shutdown wrapper starting"
 log "Target=$TARGET"
 log "Host=$HOST"
 log "SIMULATE=$SIMULATE"
@@ -116,7 +116,7 @@ fi
 # shellcheck disable=SC1090
 . "$CONFIG_FILE"
 
-V24013_HOST="${V24013_HOST:-192.168.1.13}"
+V24013_HOST="${V24013_HOST:-198.51.100.10}"
 V24013_USERNAME="${V24013_USERNAME:-}"
 V24013_PASSWORD="${V24013_PASSWORD:-}"
 
@@ -129,18 +129,18 @@ if [ -z "$V24013_PASSWORD" ]; then
 fi
 
 if [ "$V24013_USERNAME" != "root" ]; then
-    die "V24013 requires direct root Telnet login"
+    die "SOLARIS_SERVER requires direct root Telnet login"
 fi
 
 if ! ping -c 2 -W 2 "$HOST" >/dev/null 2>&1; then
-    die "V24013 is not reachable before shutdown attempt"
+    die "SOLARIS_SERVER is not reachable before shutdown attempt"
 fi
 
 if ! timeout 5 bash -c "</dev/tcp/${HOST}/23" >/dev/null 2>&1; then
-    die "V24013 Telnet port 23 is not reachable"
+    die "SOLARIS_SERVER Telnet port 23 is not reachable"
 fi
 
-log "PRECHECK PASS: V24013 responds to ping and Telnet port 23"
+log "PRECHECK PASS: SOLARIS_SERVER responds to ping and Telnet port 23"
 
 export V240_HOST="$HOST"
 export V240_USERNAME="$V24013_USERNAME"
@@ -154,25 +154,25 @@ expect "$COMMON_EXPECT"
 COMMAND_RC=$?
 
 if [ "$COMMAND_RC" -ne 0 ]; then
-    log "FAIL: V24013 Telnet dialogue or shutdown command rejected rc=$COMMAND_RC"
+    log "FAIL: SOLARIS_SERVER Telnet dialogue or shutdown command rejected rc=$COMMAND_RC"
     exit 1
 fi
 
-log "COMMAND SENT: V24013; independent shutdown verification required"
+log "COMMAND SENT: SOLARIS_SERVER; independent shutdown verification required"
 VERIFY_RC=99
 CLASSIFY_RC=3
 if [ -x /usr/local/sbin/nut-verify-target-down.sh ]; then
-    /usr/local/sbin/nut-verify-target-down.sh V24013 "$HOST" "${V24013_VERIFY_TIMEOUT:-300}" >> "$LOG_FILE" 2>&1
+    /usr/local/sbin/nut-verify-target-down.sh SOLARIS_SERVER "$HOST" "${V24013_VERIFY_TIMEOUT:-300}" >> "$LOG_FILE" 2>&1
     VERIFY_RC=$?
 fi
 if [ -x /usr/local/sbin/nut-classify-shutdown-result ]; then
-    /usr/local/sbin/nut-classify-shutdown-result V24013 "$COMMAND_RC" "$VERIFY_RC" >> "$LOG_FILE" 2>&1
+    /usr/local/sbin/nut-classify-shutdown-result SOLARIS_SERVER "$COMMAND_RC" "$VERIFY_RC" >> "$LOG_FILE" 2>&1
     CLASSIFY_RC=$?
 fi
 case "$CLASSIFY_RC" in
-    0) log "PASS: V24013 shutdown confirmed" ;;
-    1) log "FAIL: V24013 remained online or command failed" ;;
-    2) log "UNKNOWN: V24013 shutdown could not be verified" ;;
-    *) log "UNKNOWN: V24013 shutdown result unavailable" ;;
+    0) log "PASS: SOLARIS_SERVER shutdown confirmed" ;;
+    1) log "FAIL: SOLARIS_SERVER remained online or command failed" ;;
+    2) log "UNKNOWN: SOLARIS_SERVER shutdown could not be verified" ;;
+    *) log "UNKNOWN: SOLARIS_SERVER shutdown result unavailable" ;;
 esac
 exit "$CLASSIFY_RC"

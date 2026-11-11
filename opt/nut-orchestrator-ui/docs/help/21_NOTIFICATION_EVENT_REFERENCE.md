@@ -97,7 +97,7 @@ The target wrapper and verification logic determine whether the action succeeded
 Examples include:
 
 - Blue Iris shutdown attempt
-- DB01 / DB02 shutdown attempt
+- <DATABASE_SERVER_1> / <DATABASE_SERVER_2> shutdown attempt
 - VOIP shutdown attempt
 - Lansweeper shutdown attempt
 - VMware shutdown sequence
