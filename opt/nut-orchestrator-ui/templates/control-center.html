@@ -9151,6 +9151,7 @@ function init(){
         continue;
       }
 
+      if(trimmed==="![NUT Power-Outage Workflow](/nut-ui/static/nut-power-outage-workflow.png)"){closeList();html.push("<p><img src=\"/nut-ui/static/nut-power-outage-workflow.png\" alt=\"NUT Power-Outage Workflow\" style=\"max-width:100%;height:auto\" loading=\"lazy\"></p>");continue;}
       var hm=line.match(/^(#{1,6})\s+(.+)$/);
       if(hm){
         headingTag(hm[1].length,hm[2],line);

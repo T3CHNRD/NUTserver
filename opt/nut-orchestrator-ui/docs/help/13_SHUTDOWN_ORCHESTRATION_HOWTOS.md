@@ -33,6 +33,12 @@ For the meaning of ONBATT, ONLINE, LOWBATT, COMMBAD, COMMOK, shutdown, and cance
 
 ## How the Shutdown Flow Works
 
+### Power-Outage and Power-Restoration Workflow
+
+![NUT Power-Outage Workflow](/nut-ui/static/nut-power-outage-workflow.png)
+
+**Important:** UPS timers operate independently. Eligible pending shutdowns may be cancelled when power returns. Issued shutdown commands cannot be reversed. FSD is separate.
+
 The normal per-UPS event path is:
 
 1. NUT detects the UPS power event.

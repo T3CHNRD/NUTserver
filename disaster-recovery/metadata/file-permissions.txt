@@ -123,6 +123,7 @@
 /opt/nut-orchestrator-ui/templates/control-center.html|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-12hour-all-20260810-074432|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-find-ups-no-popup-always-blink-20260624-113948|644|root|root
+/opt/nut-orchestrator-ui/templates/control-center.html.before-help-image-20261111|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-brighter-active-mode-buttons-20260612-143949|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-force-emails-header-20260622-130557|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-emails-status-20260622-125932|644|root|root
@@ -1113,6 +1114,7 @@
 /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.before-ups-link-20260904-073425|644|root|root
 /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md|644|nutserver|nutserver
 /opt/nut-orchestrator-ui/docs/help/REF_10_ups_conf.md|644|root|root
+/opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md.before-workflow-20261111|644|nutserver|nutserver
 /opt/nut-orchestrator-ui/docs/help/37_SHUTDOWN_AND_MAINTENANCE.md.before-inline-links-20261014|644|root|root
 /opt/nut-orchestrator-ui/docs/help/04_EVENTS_HOWTOS.md|644|root|root
 /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.pre-task10f-20260902_142430|644|root|root

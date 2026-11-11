@@ -156,6 +156,7 @@ SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center
 FILE /opt/nut-orchestrator-ui/templates/control-center.html -> files/opt/nut-orchestrator-ui/templates/control-center.html mode=0644
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-12hour-all-20260810-074432
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-find-ups-no-popup-always-blink-20260624-113948
+SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.before-help-image-20261111
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-brighter-active-mode-buttons-20260612-143949
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-force-emails-header-20260622-130557
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-emails-status-20260622-125932
@@ -1089,6 +1090,7 @@ SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/11_BACK
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.before-ups-link-20260904-073425
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_10_ups_conf.md
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/13_SHUTDOWN_ORCHESTRATION_HOWTOS.md.before-workflow-20261111
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/37_SHUTDOWN_AND_MAINTENANCE.md.before-inline-links-20261014
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/04_EVENTS_HOWTOS.md
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/14_PROTECTED_SYSTEMS_HOWTOS.md.pre-task10f-20260902_142430
