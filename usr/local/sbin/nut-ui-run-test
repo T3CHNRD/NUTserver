@@ -169,6 +169,24 @@ run_prechecks() {
   validate_managed_configs
 }
 
+
+run_real_prechecks_or_exit() {
+  local precheck_rc=0
+
+  run_prechecks || precheck_rc=$?
+
+  # Fail closed on either a nonzero precheck result or any recorded failure.
+  # FAIL_COUNT is initialized by this script; validate it before arithmetic.
+  if [[ ! "${FAIL_COUNT:-}" =~ ^[0-9]+$ ]] || \
+     (( precheck_rc != 0 )) || \
+     (( 10#$FAIL_COUNT > 0 )); then
+    log_line "REAL TEST BLOCKED: required precheck failed or returned UNKNOWN; no phase dispatched"
+    power_event "REAL TEST BLOCKED result=FAIL reason=required_precheck_failed_or_unknown phase_dispatch=0"
+    log_line "SUMMARY FAIL passes=0 failures=precheck phase_dispatch=0"
+    exit 1
+  fi
+}
+
 run_simulate() {
   log_line "TEST START mode=simulate"
   log_line "NOTE Simulated Test does not perform real shutdowns."
@@ -282,7 +300,7 @@ run_real() {
   log_line "WARNING REAL TEST ENABLED - LIVE SHUTDOWN COMMANDS MAY EXECUTE"
   power_event "REAL TEST START mode=real warning=\"live shutdown commands may execute\""
 
-  run_prechecks
+  run_real_prechecks_or_exit
 
   case "$phase" in
     phase1-lansweeper)

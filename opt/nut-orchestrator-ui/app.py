@@ -47,6 +47,8 @@ def is_allowed_file(item):
 
 @app.route("/")
 def index():
+    from flask import redirect
+    return redirect("/nut-ui/control-center", code=302)
     registry = load_registry()
     editable_configs = registry.get("editable_configs", [])
     reference_configs = registry.get("reference_configs", [])
