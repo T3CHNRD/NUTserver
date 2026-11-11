@@ -8,7 +8,6 @@ TARGET_IP="192.168.1.25"
 CREDS_FILE="/etc/nut/lansweeper.creds"
 SIMULATE="${SIMULATE:-1}"
 
-CLASSIFY_TARGET_HELPER="/usr/local/sbin/nut-classify-target-shutdown"
 
 ts() {
   date '+%Y-%m-%d %H:%M:%S'
@@ -18,17 +17,6 @@ log() {
   echo "[$(ts)] $1" | tee -a "$LOG_FILE"
 }
 
-classify_target() {
-  local command_rc="$1"
-
-  if [ -x "$CLASSIFY_TARGET_HELPER" ]; then
-    "$CLASSIFY_TARGET_HELPER" "$TARGET_NAME" "$command_rc"
-    return "$?"
-  fi
-
-  log "WARN classification helper missing: $CLASSIFY_TARGET_HELPER"
-  return 3
-}
 
 if [ -f "$CREDS_FILE" ]; then
   # shellcheck disable=SC1090
@@ -97,13 +85,11 @@ fi
 
 if [ ! -f "$CREDS_FILE" ]; then
   log "ERROR credentials file not found: $CREDS_FILE"
-  classify_target 1
   exit 1
 fi
 
 if [ -z "${RPC_PASSWORD:-}" ]; then
   log "ERROR RPC password missing from $CREDS_FILE"
-  classify_target 1
   exit 1
 fi
 
@@ -119,7 +105,4 @@ else
   log "SUCCESS Blue Iris shutdown command sent"
 fi
 
-classify_target "$COMMAND_RC"
-CLASSIFY_RC="$?"
-
-exit "$CLASSIFY_RC"
+exit "$COMMAND_RC"

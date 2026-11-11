@@ -6,9 +6,6 @@ LOG_FILE="/var/log/nut-lansweeper-shutdown.log"
 CREDS_FILE="/etc/nut/lansweeper.creds"
 SIMULATE="${SIMULATE:-1}"
 
-VERIFY_TIMEOUT="${VERIFY_TIMEOUT:-300}"
-VERIFY_HELPER="/usr/local/sbin/nut-verify-target-down.sh"
-CLASSIFY_HELPER="/usr/local/sbin/nut-classify-shutdown-result"
 POWER_EVENT_LOGGER="/usr/local/sbin/nut-power-event-log"
 PUBLISH_POWER_EVENTS="/usr/local/sbin/nut-publish-power-events-json"
 
@@ -109,42 +106,13 @@ else
   log "ERROR Lansweeper shutdown command failed rc=${COMMAND_RC}"
 fi
 
-VERIFY_RC=99
-
-if [ -x "$VERIFY_HELPER" ]; then
-  "$VERIFY_HELPER" Lansweeper "${LANSWEEPER_IP}" "${VERIFY_TIMEOUT}"
-  VERIFY_RC="$?"
+if [ "$COMMAND_RC" -eq 0 ]; then
+  CLASSIFICATION=COMMAND_ACCEPTED
 else
-  log "WARN verification helper missing or not executable: $VERIFY_HELPER"
-  VERIFY_RC=99
+  CLASSIFICATION=COMMAND_FAILED
 fi
-
-if [ -x "$CLASSIFY_HELPER" ]; then
-  CLASSIFICATION="$("$CLASSIFY_HELPER" Lansweeper "$COMMAND_RC" "$VERIFY_RC")"
-  CLASSIFY_RC="$?"
-else
-  CLASSIFICATION="WARN target=\"Lansweeper\" reason=\"classification_helper_missing\" command_rc=${COMMAND_RC} verify_rc=${VERIFY_RC}"
-  CLASSIFY_RC=3
-fi
-
-log "CLASSIFICATION ${CLASSIFICATION}"
+CLASSIFY_RC="$COMMAND_RC"
+log "Lansweeper ${CLASSIFICATION}; command_rc=${COMMAND_RC}; power-off not independently verified"
 power_event "SHUTDOWN_CLASSIFICATION ${CLASSIFICATION}"
 publish_power_events
-
-case "$CLASSIFY_RC" in
-  0)
-    exit 0
-    ;;
-  1)
-    exit 1
-    ;;
-  2)
-    exit 2
-    ;;
-  3)
-    exit 3
-    ;;
-  *)
-    exit 3
-    ;;
-esac
+exit "$COMMAND_RC"

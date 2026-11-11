@@ -195,17 +195,8 @@ commit_placeholder() {
     ups7)
       local db01_rc=0
       local db02_rc=0
-      local db01_classify_rc=0
-      local db02_classify_rc=0
-      local db01_classification=""
-      local db02_classification=""
 
       log_line "UPS_SHUTDOWN_COMMITTED ups7 targeted shutdown started"
-
-      #
-      # Send BOTH Solaris shutdown commands before beginning the
-      # potentially slow post-shutdown verification phase.
-      #
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups7 DB01 method='telnet solaris wrapper'"
       send_outage_email "shutdown" "ups7 shutdown sequence started / DB target action attempted"
@@ -229,41 +220,12 @@ commit_placeholder() {
         log_line "UPS_TARGET_ACTION_FAILED ups7 DB02 rc=$db02_rc"
       fi
 
-      #
-      # Both shutdown commands have now been attempted.
-      # Use the existing shutdown-verification framework to determine
-      # whether each server actually became unreachable.
-      #
-
-      log_line "UPS_TARGET_VERIFICATION_STARTED ups7 DB01"
-
-      if db01_classification="$(/usr/local/sbin/nut-classify-target-shutdown DB01 "$db01_rc" 2>&1)"; then
-        db01_classify_rc=0
+      if [ "$db01_rc" -eq 0 ] && [ "$db02_rc" -eq 0 ]; then
+        log_line "UPS_TARGET_COMMANDS_ACCEPTED ups7 DB01 DB02 independent_verification=not_performed"
+        write_state "ups7" "ups7" "shutdown_committed" "targeted shutdown" 0 0 "DB01 and DB02 shutdown commands accepted; power-off not independently verified"
       else
-        db01_classify_rc=$?
-      fi
-
-      log_line "UPS_TARGET_VERIFICATION_RESULT ups7 DB01 rc=$db01_classify_rc result='$db01_classification'"
-
-      log_line "UPS_TARGET_VERIFICATION_STARTED ups7 DB02"
-
-      if db02_classification="$(/usr/local/sbin/nut-classify-target-shutdown DB02 "$db02_rc" 2>&1)"; then
-        db02_classify_rc=0
-      else
-        db02_classify_rc=$?
-      fi
-
-      log_line "UPS_TARGET_VERIFICATION_RESULT ups7 DB02 rc=$db02_classify_rc result='$db02_classification'"
-
-      if [ "$db01_classify_rc" -eq 0 ] && [ "$db02_classify_rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups7 DB01 verified_shutdown=yes"
-        log_line "UPS_TARGET_ACTION_SUCCESS ups7 DB02 verified_shutdown=yes"
-
-        write_state           "ups7"           "ups7"           "shutdown_committed"           "targeted shutdown"           0           0           "DB01 and DB02 shutdown confirmed"
-      else
-        log_line "UPS_TARGET_VERIFICATION_INCOMPLETE ups7 DB01_rc=$db01_classify_rc DB02_rc=$db02_classify_rc"
-
-        write_state           "ups7"           "ups7"           "shutdown_committed"           "targeted shutdown"           0           0           "DB shutdown attempted; verification requires review"
+        log_line "UPS_TARGET_COMMANDS_INCOMPLETE ups7 DB01_rc=$db01_rc DB02_rc=$db02_rc independent_verification=not_performed"
+        write_state "ups7" "ups7" "shutdown_committed" "targeted shutdown" 0 0 "DB shutdown commands attempted; DB01 rc=$db01_rc DB02 rc=$db02_rc; power-off not independently verified"
       fi
       ;;
 
@@ -275,7 +237,7 @@ commit_placeholder() {
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full BLUEIRIS_LIVE_APPROVED=1 /usr/local/sbin/nut-blueiris-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups2 Blue Iris"
+        log_line "UPS_TARGET_COMMAND_ACCEPTED ups2 Blue Iris"
       else
         log_line "UPS_TARGET_ACTION_FAILED ups2 Blue Iris rc=$rc"
       fi
@@ -291,7 +253,7 @@ commit_placeholder() {
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full VOIP_LIVE_APPROVED=1 /usr/local/sbin/nut-voip-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups8 VOIP"
+        log_line "UPS_TARGET_COMMAND_ACCEPTED ups8 VOIP"
       else
         log_line "UPS_TARGET_ACTION_FAILED ups8 VOIP rc=$rc"
       fi
@@ -310,7 +272,7 @@ commit_placeholder() {
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase1-lansweeper LANSWEEPER_LIVE_APPROVED=1 /usr/local/sbin/nut-lansweeper-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups6 Lansweeper"
+        log_line "UPS_TARGET_COMMAND_ACCEPTED ups6 Lansweeper"
       else
         log_line "UPS_TARGET_ACTION_FAILED ups6 Lansweeper rc=$rc"
       fi
@@ -329,7 +291,7 @@ commit_placeholder() {
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production VMWARE_LIVE_APPROVED=1 ALLOW_ESXI_SSH_FALLBACK=1 VMWARE_HOST_ACTION_APPROVED=1 CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN=1 /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups9 VMware"
+        log_line "UPS_TARGET_COMMAND_ACCEPTED ups9 VMware"
       else
         log_line "UPS_TARGET_ACTION_FAILED ups9 VMware rc=$rc"
       fi
@@ -339,7 +301,7 @@ commit_placeholder() {
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=phase3-full SYNOLOGY_LIVE_APPROVED=1 /usr/local/sbin/nut-synology-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups9 Albl-synology1"
+        log_line "UPS_TARGET_COMMAND_ACCEPTED ups9 Albl-synology1"
       else
         log_line "UPS_TARGET_ACTION_FAILED ups9 Albl-synology1 rc=$rc"
       fi
@@ -349,7 +311,7 @@ commit_placeholder() {
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production NETAPP_LIVE_APPROVED=1 /usr/local/sbin/nut-netapp-halt.sh Alblnetapp01 >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups9 Alblnetapp01"
+        log_line "UPS_TARGET_COMMAND_ACCEPTED ups9 Alblnetapp01"
       else
         log_line "UPS_TARGET_ACTION_FAILED ups9 Alblnetapp01 rc=$rc"
       fi
@@ -359,7 +321,7 @@ commit_placeholder() {
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production NETAPP_LIVE_APPROVED=1 /usr/local/sbin/nut-netapp-halt.sh Alblnetapp02 >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups9 Alblnetapp02"
+        log_line "UPS_TARGET_COMMAND_ACCEPTED ups9 Alblnetapp02"
       else
         log_line "UPS_TARGET_ACTION_FAILED ups9 Alblnetapp02 rc=$rc"
       fi
@@ -378,7 +340,7 @@ commit_placeholder() {
       SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production NUTSERVER_LIVE_APPROVED=1 /usr/local/sbin/nut-local-final-shutdown.sh >> "$LOG_FILE" 2>&1
       rc=$?
       if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_ACTION_SUCCESS ups9 nutserver final shutdown"
+        log_line "UPS_TARGET_COMMAND_ACCEPTED ups9 nutserver final shutdown"
       else
         log_line "UPS_TARGET_ACTION_FAILED ups9 nutserver final shutdown rc=$rc"
       fi

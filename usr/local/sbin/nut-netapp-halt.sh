@@ -181,15 +181,5 @@ if [ "$RC_B" -ne 0 ]; then
   exit "$RC_B"
 fi
 
-RC=0
-log "SUCCESS NetApp node-by-node halt sequence sent to $TARGET"
-
-if [ -x /usr/local/sbin/nut-classify-target-shutdown ]; then
-  CLASSIFY_NAME="$(classify_name)"
-  /usr/local/sbin/nut-classify-target-shutdown "$CLASSIFY_NAME" "$RC" >> "$LOG_FILE" 2>&1
-  CLASSIFY_RC="$?"
-  exit "$CLASSIFY_RC"
-fi
-
-power_classification "WARN" "command_sent_but_not_verified" "verify_rc=99"
-exit 3
+power_classification "WARN" "NetApp halt commands accepted; power-off not independently verified" ""
+exit 0

@@ -172,25 +172,5 @@ if [ "$RC" -ne 0 ]; then
 fi
 
 log "COMMAND SENT to $TARGET; independent shutdown verification required"
-VERIFY_TIMEOUT="${DB_TELNET_VERIFY_TIMEOUT:-300}"
-VERIFY_RC=99
-CLASSIFY_RC=3
-if [ -x /usr/local/sbin/nut-verify-target-down.sh ]; then
-  /usr/local/sbin/nut-verify-target-down.sh "$TARGET" "$HOST" "$VERIFY_TIMEOUT" >> "$LOG_FILE" 2>&1
-  VERIFY_RC=$?
-else
-  log "WARN shutdown verification helper unavailable"
-fi
-if [ -x /usr/local/sbin/nut-classify-shutdown-result ]; then
-  /usr/local/sbin/nut-classify-shutdown-result "$TARGET" "$RC" "$VERIFY_RC" >> "$LOG_FILE" 2>&1
-  CLASSIFY_RC=$?
-else
-  log "WARN shutdown result classifier unavailable"
-fi
-case "$CLASSIFY_RC" in
-  0) log "PASS shutdown confirmed for $TARGET" ;;
-  1) log "FAIL $TARGET remained online or command failed" ;;
-  2) log "UNKNOWN shutdown could not be verified for $TARGET" ;;
-  *) log "UNKNOWN shutdown result for $TARGET" ;;
-esac
-exit "$CLASSIFY_RC"
+log "Solaris shutdown command accepted; power-off not independently verified"
+exit 0

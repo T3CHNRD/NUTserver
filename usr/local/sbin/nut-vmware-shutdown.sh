@@ -223,7 +223,7 @@ try:
     if r.status_code == 400:
         sys.exit(3)
     r.raise_for_status()
-    sys.exit(0)
+    sys.exit(1)
 except Exception:
     sys.exit(1)
 PY
@@ -305,6 +305,7 @@ shutdown_vm_list() {
   local vm_name
   local vm_id
   local rc=0
+  local group_failed=0
 
   for vm_name in "$@"; do
     log "ATTEMPT VMware guest shutdown for ${vm_name}"
@@ -321,6 +322,8 @@ shutdown_vm_list() {
         log "ERROR could not find VM id for ${vm_name}"
         power_classification "FAIL" "vm_id_not_found" "vm=\"${vm_name}\""
         continue
+      group_failed=1
+      continue
       fi
     fi
 
@@ -338,8 +341,9 @@ shutdown_vm_list() {
         power_classification "FAIL" "guest_shutdown_command_failed" "vm=\"${vm_name}\" command_rc=${shutdown_rc}"
         ;;
     esac
-    sleep 5
+      if [ "$shutdown_rc" -ne 0 ]; then group_failed=1; fi
   done
+  return "$group_failed"
 }
 
 
@@ -441,6 +445,7 @@ shutdown_esxi_hosts() {
 
 
 real_shutdown_domain() {
+  local workflow_failed=0
   log "MODE: REAL / LIVE"
   log "SAFETY CHECK: ALLOW_REAL_TEST=${ALLOW_REAL_TEST:-0}"
   log "SAFETY CHECK: REAL_TEST_PHASE=${REAL_TEST_PHASE:-unset}"
@@ -485,14 +490,14 @@ real_shutdown_domain() {
     log "WARN could not dynamically detect ${VCENTER_VM} host"
   fi
 
-  shutdown_vm_list "$session_id" "${PHASE1[@]}"
-  shutdown_vm_list "$session_id" "${PHASE2[@]}"
-  shutdown_vm_list "$session_id" "${PHASE3[@]}"
-  shutdown_vm_list "$session_id" "${PHASE4[@]}"
-  shutdown_vm_list "$session_id" "$VCENTER_VM"
+  if shutdown_vm_list "$session_id" "${PHASE1[@]}"; then :; else workflow_failed=1; fi
+  if shutdown_vm_list "$session_id" "${PHASE2[@]}"; then :; else workflow_failed=1; fi
+  if shutdown_vm_list "$session_id" "${PHASE3[@]}"; then :; else workflow_failed=1; fi
+  if shutdown_vm_list "$session_id" "${PHASE4[@]}"; then :; else workflow_failed=1; fi
+  if shutdown_vm_list "$session_id" "$VCENTER_VM"; then :; else workflow_failed=1; fi
 
   log "VMWARE_GUEST_SHUTDOWN_PHASE_COMPLETE"
-  power_classification "WARN" "workflow_guest_shutdowns_requested_not_verified"
+  power_classification "WARN" "VMware guest shutdown requests issued; completion not independently verified"
 
   if shutdown_esxi_hosts; then
     log "SUCCESS VMware ESXi host shutdown phase completed"
@@ -503,7 +508,11 @@ real_shutdown_domain() {
   fi
 
   log "SUCCESS VMware vCenter guest plus ESXi host shutdown workflow completed"
-  power_classification "WARN" "workflow_completed_guest_and_host_shutdowns_requested_not_verified"
+  if [ "$workflow_failed" -ne 0 ]; then
+    power_classification "FAIL" "One or more VMware guest or ESXi shutdown commands failed; later requests were still attempted"
+    exit 1
+  fi
+  power_classification "WARN" "VMware guest and ESXi shutdown commands accepted; power-off not independently verified"
   exit 0
 }
 
