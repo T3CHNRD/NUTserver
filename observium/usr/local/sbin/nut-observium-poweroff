@@ -1,0 +1,10 @@
+#!/bin/sh
+# Candidate only. Never execute this helper in the workspace or on production.
+# Install as root-owned and executable only after separate review/authorization.
+set -eu
+
+if [ "$#" -ne 0 ]; then
+  exit 64
+fi
+
+exec /usr/bin/systemctl poweroff

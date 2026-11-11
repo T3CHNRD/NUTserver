@@ -1,0 +1,3 @@
+# Candidate only; install as /etc/sudoers.d/nut-observium-shutdown after review.
+# Restricts observium to this one no-argument root helper.
+observium ALL=(root) NOPASSWD: /usr/local/sbin/nut-observium-poweroff ""
