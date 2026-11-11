@@ -16,18 +16,20 @@ snap-core26-646.mount                          enabled         enabled
 snap-core26-750.mount                          enabled         enabled
 snap-cups-1272.mount                           enabled         enabled
 snap-cups-1277.mount                           enabled         enabled
-snap-firefox-9057.mount                        enabled         enabled
 snap-firefox-9137.mount                        enabled         enabled
+snap-firefox-9181.mount                        enabled         enabled
 snap-firmware\x2dupdater-258.mount             enabled         enabled
 snap-firmware\x2dupdater-262.mount             enabled         enabled
 snap-gnome\x2d42\x2d2204-247.mount             enabled         enabled
 snap-gnome\x2d42\x2d2204-263.mount             enabled         enabled
 snap-gnome\x2d46\x2d2404-164.mount             enabled         enabled
 snap-gnome\x2d46\x2d2404-177.mount             enabled         enabled
+snap-gnome\x2dcore26-33.mount                  enabled         enabled
 snap-gtk\x2dcommon\x2dthemes-1535.mount        enabled         enabled
 snap-icon\x2dtheme\x2dbreeze-5.mount           enabled         enabled
 snap-mesa\x2d2404-1165.mount                   enabled         enabled
 snap-mesa\x2d2404-1839.mount                   enabled         enabled
+snap-mesa\x2d2604-123.mount                    enabled         enabled
 snap-snap\x2dstore-1447.mount                  enabled         enabled
 snap-snap\x2dstore-1468.mount                  enabled         enabled
 snap-snapd-28254.mount                         enabled         enabled
@@ -216,6 +218,7 @@ snap.chromium.daemon.service                   disabled        enabled
 snap.cups.cups-browsed.service                 enabled         enabled
 snap.cups.cupsd.service                        enabled         enabled
 snap.mesa-2404.component-monitor.service       disabled        enabled
+snap.mesa-2604.component-monitor.service       disabled        enabled
 snapd.apparmor.service                         enabled         enabled
 snapd.autoimport.service                       enabled         enabled
 snapd.core-fixup.service                       enabled         enabled
@@ -516,4 +519,4 @@ ua-timer.timer                                 enabled         enabled
 update-notifier-download.timer                 enabled         enabled
 update-notifier-motd.timer                     enabled         enabled
 
-516 unit files listed.
+519 unit files listed.

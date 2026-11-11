@@ -1594,6 +1594,7 @@
 /etc/systemd/system/nut-weather-cache-refresh.timer|644|root|root
 /etc/systemd/system/nut-daily-health-email.service.pre-telegram-production-20260817-123730|644|root|root
 /etc/systemd/system/nut-daily-health-email.service|644|root|root
+/etc/systemd/system/snap-mesa\x2d2604-123.mount|644|root|root
 /etc/systemd/system/snap-snapd\x2ddesktop\x2dintegration-387.mount|644|root|root
 /etc/systemd/system/snap-core26-750.mount|644|root|root
 /etc/systemd/system/snap-bare-5.mount|644|root|root
@@ -1606,6 +1607,7 @@
 /etc/systemd/system/snap-firefox-9137.mount|644|root|root
 /etc/systemd/system/nut-driver@ups8.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups8.service.d/nut-driver-enumerator-generated.conf|644|root|root
+/etc/systemd/system/snap-gnome\x2dcore26-33.mount|644|root|root
 /etc/systemd/system/nut-daily-health-email.service.pre-telegram-production-20260817-123346|644|root|root
 /etc/systemd/system/snap-core24-2124.mount|644|root|root
 /etc/systemd/system/nut-boot-event-log.service|644|root|root
@@ -1629,6 +1631,7 @@
 /etc/systemd/system/nut-telegram-heartbeat.service|644|root|root
 /etc/systemd/system/nut-driver@ups1.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups1.service.d/nut-driver-enumerator-generated.conf|644|root|root
+/etc/systemd/system/snap-firefox-9181.mount|644|root|root
 /etc/systemd/system/nut-power-events-refresh.service.pre-doc-warning-cleanup-20260522-090629|644|root|root
 /etc/systemd/system/nut-driver@.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
 /etc/systemd/system/nut-driver@ups9.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root
@@ -1639,7 +1642,6 @@
 /etc/systemd/system/snap-core24-2307.mount|644|root|root
 /etc/systemd/system/nut-fix-sockets.service|644|root|root
 /etc/systemd/system/snap-gnome\x2d46\x2d2404-164.mount|644|root|root
-/etc/systemd/system/snap-firefox-9057.mount|644|root|root
 /etc/systemd/system/nut-weather-cache-refresh.service|644|root|root
 /etc/systemd/system/nut-daily-health-email.timer|644|root|root
 /etc/systemd/system/snap-snapd\x2ddesktop\x2dintegration-391.mount|644|root|root
@@ -1656,6 +1658,7 @@
 /etc/systemd/system/sshd-keygen@.service.d/disable-sshd-keygen-if-cloud-init-active.conf|644|root|root
 /etc/systemd/system/nut-orchestrator-ui.service.pre-nnp-fix-20260417-154813|644|root|root
 /etc/systemd/system/snap-cups-1272.mount|644|root|root
+/etc/systemd/system/snap.mesa-2604.component-monitor.service|644|root|root
 /etc/systemd/system/nut-telegram-dispatch.path|644|root|root
 /etc/systemd/system/snap-gnome\x2d42\x2d2204-247.mount|644|root|root
 /etc/systemd/system/nut-driver@ups2.service.d/nut-driver-enumerator-generated-checksum.conf|644|root|root

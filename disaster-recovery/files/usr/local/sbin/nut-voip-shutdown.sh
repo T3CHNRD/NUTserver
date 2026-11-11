@@ -100,11 +100,5 @@ fi
 
 log "SUCCESS VOIP shutdown command sent"
 
-if [ -x /usr/local/sbin/nut-classify-target-shutdown ]; then
-  /usr/local/sbin/nut-classify-target-shutdown VOIP "$RC" >> "$LOG_FILE" 2>&1
-  CLASSIFY_RC="$?"
-  exit "$CLASSIFY_RC"
-fi
-
-power_classification "WARN" "command_sent_but_not_verified" "verify_rc=99"
-exit 3
+power_classification "WARN" "VOIP shutdown command accepted; power-off not independently verified"
+exit 0

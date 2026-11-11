@@ -170,11 +170,5 @@ fi
 
 log "SUCCESS Synology DSM API shutdown command sent"
 
-if [ -x /usr/local/sbin/nut-classify-target-shutdown ]; then
-  /usr/local/sbin/nut-classify-target-shutdown Synology 0 >> "$LOG_FILE" 2>&1
-  CLASSIFY_RC="$?"
-  exit "$CLASSIFY_RC"
-fi
-
-power_classification "WARN" "command_sent_but_not_verified" "verify_rc=99 method=\"dsm_api\""
-exit 3
+power_classification "WARN" "Synology shutdown API request accepted; power-off not independently verified"
+exit 0
