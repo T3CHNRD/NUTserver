@@ -382,6 +382,7 @@
 /opt/nut-orchestrator-ui/static/app.js.pre-toast-cleanup-20260421-102421|644|root|root
 /opt/nut-orchestrator-ui/static/nut-ui-theme.css.pre-ref-header-fix-20260421-074938|644|root|root
 /opt/nut-orchestrator-ui/static/nut-ui-theme.css.pre-compact-20260421-073025|644|root|root
+/opt/nut-orchestrator-ui/static/nut-power-outage-workflow.png|644|root|root
 /opt/nut-orchestrator-ui/static/app.js.pre-shared-static-power-events-feed-20260522-074407|664|nutserver|nutserver
 /opt/nut-orchestrator-ui/static/app.js.pre-subpath-fix-20260417-150707|644|root|root
 /opt/nut-orchestrator-ui/static/nut-ui-theme.css.pre-readable-action-output-20260522-131900|644|root|root
