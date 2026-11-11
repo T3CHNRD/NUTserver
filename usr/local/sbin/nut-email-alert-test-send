@@ -537,8 +537,8 @@ def current_idf_power_state(source):
 
 def idf_status_lines():
     targets = [
-        ("IDF 2", "IDF2", "198.51.100.10", "APC-IDF2.example.com"),
-        ("IDF 3", "IDF3", "198.51.100.11", "apc-idf3.example.com"),
+        ("IDF 2", "IDF2", "192.168.9.251", "APC-IDF2.albl.com"),
+        ("IDF 3", "IDF3", "192.168.9.252", "apc-idf3.albl.com"),
     ]
 
     lines = [

@@ -28,9 +28,9 @@ Before changing any protected-system integration:
 
 ---
 
-## How to Update or Troubleshoot <DATABASE_SERVER_1> Shutdown Integration
+## How to Update or Troubleshoot DB01 Shutdown Integration
 
-Production <DATABASE_SERVER_1>:
+Production DB01:
 
 - IP: <site address>
 
@@ -40,30 +40,30 @@ Current integration reference:
 
 Procedure:
 
-1. Confirm you are working with <DATABASE_SERVER_1> and not <DATABASE_SERVER_2>.
+1. Confirm you are working with DB01 and not DB02.
 2. Review the DB shutdown target/configuration.
-3. Confirm the <DATABASE_SERVER_1> IP is correct.
+3. Confirm the DB01 IP is correct.
 4. Confirm the configured Telnet username reference.
 5. Confirm the password reference without displaying it.
 6. If the password changed, use [Credential and Password Changes](18_CREDENTIAL_AND_PASSWORD_CHANGES.md).
 7. Perform only the approved non-destructive authentication validation.
 8. Review wrapper output/logs.
 
-DO NOT perform a live shutdown of production <DATABASE_SERVER_1> as a routine test.
+DO NOT perform a live shutdown of production DB01 as a routine test.
 
 Search phrases:
 
-- <DATABASE_SERVER_1> shutdown
-- <DATABASE_SERVER_1> NUT
+- DB01 shutdown
+- DB01 NUT
 - DBO1 password
-- <DATABASE_SERVER_1> shutdown failed
-- update <DATABASE_SERVER_1> in NUT
+- DB01 shutdown failed
+- update DB01 in NUT
 
 ---
 
-## How to Update or Troubleshoot <DATABASE_SERVER_2> Shutdown Integration
+## How to Update or Troubleshoot DB02 Shutdown Integration
 
-Production <DATABASE_SERVER_2>:
+Production DB02:
 
 - IP: <site address>
 
@@ -73,23 +73,23 @@ Current integration reference:
 
 Procedure:
 
-1. Confirm you are working with <DATABASE_SERVER_2>.
+1. Confirm you are working with DB02.
 2. Review the DB shutdown configuration.
-3. Confirm the <DATABASE_SERVER_2> IP.
+3. Confirm the DB02 IP.
 4. Confirm the username reference.
 5. Confirm the password reference without exposing it.
 6. Use non-destructive authentication validation.
 7. Review wrapper output/logs.
 
-DO NOT perform a live shutdown of production <DATABASE_SERVER_2> as a routine test.
+DO NOT perform a live shutdown of production DB02 as a routine test.
 
 Search phrases:
 
-- <DATABASE_SERVER_2> shutdown
-- <DATABASE_SERVER_2> NUT
+- DB02 shutdown
+- DB02 NUT
 - DBO2 password
-- <DATABASE_SERVER_2> shutdown failed
-- update <DATABASE_SERVER_2> in NUT
+- DB02 shutdown failed
+- update DB02 in NUT
 
 ---
 
@@ -117,7 +117,7 @@ Procedure:
 4. Confirm credentials without displaying them.
 5. Confirm approved-target mapping.
 6. Use non-disruptive verification whenever possible.
-7. Never accidentally target production <DATABASE_SERVER_1> or <DATABASE_SERVER_2> while testing V240 logic.
+7. Never accidentally target production DB01 or DB02 while testing V240 logic.
 
 Search phrases:
 
@@ -282,7 +282,7 @@ Search phrases:
 
 ## How to Review or Troubleshoot Observium Shutdown Integration
 
-The configured Observium host is `<INTERNAL_IP>`; the SSH account is `observium`, not root. The operator reports that the restricted helper, sudo authorization, trusted SSH host key, NUT wrapper, and verification-registry entry were installed and checked on 2026-11-10. An actual shutdown has not been live-tested.
+The configured Observium host is `192.168.3.230`; the SSH account is `observium`, not root. The operator reports that the restricted helper, sudo authorization, trusted SSH host key, NUT wrapper, and verification-registry entry were installed and checked on 2026-11-10. An actual shutdown has not been live-tested.
 
 | Side | Path | Role |
 | --- | --- | --- |
@@ -374,8 +374,8 @@ Do not assume the address exists in only one file.
 
 Search Help for:
 
-- <DATABASE_SERVER_1> password
-- <DATABASE_SERVER_2> password
+- DB01 password
+- DB02 password
 - vCenter password
 - Synology password
 - credential change
@@ -419,8 +419,8 @@ HIGH RISK:
 
 LIVE / DISRUPTIVE - DO NOT RUN WITHOUT APPROVAL:
 
-- real <DATABASE_SERVER_1> shutdown
-- real <DATABASE_SERVER_2> shutdown
+- real DB01 shutdown
+- real DB02 shutdown
 - real VMware shutdown
 - real Synology halt
 - real NetApp halt

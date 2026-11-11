@@ -245,8 +245,8 @@ HIGH RISK / DO NOT RUN WITHOUT APPROVAL:
 - changing live shutdown commands
 - Real Test
 - intentionally forcing a UPS ONBATT condition
-- shutting down production <DATABASE_SERVER_1>
-- shutting down production <DATABASE_SERVER_2>
+- shutting down production DB01
+- shutting down production DB02
 - shutting down VMware/storage production systems
 
 ---
@@ -290,8 +290,8 @@ Use that article when answering questions such as:
 
 - what is plugged into UPS3
 - what does UPS7 shut down
-- which UPS protects <DATABASE_SERVER_1>
-- which UPS protects <DATABASE_SERVER_2>
+- which UPS protects DB01
+- which UPS protects DB02
 - what is connected to UPS9
 - which UPS devices are alert only
 

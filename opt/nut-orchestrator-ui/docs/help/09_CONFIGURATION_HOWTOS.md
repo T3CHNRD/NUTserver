@@ -292,15 +292,15 @@ Do not change logical mapping merely because a system appears near a different U
 
 Not every credential used by the NUT environment is exposed as a normal field under Configuration -> EDITABLE LIVE CONFIG.
 
-For <DATABASE_SERVER_1> and <DATABASE_SERVER_2> database shutdown access, use the dedicated **Credential and Password Changes** Help article instead of assuming the password is stored in a general Configuration form.
+For DB01 and DB02 database shutdown access, use the dedicated **Credential and Password Changes** Help article instead of assuming the password is stored in a general Configuration form.
 
 Use that article for searches and tasks such as:
 
-- <DATABASE_SERVER_1> password
+- DB01 password
 - DBO1 password
-- update <DATABASE_SERVER_1> password
-- <DATABASE_SERVER_2> password
-- update <DATABASE_SERVER_2> password
+- update DB01 password
+- DB02 password
+- update DB02 password
 - database Telnet password
 - database Telnet username
 - update username
@@ -762,7 +762,7 @@ Eleven of the 26 editable registry entries are executable scripts/helpers. They 
 | --- | --- |
 | nut-synology-shutdown.sh<br>/usr/local/sbin/nut-synology-shutdown.sh | Synology action/API workflow. Change for a new supported API/method or behavior; use Synology API Config for supported account/connection changes. |
 | nut-voip-shutdown.sh<br>/usr/local/sbin/nut-voip-shutdown.sh | VOIP target action. Inspect current credential source and target identity; neither a new server nor a password change justifies guessing its variables. |
-| nut-db-shutdown.sh<br>/usr/local/sbin/nut-db-shutdown.sh | <DATABASE_SERVER_1>/<DATABASE_SERVER_2> action implementation. Existing DB settings/credential consumers must be traced before adding a third target. |
+| nut-db-shutdown.sh<br>/usr/local/sbin/nut-db-shutdown.sh | DB01/DB02 action implementation. Existing DB settings/credential consumers must be traced before adding a third target. |
 | nut-blueiris-shutdown.sh<br>/usr/local/sbin/nut-blueiris-shutdown.sh | Blue Iris action implementation. The reviewed wrapper copy loads `/etc/nut/lansweeper.creds` and consumes the shared domain, username and password fields documented below. The live wrapper was not re-read during this Help update. |
 | nut-ui-run-test<br>/usr/local/sbin/nut-ui-run-test | Simulation dispatch/validation. Update only if a newly supported target must be included in the test workflow; simulation is not target shutdown proof. |
 | nut-ui-run-real-test-approved<br>/usr/local/sbin/nut-ui-run-real-test-approved | Real-test approval/dispatch. Preserve authorization gates; adding a target must not silently broaden an existing live test. |
@@ -932,7 +932,7 @@ The deployed profile map provides nine selectable profiles. It exposes 27 named 
 | NetApp02 | management address → `NETAPP02_HOST` | `/etc/nut/nut-orchestrator.conf` | NetApp02 management endpoint used by NetApp wrapper. | NetApp02 only. |
 | NetApp02 | node A address → `NETAPP02_NODE_A` | `/etc/nut/nut-orchestrator.conf` | Node A identity/endpoint used by the per-node halt workflow. Exact accepted identifier format was not confirmed here. | NetApp02 only. |
 | NetApp02 | node B address → `NETAPP02_NODE_B` | `/etc/nut/nut-orchestrator.conf` | Node B identity/endpoint used by the per-node halt workflow. Exact accepted identifier format was not confirmed here. | NetApp02 only. |
-| Observium | Observium address → `OBSERVIUM_HOST` | `/etc/nut/nut-orchestrator.conf` | NUT-side SSH target, configured as `<INTERNAL_IP>`. | Observium only. |
+| Observium | Observium address → `OBSERVIUM_HOST` | `/etc/nut/nut-orchestrator.conf` | NUT-side SSH target, configured as `192.168.3.230`. | Observium only. |
 | Observium | Observium username → `OBSERVIUM_USERNAME` | `/etc/nut/nut-orchestrator.conf` | SSH account; configured account is `observium`, not root. | Uses restricted helper authorization. |
 | Observium | Observium password → `OBSERVIUM_PASSWORD` | `/etc/nut/nut-orchestrator.conf` | SSH account password consumed by wrapper. | Observium only; blank preserves the stored value. |
 | Lansweeper | Lansweeper address → `LANSWEEPER_IP` | `/etc/nut/lansweeper.creds` | RPC target address used by Lansweeper wrapper. | Lansweeper only. |
@@ -943,12 +943,12 @@ The deployed profile map provides nine selectable profiles. It exposes 27 named 
 | Synology | DSM API address → `SYNOLOGY_BASE_URL` | `/etc/nut/synology-api.conf` | DSM API base address used by Synology wrapper's login/session flow. | Synology only. |
 | Synology | DSM username → `SYNOLOGY_USERNAME` | `/etc/nut/synology-api.conf` | Account submitted for DSM API login. | Synology only. |
 | Synology | DSM password → `SYNOLOGY_PASSWORD` | `/etc/nut/synology-api.conf` | Secret submitted for DSM API login. | Synology only; blank preserves the stored value. |
-| <DATABASE_SERVER_1> | <DATABASE_SERVER_1> address → `<DATABASE_SERVER_1>_HOST` | `/etc/nut/db-shutdown.conf` | <DATABASE_SERVER_1> host selected by shared Solaris shutdown wrapper. | <DATABASE_SERVER_1> only. |
-| <DATABASE_SERVER_1> | <DATABASE_SERVER_1> username → `<DATABASE_SERVER_1>_USERNAME` | `/etc/nut/db-shutdown.conf` | Solaris login account for <DATABASE_SERVER_1>. | <DATABASE_SERVER_1> only. |
-| <DATABASE_SERVER_1> | <DATABASE_SERVER_1> password → `<DATABASE_SERVER_1>_PASSWORD` | `/etc/nut/db-shutdown.conf` | Solaris login credential for <DATABASE_SERVER_1>. | <DATABASE_SERVER_1> only; blank preserves the stored value. |
-| <DATABASE_SERVER_2> | <DATABASE_SERVER_2> address → `<DATABASE_SERVER_2>_HOST` | `/etc/nut/db-shutdown.conf` | <DATABASE_SERVER_2> host selected by shared Solaris shutdown wrapper. | <DATABASE_SERVER_2> only. |
-| <DATABASE_SERVER_2> | <DATABASE_SERVER_2> username → `<DATABASE_SERVER_2>_USERNAME` | `/etc/nut/db-shutdown.conf` | Solaris login account for <DATABASE_SERVER_2>. | <DATABASE_SERVER_2> only. |
-| <DATABASE_SERVER_2> | <DATABASE_SERVER_2> password → `<DATABASE_SERVER_2>_PASSWORD` | `/etc/nut/db-shutdown.conf` | Solaris login credential for <DATABASE_SERVER_2>. | <DATABASE_SERVER_2> only; blank preserves the stored value. |
+| DB01 | DB01 address → `DB01_HOST` | `/etc/nut/db-shutdown.conf` | DB01 host selected by shared Solaris shutdown wrapper. | DB01 only. |
+| DB01 | DB01 username → `DB01_USERNAME` | `/etc/nut/db-shutdown.conf` | Solaris login account for DB01. | DB01 only. |
+| DB01 | DB01 password → `DB01_PASSWORD` | `/etc/nut/db-shutdown.conf` | Solaris login credential for DB01. | DB01 only; blank preserves the stored value. |
+| DB02 | DB02 address → `DB02_HOST` | `/etc/nut/db-shutdown.conf` | DB02 host selected by shared Solaris shutdown wrapper. | DB02 only. |
+| DB02 | DB02 username → `DB02_USERNAME` | `/etc/nut/db-shutdown.conf` | Solaris login account for DB02. | DB02 only. |
+| DB02 | DB02 password → `DB02_PASSWORD` | `/etc/nut/db-shutdown.conf` | Solaris login credential for DB02. | DB02 only; blank preserves the stored value. |
 
 For non-Observium wrappers, consumer names and per-invocation reading above are supported by reviewed source copies dated 2026-10-09; those current live wrappers were not re-read during this Help pass. This is not proof of successful authentication or shutdown. The compact UI itself and its profile map were deployed/verified by the operator on 2026-11-10.
 
@@ -959,7 +959,7 @@ For non-Observium wrappers, consumer names and per-invocation reading above are 
 | `/etc/nut/nut-orchestrator.conf` | Shared connection configuration for VMware, NetApp01/02, and Observium wrappers. | Wrong endpoint/account can make its corresponding action fail. NetApp credentials affect both arrays. Registered `root:nut`, `0640`. | Editor does not restart services. Reviewed source copies read settings at invocation. Restore via the existing config-ID rollback described in [Save and rollback](35_SAVE_AND_ROLL_BACK_CONFIGURATION.md); remote credentials must agree. |
 | `/etc/nut/lansweeper.creds` | Lansweeper and Blue Iris shared RPC credentials; Lansweeper target/method also use this file. | Wrong shared account values can affect both consumers. Registered `root:nut`, `0640`. | No editor-triggered restart; next invocation per reviewed copies. Roll back the whole registry item and coordinate both remote accounts. |
 | `/etc/nut/synology-api.conf` | Synology DSM API address and login. | Incorrect endpoint/account prevents the API login. Registered `root:nut`, `0640`. | No editor-triggered restart; next wrapper invocation per reviewed copy. Restore the matching file backup and coordinate the remote account. |
-| `/etc/nut/db-shutdown.conf` | <DATABASE_SERVER_1>/02 host/login fields plus other common dialogue settings not displayed in compact profiles. | Wrong target-specific value affects that DB; compact save preserves unrelated/common lines. Registered `root:nut`, `0640`. | No editor-triggered restart; next wrapper invocation per reviewed copy. Roll back this file as one item and check both target entries. |
+| `/etc/nut/db-shutdown.conf` | DB01/02 host/login fields plus other common dialogue settings not displayed in compact profiles. | Wrong target-specific value affects that DB; compact save preserves unrelated/common lines. Registered `root:nut`, `0640`. | No editor-triggered restart; next wrapper invocation per reviewed copy. Roll back this file as one item and check both target entries. |
 | `/etc/nut/vcenter.pass` | Protected whole-file vCenter password, separate from username/address. | Wrong password prevents vCenter authentication. Registered `root:nut`, `0640`, sensitive. | Blank input retains it. Use the protected credential rollback path and coordinate the remote account. |
 
 ### Recovery and scope boundaries

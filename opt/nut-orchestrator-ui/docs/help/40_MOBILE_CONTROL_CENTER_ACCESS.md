@@ -12,7 +12,7 @@ Internal mobile access over company Wi-Fi is working. The Control Center layout 
 
 When the phone is connected to the company Wi-Fi, open the approved internal Control Center address:
 
-`http://<INTERNAL_IP>/nut-ui/control-center`
+`http://192.168.3.251/nut-ui/control-center`
 
 This address is already listed in the Control Center overview and Help reference index. Continue to use the existing authentication and security controls. This article does not change or bypass them.
 

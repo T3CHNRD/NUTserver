@@ -17,8 +17,8 @@ Use this Help article when a password, username, API credential, or protected-sy
 
 Common examples include:
 
-- <DATABASE_SERVER_1> Telnet password changed
-- <DATABASE_SERVER_2> Telnet password changed
+- DB01 Telnet password changed
+- DB02 Telnet password changed
 - database Telnet username changed
 - vCenter password changed
 - Synology API credentials changed
@@ -46,11 +46,11 @@ Use the exact field and file mapping in [Server Connection Settings](09_CONFIGUR
 
 ---
 
-## How to Update the <DATABASE_SERVER_1> Telnet Password Used by NUT
+## How to Update the DB01 Telnet Password Used by NUT
 
-Use this procedure after the password for <DATABASE_SERVER_1> has changed.
+Use this procedure after the password for DB01 has changed.
 
-<DATABASE_SERVER_1> production address:
+DB01 production address:
 
 - <site address>
 
@@ -81,11 +81,11 @@ Example backup naming convention:
 
 Do not copy the credential value into the backup filename.
 
-### Step 4 - Update the <DATABASE_SERVER_1> password
+### Step 4 - Update the DB01 password
 
-Update only the credential field used for <DATABASE_SERVER_1>.
+Update only the credential field used for DB01.
 
-Do not change <DATABASE_SERVER_2> or other protected-system credentials unless those credentials also changed.
+Do not change DB02 or other protected-system credentials unless those credentials also changed.
 
 Do not paste the new password into chat while asking for assistance.
 
@@ -99,9 +99,9 @@ Do not make the credential file world-readable merely to fix a permission proble
 
 Use the approved non-disruptive DB shutdown verification method.
 
-Do NOT initiate a live shutdown of production <DATABASE_SERVER_1> merely to test the new password.
+Do NOT initiate a live shutdown of production DB01 merely to test the new password.
 
-Production <DATABASE_SERVER_1> must not be used for a live shutdown test without explicit authorization.
+Production DB01 must not be used for a live shutdown test without explicit authorization.
 
 ### Step 7 - Review logs
 
@@ -109,41 +109,41 @@ Confirm the integration can authenticate without exposing the password in logs.
 
 ### Expected Result
 
-The NUT DB shutdown integration can authenticate to <DATABASE_SERVER_1> using the new credential while production <DATABASE_SERVER_1> remains running.
+The NUT DB shutdown integration can authenticate to DB01 using the new credential while production DB01 remains running.
 
 ### Search phrases
 
-- I changed the <DATABASE_SERVER_1> password
-- update <DATABASE_SERVER_1> password in NUT
+- I changed the DB01 password
+- update DB01 password in NUT
 - DBO1 password changed
 - change database Telnet password
-- <DATABASE_SERVER_1> login changed
+- DB01 login changed
 
 ---
 
-## How to Update the <DATABASE_SERVER_2> Telnet Password Used by NUT
+## How to Update the DB02 Telnet Password Used by NUT
 
-Use this procedure after the production <DATABASE_SERVER_2> Telnet password changes.
+Use this procedure after the production DB02 Telnet password changes.
 
-<DATABASE_SERVER_2> production address:
+DB02 production address:
 
 - <site address>
 
-Follow the same safe process used for <DATABASE_SERVER_1>:
+Follow the same safe process used for DB01:
 
-1. Identify the <DATABASE_SERVER_2> credential field.
+1. Identify the DB02 credential field.
 2. Make a root-only local backup.
-3. Change only the <DATABASE_SERVER_2> credential.
+3. Change only the DB02 credential.
 4. Preserve file permissions.
 5. Validate authentication non-destructively.
-6. Never use production <DATABASE_SERVER_2> for an unapproved live shutdown test.
+6. Never use production DB02 for an unapproved live shutdown test.
 
 ### Search phrases
 
-- I changed the <DATABASE_SERVER_2> password
-- update <DATABASE_SERVER_2> password in NUT
+- I changed the DB02 password
+- update DB02 password in NUT
 - DBO2 password changed
-- <DATABASE_SERVER_2> Telnet login changed
+- DB02 Telnet login changed
 
 ---
 
@@ -156,7 +156,7 @@ Use this if the login username itself changes rather than only the password.
 3. Replace only the intended username.
 4. Preserve credential file permissions.
 5. Validate authentication non-destructively.
-6. Confirm both <DATABASE_SERVER_1> and <DATABASE_SERVER_2> behavior if the same username is shared.
+6. Confirm both DB01 and DB02 behavior if the same username is shared.
 
 Do not assume changing the username automatically updates the password.
 
@@ -241,8 +241,8 @@ Credential updates can usually be performed during production hours if the assoc
 
 Use extra caution with:
 
-- <DATABASE_SERVER_1>
-- <DATABASE_SERVER_2>
+- DB01
+- DB02
 - VMware/vCenter
 - Synology
 - NetApp
@@ -285,8 +285,8 @@ For that reason, every credential change requires a safe authentication verifica
 
 - Configuration
 - Protected Systems
-- <DATABASE_SERVER_1> Shutdown Integration
-- <DATABASE_SERVER_2> Shutdown Integration
+- DB01 Shutdown Integration
+- DB02 Shutdown Integration
 - VMware/vCenter Shutdown Integration
 - Synology Shutdown Integration
 - Security

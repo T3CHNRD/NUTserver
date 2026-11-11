@@ -101,7 +101,7 @@ Primary references:
 
 ---
 
-## <DATABASE_SERVER_1> / <DATABASE_SERVER_2> Shutdown
+## DB01 / DB02 Shutdown
 
 Primary reference:
 
@@ -109,8 +109,8 @@ Primary reference:
 
 Production addresses currently documented:
 
-- <DATABASE_SERVER_1>: <site address>
-- <DATABASE_SERVER_2>: <site address>
+- DB01: <site address>
+- DB02: <site address>
 
 ---
 
