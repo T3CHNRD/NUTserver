@@ -150,6 +150,7 @@ SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-control-cente
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-mask-password-like-config-lines-20260624-071306
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-help-search-20260902_081111
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-three-button-production-mode-api-20260611-154325
+SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.before-root-redirect-20261111
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-streamlined-restore-test-probe-20260604-094801
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-fluid-in-modal-live-restore-20260604-112503
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-latest-event-fix-v2-20260825-081857

@@ -1224,6 +1224,7 @@
 /opt/nut-orchestrator-ui/docs/runbooks/17_config_d_nut_orchestrator_conf.txt|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-help-search-20260902_081111|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-three-button-production-mode-api-20260611-154325|644|root|root
+/opt/nut-orchestrator-ui/app.py.before-root-redirect-20261111|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-streamlined-restore-test-probe-20260604-094801|644|root|root
 /usr/local/bin/nut-orchestrator.sh.pre-ups7-policy|750|root|nut
 /usr/local/bin/nut-test-logic.sh|750|root|nut

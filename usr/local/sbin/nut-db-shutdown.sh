@@ -42,8 +42,8 @@ load_db_config() {
   . "$CONFIG_FILE"
 
   DB_SHUTDOWN_METHOD="${DB_SHUTDOWN_METHOD:-telnet}"
-  DB01_HOST="${DB01_HOST:-198.51.100.10}"
-  DB02_HOST="${DB02_HOST:-198.51.100.11}"
+  DB01_HOST="${DB01_HOST:-192.168.1.9}"
+  DB02_HOST="${DB02_HOST:-192.168.1.11}"
   DB01_USERNAME="${DB01_USERNAME:-}"
   DB01_PASSWORD="${DB01_PASSWORD:-}"
   DB02_USERNAME="${DB02_USERNAME:-}"
@@ -55,7 +55,7 @@ load_db_config() {
 
 validate_common_config() {
   if [ "$DB_SHUTDOWN_METHOD" != "telnet" ]; then
-    log "ERROR DB_SERVER_1/DB_SERVER_2 Solaris V240 targets require the common Telnet method"
+    log "ERROR DB01/DB02 Solaris V240 targets require the common Telnet method"
     exit 12
   fi
 
@@ -72,12 +72,12 @@ validate_common_config() {
 
 resolve_target_host() {
   case "$TARGET" in
-    DB_SERVER_1)
+    DB01)
       HOST="${DB01_HOST:-}"
       DB_USERNAME="${DB01_USERNAME:-}"
       DB_PASSWORD="${DB01_PASSWORD:-}"
       ;;
-    DB_SERVER_2)
+    DB02)
       HOST="${DB02_HOST:-}"
       DB_USERNAME="${DB02_USERNAME:-}"
       DB_PASSWORD="${DB02_PASSWORD:-}"
