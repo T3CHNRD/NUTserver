@@ -222,6 +222,7 @@ SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-full-restore-workflow-20260903-151312
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center-restore-lab.html.pre-final-restore-dropdown-layout-20260604-154625
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-tests-above-config-modal-20260529-092040
+SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-topic-pages-20261112
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-selected-restore-hard-fix-20260604-104215
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-promote-restore-lab-20260604-151127
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-protection-wording-20260619-081122
@@ -335,6 +336,7 @@ SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/index.html.pre-test-buttons-20260417-153422
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-top-refresh-page-reload-20260615-141450
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-load-history-store-fix-20260612-131948
+SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-help-redesign-20261112
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-section-links-20260909-080356
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-help-index-auto-20260909-074352
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-article-focus-20260902_094823

@@ -8559,6 +8559,9 @@ function closeLabSelectedRestoreScreen() {
 
 <style id="cc-help-readability-style">
 #cc-help-article-pane{
+  max-height:70vh;
+  overflow-y:auto;
+  overscroll-behavior:contain;
   padding:12px 16px !important;
 }
 
@@ -9072,6 +9075,81 @@ function init(){
     return s;
   }
 
+
+  function helpTopicPage(md,anchor,file){
+    var lines=String(md||"").replace(/\r/g,"").split("\n");
+    var topics=[];
+    var first=-1;
+    var i;
+
+    for(i=0;i<lines.length;i++){
+      var m=lines[i].match(/^##\s+(.+)$/);
+      if(!m)continue;
+      if(first<0)first=i;
+      if(topics.length)topics[topics.length-1].end=i;
+      topics.push({
+        title:m[1],
+        slug:helpHeadingSlug(m[1]),
+        start:i,
+        end:lines.length
+      });
+    }
+
+    if(!topics.length){
+      return {body:md,nav:""};
+    }
+
+    var wanted=String(anchor||"").replace(/^#/,"");
+    var selected=-1;
+
+    for(i=0;i<topics.length;i++){
+      if(topics[i].slug===wanted){
+        selected=i;
+        break;
+      }
+
+      var part=lines.slice(topics[i].start,topics[i].end);
+      for(var j=0;j<part.length;j++){
+        var h=part[j].match(/^#{3,6}\s+(.+)$/);
+        if(h && helpHeadingSlug(h[1])===wanted){
+          selected=i;
+          break;
+        }
+      }
+      if(selected>=0)break;
+    }
+
+    var nav="<details class=\"cc-help-topic-navigation\" "+
+      (selected<0?"open":"")+">"+
+      "<summary>Help topics in this document</summary>"+
+      "<div style=\"padding:10px;display:flex;flex-wrap:wrap;gap:8px;\">";
+
+    nav+="<a href=\"#\" class=\"cc-help-internal-link cc-btn\" "+
+      "data-help-file=\""+esc(file)+"\" data-help-anchor=\"\">Overview</a>";
+
+    for(i=0;i<topics.length;i++){
+      nav+="<a href=\"#\" class=\"cc-help-internal-link cc-btn\" "+
+        "data-help-file=\""+esc(file)+"\" "+
+        "data-help-anchor=\""+esc(topics[i].slug)+"\">"+
+        esc(topics[i].title)+"</a>";
+    }
+
+    nav+="</div></details>";
+
+    var body;
+
+    if(selected>=0){
+      body=lines.slice(topics[selected].start,topics[selected].end).join("\n");
+    }else{
+      body=lines.slice(0,first).join("\n");
+      if(wanted){
+        body+="\n\nRequested section was not found. Choose a topic above.";
+      }
+    }
+
+    return {body:body,nav:nav};
+  }
+
   function helpRenderMarkdown(md,anchor){
     var lines=String(md||"").replace(/\r/g,"").split("\n");
     var html=[];
@@ -9263,7 +9341,7 @@ function init(){
     openHelpAnchor=anchor;
 
     if(list){
-      list.style.display="none";
+      list.style.display="";
     }
 
     pane.style.display="block";
@@ -9289,7 +9367,8 @@ function init(){
 
         var content=String(d.content||"");
         var markerId="cc-help-match-anchor";
-        var rendered=helpRenderMarkdown(content,anchor);
+        var topic=helpTopicPage(content,anchor,file);
+        var rendered=topic.nav+helpRenderMarkdown(topic.body,anchor);
 
         if(file==="00_HELP_INDEX.md"){
           rendered+=helpIndexAutoLibraryHtml();
@@ -9375,40 +9454,16 @@ function init(){
         document.body.appendChild(topBtn);
 
         topBtn.onclick=function(){
-          var top=document.getElementById("cc-help-article-top");
-          if(!top)return;
-
-          var scrollNow=
-            window.pageYOffset ||
-            document.documentElement.scrollTop ||
-            document.body.scrollTop ||
-            0;
-
-          var y=top.getBoundingClientRect().top+scrollNow-135;
-          if(y<0)y=0;
-
-          window.scrollTo(0,y);
+          pane.scrollTop=0;
         };
 
         var marker=document.getElementById(markerId);
 
-        if(marker&&marker.scrollIntoView){
-          marker.scrollIntoView(true);
+        pane.scrollTop=0;
 
-          /*
-           * The Control Center has a fixed status/header bar.
-           * scrollIntoView(true) places the matched heading behind it,
-           * so move the viewport upward enough to keep the complete
-           * matched section heading visible.
-           */
-          if(window.scrollBy){
-            window.scrollBy(0,-135);
-          }
-        }else if(pane.scrollIntoView){
-          pane.scrollIntoView(true);
-          if(window.scrollBy){
-            window.scrollBy(0,-135);
-          }
+        if(marker && pane.contains(marker)){
+          var offset=marker.getBoundingClientRect().top-pane.getBoundingClientRect().top;
+          pane.scrollTop=Math.max(0,offset-12);
         }
       },
 
