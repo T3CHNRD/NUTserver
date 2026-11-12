@@ -1285,6 +1285,7 @@
 /usr/local/sbin/nut-netapp-halt.sh.before-sshpass-20261009|750|root|root
 /usr/local/sbin/nut-ui-run-test.pre-friday-standby-20261111-1354|755|root|root
 /usr/local/sbin/nut-email-alert-test-send.pre-raw-bytes-cr-normalize-20260623-124108|755|root|root
+/usr/local/sbin/nut-ups9-checkpoint|755|root|root
 /usr/local/sbin/nut-email-alert-test-send|755|root|root
 /usr/local/sbin/nut-synology-shutdown.sh.bak.2026-05-12-090606|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-141355|755|root|root

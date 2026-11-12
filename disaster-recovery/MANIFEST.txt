@@ -1261,6 +1261,7 @@ FILE /usr/local/sbin/nut-sync-live-to-repo-for-backup -> files/usr/local/sbin/nu
 SKIP temp-development-artifact /usr/local/sbin/nut-netapp-halt.sh.before-sshpass-20261009
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-run-test.pre-friday-standby-20261111-1354
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-raw-bytes-cr-normalize-20260623-124108
+FILE /usr/local/sbin/nut-ups9-checkpoint -> files/usr/local/sbin/nut-ups9-checkpoint mode=0755
 FILE /usr/local/sbin/nut-email-alert-test-send -> files/usr/local/sbin/nut-email-alert-test-send mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-synology-shutdown.sh.bak.2026-05-12-090606
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-sanitize-20260622-141355

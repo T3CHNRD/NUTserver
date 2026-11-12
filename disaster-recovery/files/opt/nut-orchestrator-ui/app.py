@@ -1223,27 +1223,23 @@ def notification_controls_api():
 
 @app.route("/api/test/<mode>", methods=["POST"])
 def run_test(mode):
-    blocked = block_if_protecting("test run")
-    if blocked:
-        return blocked
-
     if mode not in ("simulate", "real"):
         return jsonify({"ok": False, "error": "Invalid mode"}), 400
 
     if mode == "real":
         real_test_mode = get_current_protection_mode()
-        if real_test_mode != "disarmed":
+        if real_test_mode not in {"armed", "disarmed"}:
             response_mode = {
                 "armed": "PROTECTING",
                 "disarmed": "STANDBY FOR MAINTENANCE",
                 "off": "OFF",
             }.get(real_test_mode, "UNKNOWN")
-            status = 423 if real_test_mode in {"armed", "off"} else 503
+            status = 423 if real_test_mode == "off" else 503
             return jsonify({
                 "ok": False,
                 "blocked": True,
                 "mode": response_mode,
-                "error": "Real Test requires exact STANDBY FOR MAINTENANCE mode; "
+                "error": "Real Test requires PROTECTING or STANDBY FOR MAINTENANCE mode; "
                          f"current mode is {response_mode}.",
             }), status
 
@@ -1289,6 +1285,9 @@ def run_test(mode):
         cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-run-real-test-approved", phase]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
     else:
+        blocked = block_if_protecting("test run")
+        if blocked:
+            return blocked
         cmd = ["/usr/bin/sudo", "/usr/local/sbin/nut-ui-run-test", "simulate"]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 

@@ -71,6 +71,19 @@ approved_standby_test_context_allows() {
      "$phase" == "phase3-full" && "$euid" == "0" ]]
 }
 
+approved_protecting_test_context_allows() {
+  local mode="${1:-}"
+  local allow_live="${2:-}"
+  local allow_esxi="${3:-}"
+  local allow_real_test="${4:-}"
+  local simulate="${5:-}"
+  local phase="${6:-}"
+  local euid="${7:-}"
+  [[ "$mode" == "armed" && "$allow_live" == "1" && "$allow_esxi" == "1" && \
+     "$allow_real_test" == "1" && "$simulate" == "0" && \
+     "$phase" == "phase3-full" && "$euid" == "0" ]]
+}
+
 production_mode_allows_commit() {
   local ups_name="${1:-unknown}"
   local mode_file="/etc/nut/production-mode.conf"
@@ -85,6 +98,7 @@ production_mode_allows_commit() {
   local NUT_ALLOW_ESXI_SSH_FALLBACK=""
 
   COMMIT_GATE_CONTEXT="blocked"
+  COMMIT_GATE_ALLOW_ESXI_SSH_FALLBACK="0"
   if [ "${ALLOW_REAL_TEST:-0}" = "1" ] || [ -n "${REAL_TEST_PHASE:-}" ]; then
     approved_test_requested=1
   fi
@@ -108,6 +122,7 @@ production_mode_allows_commit() {
   if { [ "$mode" = "armed" ] || [ "$mode" = "storm_guard" ]; } && \
      [ "$allow_live" = "1" ] && [ "$approved_test_requested" = "0" ]; then
     COMMIT_GATE_CONTEXT="protecting"
+    COMMIT_GATE_ALLOW_ESXI_SSH_FALLBACK="$allow_esxi"
     log_line "PRODUCTION_MODE_GATE_ALLOW ups=${ups_name} mode=${mode} allow_live=${allow_live} allow_esxi=${allow_esxi}"
     return 0
   fi
@@ -116,7 +131,17 @@ production_mode_allows_commit() {
      approved_standby_test_context_allows "$mode" "$allow_live" \
        "${ALLOW_REAL_TEST:-0}" "${SIMULATE:-1}" "${REAL_TEST_PHASE:-}" "$EUID"; then
     COMMIT_GATE_CONTEXT="approved_standby_test"
+    COMMIT_GATE_ALLOW_ESXI_SSH_FALLBACK="$allow_esxi"
     log_line "PRODUCTION_MODE_GATE_ALLOW ups=${ups_name} mode=disarmed approved_test=1 phase=phase3-full"
+    return 0
+  fi
+
+  if [ "$mode_config_valid" = "1" ] && \
+     approved_protecting_test_context_allows "$mode" "$allow_live" "$allow_esxi" \
+       "${ALLOW_REAL_TEST:-0}" "${SIMULATE:-1}" "${REAL_TEST_PHASE:-}" "$EUID"; then
+    COMMIT_GATE_CONTEXT="approved_protecting_test"
+    COMMIT_GATE_ALLOW_ESXI_SSH_FALLBACK="$allow_esxi"
+    log_line "PRODUCTION_MODE_GATE_ALLOW ups=${ups_name} mode=armed approved_test=1 phase=phase3-full"
     return 0
   fi
 
@@ -260,7 +285,7 @@ commit_placeholder() {
     return 1
   fi
 
-  if [ "$maintenance_rc" -eq 2 ] && [ "$COMMIT_GATE_CONTEXT" = "approved_standby_test" ]; then
+  if [ "$maintenance_rc" -eq 2 ] && { [ "$COMMIT_GATE_CONTEXT" = "approved_standby_test" ] || [ "$COMMIT_GATE_CONTEXT" = "approved_protecting_test" ]; }; then
     log_line "APPROVED_TEST_BLOCKED ups=${ups_name} reason='maintenance state unavailable or invalid'"
     write_state "$ups_name" "$ups_name" "shutdown_blocked_maintenance_state_unknown" "maintenance state gate" 0 0 "Approved Standby test blocked because maintenance state is unavailable or invalid"
     return 1
@@ -364,7 +389,7 @@ commit_placeholder() {
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups9 VMware method='vCenter API with PowerCLI fallback'"
     send_outage_email "shutdown" "ups9 shutdown sequence started / VMware target action attempted"
-      SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production VMWARE_LIVE_APPROVED=1 VMWARE_HOST_ACTION_APPROVED=1 CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN=1 /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain >> "$LOG_FILE" 2>&1
+      SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production ALLOW_ESXI_SSH_FALLBACK="${COMMIT_GATE_ALLOW_ESXI_SSH_FALLBACK:-0}" VMWARE_LIVE_APPROVED=1 VMWARE_HOST_ACTION_APPROVED=1 CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN=1 /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain >> "$LOG_FILE" 2>&1
       rc=$?
       case "$rc" in
         0) log_line "UPS_TARGET_RESULT ups9 VMware wrapper_rc=0 result=COMMANDS_ACCEPTED physical_poweroff_verified=no" ;;

@@ -94,6 +94,35 @@ ESXI_HOST_NAMES=(
 "${ESXI_HOST_03_NAME:-}"
 )
 
+UPS9_CHECKPOINT_CLI="/usr/local/sbin/nut-ups9-checkpoint"
+UPS9_SEQUENCE_ID=""
+UPS9_CHECKPOINT_REQUIRED=0
+
+ups9_checkpoint_record() {
+  local target="$1" stage="$2" outcome="$3" reason="$4" result_rc="${5:-}"
+  [ "${UPS9_CHECKPOINT_REQUIRED:-0}" = "1" ] || return 0
+  [ -n "$UPS9_SEQUENCE_ID" ] || return 1
+  if [ -n "$result_rc" ]; then
+    "$UPS9_CHECKPOINT_CLI" record --sequence "$UPS9_SEQUENCE_ID" --target "$target" \
+      --stage "$stage" --outcome "$outcome" --reason "$reason" --return-code "$result_rc"
+  else
+    "$UPS9_CHECKPOINT_CLI" record --sequence "$UPS9_SEQUENCE_ID" --target "$target" \
+      --stage "$stage" --outcome "$outcome" --reason "$reason"
+  fi
+}
+
+ups9_checkpoint_finish() {
+  local outcome="$1" reason="$2" result_rc="${3:-}"
+  [ -n "$UPS9_SEQUENCE_ID" ] || return 1
+  if [ -n "$result_rc" ]; then
+    "$UPS9_CHECKPOINT_CLI" finish-vmware --sequence "$UPS9_SEQUENCE_ID" \
+      --outcome "$outcome" --reason "$reason" --return-code "$result_rc"
+  else
+    "$UPS9_CHECKPOINT_CLI" finish-vmware --sequence "$UPS9_SEQUENCE_ID" \
+      --outcome "$outcome" --reason "$reason"
+  fi
+}
+
 require_python() {
   python3 - <<'PY' >/dev/null 2>&1
 import requests
@@ -373,12 +402,14 @@ shutdown_vm_list() {
     expected_id="$vm_id"
     vm_id="$(vc_api_get_vm_id "$session_id" "${mapped_name:-$vm_name}" "$expected_id" 2>/dev/null)" || {
       log "UNKNOWN VMware current VM identity could not be uniquely resolved vm=${vm_name}"
+      ups9_checkpoint_record "$vm_name" vmware_guest UNKNOWN "VM identity could not be uniquely resolved" || group_unknown=1
       power_classification "UNKNOWN" "vm_identity_unverified" "vm=\"${vm_name}\""
       group_unknown=1
       continue
     }
     state="$(vc_api_get_power_state "$session_id" "$vm_id" 2>/dev/null)" || {
       log "UNKNOWN VMware guest power state unavailable vm=${vm_name}"
+      ups9_checkpoint_record "$vm_name" vmware_guest UNKNOWN "Guest power state unavailable" || group_unknown=1
       power_classification "UNKNOWN" "guest_power_state_unavailable" "vm=\"${vm_name}\""
       group_unknown=1
       continue
@@ -386,12 +417,14 @@ shutdown_vm_list() {
     case "$state" in
       POWERED_OFF)
         log "VERIFIED_OFF VMware guest was already POWERED_OFF before this request vm=${vm_name}"
+        ups9_checkpoint_record "$vm_name" vmware_guest VERIFIED_OFF "POWERED_OFF observed before a shutdown request" || group_unknown=1
         power_classification "VERIFIED_OFF" "guest_already_powered_off_observed_before_request" "vm=\"${vm_name}\""
         continue
         ;;
       POWERED_ON) ;;
       *)
         log "FAIL VMware guest state is not eligible for graceful shutdown vm=${vm_name} state=${state}"
+        ups9_checkpoint_record "$vm_name" vmware_guest FAILED "Guest state was not eligible: ${state}" || group_unknown=1
         power_classification "FAIL" "guest_state_not_powered_on" "vm=\"${vm_name}\""
         group_failed=1
         continue
@@ -399,21 +432,30 @@ shutdown_vm_list() {
     esac
 
     log "ATTEMPT VMware guest shutdown for ${vm_name}"
+    if ! ups9_checkpoint_record "$vm_name" vmware_guest ATTEMPTED "vCenter guest shutdown request about to be sent"; then
+      log "BLOCKED VMware guest request because durable checkpoint attempt could not be recorded vm=${vm_name}"
+      group_unknown=1
+      continue
+    fi
     shutdown_rc=0
     vc_api_guest_shutdown "$session_id" "$vm_id" "${mapped_name:-$vm_name}" || shutdown_rc=$?
     case "$shutdown_rc" in
       0)
+        ups9_checkpoint_record "$vm_name" vmware_guest COMMAND_ACCEPTED "vCenter accepted guest shutdown request" 0 || group_unknown=1
         power_classification "COMMAND_ACCEPTED" "guest_shutdown_request_accepted" "vm=\"${vm_name}\""
         ;;
       3)
+        ups9_checkpoint_record "$vm_name" vmware_guest COMMAND_FAILED "vCenter rejected guest shutdown request" "$shutdown_rc" || group_unknown=1
         power_classification "COMMAND_FAILED" "guest_shutdown_request_rejected" "vm=\"${vm_name}\" rc=${shutdown_rc}"
         group_failed=1
         ;;
       2)
+        ups9_checkpoint_record "$vm_name" vmware_guest UNKNOWN "vCenter guest request outcome ambiguous" "$shutdown_rc" || group_unknown=1
         power_classification "UNKNOWN" "guest_shutdown_request_outcome_unknown" "vm=\"${vm_name}\""
         group_unknown=1
         ;;
       *)
+        ups9_checkpoint_record "$vm_name" vmware_guest COMMAND_FAILED "vCenter guest shutdown request failed" "$shutdown_rc" || group_unknown=1
         power_classification "COMMAND_FAILED" "guest_shutdown_request_failed" "vm=\"${vm_name}\" rc=${shutdown_rc}"
         group_failed=1
         ;;
@@ -505,6 +547,11 @@ shutdown_esxi_hosts() {
     any_host=1
 
     log "ATTEMPT ESXi host shutdown host=${host_name} endpoint=${host} method=ssh command='esxcli system shutdown poweroff'"
+    if ! ups9_checkpoint_record "$host_name" esxi_host ATTEMPTED "SSH ESXi shutdown request about to be sent"; then
+      unknown=1
+      log "BLOCKED ESXi host request because durable checkpoint attempt could not be recorded host=${host_name}"
+      break
+    fi
     if ssh \
       -o BatchMode=yes \
       -o ConnectTimeout=8 \
@@ -514,11 +561,19 @@ shutdown_esxi_hosts() {
       "esxcli system shutdown poweroff -d ${delay} -r '${reason_safe}'" >> "$LOG_FILE" 2>&1; then
       accepted=$((accepted + 1))
       log "COMMAND_ACCEPTED ESXi host shutdown request accepted host=${host_name}; physical host-off is not asserted"
+      if ! ups9_checkpoint_record "$host_name" esxi_host COMMAND_ACCEPTED "SSH accepted ESXi shutdown request; physical host-off not verified" 0; then
+        unknown=1
+        break
+      fi
       power_classification "COMMAND_ACCEPTED" "esxi_host_shutdown_request_accepted" "host=\"${host_name}\""
     else
       rc=$?
       unknown=1
       log "COMMAND_OUTCOME_UNKNOWN ESXi host SSH result host=${host_name} rc=${rc}; no retry"
+      if ! ups9_checkpoint_record "$host_name" esxi_host UNKNOWN "SSH outcome ambiguous; no retry" "$rc"; then
+        log "BLOCKED remaining ESXi host requests because ambiguous outcome could not be durably recorded"
+        break
+      fi
       power_classification "UNKNOWN" "esxi_host_ssh_outcome_unknown" "host=\"${host_name}\" command_rc=${rc}"
     fi
   done
@@ -590,6 +645,28 @@ real_shutdown_domain() {
   # mapping before any guest request can leave the terminal workflow half-run.
   preflight_esxi_host_shutdown "$vcsa_host" || exit 10
 
+  UPS9_CHECKPOINT_REQUIRED=1
+  if [ ! -x "$UPS9_CHECKPOINT_CLI" ]; then
+    log "BLOCKED UPS9 durable checkpoint helper unavailable; no VMware guest request sent"
+    power_classification "BLOCKED" "ups9_checkpoint_helper_unavailable"
+    exit 10
+  fi
+  local checkpoint_args=() checkpoint_guest checkpoint_host
+  for checkpoint_guest in "${PHASE1[@]}" "${PHASE2[@]}" "${PHASE3[@]}" "${PHASE4[@]}" "$VCENTER_VM"; do
+    checkpoint_args+=(--guest "$checkpoint_guest")
+  done
+  for checkpoint_host in "${ESXI_HOST_NAMES[@]}"; do
+    [ -n "$checkpoint_host" ] && checkpoint_args+=(--host "$checkpoint_host")
+  done
+  UPS9_SEQUENCE_ID="$("$UPS9_CHECKPOINT_CLI" begin --vcsa-host "$vcsa_host" "${checkpoint_args[@]}")" || {
+    log "BLOCKED UPS9 checkpoint creation failed; no VMware guest request sent"
+    power_classification "BLOCKED" "ups9_checkpoint_creation_failed"
+    exit 10
+  }
+  [ -n "$UPS9_SEQUENCE_ID" ] || { log "BLOCKED UPS9 checkpoint returned no sequence ID"; exit 10; }
+  export UPS9_SEQUENCE_ID UPS9_CHECKPOINT_REQUIRED
+  log "UPS9_CHECKPOINT_CREATED sequence_id=${UPS9_SEQUENCE_ID} status=VMWARE_DISPATCHING"
+
   # Preserve configured guest order and attempt each independent request once.
   # A failed/unknown guest result does not suppress later guest requests, but it
   # prevents host shutdown because a guest may still depend on that host.
@@ -599,11 +676,13 @@ real_shutdown_domain() {
   shutdown_vm_list "$session_id" "${PHASE4[@]}" || { guest_rc=$?; [ "$guest_rc" -eq 2 ] && workflow_unknown=1 || workflow_failed=1; }
   if ! vcsa_host="$(vc_api_detect_vcsa_host "$session_id" 2>/dev/null)" || [ -z "$vcsa_host" ]; then
     log "UNKNOWN current VCSA placement unavailable immediately before VCSA shutdown; VCSA and host requests not sent"
+    ups9_checkpoint_finish UNKNOWN "VCSA current placement unavailable before final guest stage" 2 || true
     power_classification "UNKNOWN" "vcsa_current_host_refresh_unavailable"
     exit 2
   fi
   if ! resolve_vcsa_ssh_endpoint "$vcsa_host" >/dev/null; then
     log "BLOCKED current VCSA host has no unique approved SSH endpoint; VCSA and host requests not sent"
+    ups9_checkpoint_finish BLOCKED "VCSA host endpoint unresolved before final guest stage" 10 || true
     power_classification "BLOCKED" "vcsa_current_host_ssh_endpoint_unresolved"
     exit 10
   fi
@@ -612,11 +691,13 @@ real_shutdown_domain() {
 
   if [ "$workflow_unknown" -ne 0 ]; then
     log "COMMAND_OUTCOME_UNKNOWN VMware guest sequence contains an unresolved target; ESXi and dependent storage stages blocked"
+    ups9_checkpoint_finish UNKNOWN "VMware guest dispatch had unknown or unpersisted outcome" 2 || true
     power_classification "UNKNOWN" "vmware_guest_command_outcome_unknown"
     exit 2
   fi
   if [ "$workflow_failed" -ne 0 ] || [ "$guest_rc" -ne 0 ]; then
     log "COMMAND_FAILED VMware guest sequence contains a rejected or unissued target; ESXi and dependent storage stages blocked"
+    ups9_checkpoint_finish FAILED "VMware guest dispatch failed; host and storage stages blocked" 1 || true
     power_classification "FAIL" "vmware_guest_command_sequence_incomplete"
     exit 1
   fi
@@ -630,11 +711,15 @@ real_shutdown_domain() {
     0) exit 0 ;;
     11)
       log "COMMANDS_ACCEPTED_DEPENDENCY_UNRESOLVED VMware SSH host requests were accepted; storage interlock remains closed without supported host-off evidence"
+      if ! "$UPS9_CHECKPOINT_CLI" pending-host-verification --sequence "$UPS9_SEQUENCE_ID" >/dev/null; then
+        ups9_checkpoint_finish UNKNOWN "Host requests completed but pending-verification checkpoint failed" 2 || true
+        exit 2
+      fi
       exit 11
       ;;
-    10) exit 10 ;;
-    2) exit 2 ;;
-    *) exit 1 ;;
+    10) ups9_checkpoint_finish BLOCKED "ESXi host preflight blocked" 10 || true; exit 10 ;;
+    2) ups9_checkpoint_finish UNKNOWN "ESXi host request outcome unknown" 2 || true; exit 2 ;;
+    *) ups9_checkpoint_finish FAILED "ESXi host request failed" "$host_rc" || true; exit 1 ;;
   esac
 }
 

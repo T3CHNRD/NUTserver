@@ -1,0 +1,492 @@
+#!/usr/bin/env python3
+"""Root-only, fail-closed UPS9 checkpoint and operator-confirmed resume candidate.
+
+The checkpoint records command results. Human host confirmation is stored as an
+attestation, never as automatic VERIFIED_OFF evidence.
+"""
+from __future__ import annotations
+
+import argparse
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
+import fcntl
+import getpass
+import json
+import os
+from pathlib import Path
+import re
+import secrets
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+import uuid
+
+STATE_DIR = Path("/var/lib/nut/ups9-checkpoints")
+MODE_FILE = Path("/etc/nut/production-mode.conf")
+CONFIRM_TTL_SECONDS = 600
+MAX_EVENTS = 500
+TARGETS = (
+    ("synology", "/usr/local/sbin/nut-synology-shutdown.sh", (), "SYNOLOGY_LIVE_APPROVED"),
+    ("netapp01", "/usr/local/sbin/nut-netapp-halt.sh", ("Alblnetapp01",), "NETAPP_LIVE_APPROVED"),
+    ("netapp02", "/usr/local/sbin/nut-netapp-halt.sh", ("Alblnetapp02",), "NETAPP_LIVE_APPROVED"),
+    ("observium", "/usr/local/sbin/nut-observium-shutdown.sh", (), "OBSERVIUM_LIVE_APPROVED"),
+    ("nut_final", "/usr/local/sbin/nut-local-final-shutdown.sh", (), "NUTSERVER_LIVE_APPROVED"),
+)
+OUTCOMES = {"ATTEMPTED", "COMMAND_ACCEPTED", "COMMAND_FAILED", "UNKNOWN", "VERIFIED_OFF", "BLOCKED"}
+FINAL_OUTCOMES = {"COMMAND_ACCEPTED", "COMMAND_FAILED", "UNKNOWN", "VERIFIED_OFF", "BLOCKED"}
+
+
+def now_utc() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def parse_mode_file(path: Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            values[key.strip()] = value.strip().strip("\"'")
+    except OSError as exc:
+        raise RuntimeError("production mode state unavailable") from exc
+    return values
+
+
+def require_armed_mode(path: Path = MODE_FILE) -> dict[str, str]:
+    values = parse_mode_file(path)
+    if (values.get("NUT_PRODUCTION_MODE") != "armed"
+            or values.get("NUT_ALLOW_LIVE_ACTIONS") != "1"
+            or values.get("NUT_ALLOW_ESXI_SSH_FALLBACK") != "1"):
+        raise RuntimeError("Protecting mode and required mode-managed gates are not all enabled")
+    return values
+
+
+class Store:
+    def __init__(self, root: Path, *, enforce_root: bool = True):
+        self.root = root
+        self.enforce_root = enforce_root
+        self.active_path = root / "active.json"
+        self.lock_path = root / "state.lock"
+        self.resume_lock_path = root / "resume.lock"
+
+    def prepare(self, *, create: bool = True) -> None:
+        if create:
+            self.root.mkdir(mode=0o700, parents=True, exist_ok=True)
+        try:
+            st = self.root.lstat()
+        except FileNotFoundError as exc:
+            raise RuntimeError("no UPS9 checkpoint state directory exists") from exc
+        if stat.S_ISLNK(st.st_mode) or not stat.S_ISDIR(st.st_mode) or stat.S_IMODE(st.st_mode) & 0o077:
+            raise RuntimeError("checkpoint directory must be a private directory (mode 0700 or stricter)")
+        if self.enforce_root and st.st_uid != 0:
+            raise RuntimeError("checkpoint directory must be root-owned")
+
+    @contextmanager
+    def locked(self, *, resume: bool = False, nonblocking: bool = False):
+        self.prepare(create=True)
+        path = self.resume_lock_path if resume else self.lock_path
+        fd = os.open(path, os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), 0o600)
+        try:
+            os.fchmod(fd, 0o600)
+            operation = fcntl.LOCK_EX | (fcntl.LOCK_NB if nonblocking else 0)
+            try:
+                fcntl.flock(fd, operation)
+            except BlockingIOError as exc:
+                raise RuntimeError("another UPS9 continuation is already active") from exc
+            yield
+        finally:
+            os.close(fd)
+
+    def _path(self, sequence_id: str) -> Path:
+        if not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", sequence_id):
+            raise RuntimeError("invalid UPS9 sequence ID")
+        return self.root / f"{sequence_id}.json"
+
+    def read(self, sequence_id: str | None = None) -> dict:
+        self.prepare(create=False)
+        if sequence_id is None:
+            if not self.active_path.exists():
+                raise RuntimeError("no UPS9 checkpoint exists")
+            active = json.loads(self.active_path.read_text(encoding="utf-8"))
+            sequence_id = active.get("sequence_id", "")
+        path = self._path(sequence_id)
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if data.get("sequence_id") != sequence_id:
+            raise RuntimeError("checkpoint identity mismatch")
+        return data
+
+    def _atomic_json(self, path: Path, data: dict) -> None:
+        raw = (json.dumps(data, indent=2, sort_keys=True) + "\n").encode()
+        fd, name = tempfile.mkstemp(prefix=".ups9.", dir=self.root)
+        try:
+            os.fchmod(fd, 0o600)
+            with os.fdopen(fd, "wb", closefd=True) as stream:
+                stream.write(raw)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(name, path)
+            dfd = os.open(self.root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+            try:
+                os.fsync(dfd)
+            finally:
+                os.close(dfd)
+        except Exception:
+            try:
+                os.unlink(name)
+            except OSError:
+                pass
+            raise
+
+    def write(self, data: dict) -> None:
+        data["updated_at"] = now_utc()
+        self._atomic_json(self._path(data["sequence_id"]), data)
+
+    def event(self, data: dict, *, target: str, stage: str, outcome: str,
+              reason: str, rc: int | None = None) -> None:
+        if outcome not in OUTCOMES:
+            raise RuntimeError("unsupported checkpoint outcome")
+        record = data["targets"].get(target)
+        if record is None or record.get("stage") != stage:
+            raise RuntimeError("target is not part of this active checkpoint")
+        if outcome == "ATTEMPTED":
+            if record.get("attempts", 0) != 0 or record.get("outcome") != "NOT_ATTEMPTED":
+                raise RuntimeError("duplicate target attempt rejected")
+            record["attempts"] = 1
+        elif record.get("attempts", 0) == 0 and outcome not in {"UNKNOWN", "FAILED", "BLOCKED", "VERIFIED_OFF"}:
+            raise RuntimeError("result cannot be recorded before an attempt")
+        if outcome in FINAL_OUTCOMES and record.get("outcome") in FINAL_OUTCOMES:
+            raise RuntimeError("final target outcome is immutable")
+        record.update({"outcome": outcome, "updated_at": now_utc(), "reason": reason[:500], "return_code": rc})
+        if stage == "vmware_guest" and all(
+                data["targets"][name].get("outcome") in {"COMMAND_ACCEPTED", "VERIFIED_OFF"}
+                for name in data["guests"]):
+            if "vmware_guest_requests" not in data["completed_stages"]:
+                data["completed_stages"].append("vmware_guest_requests")
+        if stage == "esxi_host" and all(
+                data["targets"][name].get("outcome") == "COMMAND_ACCEPTED"
+                for name in data["hosts"]):
+            if "esxi_host_requests" not in data["completed_stages"]:
+                data["completed_stages"].append("esxi_host_requests")
+        data["events"].append({
+            "at": now_utc(), "sequence_id": data["sequence_id"], "stage": stage,
+            "target": target, "outcome": outcome, "reason": reason[:500], "return_code": rc,
+        })
+        data["events"] = data["events"][-MAX_EVENTS:]
+        self.write(data)
+
+    def begin(self, *, vcsa_host: str, guests: list[str], hosts: list[str]) -> str:
+        if not vcsa_host or not guests or not hosts or len(set(hosts)) != len(hosts) or len(set(guests)) != len(guests):
+            raise RuntimeError("VMware checkpoint requires unique guests, hosts, and a VCSA host")
+        with self.locked():
+            previous = None
+            try:
+                previous = self.read()
+            except RuntimeError as exc:
+                if str(exc) != "no UPS9 checkpoint exists":
+                    raise
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                raise RuntimeError("existing checkpoint is unreadable; refusing a new VMware attempt") from exc
+            if previous and previous.get("status") != "COMPLETED":
+                raise RuntimeError("an unresolved UPS9 checkpoint exists; refusing to repeat VMware requests")
+            seq = str(uuid.uuid4())
+            targets = {}
+            for name in guests:
+                targets[name] = {"stage": "vmware_guest", "attempts": 0, "outcome": "NOT_ATTEMPTED", "reason": "", "return_code": None}
+            for name in hosts:
+                if name in targets:
+                    raise RuntimeError("guest and host target identifiers must be unique")
+                targets[name] = {"stage": "esxi_host", "attempts": 0, "outcome": "NOT_ATTEMPTED", "reason": "", "return_code": None}
+            for key, *_ in TARGETS:
+                targets[key] = {"stage": "dependent", "attempts": 0, "outcome": "NOT_ATTEMPTED", "reason": "", "return_code": None}
+            data = {
+                "schema": 1, "sequence_id": seq, "status": "VMWARE_DISPATCHING",
+                "created_at": now_utc(), "updated_at": now_utc(), "vcsa_host": vcsa_host,
+                "hosts": hosts, "guests": guests, "completed_stages": [], "targets": targets,
+                "host_confirmation": None, "resume_cursor": 0, "events": [],
+            }
+            data["events"].append({"at": now_utc(), "sequence_id": seq, "stage": "vmware",
+                                   "target": "vmware", "outcome": "ATTEMPTED", "reason": "checkpoint created before first guest request", "return_code": None})
+            self.write(data)
+            self._atomic_json(self.active_path, {"sequence_id": seq})
+            return seq
+
+
+def require_root() -> None:
+    if os.geteuid() != 0:
+        raise RuntimeError("this operator CLI is restricted to an authenticated root/sudo session")
+
+
+def confirm_hosts(store: Store, sequence_id: str, *, input_fn=input) -> None:
+    require_root()
+    require_armed_mode()
+    if not sys.stdin.isatty():
+        raise RuntimeError("host confirmation requires an interactive terminal")
+    with store.locked():
+        data = store.read(sequence_id)
+        if data.get("status") not in {"PENDING_HOST_VERIFICATION", "READY_TO_CONTINUE", "RESUMING"}:
+            raise RuntimeError("checkpoint is not awaiting host verification")
+        operator = os.environ.get("SUDO_USER") or getpass.getuser()
+        per_host = {}
+        print("For each listed host, enter direct power-off evidence and separate evidence that it is no longer using Synology/NetApp storage.")
+        print("Do not enter credentials or secret material. This is an operator attestation, not automatic verification.")
+        for host in data["hosts"]:
+            if input_fn(f"Type exactly POWERED_OFF only if {host} is directly confirmed powered off: ").strip() != "POWERED_OFF":
+                raise RuntimeError(f"host {host} was not affirmatively confirmed powered off")
+            powered_off = input_fn(f"{host} power-off observation/evidence reference: ").strip()
+            if input_fn(f"Type exactly NO_STORAGE_USE only if {host} is directly confirmed no longer accessing Synology/NetApp: ").strip() != "NO_STORAGE_USE":
+                raise RuntimeError(f"host {host} was not affirmatively confirmed off dependent storage")
+            storage_idle = input_fn(f"{host} no-storage-use observation/evidence reference: ").strip()
+            if len(powered_off) < 12 or len(storage_idle) < 12:
+                raise RuntimeError(f"insufficient per-host evidence description for {host}")
+            per_host[host] = {"power_off_confirmed": True, "power_off_evidence": powered_off[:500],
+                              "storage_not_in_use_confirmed": True, "storage_not_in_use_evidence": storage_idle[:500]}
+        phrase = f"CONFIRM ALL HOSTS AND STORAGE IDLE {sequence_id}"
+        if input_fn(f"Type exactly '{phrase}' to record this confirmation: ").strip() != phrase:
+            raise RuntimeError("confirmation phrase mismatch")
+        confirmed = datetime.now(timezone.utc)
+        data["host_confirmation"] = {
+            "type": "OPERATOR_ATTESTATION_NOT_AUTOMATIC_VERIFICATION", "operator": operator,
+            "confirmed_at": confirmed.isoformat(timespec="seconds"),
+            "expires_at": (confirmed + timedelta(seconds=CONFIRM_TTL_SECONDS)).isoformat(timespec="seconds"),
+            "hosts": per_host,
+        }
+        data["status"] = "READY_TO_CONTINUE"
+        data["events"].append({"at": now_utc(), "sequence_id": sequence_id, "stage": "host_verification",
+                               "target": "all_dependent_hosts", "outcome": "OPERATOR_CONFIRMED",
+                               "reason": "per-host power-off and storage-not-in-use attestations recorded", "return_code": None})
+        store.write(data)
+
+
+def confirmation_current(data: dict, now: datetime | None = None) -> bool:
+    confirmation = data.get("host_confirmation")
+    if not isinstance(confirmation, dict) or confirmation.get("type") != "OPERATOR_ATTESTATION_NOT_AUTOMATIC_VERIFICATION":
+        return False
+    try:
+        exp = datetime.fromisoformat(confirmation["expires_at"])
+    except (KeyError, TypeError, ValueError):
+        return False
+    now = now or datetime.now(timezone.utc)
+    host_evidence = confirmation.get("hosts", {})
+    if set(host_evidence) != set(data.get("hosts", [])):
+        return False
+    for evidence in host_evidence.values():
+        if (not isinstance(evidence, dict) or evidence.get("power_off_confirmed") is not True
+                or evidence.get("storage_not_in_use_confirmed") is not True
+                or len(str(evidence.get("power_off_evidence", ""))) < 12
+                or len(str(evidence.get("storage_not_in_use_evidence", ""))) < 12):
+            return False
+    return now < exp
+
+
+class Resumer:
+    def __init__(self, store: Store, runner=subprocess.run, mode_reader=require_armed_mode):
+        self.store = store
+        self.runner = runner
+        self.mode_reader = mode_reader
+
+    def resume(self, sequence_id: str, *, confirmation_phrase: str) -> dict:
+        require_root()
+        self.mode_reader()
+        phrase = f"RESUME UPS9 SEQUENCE {sequence_id}"
+        if not secrets.compare_digest(confirmation_phrase, phrase):
+            raise RuntimeError("resume confirmation phrase mismatch")
+        with self.store.locked(resume=True, nonblocking=True):
+            with self.store.locked():
+                data = self.store.read(sequence_id)
+                if data.get("status") not in {"READY_TO_CONTINUE", "RESUMING"}:
+                    raise RuntimeError("checkpoint is not ready for continuation")
+                if not confirmation_current(data):
+                    raise RuntimeError("host confirmation is missing, stale, or does not cover every required host")
+                self._preflight_wrappers()
+                if data.get("status") == "RESUMING":
+                    for name, record in data["targets"].items():
+                        if record.get("outcome") == "ATTEMPTED":
+                            self.store.event(data, target=name, stage=record["stage"], outcome="UNKNOWN",
+                                             reason="resume found an interrupted attempt; no retry issued", rc=None)
+                data["status"] = "RESUMING"
+                data["events"].append({"at": now_utc(), "sequence_id": sequence_id, "stage": "continuation",
+                                       "target": "dependent_targets", "outcome": "RESUMING",
+                                       "reason": "operator-confirmed checkpoint continuation", "return_code": None})
+                self.store.write(data)
+
+            for index, (target, path, args, approval) in enumerate(TARGETS):
+                self.mode_reader()
+                with self.store.locked():
+                    data = self.store.read(sequence_id)
+                    if not confirmation_current(data):
+                        raise RuntimeError("host confirmation expired during continuation; no further target dispatched")
+                    record = data["targets"][target]
+                    if record.get("attempts", 0) != 0:
+                        continue
+                    if target == "nut_final":
+                        if any(data["targets"][key].get("attempts", 0) != 1 for key, *_ in TARGETS[:-1]):
+                            raise RuntimeError("NUT-final blocked until every prior target has a recorded single attempt")
+                        unresolved = [
+                            key for key, *_ in TARGETS[:-1]
+                            if data["targets"][key].get("outcome") != "COMMAND_ACCEPTED"
+                        ]
+                        if unresolved:
+                            self.store.event(
+                                data, target="nut_final", stage="dependent", outcome="BLOCKED",
+                                reason="NUT-final blocked because required earlier shutdown command outcomes are not all accepted: " + ",".join(unresolved),
+                                rc=None,
+                            )
+                            data["status"] = "FAILED"
+                            data["events"].append({
+                                "at": now_utc(), "sequence_id": sequence_id, "stage": "continuation",
+                                "target": "nut_final", "outcome": "BLOCKED",
+                                "reason": "NUT-final not dispatched; required dependency outcome unresolved", "return_code": None,
+                            })
+                            self.store.write(data)
+                            return data
+                        if not confirmation_current(data):
+                            raise RuntimeError("host confirmation expired before NUT-final")
+                    self.store.event(data, target=target, stage="dependent", outcome="ATTEMPTED",
+                                     reason="single shutdown-wrapper attempt; persisted before dispatch", rc=None)
+                    data["resume_cursor"] = index
+                    data["status"] = "RESUMING"
+                    self.store.write(data)
+                env = {
+                    "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                    "ALLOW_REAL_TEST": "1", "SIMULATE": "0",
+                    "REAL_TEST_PHASE": "full-production", approval: "1",
+                }
+                try:
+                    proc = self.runner([path, *args], capture_output=True, text=True, timeout=900, env=env, check=False)
+                    outcome = "COMMAND_ACCEPTED" if proc.returncode == 0 else "COMMAND_FAILED"
+                    reason = "wrapper returned zero; command accepted, not shutdown verified" if proc.returncode == 0 else f"wrapper returned nonzero rc={proc.returncode}"
+                    result_rc = proc.returncode
+                except subprocess.TimeoutExpired:
+                    outcome, reason, result_rc = "UNKNOWN", "wrapper timed out after one attempt; no retry", None
+                except Exception as exc:
+                    outcome, reason, result_rc = "UNKNOWN", f"wrapper invocation outcome unknown ({type(exc).__name__}); no retry", None
+                with self.store.locked():
+                    data = self.store.read(sequence_id)
+                    self.store.event(data, target=target, stage="dependent", outcome=outcome, reason=reason, rc=result_rc)
+                    data["resume_cursor"] = index + 1
+                    self.store.write(data)
+
+            with self.store.locked():
+                data = self.store.read(sequence_id)
+                all_attempted = all(data["targets"][key].get("attempts", 0) == 1 for key, *_ in TARGETS)
+                all_accepted = all(data["targets"][key].get("outcome") == "COMMAND_ACCEPTED" for key, *_ in TARGETS)
+                data["completed_stages"].append("dependent_shutdown_commands_attempted")
+                data["status"] = "COMPLETED" if all_attempted and all_accepted else "FAILED"
+                data["events"].append({"at": now_utc(), "sequence_id": sequence_id, "stage": "continuation",
+                                       "target": "dependent_targets", "outcome": data["status"],
+                                       "reason": "all dependent commands accepted" if data["status"] == "COMPLETED" else "all remaining target attempts recorded with one or more failed/unknown outcomes; no retry", "return_code": 0 if data["status"] == "COMPLETED" else 1})
+                self.store.write(data)
+                return data
+
+    @staticmethod
+    def _preflight_wrappers() -> None:
+        for _target, path, _args, _approval in TARGETS:
+            if not os.path.isfile(path) or not os.access(path, os.X_OK):
+                raise RuntimeError(f"required shutdown wrapper is unavailable: {path}")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Restricted UPS9 checkpoint/status/continuation tool")
+    sub = parser.add_subparsers(dest="command", required=True)
+    begin = sub.add_parser("begin", help=argparse.SUPPRESS)
+    begin.add_argument("--vcsa-host", required=True)
+    begin.add_argument("--guest", action="append", required=True)
+    begin.add_argument("--host", action="append", required=True)
+    record = sub.add_parser("record", help=argparse.SUPPRESS)
+    record.add_argument("--sequence", required=True)
+    record.add_argument("--target", required=True)
+    record.add_argument("--stage", required=True, choices=("vmware_guest", "esxi_host"))
+    record.add_argument("--outcome", required=True, choices=tuple(sorted(OUTCOMES)))
+    record.add_argument("--reason", required=True)
+    record.add_argument("--return-code", type=int)
+    finish = sub.add_parser("finish-vmware", help=argparse.SUPPRESS)
+    finish.add_argument("--sequence", required=True)
+    finish.add_argument("--outcome", required=True, choices=("FAILED", "UNKNOWN", "BLOCKED"))
+    finish.add_argument("--reason", required=True)
+    finish.add_argument("--return-code", type=int)
+    pending = sub.add_parser("pending-host-verification", help=argparse.SUPPRESS)
+    pending.add_argument("--sequence", required=True)
+    status = sub.add_parser("status", help="read-only checkpoint status")
+    status.add_argument("--sequence")
+    confirm = sub.add_parser("confirm-hosts", help="interactively attest per-host completion evidence")
+    confirm.add_argument("--sequence", required=True)
+    resume = sub.add_parser("resume", help="resume a confirmed checkpoint; sends target commands")
+    resume.add_argument("--sequence", required=True)
+
+    args = parser.parse_args(argv)
+    store = Store(STATE_DIR)
+    try:
+        require_root()
+        if args.command == "begin":
+            require_armed_mode()
+            required_env = {
+                "ALLOW_REAL_TEST": "1", "SIMULATE": "0", "VMWARE_LIVE_APPROVED": "1",
+                "VMWARE_HOST_ACTION_APPROVED": "1", "CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN": "1",
+                "ALLOW_ESXI_SSH_FALLBACK": "1",
+            }
+            for key, expected in required_env.items():
+                if os.environ.get(key) != expected:
+                    raise RuntimeError(f"required VMware authorization gate absent: {key}")
+            if os.environ.get("REAL_TEST_PHASE") not in {"full-production", "phase-vmware"}:
+                raise RuntimeError("VMware real-test phase is not approved")
+            seq = store.begin(vcsa_host=args.vcsa_host, guests=args.guest, hosts=args.host)
+            print(seq)
+            return 0
+        if args.command == "record":
+            require_root()
+            with store.locked():
+                data = store.read(args.sequence)
+                store.event(data, target=args.target, stage=args.stage, outcome=args.outcome,
+                            reason=args.reason, rc=args.return_code)
+            return 0
+        if args.command == "finish-vmware":
+            with store.locked():
+                data = store.read(args.sequence)
+                data["status"] = args.outcome
+                data["events"].append({"at": now_utc(), "sequence_id": args.sequence, "stage": "vmware",
+                                       "target": "vmware", "outcome": args.outcome,
+                                       "reason": args.reason[:500], "return_code": args.return_code})
+                store.write(data)
+            return 0
+        if args.command == "pending-host-verification":
+            with store.locked():
+                data = store.read(args.sequence)
+                if any(data["targets"][g].get("outcome") not in {"COMMAND_ACCEPTED", "VERIFIED_OFF"} for g in data["guests"]):
+                    raise RuntimeError("cannot await host confirmation until all guest requests are accepted or guests were observed already off")
+                if any(data["targets"][h].get("outcome") != "COMMAND_ACCEPTED" for h in data["hosts"]):
+                    raise RuntimeError("cannot await storage confirmation until every host request was accepted")
+                data["status"] = "PENDING_HOST_VERIFICATION"
+                data["completed_stages"].append("vmware_guest_and_host_requests")
+                data["events"].append({"at": now_utc(), "sequence_id": args.sequence, "stage": "host_verification",
+                                       "target": "all_dependent_hosts", "outcome": "BLOCKED",
+                                       "reason": "no automatic host-off observer; operator evidence required", "return_code": 11})
+                store.write(data)
+            print("PENDING HOST VERIFICATION")
+            return 0
+        if args.command == "status":
+            data = store.read(args.sequence)
+            print(json.dumps(data, indent=2, sort_keys=True))
+            return 0
+        if args.command == "confirm-hosts":
+            confirm_hosts(store, args.sequence)
+            print("READY TO CONTINUE (operator attestation; not automatic verification)")
+            return 0
+        if args.command == "resume":
+            if not sys.stdin.isatty():
+                raise RuntimeError("resume requires an interactive terminal")
+            phrase = input(f"Type exactly 'RESUME UPS9 SEQUENCE {args.sequence}' to continue: ").strip()
+            data = Resumer(store).resume(args.sequence, confirmation_phrase=phrase)
+            print(data["status"])
+            return 0 if data["status"] == "COMPLETED" else 1
+    except (RuntimeError, OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"BLOCKED: {exc}", file=sys.stderr)
+        return 2
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
