@@ -1226,6 +1226,22 @@ def run_test(mode):
         return jsonify({"ok": False, "error": "Invalid mode"}), 400
 
     if mode == "real":
+        real_test_mode = get_current_protection_mode()
+        if real_test_mode != "disarmed":
+            response_mode = {
+                "armed": "PROTECTING",
+                "disarmed": "STANDBY FOR MAINTENANCE",
+                "off": "OFF",
+            }.get(real_test_mode, "UNKNOWN")
+            status = 423 if real_test_mode in {"armed", "off"} else 503
+            return jsonify({
+                "ok": False,
+                "blocked": True,
+                "mode": response_mode,
+                "error": "Real Test requires exact STANDBY FOR MAINTENANCE mode; "
+                         f"current mode is {response_mode}.",
+            }), status
+
         payload = request.get_json(silent=True) or {}
         supplied = payload.get("passphrase", "")
 
@@ -2047,10 +2063,21 @@ def power_events_table():
             if not mode:
                 mode = "RUNNING"
 
-        if "PASS" in upper or "SUCCESS" in upper:
-            status = "PASS"
-        elif "FAIL" in upper or "ERROR" in upper:
+        # Keep command dispatch distinct from independent power-off proof.
+        # BLOCKED takes precedence because a dependency-unresolved record may
+        # also mention that its preceding command was accepted.
+        if "BLOCKED" in upper:
+            status = "BLOCKED"
+        elif "COMMAND_OUTCOME_UNKNOWN" in upper or "UNKNOWN" in upper:
+            status = "UNKNOWN"
+        elif "COMMAND_FAILED" in upper or "FAIL" in upper or "ERROR" in upper:
             status = "FAIL"
+        elif "VERIFIED_OFF" in upper:
+            status = "VERIFIED OFF"
+        elif "COMMAND_ACCEPTED" in upper or "COMMANDS_ACCEPTED" in upper:
+            status = "COMMAND ACCEPTED"
+        elif "PASS" in upper or "SUCCESS" in upper:
+            status = "PASS"
         elif "WARN" in upper:
             status = "WARN"
 

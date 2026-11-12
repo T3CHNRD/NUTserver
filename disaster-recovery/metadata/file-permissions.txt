@@ -112,6 +112,7 @@
 /opt/nut-orchestrator-ui/app.py.pre-restore-route.20260424-111803|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-6c1-20260827-090720|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-restore-lab-route-20260604-123931|644|root|root
+/opt/nut-orchestrator-ui/app.py.pre-thursday-20261112|644|root|root
 /opt/nut-orchestrator-ui/app.py|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-help-search-20260827-132416|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-full-restore-api-20260903-150611|644|root|root
@@ -327,6 +328,7 @@
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-config-layout-cleanup-20260528-144842|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-status-progress-20260528-150943|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-find-ups-red-blink-20260624-112646|644|root|root
+/opt/nut-orchestrator-ui/app.py.pre-friday-standby-20261111-1354|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-natural-search-20260902_084658|644|root|root
 /opt/nut-orchestrator-ui/app.py.rej|644|root|root
 /opt/nut-orchestrator-ui/app.py.broken-before-emergency-rollback-20260624-072322|644|root|root
@@ -1236,12 +1238,14 @@
 /usr/local/bin/nut-orchestrator.sh.pre-comm-email-wiring-20260805-090625|750|root|nut
 /usr/local/bin/nut-orchestrator.sh.bak.2026-05-08-171935|755|root|root
 /usr/local/bin/nut-orchestrator.sh.pre-telegram-final-20260817-124128|750|root|nut
+/usr/local/bin/nut-orchestrator.sh.pre-thursday-20261112|750|root|nut
 /usr/local/bin/nut-orchestrator.sh.bak.2026-05-08-172416|755|root|root
 /usr/local/bin/nut-orchestrator.sh.pre-lowbatt-handlers-20260805-090708|750|root|nut
 /usr/local/bin/nut-orchestrator.sh.pre-ups-event-approval-vars-20260615-130847|750|root|nut
 /usr/local/bin/nut-orchestrator.sh.bak.2026-05-08-171856|755|root|root
 /usr/local/bin/nut-orchestrator.sh.pre-telegram-production-20260817-123730|750|root|nut
 /usr/local/bin/nut-test-logic.sh.bak.2026-05-08-171047|750|root|nut
+/usr/local/bin/nut-orchestrator.sh.pre-friday-standby-20261111-1354|750|root|nut
 /usr/local/bin/nut-orchestrator.sh.pre-production-mode-gate-20260611-133827|750|root|nut
 /usr/local/bin/nut-orchestrator.sh.pre-restoration-state-20260903-110550|750|root|nut
 /usr/local/bin/nut-orchestrator.sh|750|root|nut
@@ -1273,6 +1277,7 @@
 /usr/local/sbin/nut-ui-live-restore-selected.pre-test-probe-20260604-094257|750|root|root
 /usr/local/sbin/nut-sync-live-to-repo-for-backup|755|root|root
 /usr/local/sbin/nut-netapp-halt.sh.before-sshpass-20261009|750|root|root
+/usr/local/sbin/nut-ui-run-test.pre-friday-standby-20261111-1354|755|root|root
 /usr/local/sbin/nut-email-alert-test-send.pre-raw-bytes-cr-normalize-20260623-124108|755|root|root
 /usr/local/sbin/nut-email-alert-test-send|755|root|root
 /usr/local/sbin/nut-synology-shutdown.sh.bak.2026-05-12-090606|755|root|root
@@ -1330,7 +1335,7 @@
 /usr/local/sbin/nut-ui-run-test.bak.2026-05-08-180010|755|root|root
 /usr/local/sbin/nut-voip-shutdown.sh|750|root|nut
 /usr/local/sbin/nut-classify-shutdown-result|750|root|nut
-/usr/local/sbin/nut-vmware-shutdown.sh|750|root|nut
+/usr/local/sbin/nut-vmware-shutdown.sh|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-euid-fix-20260421-085534|750|root|root
 /usr/local/sbin/nut-ui-apply-config.pre-force-msmtp-rebuild-20260622-093509|750|root|root
 /usr/local/sbin/nut-email-alert-test-send.before-test-mode-gate-20261005|755|root|root
@@ -1544,6 +1549,7 @@
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-all-commands-20260817-132208|755|root|root
 /usr/local/sbin/nut-telegram-alert.before-health-block-fix-20261007|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-add-ups-conf-backup-20260604-154604|755|root|root
+/usr/local/sbin/nut-vmware-shutdown.sh.pre-thursday-20261112|750|root|nut
 /usr/local/sbin/nut-email-alert-test-send.pre-dynamic-weekly-ups-count-20260622-113121|750|root|root
 /usr/local/sbin/nut-vmware-shutdown.sh.pre-readonly-placement-detect-20260522-110635|750|root|root
 /usr/local/sbin/nut-netapp-halt.sh.bak-20260713-152732|750|root|nut
@@ -1558,6 +1564,7 @@
 /usr/local/sbin/nut-vmware-shutdown.sh.pre-esxi-config-host-list-20260611-151604|750|root|root
 /usr/local/sbin/nut-apc-idf-event-monitor.sh.pre-final-dedup-20260805-095431|755|root|root
 /usr/local/sbin/nut-v24013-shutdown.sh.before-v24013-unify-20261007-122713|750|root|nut
+/usr/local/sbin/nut-ui-run-test.pre-thursday-20261112|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-sync-helper-self-backup-20260611-140533|755|root|root
 /usr/local/sbin/nut-email-alert-test-send.pre-retry-fix-20260903-103100|755|root|root
 /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-rungit-20260421-093355|750|root|root

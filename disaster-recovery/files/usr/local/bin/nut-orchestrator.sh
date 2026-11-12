@@ -59,33 +59,69 @@ JSON
 }
 
 
+approved_standby_test_context_allows() {
+  local mode="${1:-}"
+  local allow_live="${2:-}"
+  local allow_real_test="${3:-}"
+  local simulate="${4:-}"
+  local phase="${5:-}"
+  local euid="${6:-}"
+  [[ "$mode" == "disarmed" && "$allow_live" == "0" && \
+     "$allow_real_test" == "1" && "$simulate" == "0" && \
+     "$phase" == "phase3-full" && "$euid" == "0" ]]
+}
+
 production_mode_allows_commit() {
   local ups_name="${1:-unknown}"
   local mode_file="/etc/nut/production-mode.conf"
-  local mode="disarmed"
-  local allow_live="0"
+  local mode="unknown"
+  local allow_live="unknown"
   local allow_esxi="0"
+  local mode_config_valid=0
+  local mode_source_ok=0
+  local approved_test_requested=0
+  local NUT_PRODUCTION_MODE=""
+  local NUT_ALLOW_LIVE_ACTIONS=""
+  local NUT_ALLOW_ESXI_SSH_FALLBACK=""
 
-  if [ -f "$mode_file" ]; then
-    # shellcheck disable=SC1090
-    . "$mode_file" 2>/dev/null || true
-    mode="${NUT_PRODUCTION_MODE:-disarmed}"
-    allow_live="${NUT_ALLOW_LIVE_ACTIONS:-0}"
+  COMMIT_GATE_CONTEXT="blocked"
+  if [ "${ALLOW_REAL_TEST:-0}" = "1" ] || [ -n "${REAL_TEST_PHASE:-}" ]; then
+    approved_test_requested=1
+  fi
+  if [ -r "$mode_file" ]; then
+    if . "$mode_file" 2>/dev/null; then
+      mode_source_ok=1
+    fi
+    mode="${NUT_PRODUCTION_MODE:-unknown}"
+    allow_live="${NUT_ALLOW_LIVE_ACTIONS:-unknown}"
     allow_esxi="${NUT_ALLOW_ESXI_SSH_FALLBACK:-0}"
+    if [ "$mode_source_ok" = "1" ]; then
+      case "$mode" in
+        armed|storm_guard|disarmed|off)
+          case "$allow_live" in 0|1) mode_config_valid=1 ;; esac
+          ;;
+      esac
+    fi
   fi
 
-  # Current enforcement rule:
-  #   armed/protecting + allow_live=1 may execute the verified/current approved commit paths.
-  #   legacy storm_guard is accepted as an alias only.
-  #   disarmed/off block live commit actions.
-  #   ESXi SSH fallback remains separately disabled unless explicitly approved.
-  if { [ "$mode" = "armed" ] || [ "$mode" = "storm_guard" ]; } && [ "$allow_live" = "1" ]; then
+  # Preserve the pre-existing Protecting-mode check and behavior.
+  if { [ "$mode" = "armed" ] || [ "$mode" = "storm_guard" ]; } && \
+     [ "$allow_live" = "1" ] && [ "$approved_test_requested" = "0" ]; then
+    COMMIT_GATE_CONTEXT="protecting"
     log_line "PRODUCTION_MODE_GATE_ALLOW ups=${ups_name} mode=${mode} allow_live=${allow_live} allow_esxi=${allow_esxi}"
     return 0
   fi
 
-  log_line "PRODUCTION_MODE_GATE_BLOCK ups=${ups_name} mode=${mode} allow_live=${allow_live} allow_esxi=${allow_esxi} reason='live commit actions blocked by production mode'"
-  write_state "$ups_name" "$ups_name" "shutdown_blocked_by_production_mode" "production mode gate" 0 0 "Blocked by production mode: ${mode}"
+  if [ "$mode_config_valid" = "1" ] && \
+     approved_standby_test_context_allows "$mode" "$allow_live" \
+       "${ALLOW_REAL_TEST:-0}" "${SIMULATE:-1}" "${REAL_TEST_PHASE:-}" "$EUID"; then
+    COMMIT_GATE_CONTEXT="approved_standby_test"
+    log_line "PRODUCTION_MODE_GATE_ALLOW ups=${ups_name} mode=disarmed approved_test=1 phase=phase3-full"
+    return 0
+  fi
+
+  log_line "PRODUCTION_MODE_GATE_BLOCK ups=${ups_name} mode=${mode} allow_live=${allow_live} allow_esxi=${allow_esxi} reason='live commit actions blocked by production mode or approval context'"
+  write_state "$ups_name" "$ups_name" "shutdown_blocked_by_production_mode" "production mode gate" 0 0 "Blocked by production mode or approved-test gate: ${mode}"
   return 1
 }
 
@@ -170,25 +206,64 @@ ups_maintenance_suppresses_commit() {
     return 0
   fi
 
-  if [ "$rc" -eq 2 ]; then
-    log_line "UPS_MAINTENANCE_SUPPRESSION_CHECK_ERROR ${ups_name} ${result}"
-  else
-    log_line "UPS_MAINTENANCE_SUPPRESSION_NOT_ACTIVE ${ups_name} ${result}"
+  if [ "$rc" -eq 2 ] || [ "$rc" -ne 1 ]; then
+    log_line "UPS_MAINTENANCE_SUPPRESSION_CHECK_ERROR ${ups_name} rc=${rc} ${result}"
+    return 2
   fi
 
+  log_line "UPS_MAINTENANCE_SUPPRESSION_NOT_ACTIVE ${ups_name} ${result}"
   return 1
+}
+
+ups9_check_vmware_dependency() {
+  local result_rc="${1:-2}"
+  case "$result_rc" in
+    0)
+      log_line "UPS9_VMWARE_RESULT COMMANDS_ACCEPTED rc=0 physical_poweroff_verified=no"
+      return 0
+      ;;
+    10)
+      log_line "UPS9_VMWARE_RESULT BLOCKED rc=10 dependent_targets=not_dispatched"
+      write_state "ups9" "ups9" "shutdown_blocked_vmware" "VMware dependency gate" 0 0 "VMware reported BLOCKED; no Synology, NetApp, Observium, or NUT-final action dispatched"
+      return 10
+      ;;
+    11)
+      log_line "UPS9_VMWARE_RESULT COMMANDS_ACCEPTED_DEPENDENCY_UNRESOLVED rc=11 dependent_targets=not_dispatched physical_poweroff_verified=no"
+      write_state "ups9" "ups9" "shutdown_blocked_vmware_dependency" "VMware dependency gate" 0 0 "VMware commands were accepted, but the existing host/storage safety interlock remains unresolved; dependent targets were not dispatched"
+      return 11
+      ;;
+    2)
+      log_line "UPS9_VMWARE_RESULT UNKNOWN rc=2 dependent_targets=not_dispatched"
+      write_state "ups9" "ups9" "shutdown_blocked_vmware_unknown" "VMware dependency gate" 0 0 "VMware result was UNKNOWN; dependent targets were not dispatched"
+      return 2
+      ;;
+    *)
+      log_line "UPS9_VMWARE_RESULT FAILED rc=${result_rc} dependent_targets=not_dispatched"
+      write_state "ups9" "ups9" "shutdown_blocked_vmware_failure" "VMware dependency gate" 0 0 "VMware failed with rc=${result_rc}; dependent targets were not dispatched"
+      return 1
+      ;;
+  esac
 }
 
 commit_placeholder() {
   local ups_name="$1"
   local rc=0
+  local maintenance_rc=1
 
   if ups_maintenance_suppresses_commit "$ups_name"; then
-    return 0
+    return 1
+  else
+    maintenance_rc=$?
   fi
 
   if ! production_mode_allows_commit "$ups_name"; then
-    return 0
+    return 1
+  fi
+
+  if [ "$maintenance_rc" -eq 2 ] && [ "$COMMIT_GATE_CONTEXT" = "approved_standby_test" ]; then
+    log_line "APPROVED_TEST_BLOCKED ups=${ups_name} reason='maintenance state unavailable or invalid'"
+    write_state "$ups_name" "$ups_name" "shutdown_blocked_maintenance_state_unknown" "maintenance state gate" 0 0 "Approved Standby test blocked because maintenance state is unavailable or invalid"
+    return 1
   fi
 
   case "$ups_name" in
@@ -284,16 +359,24 @@ commit_placeholder() {
       ;;
 
     ups9)
+      local vmware_gate_rc=0
       log_line "UPS_SHUTDOWN_COMMITTED ups9 broader VMware shutdown started"
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups9 VMware method='vCenter API with PowerCLI fallback'"
     send_outage_email "shutdown" "ups9 shutdown sequence started / VMware target action attempted"
-      SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production VMWARE_LIVE_APPROVED=1 ALLOW_ESXI_SSH_FALLBACK=1 VMWARE_HOST_ACTION_APPROVED=1 CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN=1 /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain >> "$LOG_FILE" 2>&1
+      SIMULATE=0 ALLOW_REAL_TEST=1 REAL_TEST_PHASE=full-production VMWARE_LIVE_APPROVED=1 VMWARE_HOST_ACTION_APPROVED=1 CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN=1 /usr/local/sbin/nut-vmware-shutdown.sh shutdown_domain >> "$LOG_FILE" 2>&1
       rc=$?
-      if [ "$rc" -eq 0 ]; then
-        log_line "UPS_TARGET_COMMAND_ACCEPTED ups9 VMware"
-      else
-        log_line "UPS_TARGET_ACTION_FAILED ups9 VMware rc=$rc"
+      case "$rc" in
+        0) log_line "UPS_TARGET_RESULT ups9 VMware wrapper_rc=0 result=COMMANDS_ACCEPTED physical_poweroff_verified=no" ;;
+        10) log_line "UPS_TARGET_RESULT ups9 VMware wrapper_rc=10 result=BLOCKED" ;;
+        11) log_line "UPS_TARGET_RESULT ups9 VMware wrapper_rc=11 result=COMMANDS_ACCEPTED_DEPENDENCY_UNRESOLVED" ;;
+        2) log_line "UPS_TARGET_RESULT ups9 VMware wrapper_rc=2 result=COMMAND_OUTCOME_UNKNOWN" ;;
+        *) log_line "UPS_TARGET_RESULT ups9 VMware wrapper_rc=$rc result=COMMAND_FAILED" ;;
+      esac
+
+      ups9_check_vmware_dependency "$rc" || vmware_gate_rc=$?
+      if [ "$vmware_gate_rc" -ne 0 ]; then
+        return "$vmware_gate_rc"
       fi
 
       log_line "UPS_TARGET_ACTION_ATTEMPT ups9 Albl-synology1 method='synology wrapper'"

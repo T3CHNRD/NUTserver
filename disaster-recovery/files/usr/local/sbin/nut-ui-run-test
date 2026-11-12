@@ -37,6 +37,32 @@ fail() {
   log_line "FAIL $1"
 }
 
+record_ups9_commit_result() {
+  local result_rc="${1:-2}"
+  case "$result_rc" in
+    0)
+      pass "Phase 3 ups9 VMware command-dispatch prerequisites accepted; physical power-off is not asserted"
+      power_event "REAL TEST PHASE3 ups9 result=COMMANDS_ACCEPTED rc=0 physical_poweroff_verified=no"
+      ;;
+    10)
+      fail "Phase 3 ups9 VMware prerequisite BLOCKED; dependent actions were not dispatched"
+      power_event "REAL TEST PHASE3 ups9 result=BLOCKED rc=10 dependent_dispatch=0"
+      ;;
+    11)
+      fail "Phase 3 ups9 VMware commands were accepted but the host/storage dependency interlock is unresolved; dependent actions were not dispatched"
+      power_event "REAL TEST PHASE3 ups9 result=COMMANDS_ACCEPTED_DEPENDENCY_UNRESOLVED rc=11 dependent_dispatch=0 physical_poweroff_verified=no"
+      ;;
+    2)
+      fail "Phase 3 ups9 VMware result UNKNOWN; dependent actions were not dispatched"
+      power_event "REAL TEST PHASE3 ups9 result=UNKNOWN rc=2 dependent_dispatch=0"
+      ;;
+    *)
+      fail "Phase 3 ups9 VMware prerequisite FAILED rc=${result_rc}; dependent actions were not dispatched"
+      power_event "REAL TEST PHASE3 ups9 result=FAILED rc=${result_rc} dependent_dispatch=0"
+      ;;
+  esac
+}
+
 check_file() {
   local path="$1"
   local label="$2"
@@ -433,7 +459,7 @@ run_real() {
       log_line ""
       log_line "===== PHASE 3 / UPS2: BLUE IRIS COMMIT PATH ====="
       power_event "REAL TEST PHASE3 accelerated_commit ups=ups2 target=BlueIris"
-      if ALLOW_REAL_TEST=1 SIMULATE=0 /usr/local/bin/nut-orchestrator.sh ups2-commit | tee -a "$LOG_FILE"; then
+      if ALLOW_REAL_TEST=1 SIMULATE=0 REAL_TEST_PHASE=phase3-full /usr/local/bin/nut-orchestrator.sh ups2-commit | tee -a "$LOG_FILE"; then
         pass "Phase 3 ups2 accelerated commit path"
       else
         fail "Phase 3 ups2 accelerated commit path"
@@ -442,7 +468,7 @@ run_real() {
       log_line ""
       log_line "===== PHASE 3 / UPS6: LANSWEEPER COMMIT PATH ====="
       power_event "REAL TEST PHASE3 accelerated_commit ups=ups6 target=Lansweeper"
-      if ALLOW_REAL_TEST=1 SIMULATE=0 /usr/local/bin/nut-orchestrator.sh ups6-commit | tee -a "$LOG_FILE"; then
+      if ALLOW_REAL_TEST=1 SIMULATE=0 REAL_TEST_PHASE=phase3-full /usr/local/bin/nut-orchestrator.sh ups6-commit | tee -a "$LOG_FILE"; then
         pass "Phase 3 ups6 accelerated commit path"
       else
         fail "Phase 3 ups6 accelerated commit path"
@@ -451,7 +477,7 @@ run_real() {
       log_line ""
       log_line "===== PHASE 3 / UPS7: DB01 THEN DB02 COMMIT PATH ====="
       power_event "REAL TEST PHASE3 accelerated_commit ups=ups7 target=DB01_DB02"
-      if ALLOW_REAL_TEST=1 SIMULATE=0 /usr/local/bin/nut-orchestrator.sh ups7-commit | tee -a "$LOG_FILE"; then
+      if ALLOW_REAL_TEST=1 SIMULATE=0 REAL_TEST_PHASE=phase3-full /usr/local/bin/nut-orchestrator.sh ups7-commit | tee -a "$LOG_FILE"; then
         pass "Phase 3 ups7 accelerated commit path"
       else
         fail "Phase 3 ups7 accelerated commit path"
@@ -460,7 +486,7 @@ run_real() {
       log_line ""
       log_line "===== PHASE 3 / UPS8: VOIP COMMIT PATH ====="
       power_event "REAL TEST PHASE3 accelerated_commit ups=ups8 target=VOIP"
-      if ALLOW_REAL_TEST=1 SIMULATE=0 /usr/local/bin/nut-orchestrator.sh ups8-commit | tee -a "$LOG_FILE"; then
+      if ALLOW_REAL_TEST=1 SIMULATE=0 REAL_TEST_PHASE=phase3-full /usr/local/bin/nut-orchestrator.sh ups8-commit | tee -a "$LOG_FILE"; then
         pass "Phase 3 ups8 accelerated commit path"
       else
         fail "Phase 3 ups8 accelerated commit path"
@@ -470,11 +496,13 @@ run_real() {
       log_line "===== PHASE 3 / UPS9: VMWARE/ESXI, SYNOLOGY, NETAPP, NUT FINAL COMMIT PATH ====="
       log_line "NOTE ups9 is intentionally last because it includes the NUT server final shutdown wrapper."
       power_event "REAL TEST PHASE3 accelerated_commit ups=ups9 target=VMware_ESXi_Synology_NetApp_NUTFinal"
-      if ALLOW_REAL_TEST=1 SIMULATE=0 /usr/local/bin/nut-orchestrator.sh ups9-commit | tee -a "$LOG_FILE"; then
-        pass "Phase 3 ups9 accelerated commit path"
+      ups9_rc=0
+      if ALLOW_REAL_TEST=1 SIMULATE=0 REAL_TEST_PHASE=phase3-full /usr/local/bin/nut-orchestrator.sh ups9-commit | tee -a "$LOG_FILE"; then
+        ups9_rc=0
       else
-        fail "Phase 3 ups9 accelerated commit path"
+        ups9_rc=$?
       fi
+      record_ups9_commit_result "$ups9_rc"
       ;;
 
     *)

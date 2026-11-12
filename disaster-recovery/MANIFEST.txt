@@ -95,12 +95,14 @@ FILE /opt/nut-orchestrator-ui/Dashboard-README.md -> files/opt/nut-orchestrator-
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-restore-route.20260424-111803
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-6c1-20260827-090720
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-restore-lab-route-20260604-123931
+SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-thursday-20261112
 FILE /opt/nut-orchestrator-ui/app.py -> files/opt/nut-orchestrator-ui/app.py mode=0644
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-help-search-20260827-132416
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-full-restore-api-20260903-150611
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-restore-branch-select-20260428-152359
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-flask-config-redaction-safe-20260624-073739
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.before-idf-power-fix-20261012
+SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-friday-standby-20261111-1354
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-natural-search-20260902_084658
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-export-cache-20260630-130613
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-help-search-20260827-132609
@@ -1212,12 +1214,14 @@ SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-ups-maint-
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-comm-email-wiring-20260805-090625
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.bak.2026-05-08-171935
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-telegram-final-20260817-124128
+SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-thursday-20261112
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.bak.2026-05-08-172416
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-lowbatt-handlers-20260805-090708
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-ups-event-approval-vars-20260615-130847
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.bak.2026-05-08-171856
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-telegram-production-20260817-123730
 SKIP temp-development-artifact /usr/local/bin/nut-test-logic.sh.bak.2026-05-08-171047
+SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-friday-standby-20261111-1354
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-production-mode-gate-20260611-133827
 SKIP temp-development-artifact /usr/local/bin/nut-orchestrator.sh.pre-restoration-state-20260903-110550
 FILE /usr/local/bin/nut-orchestrator.sh -> files/usr/local/bin/nut-orchestrator.sh mode=0750
@@ -1249,6 +1253,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-eve
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-live-restore-selected.pre-test-probe-20260604-094257
 FILE /usr/local/sbin/nut-sync-live-to-repo-for-backup -> files/usr/local/sbin/nut-sync-live-to-repo-for-backup mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-netapp-halt.sh.before-sshpass-20261009
+SKIP temp-development-artifact /usr/local/sbin/nut-ui-run-test.pre-friday-standby-20261111-1354
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-raw-bytes-cr-normalize-20260623-124108
 FILE /usr/local/sbin/nut-email-alert-test-send -> files/usr/local/sbin/nut-email-alert-test-send mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-synology-shutdown.sh.bak.2026-05-12-090606
@@ -1305,7 +1310,7 @@ FILE /usr/local/sbin/nut-ups-identity-snapshot -> files/usr/local/sbin/nut-ups-i
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-run-test.bak.2026-05-08-180010
 FILE /usr/local/sbin/nut-voip-shutdown.sh -> files/usr/local/sbin/nut-voip-shutdown.sh mode=0750
 FILE /usr/local/sbin/nut-classify-shutdown-result -> files/usr/local/sbin/nut-classify-shutdown-result mode=0750
-FILE /usr/local/sbin/nut-vmware-shutdown.sh -> files/usr/local/sbin/nut-vmware-shutdown.sh mode=0750
+FILE /usr/local/sbin/nut-vmware-shutdown.sh -> files/usr/local/sbin/nut-vmware-shutdown.sh mode=0755
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-euid-fix-20260421-085534
 SKIP temp-development-artifact /usr/local/sbin/nut-ui-apply-config.pre-force-msmtp-rebuild-20260622-093509
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.before-test-mode-gate-20261005
@@ -1494,6 +1499,7 @@ SKIP temp-development-artifact /usr/local/sbin/nut-ui-apply-config.pre-dedicated
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-all-commands-20260817-132208
 SKIP temp-development-artifact /usr/local/sbin/nut-telegram-alert.before-health-block-fix-20261007
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-add-ups-conf-backup-20260604-154604
+SKIP temp-development-artifact /usr/local/sbin/nut-vmware-shutdown.sh.pre-thursday-20261112
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-dynamic-weekly-ups-count-20260622-113121
 SKIP temp-development-artifact /usr/local/sbin/nut-vmware-shutdown.sh.pre-readonly-placement-detect-20260522-110635
 SKIP temp-development-artifact /usr/local/sbin/nut-netapp-halt.sh.bak-20260713-152732
@@ -1508,6 +1514,7 @@ FILE /usr/local/sbin/nut-ups-locator-beep.sh -> files/usr/local/sbin/nut-ups-loc
 SKIP temp-development-artifact /usr/local/sbin/nut-vmware-shutdown.sh.pre-esxi-config-host-list-20260611-151604
 SKIP temp-development-artifact /usr/local/sbin/nut-apc-idf-event-monitor.sh.pre-final-dedup-20260805-095431
 SKIP temp-development-artifact /usr/local/sbin/nut-v24013-shutdown.sh.before-v24013-unify-20261007-122713
+SKIP temp-development-artifact /usr/local/sbin/nut-ui-run-test.pre-thursday-20261112
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-sync-helper-self-backup-20260611-140533
 SKIP temp-development-artifact /usr/local/sbin/nut-email-alert-test-send.pre-retry-fix-20260903-103100
 SKIP temp-development-artifact /usr/local/sbin/nut-run-backup-and-push.sh.pre-final-rungit-20260421-093355

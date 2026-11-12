@@ -88,6 +88,11 @@ ESXI_HOSTS=(
 "${ESXI_HOST_02_IP:-}"
 "${ESXI_HOST_03_IP:-}"
 )
+ESXI_HOST_NAMES=(
+"${ESXI_HOST_01_NAME:-}"
+"${ESXI_HOST_02_NAME:-}"
+"${ESXI_HOST_03_NAME:-}"
+)
 
 require_python() {
   python3 - <<'PY' >/dev/null 2>&1
@@ -181,26 +186,34 @@ vmware_map_lookup() {
 vc_api_get_vm_id() {
   local session_id="$1"
   local vm_name="$2"
+  local expected_id="${3:-}"
 
-  python3 - <<PY
-import requests, sys
-server="${VCENTER_SERVER:-}"
-session="${session_id}"
-vm_name="${vm_name}"
-verify = False if "${VCENTER_INSECURE:-1}" == "1" else True
-headers={"vmware-api-session-id": session}
+  T04_SERVER="${VCENTER_SERVER:-}" T04_SESSION="$session_id" \
+  T04_VM_NAME="$vm_name" T04_EXPECTED_ID="$expected_id" \
+  T04_INSECURE="${VCENTER_INSECURE:-1}" python3 - <<'PY_LOOKUP'
+import os
+import re
+import sys
+import requests
 try:
-    r=requests.get(f"https://{server}/rest/vcenter/vm", headers=headers, verify=verify, timeout=20)
-    r.raise_for_status()
-    for item in r.json().get("value", []):
-        if item.get("name") == vm_name:
-            print(item.get("vm"))
-            sys.exit(0)
-    sys.exit(2)
-except Exception as e:
-    print(f"ERROR:{e}")
+    response = requests.get(
+        "https://" + os.environ["T04_SERVER"] + "/rest/vcenter/vm",
+        headers={"vmware-api-session-id": os.environ["T04_SESSION"]},
+        verify=os.environ["T04_INSECURE"] != "1", timeout=20,
+    )
+    response.raise_for_status()
+    matches = [vm for vm in response.json()["value"]
+               if vm.get("name") == os.environ["T04_VM_NAME"]]
+    if len(matches) != 1:
+        sys.exit(2)
+    vm_id = matches[0].get("vm", "")
+    expected = os.environ["T04_EXPECTED_ID"]
+    if not re.fullmatch(r"vm-[0-9]+", vm_id) or (expected and expected != vm_id):
+        sys.exit(2)
+    print(vm_id)
+except Exception:
     sys.exit(1)
-PY
+PY_LOOKUP
 }
 
 vc_api_guest_shutdown() {
@@ -208,7 +221,8 @@ vc_api_guest_shutdown() {
   local vm_id="$2"
   local vm_name="$3"
 
-  python3 - <<PY
+  local detail rc
+  detail="$(python3 - <<PY
 import requests, sys
 server="${VCENTER_SERVER:-}"
 session="${session_id}"
@@ -218,147 +232,218 @@ headers={"vmware-api-session-id": session}
 url=f"https://{server}/rest/vcenter/vm/{vm_id}/guest/power?action=shutdown"
 try:
     r=requests.post(url, headers=headers, verify=verify, timeout=20)
-    if r.status_code in (200, 204):
+    if 200 <= r.status_code < 300:
+        print(f"HTTP_STATUS={r.status_code}")
         sys.exit(0)
-    if r.status_code == 400:
+    if 400 <= r.status_code < 500 and r.status_code != 408:
+        print(f"HTTP_STATUS={r.status_code}")
         sys.exit(3)
-    r.raise_for_status()
-    sys.exit(1)
-except Exception:
-    sys.exit(1)
+    print(f"HTTP_STATUS={r.status_code}")
+    sys.exit(2)
+except requests.Timeout:
+    print("REQUEST_TIMEOUT")
+    sys.exit(2)
+except requests.RequestException as e:
+    print("REQUEST_ERROR=" + type(e).__name__)
+    sys.exit(2)
+except Exception as e:
+    print("REQUEST_ERROR=" + type(e).__name__)
+    sys.exit(2)
 PY
-
-  local rc=$?
+  )"
+  rc=$?
+  if [[ "$detail" == HTTP_STATUS=* ]]; then
+    log "COMMAND_SENT VMware guest shutdown request reached vCenter vm=${vm_name} ${detail}"
+  fi
   if [ "$rc" -eq 0 ]; then
-    log "SUCCESS vCenter API guest shutdown requested for ${vm_name}"
+    log "COMMAND_ACCEPTED VMware guest shutdown request accepted vm=${vm_name} ${detail}; physical power-off is not asserted"
   elif [ "$rc" -eq 3 ]; then
-    log "WARN vCenter API could not guest-shutdown ${vm_name}; VMware Tools/state issue possible"
+    log "COMMAND_FAILED VMware guest shutdown request rejected vm=${vm_name} rc=${rc} ${detail}"
+  elif [ "$rc" -eq 2 ]; then
+    log "COMMAND_OUTCOME_UNKNOWN VMware guest shutdown request may have been sent vm=${vm_name} rc=${rc} ${detail}"
   else
-    log "ERROR vCenter API guest shutdown failed for ${vm_name}"
+    log "COMMAND_FAILED VMware guest shutdown request failed before acceptance vm=${vm_name} rc=${rc} ${detail}"
   fi
 
   return "$rc"
 }
 
+vc_api_get_power_state() {
+  local session_id="$1"
+  local vm_id="$2"
+  T04_SERVER="${VCENTER_SERVER:-}" T04_SESSION="$session_id" \
+  T04_VM_ID="$vm_id" T04_INSECURE="${VCENTER_INSECURE:-1}" \
+  python3 - <<'PY_STATE'
+import os
+import re
+import sys
+import requests
+try:
+    vm_id = os.environ["T04_VM_ID"]
+    if not re.fullmatch(r"vm-[0-9]+", vm_id):
+        sys.exit(2)
+    response = requests.get(
+        "https://" + os.environ["T04_SERVER"] + f"/rest/vcenter/vm/{vm_id}/power",
+        headers={"vmware-api-session-id": os.environ["T04_SESSION"]},
+        verify=os.environ["T04_INSECURE"] != "1", timeout=20,
+    )
+    response.raise_for_status()
+    state = response.json()["value"]["state"]
+    if state not in ("POWERED_OFF", "POWERED_ON", "SUSPENDED"):
+        sys.exit(2)
+    print(state)
+except Exception:
+    sys.exit(2)
+PY_STATE
+}
+
 vc_api_detect_vcsa_host() {
   local session_id="${1:-unused}"
+  local mapped_vcsa_name expected_vcsa_id vcsa_id placement_json
+  mapped_vcsa_name="$(vmware_map_lookup "$VCENTER_VM" vcenter_name 2>/dev/null || true)"
+  expected_vcsa_id="$(vmware_map_lookup "$VCENTER_VM" vm_id 2>/dev/null || true)"
+  vcsa_id="$(vc_api_get_vm_id "$session_id" "${mapped_vcsa_name:-$VCENTER_VM}" "$expected_vcsa_id" 2>/dev/null)" || {
+    log "UNKNOWN VCSA identity is not uniquely resolved or conflicts with the stored mapping"
+    return 2
+  }
 
   # Preferred read-only placement path:
-  # Uses pyVmomi helper to resolve VM runtime host placement.
+  # Bind placement to the uniquely resolved VCSA MoRef; do not use the
+  # helper's first case-insensitive name match when duplicate names exist.
   # This does not request guest shutdown, poweroff, reboot, or host shutdown.
   if [ -x /usr/local/sbin/nut-vmware-readonly-placement.py ]; then
-    /usr/local/sbin/nut-vmware-readonly-placement.py --vm "$VCENTER_VM" --json | python3 -c '
+    placement_json="$(/usr/local/sbin/nut-vmware-readonly-placement.py --all --json 2>/dev/null)" || return 2
+    printf '%s\n' "$placement_json" | T04_VCSA_ID="$vcsa_id" T04_VCSA_NAME="${mapped_vcsa_name:-$VCENTER_VM}" python3 -c '
 import json
+import os
 import sys
 
 try:
-    data = json.load(sys.stdin)
-    host = data.get("host_name")
-    if not host:
-        sys.exit(3)
-    print(host)
+    records = json.load(sys.stdin)
+    matches = [r for r in records
+               if r.get("vm_moref") == os.environ["T04_VCSA_ID"]
+               and r.get("name") == os.environ["T04_VCSA_NAME"]]
+    if len(matches) != 1:
+        sys.exit(2)
+    record = matches[0]
+    if not record.get("host_name") or not record.get("host_moref"):
+        sys.exit(2)
+    print(record["host_name"])
 except Exception:
-    sys.exit(1)
+    sys.exit(2)
 '
     return "$?"
   fi
 
-  # Fallback legacy REST-only detection.
-  python3 - <<PY2
+  # Fallback REST-only placement lookup, using the already unique VM MoRef.
+  T04_SERVER="${VCENTER_SERVER:-}" T04_SESSION="$session_id" \
+  T04_VM_ID="$vcsa_id" T04_INSECURE="${VCENTER_INSECURE:-1}" python3 - <<'PY2'
+import os
 import requests, sys
-server="${VCENTER_SERVER:-}"
-session="${session_id}"
-vcsa_name="${VCENTER_VM}"
-verify = False if "${VCENTER_INSECURE:-1}" == "1" else True
-headers={"vmware-api-session-id": session}
+server=os.environ["T04_SERVER"]
+verify = os.environ["T04_INSECURE"] != "1"
+headers={"vmware-api-session-id": os.environ["T04_SESSION"]}
 try:
-    vms=requests.get(f"https://{server}/rest/vcenter/vm", headers=headers, verify=verify, timeout=20)
-    vms.raise_for_status()
-    vcsa_id=None
-    for item in vms.json().get("value", []):
-        if item.get("name", "").lower() == vcsa_name.lower():
-            vcsa_id=item.get("vm")
-            break
-    if not vcsa_id:
-        sys.exit(2)
-
-    detail=requests.get(f"https://{server}/rest/vcenter/vm/{vcsa_id}", headers=headers, verify=verify, timeout=20)
+    detail=requests.get(f"https://{server}/rest/vcenter/vm/{os.environ['T04_VM_ID']}", headers=headers, verify=verify, timeout=20)
     detail.raise_for_status()
     host_id=detail.json().get("value", {}).get("host")
     if not host_id:
-        sys.exit(3)
+        sys.exit(2)
 
     hosts=requests.get(f"https://{server}/rest/vcenter/host", headers=headers, verify=verify, timeout=20)
     hosts.raise_for_status()
-    for item in hosts.json().get("value", []):
-        if item.get("host") == host_id:
-            print(item.get("name"))
-            sys.exit(0)
-    sys.exit(4)
+    matches=[item for item in hosts.json().get("value", []) if item.get("host") == host_id]
+    if len(matches) != 1 or not matches[0].get("name"):
+        sys.exit(2)
+    print(matches[0]["name"])
 except Exception:
-    sys.exit(1)
+    sys.exit(2)
 PY2
 }
 shutdown_vm_list() {
   local session_id="$1"
   shift
-  local vm_name
-  local vm_id
-  local rc=0
-  local group_failed=0
+  local vm_name vm_id mapped_name expected_id state shutdown_rc
+  local group_failed=0 group_unknown=0
 
   for vm_name in "$@"; do
-    log "ATTEMPT VMware guest shutdown for ${vm_name}"
+    log "CHECK VMware guest identity and current state vm=${vm_name}"
     vm_id="$(vmware_map_lookup "$vm_name" vm_id 2>/dev/null || true)"
     mapped_name="$(vmware_map_lookup "$vm_name" vcenter_name 2>/dev/null || true)"
-
-    if [ -n "$vm_id" ]; then
-      log "MAPPED ${vm_name} -> ${mapped_name:-unknown} (${vm_id})"
-    else
-      vm_id="$(vc_api_get_vm_id "$session_id" "$vm_name" 2>/dev/null)"
-      rc=$?
-
-      if [ "$rc" -ne 0 ] || [ -z "$vm_id" ]; then
-        log "ERROR could not find VM id for ${vm_name}"
-        power_classification "FAIL" "vm_id_not_found" "vm=\"${vm_name}\""
-        continue
-      group_failed=1
+    expected_id="$vm_id"
+    vm_id="$(vc_api_get_vm_id "$session_id" "${mapped_name:-$vm_name}" "$expected_id" 2>/dev/null)" || {
+      log "UNKNOWN VMware current VM identity could not be uniquely resolved vm=${vm_name}"
+      power_classification "UNKNOWN" "vm_identity_unverified" "vm=\"${vm_name}\""
+      group_unknown=1
       continue
-      fi
-    fi
-
-    vc_api_guest_shutdown "$session_id" "$vm_id" "${mapped_name:-$vm_name}"
-    shutdown_rc="$?"
-
-    case "$shutdown_rc" in
-      0)
-        power_classification "WARN" "guest_shutdown_requested_not_verified" "vm=\"${vm_name}\""
+    }
+    state="$(vc_api_get_power_state "$session_id" "$vm_id" 2>/dev/null)" || {
+      log "UNKNOWN VMware guest power state unavailable vm=${vm_name}"
+      power_classification "UNKNOWN" "guest_power_state_unavailable" "vm=\"${vm_name}\""
+      group_unknown=1
+      continue
+    }
+    case "$state" in
+      POWERED_OFF)
+        log "VERIFIED_OFF VMware guest was already POWERED_OFF before this request vm=${vm_name}"
+        power_classification "VERIFIED_OFF" "guest_already_powered_off_observed_before_request" "vm=\"${vm_name}\""
+        continue
         ;;
-      3)
-        power_classification "WARN" "guest_shutdown_tools_or_state_issue" "vm=\"${vm_name}\""
-        ;;
+      POWERED_ON) ;;
       *)
-        power_classification "FAIL" "guest_shutdown_command_failed" "vm=\"${vm_name}\" command_rc=${shutdown_rc}"
+        log "FAIL VMware guest state is not eligible for graceful shutdown vm=${vm_name} state=${state}"
+        power_classification "FAIL" "guest_state_not_powered_on" "vm=\"${vm_name}\""
+        group_failed=1
+        continue
         ;;
     esac
-      if [ "$shutdown_rc" -ne 0 ]; then group_failed=1; fi
+
+    log "ATTEMPT VMware guest shutdown for ${vm_name}"
+    shutdown_rc=0
+    vc_api_guest_shutdown "$session_id" "$vm_id" "${mapped_name:-$vm_name}" || shutdown_rc=$?
+    case "$shutdown_rc" in
+      0)
+        power_classification "COMMAND_ACCEPTED" "guest_shutdown_request_accepted" "vm=\"${vm_name}\""
+        ;;
+      3)
+        power_classification "COMMAND_FAILED" "guest_shutdown_request_rejected" "vm=\"${vm_name}\" rc=${shutdown_rc}"
+        group_failed=1
+        ;;
+      2)
+        power_classification "UNKNOWN" "guest_shutdown_request_outcome_unknown" "vm=\"${vm_name}\""
+        group_unknown=1
+        ;;
+      *)
+        power_classification "COMMAND_FAILED" "guest_shutdown_request_failed" "vm=\"${vm_name}\" rc=${shutdown_rc}"
+        group_failed=1
+        ;;
+    esac
   done
-  return "$group_failed"
+  [ "$group_failed" -eq 0 ] || return 1
+  [ "$group_unknown" -eq 0 ] || return 2
+  return 0
 }
 
 
-shutdown_esxi_hosts() {
-  local host
-  local any_host=0
-  local failed=0
-  local rc=0
-  local delay="${ESXI_SHUTDOWN_DELAY_SECONDS:-60}"
-  local reason="${ESXI_SHUTDOWN_REASON:-power outage}"
-  local reason_safe="${reason//\'/ }"
-  local ssh_user="${ESXI_SSH_USER:-root}"
-  local ssh_key="${HYPERVISOR_SSH_KEY:-/root/.ssh/id_rsa}"
+resolve_vcsa_ssh_endpoint() {
+  local vcsa_host="${1:-}" i configured_name match_ip="" matches=0
+  local normalized_vcsa
+  [ -n "$vcsa_host" ] || return 1
+  normalized_vcsa="$(printf '%s' "$vcsa_host" | tr '[:upper:]' '[:lower:]')"
+  for i in 0 1 2; do
+    configured_name="${ESXI_HOST_NAMES[$i]:-}"
+    [ -n "$configured_name" ] || continue
+    if [ "$(printf '%s' "$configured_name" | tr '[:upper:]' '[:lower:]')" = "$normalized_vcsa" ]; then
+      match_ip="${ESXI_HOSTS[$i]:-}"
+      matches=$((matches + 1))
+    fi
+  done
+  [ "$matches" -eq 1 ] && [ -n "$match_ip" ] || return 1
+  printf '%s\n' "$match_ip"
+}
 
-  log "===== ESXI HOST SHUTDOWN PHASE ====="
+preflight_esxi_host_shutdown() {
+  local vcsa_host="${1:-}" host ip j
   log "SAFETY CHECK: HYPERVISOR_SSH_FALLBACK_CONFIGURED=${HYPERVISOR_SSH_FALLBACK_CONFIGURED:-0}"
   log "SAFETY CHECK: HYPERVISOR_SSH_FALLBACK_ENABLED=${HYPERVISOR_SSH_FALLBACK_ENABLED:-0}"
   log "SAFETY CHECK: VMWARE_FALLBACK_HOST_SHUTDOWN_METHOD=${VMWARE_FALLBACK_HOST_SHUTDOWN_METHOD:-unset}"
@@ -366,53 +451,60 @@ shutdown_esxi_hosts() {
   log "SAFETY CHECK: CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN=${CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN:-0}"
   log "SAFETY CHECK: ALLOW_ESXI_SSH_FALLBACK=${ALLOW_ESXI_SSH_FALLBACK:-0}"
 
-  if [ "${HYPERVISOR_SSH_FALLBACK_CONFIGURED:-0}" != "1" ]; then
-    log "ERROR ESXi host shutdown blocked: fallback config is not marked configured"
-    power_classification "FAIL" "esxi_host_shutdown_blocked_not_configured"
-    return 2
-  fi
-
-  if [ "${HYPERVISOR_SSH_FALLBACK_ENABLED:-0}" != "1" ]; then
-    log "ERROR ESXi host shutdown blocked: HYPERVISOR_SSH_FALLBACK_ENABLED is not 1"
-    power_classification "FAIL" "esxi_host_shutdown_blocked_fallback_disabled"
-    return 2
-  fi
-
-  if [ "${VMWARE_FALLBACK_HOST_SHUTDOWN_METHOD:-}" != "esxi_ssh" ]; then
-    log "ERROR ESXi host shutdown blocked: VMWARE_FALLBACK_HOST_SHUTDOWN_METHOD is not esxi_ssh"
-    power_classification "FAIL" "esxi_host_shutdown_blocked_wrong_method"
-    return 2
-  fi
-
-  if [ "${ALLOW_ESXI_SSH_FALLBACK:-0}" != "1" ]; then
-    log "ERROR ESXi host shutdown blocked: ALLOW_ESXI_SSH_FALLBACK is not 1"
-    power_classification "FAIL" "esxi_host_shutdown_blocked_mode_gate"
-    return 2
-  fi
-
-  if [ "${VMWARE_HOST_ACTION_APPROVED:-0}" != "1" ]; then
-    log "ERROR ESXi host shutdown blocked: VMWARE_HOST_ACTION_APPROVED is not 1"
-    power_classification "FAIL" "esxi_host_shutdown_blocked_host_action_not_approved"
-    return 2
-  fi
-
-  if [ "${CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN:-0}" != "1" ]; then
-    log "ERROR ESXi host shutdown blocked: CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN is not 1"
-    power_classification "FAIL" "esxi_host_shutdown_blocked_missing_final_confirmation"
-    return 2
-  fi
-
-  if [ ! -r "$ssh_key" ]; then
-    log "ERROR ESXi host shutdown blocked: SSH key is not readable"
-    power_classification "FAIL" "esxi_host_shutdown_blocked_ssh_key_unreadable"
-    return 2
-  fi
-
-  for host in "${ESXI_HOSTS[@]}"; do
+  [ "${HYPERVISOR_SSH_FALLBACK_CONFIGURED:-0}" = "1" ] || { log "BLOCKED ESXi SSH host action: fallback is not configured"; return 10; }
+  [ "${HYPERVISOR_SSH_FALLBACK_ENABLED:-0}" = "1" ] || { log "BLOCKED ESXi SSH host action: fallback is disabled"; return 10; }
+  [ "${VMWARE_FALLBACK_HOST_SHUTDOWN_METHOD:-}" = "esxi_ssh" ] || { log "BLOCKED ESXi SSH host action: configured method is not esxi_ssh"; return 10; }
+  [ "${ALLOW_ESXI_SSH_FALLBACK:-0}" = "1" ] || { log "BLOCKED ESXi SSH host action: mode gate is not approved"; return 10; }
+  [ "${VMWARE_HOST_ACTION_APPROVED:-0}" = "1" ] || { log "BLOCKED ESXi SSH host action: target approval is absent"; return 10; }
+  [ "${CONFIRM_POWER_OUTAGE_HOST_SHUTDOWN:-0}" = "1" ] || { log "BLOCKED ESXi SSH host action: final confirmation is absent"; return 10; }
+  [ -r "${HYPERVISOR_SSH_KEY:-/root/.ssh/id_rsa}" ] || { log "BLOCKED ESXi SSH host action: SSH key is unavailable"; return 10; }
+  ip="$(resolve_vcsa_ssh_endpoint "$vcsa_host")" || { log "BLOCKED ESXi host order: current VCSA placement has no unique configured name/IP mapping"; return 10; }
+  local any=0 i
+  for i in 0 1 2; do
+    host="${ESXI_HOSTS[$i]:-}"
     [ -n "$host" ] || continue
+    [ -n "${ESXI_HOST_NAMES[$i]:-}" ] || { log "BLOCKED ESXi host order: configured host endpoint lacks an identity name"; return 10; }
+    for j in 0 1 2; do
+      [ "$j" -gt "$i" ] || continue
+      [ -n "${ESXI_HOSTS[$j]:-}" ] || continue
+      [ "$host" != "${ESXI_HOSTS[$j]}" ] || { log "BLOCKED ESXi host order: duplicate configured host endpoint"; return 10; }
+    done
+    any=1
+  done
+  [ "$any" -eq 1 ] || { log "BLOCKED ESXi host action: no hosts are configured"; return 10; }
+  return 0
+}
+
+shutdown_esxi_hosts() {
+  local vcsa_host="${1:-}" host host_name vcsa_ip i
+  local any_host=0 unknown=0 failed=0 accepted=0 rc=0
+  local delay="${ESXI_SHUTDOWN_DELAY_SECONDS:-60}"
+  local reason="${ESXI_SHUTDOWN_REASON:-power outage}"
+  local reason_safe="${reason//\'/ }"
+  local ssh_user="${ESXI_SSH_USER:-root}"
+  local ssh_key="${HYPERVISOR_SSH_KEY:-/root/.ssh/id_rsa}"
+  local ordered_hosts=() ordered_names=()
+
+  log "===== ESXI HOST SHUTDOWN PHASE ====="
+  preflight_esxi_host_shutdown "$vcsa_host" || return $?
+  vcsa_ip="$(resolve_vcsa_ssh_endpoint "$vcsa_host")" || return 10
+  for i in 0 1 2; do
+    host="${ESXI_HOSTS[$i]:-}"
+    host_name="${ESXI_HOST_NAMES[$i]:-}"
+    [ -n "$host" ] || continue
+    [ "$host" = "$vcsa_ip" ] && continue
+    ordered_hosts+=("$host")
+    ordered_names+=("$host_name")
+  done
+  ordered_hosts+=("$vcsa_ip")
+  ordered_names+=("$vcsa_host")
+
+  for i in "${!ordered_hosts[@]}"; do
+    host="${ordered_hosts[$i]}"
+    host_name="${ordered_names[$i]}"
     any_host=1
 
-    log "ATTEMPT ESXi host shutdown host=${host} method=ssh command='esxcli system shutdown poweroff'"
+    log "ATTEMPT ESXi host shutdown host=${host_name} endpoint=${host} method=ssh command='esxcli system shutdown poweroff'"
     if ssh \
       -o BatchMode=yes \
       -o ConnectTimeout=8 \
@@ -420,13 +512,14 @@ shutdown_esxi_hosts() {
       -i "$ssh_key" \
       "${ssh_user}@${host}" \
       "esxcli system shutdown poweroff -d ${delay} -r '${reason_safe}'" >> "$LOG_FILE" 2>&1; then
-      log "SUCCESS ESXi host shutdown command accepted host=${host}"
-      power_classification "WARN" "esxi_host_shutdown_command_accepted_not_verified" "host=\"${host}\""
+      accepted=$((accepted + 1))
+      log "COMMAND_ACCEPTED ESXi host shutdown request accepted host=${host_name}; physical host-off is not asserted"
+      power_classification "COMMAND_ACCEPTED" "esxi_host_shutdown_request_accepted" "host=\"${host_name}\""
     else
       rc=$?
-      failed=1
-      log "ERROR ESXi host shutdown command failed host=${host} rc=${rc}"
-      power_classification "FAIL" "esxi_host_shutdown_command_failed" "host=\"${host}\" command_rc=${rc}"
+      unknown=1
+      log "COMMAND_OUTCOME_UNKNOWN ESXi host SSH result host=${host_name} rc=${rc}; no retry"
+      power_classification "UNKNOWN" "esxi_host_ssh_outcome_unknown" "host=\"${host_name}\" command_rc=${rc}"
     fi
   done
 
@@ -436,16 +529,19 @@ shutdown_esxi_hosts() {
     return 2
   fi
 
-  if [ "$failed" -ne 0 ]; then
-    return 1
-  fi
-
-  return 0
+  [ "$unknown" -eq 0 ] || return 2
+  [ "$failed" -eq 0 ] || return 1
+  [ "$accepted" -eq "${#ordered_hosts[@]}" ] || return 2
+  # Keep the established host/storage interlock. SSH acceptance is a command
+  # result only and does not establish that dependent storage is safe to stop.
+  log "BLOCKED dependent storage: no supported physical host-off confirmation source is available"
+  power_classification "BLOCKED" "host_off_dependency_not_confirmed"
+  return 11
 }
 
 
 real_shutdown_domain() {
-  local workflow_failed=0
+  local workflow_failed=0 workflow_unknown=0 guest_rc=0 host_rc=0
   log "MODE: REAL / LIVE"
   log "SAFETY CHECK: ALLOW_REAL_TEST=${ALLOW_REAL_TEST:-0}"
   log "SAFETY CHECK: REAL_TEST_PHASE=${REAL_TEST_PHASE:-unset}"
@@ -483,37 +579,63 @@ real_shutdown_domain() {
   fi
 
   local vcsa_host=""
-  vcsa_host="$(vc_api_detect_vcsa_host "$session_id" 2>/dev/null)" || true
-  if [ -n "$vcsa_host" ]; then
-    log "Detected ${VCENTER_VM} currently on host: ${vcsa_host}"
-  else
-    log "WARN could not dynamically detect ${VCENTER_VM} host"
+  if ! vcsa_host="$(vc_api_detect_vcsa_host "$session_id" 2>/dev/null)" || [ -z "$vcsa_host" ]; then
+    log "UNKNOWN current VCSA host placement could not be resolved; no guest or host request sent"
+    power_classification "UNKNOWN" "vcsa_current_host_unresolved"
+    exit 2
   fi
+  log "Detected ${VCENTER_VM} current host placement: ${vcsa_host}"
 
-  if shutdown_vm_list "$session_id" "${PHASE1[@]}"; then :; else workflow_failed=1; fi
-  if shutdown_vm_list "$session_id" "${PHASE2[@]}"; then :; else workflow_failed=1; fi
-  if shutdown_vm_list "$session_id" "${PHASE3[@]}"; then :; else workflow_failed=1; fi
-  if shutdown_vm_list "$session_id" "${PHASE4[@]}"; then :; else workflow_failed=1; fi
-  if shutdown_vm_list "$session_id" "$VCENTER_VM"; then :; else workflow_failed=1; fi
+  # Validate the existing host approval/configuration and exact current-name
+  # mapping before any guest request can leave the terminal workflow half-run.
+  preflight_esxi_host_shutdown "$vcsa_host" || exit 10
 
-  log "VMWARE_GUEST_SHUTDOWN_PHASE_COMPLETE"
-  power_classification "WARN" "VMware guest shutdown requests issued; completion not independently verified"
-
-  if shutdown_esxi_hosts; then
-    log "SUCCESS VMware ESXi host shutdown phase completed"
-  else
-    rc=$?
-    log "ERROR VMware ESXi host shutdown phase failed or was blocked rc=${rc}"
-    exit "$rc"
+  # Preserve configured guest order and attempt each independent request once.
+  # A failed/unknown guest result does not suppress later guest requests, but it
+  # prevents host shutdown because a guest may still depend on that host.
+  shutdown_vm_list "$session_id" "${PHASE1[@]}" || { guest_rc=$?; [ "$guest_rc" -eq 2 ] && workflow_unknown=1 || workflow_failed=1; }
+  shutdown_vm_list "$session_id" "${PHASE2[@]}" || { guest_rc=$?; [ "$guest_rc" -eq 2 ] && workflow_unknown=1 || workflow_failed=1; }
+  shutdown_vm_list "$session_id" "${PHASE3[@]}" || { guest_rc=$?; [ "$guest_rc" -eq 2 ] && workflow_unknown=1 || workflow_failed=1; }
+  shutdown_vm_list "$session_id" "${PHASE4[@]}" || { guest_rc=$?; [ "$guest_rc" -eq 2 ] && workflow_unknown=1 || workflow_failed=1; }
+  if ! vcsa_host="$(vc_api_detect_vcsa_host "$session_id" 2>/dev/null)" || [ -z "$vcsa_host" ]; then
+    log "UNKNOWN current VCSA placement unavailable immediately before VCSA shutdown; VCSA and host requests not sent"
+    power_classification "UNKNOWN" "vcsa_current_host_refresh_unavailable"
+    exit 2
   fi
+  if ! resolve_vcsa_ssh_endpoint "$vcsa_host" >/dev/null; then
+    log "BLOCKED current VCSA host has no unique approved SSH endpoint; VCSA and host requests not sent"
+    power_classification "BLOCKED" "vcsa_current_host_ssh_endpoint_unresolved"
+    exit 10
+  fi
+  # VCSA is deliberately last in the configured guest request order.
+  shutdown_vm_list "$session_id" "$VCENTER_VM" || { [ "$?" -eq 2 ] && workflow_unknown=1 || workflow_failed=1; }
 
-  log "SUCCESS VMware vCenter guest plus ESXi host shutdown workflow completed"
-  if [ "$workflow_failed" -ne 0 ]; then
-    power_classification "FAIL" "One or more VMware guest or ESXi shutdown commands failed; later requests were still attempted"
+  if [ "$workflow_unknown" -ne 0 ]; then
+    log "COMMAND_OUTCOME_UNKNOWN VMware guest sequence contains an unresolved target; ESXi and dependent storage stages blocked"
+    power_classification "UNKNOWN" "vmware_guest_command_outcome_unknown"
+    exit 2
+  fi
+  if [ "$workflow_failed" -ne 0 ] || [ "$guest_rc" -ne 0 ]; then
+    log "COMMAND_FAILED VMware guest sequence contains a rejected or unissued target; ESXi and dependent storage stages blocked"
+    power_classification "FAIL" "vmware_guest_command_sequence_incomplete"
     exit 1
   fi
-  power_classification "WARN" "VMware guest and ESXi shutdown commands accepted; power-off not independently verified"
-  exit 0
+
+  log "COMMANDS_ACCEPTED VMware guest shutdown requests accepted or target was already POWERED_OFF; no post-request power-off claim"
+  power_classification "COMMAND_ACCEPTED" "vmware_guest_commands_accepted_not_independently_verified"
+
+  host_rc=0
+  shutdown_esxi_hosts "$vcsa_host" || host_rc=$?
+  case "$host_rc" in
+    0) exit 0 ;;
+    11)
+      log "COMMANDS_ACCEPTED_DEPENDENCY_UNRESOLVED VMware SSH host requests were accepted; storage interlock remains closed without supported host-off evidence"
+      exit 11
+      ;;
+    10) exit 10 ;;
+    2) exit 2 ;;
+    *) exit 1 ;;
+  esac
 }
 
 real_detect_vcsa_host() {
