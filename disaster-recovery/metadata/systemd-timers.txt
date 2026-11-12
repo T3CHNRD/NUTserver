@@ -1,22 +1,22 @@
 NEXT                            LEFT LAST                              PASSED UNIT                            ACTIVATES
-Thu 2026-11-12 14:35:45 EST      58s Thu 2026-11-12 14:34:45 EST       1s ago nut-power-events-refresh.timer  nut-power-events-refresh.service
-Thu 2026-11-12 14:40:00 EST     5min Thu 2026-11-12 14:30:05 EST 4min 41s ago sysstat-collect.timer           sysstat-collect.service
-Thu 2026-11-12 14:42:42 EST     7min Thu 2026-11-12 14:32:27 EST 2min 19s ago nut-apc-idf-event-monitor.timer nut-apc-idf-event-monitor.service
-Thu 2026-11-12 15:09:30 EST    34min Thu 2026-11-12 14:13:20 EST    21min ago fwupd-refresh.timer             fwupd-refresh.service
-Thu 2026-11-12 15:31:03 EST    56min Thu 2026-11-12 14:33:34 EST 1min 12s ago anacron.timer                   anacron.service
-Thu 2026-11-12 15:50:27 EST 1h 15min Wed 2026-11-11 15:50:27 EST      22h ago update-notifier-download.timer  update-notifier-download.service
-Thu 2026-11-12 15:59:37 EST 1h 24min Wed 2026-11-11 15:59:37 EST      22h ago systemd-tmpfiles-clean.timer    systemd-tmpfiles-clean.service
-Thu 2026-11-12 16:00:00 EST 1h 25min Thu 2026-11-12 06:00:05 EST       8h ago nut-daily-health-email.timer    nut-daily-health-email.service
-Thu 2026-11-12 16:36:43 EST  2h 1min Thu 2026-11-12 13:36:43 EST    58min ago apport-autoreport.timer         apport-autoreport.service
-Thu 2026-11-12 17:44:57 EST 3h 10min Thu 2026-11-12 11:35:39 EST 2h 59min ago motd-news.timer                 motd-news.service
-Fri 2026-11-13 00:00:00 EST       9h Thu 2026-11-12 00:00:00 EST      14h ago dpkg-db-backup.timer            dpkg-db-backup.service
-Fri 2026-11-13 00:00:00 EST       9h Thu 2026-11-12 00:00:00 EST      14h ago logrotate.timer                 logrotate.service
-Fri 2026-11-13 00:07:00 EST       9h Thu 2026-11-12 00:07:00 EST      14h ago sysstat-summary.timer           sysstat-summary.service
-Fri 2026-11-13 03:27:00 EST      12h Thu 2026-11-12 13:10:15 EST 1h 24min ago apt-daily.timer                 apt-daily.service
-Fri 2026-11-13 03:44:12 EST      13h Thu 2026-11-12 04:50:41 EST       9h ago man-db.timer                    man-db.service
-Fri 2026-11-13 04:00:00 EST      13h Thu 2026-11-12 12:00:04 EST 2h 34min ago nut-weather-cache-refresh.timer nut-weather-cache-refresh.service
-Fri 2026-11-13 06:39:23 EST      16h Thu 2026-11-12 06:15:43 EST       8h ago apt-daily-upgrade.timer         apt-daily-upgrade.service
-Fri 2026-11-13 08:00:00 EST      17h Thu 2026-11-12 08:00:06 EST       6h ago nut-telegram-heartbeat.timer    nut-telegram-heartbeat.service
+Thu 2026-11-12 15:16:16 EST      25s Thu 2026-11-12 15:15:16 EST      34s ago nut-power-events-refresh.timer  nut-power-events-refresh.service
+Thu 2026-11-12 15:20:00 EST  4min 8s Thu 2026-11-12 15:10:00 EST     5min ago sysstat-collect.timer           sysstat-collect.service
+Thu 2026-11-12 15:23:57 EST     8min Thu 2026-11-12 15:13:41 EST 2min 10s ago nut-apc-idf-event-monitor.timer nut-apc-idf-event-monitor.service
+Thu 2026-11-12 15:31:03 EST    15min Thu 2026-11-12 14:33:34 EST    42min ago anacron.timer                   anacron.service
+Thu 2026-11-12 15:50:27 EST    34min Wed 2026-11-11 15:50:27 EST      23h ago update-notifier-download.timer  update-notifier-download.service
+Thu 2026-11-12 15:59:37 EST    43min Wed 2026-11-11 15:59:37 EST      23h ago systemd-tmpfiles-clean.timer    systemd-tmpfiles-clean.service
+Thu 2026-11-12 16:00:00 EST    44min Thu 2026-11-12 06:00:05 EST       9h ago nut-daily-health-email.timer    nut-daily-health-email.service
+Thu 2026-11-12 16:35:37 EST 1h 19min Thu 2026-11-12 15:09:30 EST     6min ago fwupd-refresh.timer             fwupd-refresh.service
+Thu 2026-11-12 16:36:43 EST 1h 20min Thu 2026-11-12 13:36:43 EST 1h 39min ago apport-autoreport.timer         apport-autoreport.service
+Thu 2026-11-12 17:44:57 EST 2h 29min Thu 2026-11-12 11:35:39 EST 3h 40min ago motd-news.timer                 motd-news.service
+Fri 2026-11-13 00:00:00 EST       8h Thu 2026-11-12 00:00:00 EST      15h ago dpkg-db-backup.timer            dpkg-db-backup.service
+Fri 2026-11-13 00:00:00 EST       8h Thu 2026-11-12 00:00:00 EST      15h ago logrotate.timer                 logrotate.service
+Fri 2026-11-13 00:07:00 EST       8h Thu 2026-11-12 00:07:00 EST      15h ago sysstat-summary.timer           sysstat-summary.service
+Fri 2026-11-13 03:27:00 EST      12h Thu 2026-11-12 13:10:15 EST  2h 5min ago apt-daily.timer                 apt-daily.service
+Fri 2026-11-13 03:44:12 EST      12h Thu 2026-11-12 04:50:41 EST      10h ago man-db.timer                    man-db.service
+Fri 2026-11-13 04:00:00 EST      12h Thu 2026-11-12 12:00:04 EST 3h 15min ago nut-weather-cache-refresh.timer nut-weather-cache-refresh.service
+Fri 2026-11-13 06:39:23 EST      15h Thu 2026-11-12 06:15:43 EST       9h ago apt-daily-upgrade.timer         apt-daily-upgrade.service
+Fri 2026-11-13 08:00:00 EST      16h Thu 2026-11-12 08:00:06 EST       7h ago nut-telegram-heartbeat.timer    nut-telegram-heartbeat.service
 Sun 2026-11-15 03:10:44 EST   2 days Sun 2026-11-08 03:11:08 EST   4 days ago e2scrub_all.timer               e2scrub_all.service
 Mon 2026-11-16 00:27:24 EST   3 days Mon 2026-11-09 00:42:34 EST   3 days ago fstrim.timer                    fstrim.service
 Wed 2026-11-18 17:01:33 EST   6 days Sun 2026-11-08 23:47:14 EST   3 days ago update-notifier-motd.timer      update-notifier-motd.service

@@ -9,17 +9,25 @@ body{margin:0;background:#101827;color:#e8edf5;font:15px Arial,sans-serif}
 header{padding:16px 24px;background:#1a2535;border-bottom:1px solid #394658}
 header a{color:#8bd4ff}
 header h1{margin:8px 0;font-size:23px}
-.layout{display:grid;grid-template-columns:310px minmax(0,1fr);height:calc(100vh - 95px)}
-aside{overflow-y:auto;padding:18px;background:#172232;border-right:1px solid #394658}
-main{overflow-y:auto;padding:28px 36px;min-width:0}
+.layout{display:grid;grid-template-columns:320px minmax(0,1fr);min-height:calc(100vh - 95px);align-items:start}
+aside{position:sticky;top:0;height:100vh;box-sizing:border-box;padding:16px;background:#172232;border-right:1px solid #394658;display:flex;flex-direction:column;min-height:0}
+main{padding:28px 36px;min-width:0;min-height:calc(100vh - 95px)}
 button{cursor:pointer;background:#263447;color:#d9efff;border:1px solid #46566b;border-radius:7px;padding:9px 12px}
 button:hover{background:#344b63}
 #topics button{display:block;width:100%;text-align:left;margin:5px 0}
 #topics button.selected{background:#245073;border-color:#5faddd}
+#articles{overflow:auto;min-height:0;flex:1}
 #articles button{display:block;width:100%;text-align:left;margin:5px 0}
+#topics{max-height:32vh;overflow:auto;flex:none;border-bottom:1px solid #394658;padding-bottom:8px}
+#topics button{font-size:13px;padding:7px}
+#topic-pager{display:flex;justify-content:space-between;gap:10px;margin:16px 0}
+#topic-pager button:disabled{opacity:.45;cursor:default}
+#library-heading{margin:12px 0 5px}
+.library-category{margin:8px 0 3px;color:#9bb0c6;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.cc-help-table-wrap{overflow-x:auto}.cc-help-table{border-collapse:collapse;width:100%;margin:12px 0}.cc-help-table th,.cc-help-table td{border:1px solid #526176;padding:8px;text-align:left;vertical-align:top}.cc-help-table th{background:#1a2535}
 #search{width:100%;box-sizing:border-box;padding:12px;background:#101827;color:white;border:1px solid #657286;border-radius:7px}
 #results button{display:block;width:100%;text-align:left;margin:5px 0}
-#results{max-height:260px;overflow-y:auto}
+#results{max-height:180px;overflow-y:auto;flex:none}
 a{color:#8bd4ff}
 h1,h2,h3{line-height:1.35}
 pre{overflow-x:auto;background:#0b1523;padding:14px;border-radius:6px}
@@ -28,7 +36,21 @@ code{overflow-wrap:anywhere}
 .cc-help-article li{margin:5px 0}
 .cc-help-article hr{border:0;border-top:1px solid #455268}
 #status{color:#b7c6d7;font-size:13px}
-@media(max-width:760px){.layout{grid-template-columns:1fr;height:auto}aside{max-height:40vh}main{min-height:60vh;padding:20px}}
+@media(max-width:760px){.layout{grid-template-columns:1fr;min-height:0}aside{z-index:5;top:0;height:auto;max-height:48vh;padding:10px 14px;border-right:0;border-bottom:1px solid #394658}#topics{max-height:17vh}#articles{max-height:13vh;flex:none}main{min-height:52vh;padding:18px}.cc-help-article{font-size:15px}}
+</style>
+
+<style>
+.help-search-sticky{
+ position:sticky;
+ top:0;
+ z-index:20;
+ background:#172232;
+ padding:8px 0 12px;
+}
+.help-search-sticky input{
+ width:100%;
+ box-sizing:border-box;
+}
 </style>
 </head>
 <body>
@@ -38,16 +60,20 @@ code{overflow-wrap:anywhere}
 </header>
 <div class="layout">
 <aside>
-<input id="search" type="search" placeholder="Search all Help documentation">
+<div class="help-search-sticky"><input id="search" type="search" placeholder="Search all Help documentation"></div>
+
+<h3 style="margin:0 0 8px">Topics in selected article</h3>
+<div id="topics" aria-label="Topics in selected article"><div id="topic-empty">Select an article to show its topics.</div></div>
+
 <div id="results"></div>
-<h3>Articles</h3>
+<h3 id="library-heading">Help Library</h3>
 <div id="articles"></div>
-<h3>Topics — Always Available</h3>
-<div id="topics"></div>
 </aside>
 <main id="reader">
 <div id="status">Select an article or search for a topic.</div>
+<nav id="topic-pager" aria-label="Previous and next Help topic" hidden><button id="previous-topic" type="button">Previous Topic</button><button id="next-topic" type="button">Next Topic</button></nav>
 <article id="content" class="cc-help-article"></article>
+<nav id="topic-pager-bottom" aria-label="Previous and next Help topic" hidden><button id="previous-topic-bottom" type="button">Previous Topic</button><button id="next-topic-bottom" type="button">Next Topic</button></nav>
 </main>
 </div>
 <script>
@@ -62,6 +88,10 @@ function esc(v){
       .replace(/[`*_~]/g,"")
       .replace(/[^a-z0-9]+/g,"-")
       .replace(/^-+|-+$/g,"");
+  }
+
+  function helpNormalizeAnchor(value){
+    return helpHeadingSlug(String(value||"").replace(/^#+\s*/,""));
   }
 
 
@@ -91,6 +121,9 @@ function esc(v){
       }
     );
 
+    s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      function(match,label,url){return '<a href="'+url+'" target="_blank" rel="noopener noreferrer">'+label+'</a>';});
+
     return s;
   }
 
@@ -115,10 +148,10 @@ function esc(v){
     }
 
     if(!topics.length){
-      return {body:md,nav:""};
+      return {body:md,topics:[],selected:-1,anchor:""};
     }
 
-    var wanted=String(anchor||"").replace(/^#/,"");
+    var wanted=helpNormalizeAnchor(anchor);
     var selected=-1;
 
     for(i=0;i<topics.length;i++){
@@ -138,35 +171,19 @@ function esc(v){
       if(selected>=0)break;
     }
 
-    var nav="<details class=\"cc-help-topic-navigation\" "+
-      (selected<0?"open":"")+">"+
-      "<summary>Help topics in this document</summary>"+
-      "<div style=\"padding:10px;display:flex;flex-wrap:wrap;gap:8px;\">";
-
-    nav+="<a href=\"#\" class=\"cc-help-internal-link cc-btn\" "+
-      "data-help-file=\""+esc(file)+"\" data-help-anchor=\"\">Overview</a>";
-
-    for(i=0;i<topics.length;i++){
-      nav+="<a href=\"#\" class=\"cc-help-internal-link cc-btn\" "+
-        "data-help-file=\""+esc(file)+"\" "+
-        "data-help-anchor=\""+esc(topics[i].slug)+"\">"+
-        esc(topics[i].title)+"</a>";
-    }
-
-    nav+="</div></details>";
-
     var body;
 
+    if(selected<0 && !wanted)selected=0;
     if(selected>=0){
       body=lines.slice(topics[selected].start,topics[selected].end).join("\n");
     }else{
       body=lines.slice(0,first).join("\n");
       if(wanted){
-        body+="\n\nRequested section was not found. Choose a topic above.";
+        body+="\n\nRequested section was not found. Choose a topic in the navigation.";
       }
     }
 
-    return {body:body,nav:nav};
+    return {body:body,topics:topics,selected:selected,anchor:wanted};
   }
 
   function helpRenderMarkdown(md,anchor){
@@ -195,14 +212,14 @@ function esc(v){
           anchorMatch=true;
         }else if(
           helpHeadingSlug(text)===
-          String(anchor).replace(/^#/,"")
+          helpNormalizeAnchor(anchor)
         ){
           // Human-authored FILE.md#section link.
           anchorMatch=true;
         }
       }
 
-      var id=anchorMatch ? " id=\""+markerId+"\"" : "";
+      var id=anchorMatch ? " id=\""+markerId+"\"" : " id=\""+helpHeadingSlug(text)+"\"";
       var t=String(text||"").toLowerCase();
       var cls="";
 
@@ -258,6 +275,21 @@ function esc(v){
       if(/^---+$/.test(trimmed)){
         closeList();
         html.push("<hr>");
+        continue;
+      }
+
+      if(/^\|.*\|$/.test(trimmed)){
+        closeList();
+        var rows=[];
+        while(i<lines.length && /^\s*\|.*\|\s*$/.test(lines[i]))rows.push(lines[i++]);
+        i--;
+        var cells=rows.map(function(row){return row.trim().replace(/^\||\|$/g,"").split("|").map(function(c){return c.trim();});});
+        if(cells.length>1 && cells[1].every(function(c){return /^:?-{3,}:?$/.test(c);}))cells.splice(1,1);
+        var table="<div class=\"cc-help-table-wrap\"><table class=\"cc-help-table\"><thead><tr>";
+        (cells[0]||[]).forEach(function(c){table+="<th>"+helpInline(c)+"</th>";});
+        table+="</tr></thead><tbody>";
+        cells.slice(1).forEach(function(row){table+="<tr>";row.forEach(function(c){table+="<td>"+helpInline(c)+"</td>";});table+="</tr>";});
+        html.push(table+="</tbody></table></div>");
         continue;
       }
 
@@ -322,7 +354,7 @@ function requestJSON(url){
 
 function topicList(md){
  var lines=String(md||"").replace(/\r/g,"").split("\n");
- var result=[{title:"Overview",slug:""}];
+ var result=[];
  lines.forEach(function(line){
   var m=line.match(/^##\s+(.+)$/);
   if(m)result.push({title:m[1],slug:helpHeadingSlug(m[1])});
@@ -333,7 +365,9 @@ function topicList(md){
 function drawTopics(file,md,selected){
  var holder=document.getElementById("topics");
  holder.innerHTML="";
- topicList(md).forEach(function(t){
+ var items=topicList(md);
+ if(!items.length){holder.textContent="This document has no ## topic headings.";return;}
+ items.forEach(function(t){
   var b=document.createElement("button");
   b.textContent=t.title;
   if(t.slug===selected)b.className="selected";
@@ -344,24 +378,26 @@ function drawTopics(file,md,selected){
 
 function showTopic(file,topic){
  var data=helpTopicPage(currentContent,topic,file);
+ topic=data.selected>=0?data.topics[data.selected].slug:(topic||"");
  drawTopics(file,currentContent,topic);
 
  var area=document.getElementById("content");
- area.innerHTML=helpRenderMarkdown(data.body,topic);
+ area.innerHTML=helpRenderMarkdown(data.body,data.anchor);
 
  var marker=area.querySelector("#cc-help-match-anchor");
- var reader=document.getElementById("reader");
- reader.scrollTop=0;
+ window.scrollTo(0,0);
 
  if(marker){
-  reader.scrollTop=Math.max(
-   0,marker.getBoundingClientRect().top-
-   reader.getBoundingClientRect().top-12
-  );
+  marker.scrollIntoView({block:"start",behavior:"auto"});
  }
 
  document.getElementById("status").textContent=file;
  document.title="NUT Help - "+file;
+ var list=data.topics||[];
+ var active=data.selected;
+ ["topic-pager","topic-pager-bottom"].forEach(function(id){document.getElementById(id).hidden=list.length<2;});
+ ["previous-topic","previous-topic-bottom"].forEach(function(id){var b=document.getElementById(id);b.disabled=active<=0;b.onclick=function(){if(active>0)go(file,list[active-1].slug);};});
+ ["next-topic","next-topic-bottom"].forEach(function(id){var b=document.getElementById(id);b.disabled=active<0||active>=list.length-1;b.onclick=function(){if(active>=0&&active<list.length-1)go(file,list[active+1].slug);};});
 
  area.querySelectorAll(".cc-help-internal-link").forEach(function(a){
   a.addEventListener("click",function(e){
@@ -378,6 +414,7 @@ function openHelp(file,topic){
 
  if(currentFile===file && currentContent){
   showTopic(file,topic);
+  syncTopicUrl(file,topic);
   return;
  }
 
@@ -390,11 +427,17 @@ function openHelp(file,topic){
   currentFile=file;
   currentContent=String(d.content||"");
   showTopic(file,topic);
+  syncTopicUrl(file,topic);
  })
  .catch(function(e){
   if(number!==requestNumber)return;
   document.getElementById("status").textContent=e.message;
  });
+}
+
+function syncTopicUrl(file,topic){
+ var data=helpTopicPage(currentContent,topic,file);
+ if(data.selected>=0){var actual=topic||data.topics[data.selected].slug;var url=pageUrl(file,actual);if(location.pathname+location.search!==url)history.replaceState({file:file,topic:actual},"",url);}
 }
 
 function go(file,topic){
@@ -405,19 +448,34 @@ function go(file,topic){
 
 window.addEventListener("popstate",function(){
  var p=new URLSearchParams(location.search);
- openHelp(p.get("file")||"",p.get("topic")||"");
+ var file=p.get("file")||"";
+ if(file){openHelp(file,p.get("topic")||"");return;}
+ ++requestNumber;currentFile="";currentContent="";
+ document.getElementById("topics").innerHTML="<div id=\"topic-empty\">Select an article to show its topics.</div>";
+ document.getElementById("content").innerHTML="";
+ document.getElementById("status").textContent="Select an article or search for a topic.";
+ document.getElementById("topic-pager").hidden=true;
+ document.getElementById("topic-pager-bottom").hidden=true;
+ document.title="NUT Control Center Help";
 });
 
 function loadArticles(){
- requestJSON("/nut-ui/api/help/articles").then(function(d){
+ Promise.all([requestJSON("/nut-ui/api/help/articles"),requestJSON("/nut-ui/api/help/article/00_HELP_INDEX.md").catch(function(){return {ok:false};})]).then(function(values){
+  var d=values[0],index=values[1];
   var items=Array.isArray(d)?d:(d.articles||[]);
   var holder=document.getElementById("articles");
   holder.innerHTML="";
+  var categoryByFile={}, labelByFile={}, categories=[], activeCategory="Other Help and References";
+  if(index&&index.ok){String(index.content||"").split(/\r?\n/).forEach(function(line){var heading=line.match(/^#{2,4}\s+(.+)$/);if(heading){activeCategory=heading[1].replace(/^\d+\s*[-—:]\s*/,"");if(categories.indexOf(activeCategory)<0)categories.push(activeCategory);return;}var link=line.match(/\[([^\]]+)\]\(([A-Za-z0-9_.-]+\.md)(?:#[^)]+)?\)/);if(link){categoryByFile[link[2]]=activeCategory;labelByFile[link[2]]=link[1];}});}
+  items.sort(function(a,b){return (a.title||a.file).localeCompare(b.title||b.file);});
+  var renderedCategories={};
   items.forEach(function(a){
    var file=String(a.file||"");
    if(!/^[A-Za-z0-9_.-]+\.md$/.test(file))return;
+   var cat=categoryByFile[file]||"Other Help and References";
+   if(!renderedCategories[cat]){var h=document.createElement("div");h.className="library-category";h.textContent=cat;holder.appendChild(h);renderedCategories[cat]=true;}
    var b=document.createElement("button");
-   b.textContent=a.title||file;
+   b.textContent=labelByFile[file]||a.title||file;
    b.onclick=function(){go(file,"");};
    holder.appendChild(b);
   });

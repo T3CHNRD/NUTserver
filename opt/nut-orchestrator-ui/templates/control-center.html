@@ -3537,6 +3537,10 @@ function updateNutProductionButtons(mode) {
         notification, backup, restore, and protected-system function.
       </p>
 
+      <p style="margin:12px 0 18px;">
+        <a class="cc-btn" href="/nut-ui/help">Open the full Help Library</a>
+      </p>
+
       <div style="margin:18px 0;">
         <input
           id="cc-help-search" style="width:100%;min-height:56px;font-size:18px;padding:12px 16px;box-sizing:border-box;"
@@ -9319,6 +9323,13 @@ function init(){
   function openArticle(file,anchor){
 
     anchor=String(anchor||"");
+    file=String(file||"");
+    if(!/^[A-Za-z0-9_.-]+\.md$/.test(file))return;
+    var standaloneQuery=new URLSearchParams();
+    standaloneQuery.set("file",file);
+    if(anchor)standaloneQuery.set("topic",anchor);
+    window.location.assign("/nut-ui/help?"+standaloneQuery.toString());
+    return;
 
     if(openHelpFile===file&&openHelpAnchor===anchor&&pane.style.display!=="none"){
       pane.style.display="none";
@@ -9711,10 +9722,10 @@ window.ccOpenHelpArticle=function(file,anchor){
   file=String(file||"");
   anchor=String(anchor||"");
   if(!/^[A-Za-z0-9_.-]+\.md$/.test(file))return;
-  var helpTab=document.querySelector('[data-cc-tab="cc-help-section"]');
-  if(helpTab)helpTab.click();
-  history.pushState({ccHelp:true,file:file,anchor:anchor},"","#cc-help-section");
-  openArticle(file,anchor);
+  var query=new URLSearchParams();
+  query.set("file",file);
+  if(anchor)query.set("topic",anchor);
+  window.location.assign("/nut-ui/help?"+query.toString());
 };
 
 })();

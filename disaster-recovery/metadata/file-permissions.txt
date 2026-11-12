@@ -270,6 +270,7 @@
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-readable-action-output-v2-20260615-140627|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-result-toggle-20260902_090541|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-final-restore-dropdown-layout-20260604-154625|644|root|root
+/opt/nut-orchestrator-ui/templates/help.html.pre-search-position-20261112-151421|664|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-6f6-20260827-093945|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-performance-lite-20260528-140238|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-dashboard-recent-20260825-082905|644|root|root
