@@ -297,6 +297,7 @@
 /opt/nut-orchestrator-ui/templates/index.html.pre-final-editable-20260417-155523|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-config-loader-visible-status-20260528-145727|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-glass-material-polish-20260528-132323|644|root|root
+/opt/nut-orchestrator-ui/templates/help.html|664|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-real-test-wording-live-ready-20260529-103504|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-disable-save-until-final-test-20260528-150545|644|root|root
 /opt/nut-orchestrator-ui/templates/control-center.html.pre-tabs-liquid-glass-20260529-095508|644|root|root
@@ -438,6 +439,7 @@
 /opt/nut-orchestrator-ui/app.py.bak-section-search-20260827_153022|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-redesign-20260417-145204|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-log-export-route-20260508-104244|644|root|root
+/opt/nut-orchestrator-ui/app.py.pre-help-page-20261112-134420|644|root|root
 /opt/nut-orchestrator-ui/__pycache__/app.cpython-312.pyc|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-fix-missing-re-import-20260624-072029|644|root|root
 /opt/nut-orchestrator-ui/app.py.pre-search-v2-20260827-142947|644|root|root

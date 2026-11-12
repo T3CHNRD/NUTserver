@@ -73,6 +73,11 @@ def control_center():
 
 
 
+@app.route("/help")
+def standalone_help():
+    return render_template("help.html")
+
+
 @app.route("/control-center-restore-lab")
 def control_center_restore_lab():
     return render_template("control-center-restore-lab.html")

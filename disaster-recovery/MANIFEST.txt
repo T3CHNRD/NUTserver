@@ -140,6 +140,7 @@ SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-force-all-con
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.bak-section-search-20260827_153022
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-redesign-20260417-145204
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-log-export-route-20260508-104244
+SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-help-page-20261112-134420
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-fix-missing-re-import-20260624-072029
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-search-v2-20260827-142947
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/app.py.pre-full-restore-workflow-20260903-151312
@@ -330,6 +331,7 @@ SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/index.html.pre-final-editable-20260417-155523
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-config-loader-visible-status-20260528-145727
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-glass-material-polish-20260528-132323
+FILE /opt/nut-orchestrator-ui/templates/help.html -> files/opt/nut-orchestrator-ui/templates/help.html mode=0664
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-real-test-wording-live-ready-20260529-103504
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-disable-save-until-final-test-20260528-150545
 SKIP temp-development-artifact /opt/nut-orchestrator-ui/templates/control-center.html.pre-tabs-liquid-glass-20260529-095508

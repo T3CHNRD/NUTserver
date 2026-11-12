@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NUT Control Center Help</title>
+<style>
+body{margin:0;background:#101827;color:#e8edf5;font:15px Arial,sans-serif}
+header{padding:16px 24px;background:#1a2535;border-bottom:1px solid #394658}
+header a{color:#8bd4ff}
+header h1{margin:8px 0;font-size:23px}
+.layout{display:grid;grid-template-columns:310px minmax(0,1fr);height:calc(100vh - 95px)}
+aside{overflow-y:auto;padding:18px;background:#172232;border-right:1px solid #394658}
+main{overflow-y:auto;padding:28px 36px;min-width:0}
+button{cursor:pointer;background:#263447;color:#d9efff;border:1px solid #46566b;border-radius:7px;padding:9px 12px}
+button:hover{background:#344b63}
+#topics button{display:block;width:100%;text-align:left;margin:5px 0}
+#topics button.selected{background:#245073;border-color:#5faddd}
+#articles button{display:block;width:100%;text-align:left;margin:5px 0}
+#search{width:100%;box-sizing:border-box;padding:12px;background:#101827;color:white;border:1px solid #657286;border-radius:7px}
+#results button{display:block;width:100%;text-align:left;margin:5px 0}
+#results{max-height:260px;overflow-y:auto}
+a{color:#8bd4ff}
+h1,h2,h3{line-height:1.35}
+pre{overflow-x:auto;background:#0b1523;padding:14px;border-radius:6px}
+code{overflow-wrap:anywhere}
+.cc-help-article{line-height:1.6;max-width:1100px}
+.cc-help-article li{margin:5px 0}
+.cc-help-article hr{border:0;border-top:1px solid #455268}
+#status{color:#b7c6d7;font-size:13px}
+@media(max-width:760px){.layout{grid-template-columns:1fr;height:auto}aside{max-height:40vh}main{min-height:60vh;padding:20px}}
+</style>
+</head>
+<body>
+<header>
+<a href="/nut-ui/control-center">Control Center</a>
+<h1>NUT Control Center Help</h1>
+</header>
+<div class="layout">
+<aside>
+<input id="search" type="search" placeholder="Search all Help documentation">
+<div id="results"></div>
+<h3>Articles</h3>
+<div id="articles"></div>
+<h3>Topics — Always Available</h3>
+<div id="topics"></div>
+</aside>
+<main id="reader">
+<div id="status">Select an article or search for a topic.</div>
+<article id="content" class="cc-help-article"></article>
+</main>
+</div>
+<script>
+function esc(v){
+ return String(v==null?"":v).replace(/&/g,"&amp;")
+ .replace(/</g,"&lt;").replace(/>/g,"&gt;")
+ .replace(/"/g,"&quot;");
+}
+  function helpHeadingSlug(s){
+    return String(s||"")
+      .toLowerCase()
+      .replace(/[`*_~]/g,"")
+      .replace(/[^a-z0-9]+/g,"-")
+      .replace(/^-+|-+$/g,"");
+  }
+
+
+  function helpInline(s){
+    s=esc(String(s||""));
+    s=s.replace(/`([^`]+)`/g,"<code>$1</code>");
+    s=s.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+
+    // Internal Help article links:
+    //
+    // Whole article:
+    // [Monitoring](03_MONITORING_HOWTOS.md)
+    //
+    // Specific section:
+    // [Save](09_CONFIGURATION_HOWTOS.md#how-to-save-a-configuration-change)
+    s=s.replace(
+      /\[([^\]]+)\]\(([A-Za-z0-9_.-]+\.md)(?:#([A-Za-z0-9_.~-]+))?\)/g,
+      function(match,label,file,anchor){
+        return "<a href=\"#\" class=\"cc-help-internal-link\" "+
+          "data-help-file=\""+
+          file+
+          "\" data-help-anchor=\""+
+          (anchor||"")+
+          "\">"+
+          label+
+          "</a>";
+      }
+    );
+
+    return s;
+  }
+
+
+  function helpTopicPage(md,anchor,file){
+    var lines=String(md||"").replace(/\r/g,"").split("\n");
+    var topics=[];
+    var first=-1;
+    var i;
+
+    for(i=0;i<lines.length;i++){
+      var m=lines[i].match(/^##\s+(.+)$/);
+      if(!m)continue;
+      if(first<0)first=i;
+      if(topics.length)topics[topics.length-1].end=i;
+      topics.push({
+        title:m[1],
+        slug:helpHeadingSlug(m[1]),
+        start:i,
+        end:lines.length
+      });
+    }
+
+    if(!topics.length){
+      return {body:md,nav:""};
+    }
+
+    var wanted=String(anchor||"").replace(/^#/,"");
+    var selected=-1;
+
+    for(i=0;i<topics.length;i++){
+      if(topics[i].slug===wanted){
+        selected=i;
+        break;
+      }
+
+      var part=lines.slice(topics[i].start,topics[i].end);
+      for(var j=0;j<part.length;j++){
+        var h=part[j].match(/^#{3,6}\s+(.+)$/);
+        if(h && helpHeadingSlug(h[1])===wanted){
+          selected=i;
+          break;
+        }
+      }
+      if(selected>=0)break;
+    }
+
+    var nav="<details class=\"cc-help-topic-navigation\" "+
+      (selected<0?"open":"")+">"+
+      "<summary>Help topics in this document</summary>"+
+      "<div style=\"padding:10px;display:flex;flex-wrap:wrap;gap:8px;\">";
+
+    nav+="<a href=\"#\" class=\"cc-help-internal-link cc-btn\" "+
+      "data-help-file=\""+esc(file)+"\" data-help-anchor=\"\">Overview</a>";
+
+    for(i=0;i<topics.length;i++){
+      nav+="<a href=\"#\" class=\"cc-help-internal-link cc-btn\" "+
+        "data-help-file=\""+esc(file)+"\" "+
+        "data-help-anchor=\""+esc(topics[i].slug)+"\">"+
+        esc(topics[i].title)+"</a>";
+    }
+
+    nav+="</div></details>";
+
+    var body;
+
+    if(selected>=0){
+      body=lines.slice(topics[selected].start,topics[selected].end).join("\n");
+    }else{
+      body=lines.slice(0,first).join("\n");
+      if(wanted){
+        body+="\n\nRequested section was not found. Choose a topic above.";
+      }
+    }
+
+    return {body:body,nav:nav};
+  }
+
+  function helpRenderMarkdown(md,anchor){
+    var lines=String(md||"").replace(/\r/g,"").split("\n");
+    var html=[];
+    var inCode=false;
+    var code=[];
+    var listType="";
+    var markerId="cc-help-match-anchor";
+
+    function closeList(){
+      if(listType){
+        html.push(listType==="ol" ? "</ol>" : "</ul>");
+        listType="";
+      }
+    }
+
+    function headingTag(level,text,raw){
+      closeList();
+
+      var anchorMatch=false;
+
+      if(anchor){
+        if(raw===anchor){
+          // Existing search-result behavior.
+          anchorMatch=true;
+        }else if(
+          helpHeadingSlug(text)===
+          String(anchor).replace(/^#/,"")
+        ){
+          // Human-authored FILE.md#section link.
+          anchorMatch=true;
+        }
+      }
+
+      var id=anchorMatch ? " id=\""+markerId+"\"" : "";
+      var t=String(text||"").toLowerCase();
+      var cls="";
+
+      if(t.indexOf("safety")>=0||t.indexOf("warning")>=0){
+        cls=" cc-help-heading-safety";
+      }else if(
+        t.indexOf("verify")>=0||
+        t.indexOf("verification")>=0||
+        t.indexOf("expected result")>=0
+      ){
+        cls=" cc-help-heading-verify";
+      }else if(t.indexOf("troubleshoot")>=0){
+        cls=" cc-help-heading-troubleshoot";
+      }
+
+      html.push(
+        "<h"+level+
+        id+
+        " class=\"cc-help-heading"+cls+"\">"+
+        helpInline(text)+
+        "</h"+level+">"
+      );
+    }
+
+    for(var i=0;i<lines.length;i++){
+      var line=lines[i];
+      var trimmed=line.replace(/^\s+|\s+$/g,"");
+
+      if(/^```/.test(trimmed)){
+        if(inCode){
+          html.push("<pre class=\"cc-help-code\"><code>"+esc(code.join("\n"))+"</code></pre>");
+          code=[];
+          inCode=false;
+        }else{
+          closeList();
+          inCode=true;
+        }
+        continue;
+      }
+
+      if(inCode){
+        code.push(line);
+        continue;
+      }
+
+      if(trimmed==="![NUT Power-Outage Workflow](/nut-ui/static/nut-power-outage-workflow.png)"){closeList();html.push("<p><img src=\"/nut-ui/static/nut-power-outage-workflow.png\" alt=\"NUT Power-Outage Workflow\" style=\"max-width:100%;height:auto\" loading=\"lazy\"></p>");continue;}
+      var hm=line.match(/^(#{1,6})\s+(.+)$/);
+      if(hm){
+        headingTag(hm[1].length,hm[2],line);
+        continue;
+      }
+
+      if(/^---+$/.test(trimmed)){
+        closeList();
+        html.push("<hr>");
+        continue;
+      }
+
+      var om=line.match(/^\s*([0-9]+)\.\s+(.+)$/);
+      if(om){
+        if(listType!=="ol"){
+          closeList();
+          html.push("<ol>");
+          listType="ol";
+        }
+        html.push("<li>"+helpInline(om[2])+"</li>");
+        continue;
+      }
+
+      var um=line.match(/^\s*[-*]\s+(.+)$/);
+      if(um){
+        if(listType!=="ul"){
+          closeList();
+          html.push("<ul>");
+          listType="ul";
+        }
+        html.push("<li>"+helpInline(um[1])+"</li>");
+        continue;
+      }
+
+      if(!trimmed){
+        closeList();
+        continue;
+      }
+
+      closeList();
+      html.push("<p>"+helpInline(trimmed)+"</p>");
+    }
+
+    if(inCode){
+      html.push("<pre class=\"cc-help-code\"><code>"+esc(code.join("\n"))+"</code></pre>");
+    }
+
+    closeList();
+    return html.join("");
+  }
+
+
+var currentFile="";
+var currentContent="";
+var requestNumber=0;
+
+function pageUrl(file,topic){
+ var p=new URLSearchParams();
+ p.set("file",file);
+ if(topic)p.set("topic",topic);
+ return "/nut-ui/help?"+p.toString();
+}
+
+function requestJSON(url){
+ return fetch(url,{credentials:"same-origin"})
+ .then(function(r){
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  return r.json();
+ });
+}
+
+function topicList(md){
+ var lines=String(md||"").replace(/\r/g,"").split("\n");
+ var result=[{title:"Overview",slug:""}];
+ lines.forEach(function(line){
+  var m=line.match(/^##\s+(.+)$/);
+  if(m)result.push({title:m[1],slug:helpHeadingSlug(m[1])});
+ });
+ return result;
+}
+
+function drawTopics(file,md,selected){
+ var holder=document.getElementById("topics");
+ holder.innerHTML="";
+ topicList(md).forEach(function(t){
+  var b=document.createElement("button");
+  b.textContent=t.title;
+  if(t.slug===selected)b.className="selected";
+  b.onclick=function(){go(file,t.slug);};
+  holder.appendChild(b);
+ });
+}
+
+function showTopic(file,topic){
+ var data=helpTopicPage(currentContent,topic,file);
+ drawTopics(file,currentContent,topic);
+
+ var area=document.getElementById("content");
+ area.innerHTML=helpRenderMarkdown(data.body,topic);
+
+ var marker=area.querySelector("#cc-help-match-anchor");
+ var reader=document.getElementById("reader");
+ reader.scrollTop=0;
+
+ if(marker){
+  reader.scrollTop=Math.max(
+   0,marker.getBoundingClientRect().top-
+   reader.getBoundingClientRect().top-12
+  );
+ }
+
+ document.getElementById("status").textContent=file;
+ document.title="NUT Help - "+file;
+
+ area.querySelectorAll(".cc-help-internal-link").forEach(function(a){
+  a.addEventListener("click",function(e){
+   e.preventDefault();
+   go(a.getAttribute("data-help-file"),
+      a.getAttribute("data-help-anchor")||"");
+  });
+ });
+}
+
+function openHelp(file,topic){
+ if(!/^[A-Za-z0-9_.-]+\.md$/.test(file))return;
+ var number=++requestNumber;
+
+ if(currentFile===file && currentContent){
+  showTopic(file,topic);
+  return;
+ }
+
+ document.getElementById("status").textContent="Loading article...";
+
+ requestJSON("/nut-ui/api/help/article/"+encodeURIComponent(file))
+ .then(function(d){
+  if(number!==requestNumber)return;
+  if(!d.ok)throw new Error(d.error||"Article unavailable");
+  currentFile=file;
+  currentContent=String(d.content||"");
+  showTopic(file,topic);
+ })
+ .catch(function(e){
+  if(number!==requestNumber)return;
+  document.getElementById("status").textContent=e.message;
+ });
+}
+
+function go(file,topic){
+ if(!file)return;
+ history.pushState({file:file,topic:topic},"",pageUrl(file,topic));
+ openHelp(file,topic);
+}
+
+window.addEventListener("popstate",function(){
+ var p=new URLSearchParams(location.search);
+ openHelp(p.get("file")||"",p.get("topic")||"");
+});
+
+function loadArticles(){
+ requestJSON("/nut-ui/api/help/articles").then(function(d){
+  var items=Array.isArray(d)?d:(d.articles||[]);
+  var holder=document.getElementById("articles");
+  holder.innerHTML="";
+  items.forEach(function(a){
+   var file=String(a.file||"");
+   if(!/^[A-Za-z0-9_.-]+\.md$/.test(file))return;
+   var b=document.createElement("button");
+   b.textContent=a.title||file;
+   b.onclick=function(){go(file,"");};
+   holder.appendChild(b);
+  });
+ }).catch(function(e){
+  document.getElementById("articles").textContent=e.message;
+ });
+}
+
+var searchTimer;
+document.getElementById("search").addEventListener("input",function(){
+ var q=this.value.trim();
+ clearTimeout(searchTimer);
+ var results=document.getElementById("results");
+ if(!q){results.innerHTML="";return;}
+ searchTimer=setTimeout(function(){
+  requestJSON("/nut-ui/api/help/search?q="+encodeURIComponent(q))
+  .then(function(d){
+   if(document.getElementById("search").value.trim()!==q)return;
+   results.innerHTML="";
+   (d.results||[]).forEach(function(r){
+    var b=document.createElement("button");
+    b.textContent=(r.title||r.file)+
+     (r.section?" — "+r.section:"");
+    b.onclick=function(){go(r.file,r.anchor||"");};
+    results.appendChild(b);
+   });
+  }).catch(function(e){results.textContent=e.message;});
+ },250);
+});
+
+loadArticles();
+var p=new URLSearchParams(location.search);
+if(p.get("file"))openHelp(p.get("file"),p.get("topic")||"");
+</script>
+</body>
+</html>
