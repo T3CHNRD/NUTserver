@@ -114,6 +114,47 @@ Search phrases:
 
 ---
 
+## Manual Power-On After a Complete Shutdown
+
+This procedure applies after an authorized NUT shutdown or full shutdown test. NUT does not automatically power protected systems back on. The operator must manually restore each system.
+
+**Important:** This is a dependency-based recovery checklist. Device-specific power-on procedures and application dependencies must be confirmed before execution.
+
+### 1. Restore storage first
+
+- Manually power on Synology and NetApp 01 and NetApp 02 using their approved equipment procedures.
+- Confirm each required storage system is healthy and its services and volumes are available.
+- Do not start ESXi hosts that depend on storage until the required storage is ready.
+
+### 2. Restore the physical VMware hosts
+
+- Manually power on the three ESXi hosts.
+- Confirm each host starts successfully and can access its required datastores.
+- Investigate storage or host errors before continuing.
+
+### 3. Restore VMware virtual machines
+
+- Restore vCenter and other virtual machines according to their actual service dependencies.
+- Verify required network, storage, operating-system, and application services.
+- Do not assume NUT performs automatic VM startup.
+
+### 4. Restore other protected systems
+
+- Manually restore remaining shutdown targets according to their approved startup instructions.
+- Verify each system before restoring dependent services.
+- Include any separately protected systems affected by the complete shutdown.
+
+### 5. Restore and verify NUT monitoring
+
+- Manually power on the NUT server if it remains off.
+- Verify the NUT Control Center, UPS monitoring services, protection mode, and current UPS statuses.
+- Review the [Tests and Logs](10_TESTS_AND_LOGS_HOWTOS.md) documentation and existing shutdown logs for successes, failures, error codes, and blocked actions.
+- Do not change the protection mode without approval.
+
+For the shutdown order and protected-target details, see [Shutdown Orchestration](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md) and [Protected Systems](14_PROTECTED_SYSTEMS_HOWTOS.md).
+
+---
+
 ## Critical Production Safety Rule
 
 DO NOT run the disaster-recovery --apply restore against the fully working production NUT server.

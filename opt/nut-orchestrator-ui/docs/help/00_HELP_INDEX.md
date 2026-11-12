@@ -140,6 +140,7 @@ Every applicable article must explain:
 - [Restore Lab selected-file workflow](12_RESTORE_AND_DR_HOWTOS.md#restore-lab-selected-file-workflow)
 - [Rollback](12_RESTORE_AND_DR_HOWTOS.md#how-to-roll-back-a-bad-change)
 - [Disaster recovery](12_RESTORE_AND_DR_HOWTOS.md#how-to-rebuild-nut-after-a-server-failure)
+- [Manual power-on after shutdown](12_RESTORE_AND_DR_HOWTOS.md#manual-power-on-after-a-complete-shutdown)
 
 ### 13 - Shutdown Orchestration
 - [UPS event flow](13_SHUTDOWN_ORCHESTRATION_HOWTOS.md#current-event-chain)

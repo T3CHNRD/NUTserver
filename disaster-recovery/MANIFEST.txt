@@ -1062,6 +1062,7 @@ SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/13_SHUT
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.pre-index-final-20260909-103823
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/03_MONITORING_HOWTOS.md.pre-gap-five-20260909-091233
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/33_ADD_VMWARE_VM.md.before-inline-links-20261014
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/12_RESTORE_AND_DR_HOWTOS.md.pre-manual-poweron-20261112
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/12_RESTORE_AND_DR_HOWTOS.md.before-inline-links-20260904-085340
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/09_CONFIGURATION_HOWTOS.md.pre-credential-guidance-20260902_101840
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/05_NOTIFICATION_SETTINGS.md
@@ -1137,6 +1138,7 @@ SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/13_SHUT
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/36_RESTORE_AND_RECOVERY.md
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/24_SHUTDOWN_CONFIGURATION_REFERENCES.md
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.before-ups-inventory-20260904-072920
+SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/00_HELP_INDEX.md.pre-poweron-link-20261112
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/32_ADD_PHYSICAL_SERVER.md.before-inline-links-20261014
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/REF_35_nut_vmware_shutdown.md
 SKIP raw-live-help-public-copy-exists /opt/nut-orchestrator-ui/docs/help/34_PROTECTED_SYSTEM_CREDENTIALS.md.before-inline-links-20261014
