@@ -1,22 +1,22 @@
 NEXT                             LEFT LAST                              PASSED UNIT                            ACTIVATES
-Fri 2026-11-13 08:23:28 EST       20s Fri 2026-11-13 08:22:28 EST      39s ago nut-power-events-refresh.timer  nut-power-events-refresh.service
-Fri 2026-11-13 08:30:00 EST      6min Fri 2026-11-13 08:20:00 EST  3min 7s ago sysstat-collect.timer           sysstat-collect.service
-Fri 2026-11-13 08:31:55 EST      8min Fri 2026-11-13 07:30:27 EST    52min ago anacron.timer                   anacron.service
-Fri 2026-11-13 08:32:09 EST      9min Fri 2026-11-13 08:21:53 EST 1min 14s ago nut-apc-idf-event-monitor.timer nut-apc-idf-event-monitor.service
-Fri 2026-11-13 09:20:44 EST     57min Fri 2026-11-13 08:11:42 EST    11min ago fwupd-refresh.timer             fwupd-refresh.service
-Fri 2026-11-13 10:20:55 EST  1h 57min Thu 2026-11-12 17:44:57 EST      14h ago motd-news.timer                 motd-news.service
-Fri 2026-11-13 10:37:09 EST  2h 14min Fri 2026-11-13 07:37:09 EST    45min ago apport-autoreport.timer         apport-autoreport.service
-Fri 2026-11-13 12:00:00 EST  3h 36min Fri 2026-11-13 04:00:00 EST 4h 23min ago nut-weather-cache-refresh.timer nut-weather-cache-refresh.service
+Fri 2026-11-13 08:47:36 EST       24s Fri 2026-11-13 08:46:36 EST      35s ago nut-power-events-refresh.timer  nut-power-events-refresh.service
+Fri 2026-11-13 08:50:00 EST  2min 48s Fri 2026-11-13 08:40:00 EST     7min ago sysstat-collect.timer           sysstat-collect.service
+Fri 2026-11-13 08:53:07 EST      5min Fri 2026-11-13 08:42:47 EST 4min 23s ago nut-apc-idf-event-monitor.timer nut-apc-idf-event-monitor.service
+Fri 2026-11-13 09:20:44 EST     33min Fri 2026-11-13 08:11:42 EST    35min ago fwupd-refresh.timer             fwupd-refresh.service
+Fri 2026-11-13 09:33:46 EST     46min Fri 2026-11-13 08:31:56 EST    15min ago anacron.timer                   anacron.service
+Fri 2026-11-13 10:20:55 EST  1h 33min Thu 2026-11-12 17:44:57 EST      15h ago motd-news.timer                 motd-news.service
+Fri 2026-11-13 10:37:09 EST  1h 49min Fri 2026-11-13 07:37:09 EST 1h 10min ago apport-autoreport.timer         apport-autoreport.service
+Fri 2026-11-13 12:00:00 EST  3h 12min Fri 2026-11-13 04:00:00 EST 4h 47min ago nut-weather-cache-refresh.timer nut-weather-cache-refresh.service
 Fri 2026-11-13 15:50:28 EST        7h Thu 2026-11-12 15:50:28 EST      16h ago update-notifier-download.timer  update-notifier-download.service
 Fri 2026-11-13 15:59:37 EST        7h Thu 2026-11-12 15:59:37 EST      16h ago systemd-tmpfiles-clean.timer    systemd-tmpfiles-clean.service
-Fri 2026-11-13 16:00:00 EST        7h Fri 2026-11-13 06:00:00 EST 2h 23min ago nut-daily-health-email.timer    nut-daily-health-email.service
-Fri 2026-11-13 17:41:59 EST        9h Fri 2026-11-13 03:27:00 EST 4h 56min ago apt-daily.timer                 apt-daily.service
+Fri 2026-11-13 16:00:00 EST        7h Fri 2026-11-13 06:00:00 EST 2h 47min ago nut-daily-health-email.timer    nut-daily-health-email.service
+Fri 2026-11-13 17:41:59 EST        8h Fri 2026-11-13 03:27:00 EST 5h 20min ago apt-daily.timer                 apt-daily.service
 Sat 2026-11-14 00:00:00 EST       15h Fri 2026-11-13 00:00:00 EST       8h ago dpkg-db-backup.timer            dpkg-db-backup.service
 Sat 2026-11-14 00:00:00 EST       15h Fri 2026-11-13 00:00:00 EST       8h ago logrotate.timer                 logrotate.service
 Sat 2026-11-14 00:07:00 EST       15h Fri 2026-11-13 00:07:00 EST       8h ago sysstat-summary.timer           sysstat-summary.service
-Sat 2026-11-14 06:55:47 EST       22h Fri 2026-11-13 06:39:23 EST 1h 43min ago apt-daily-upgrade.timer         apt-daily-upgrade.service
-Sat 2026-11-14 08:00:00 EST       23h Fri 2026-11-13 08:00:00 EST    23min ago nut-telegram-heartbeat.timer    nut-telegram-heartbeat.service
-Sat 2026-11-14 10:08:47 EST  1 day 1h Fri 2026-11-13 03:44:13 EST 4h 38min ago man-db.timer                    man-db.service
+Sat 2026-11-14 06:55:47 EST       22h Fri 2026-11-13 06:39:23 EST  2h 7min ago apt-daily-upgrade.timer         apt-daily-upgrade.service
+Sat 2026-11-14 08:00:00 EST       23h Fri 2026-11-13 08:00:00 EST    47min ago nut-telegram-heartbeat.timer    nut-telegram-heartbeat.service
+Sat 2026-11-14 10:08:47 EST  1 day 1h Fri 2026-11-13 03:44:13 EST  5h 2min ago man-db.timer                    man-db.service
 Sun 2026-11-15 03:10:44 EST 1 day 18h Sun 2026-11-08 03:11:08 EST   5 days ago e2scrub_all.timer               e2scrub_all.service
 Mon 2026-11-16 00:27:24 EST    2 days Mon 2026-11-09 00:42:34 EST   4 days ago fstrim.timer                    fstrim.service
 Wed 2026-11-18 17:01:33 EST    5 days Sun 2026-11-08 23:47:14 EST   4 days ago update-notifier-motd.timer      update-notifier-motd.service
